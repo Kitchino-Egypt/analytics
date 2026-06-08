@@ -321,21 +321,31 @@ tbody td.muted { color:var(--text2); }
 /* RESPONSIVE */
 @media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } }
 @media(max-width:900px) {
-  .sidebar { transform:translateX(-100%) !important; transition:transform .3s ease; z-index:200 !important; }
-  .sidebar.open { transform:translateX(0) !important; box-shadow:4px 0 24px rgba(0,0,0,.7); }
-  .main { margin-left:0 !important; }
-  .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(2,1fr); }
-  .chart-2,.chart-3,.chart-32,.row-2,.row-3 { grid-template-columns:1fr; }
-  .topbar { padding:0 12px; height:52px; }
+  /* Hide sidebar completely — shown only when JS adds .open class */
+  .sidebar { display:none !important; }
+  .sidebar.open { display:flex !important; position:fixed; top:0; left:0; height:100vh; z-index:200; width:var(--sidebar-w); box-shadow:4px 0 24px rgba(0,0,0,.8); }
+  /* Main takes full width */
+  .main { margin-left:0 !important; width:100% !important; }
+  /* Grid adjustments */
+  .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(2,1fr) !important; }
+  .chart-2,.chart-3,.chart-32,.row-2,.row-3 { grid-template-columns:1fr !important; }
+  /* Topbar */
+  .topbar { padding:0 12px !important; height:52px; }
   .topbar-filters { display:none !important; }
-  .mobile-topbar-actions { display:flex !important; }
+  .mobile-topbar-actions { display:flex !important; align-items:center; gap:8px; }
+  /* Page padding */
   .page-content { padding:12px 10px; }
+  /* Overlay */
   #sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:199; }
-  #sidebar-overlay.visible { display:block; }
+  #sidebar-overlay.visible { display:block !important; }
+  /* Mobile home */
   #page-home { display:none; }
   #page-home.active { display:block !important; }
 }
-@media(max-width:600px) { .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:1fr 1fr; } }
+@media(max-width:600px) {
+  .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:1fr 1fr !important; }
+  .page-content { padding:8px 8px; }
+}
 @media(min-width:901px) {
   #page-home { display:none !important; }
   .mobile-topbar-actions { display:none !important; }
