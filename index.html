@@ -837,6 +837,13 @@ function _grantAccess() {
     window.name = JSON.stringify(wn);
   } catch(e) {}
   try { localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString()); } catch(e) {}
+  // If data didn't load before login, fetch now
+  if (!ENGINE_READY && sheetsUrl) {
+    setTimeout(() => {
+      _setSourceLabel('fetching');
+      _fetchAllRows().then(() => { _fetchContracts(); _startPolling(); });
+    }, 400);
+  }
 }
 
 async function attemptLogin() {
