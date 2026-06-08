@@ -2725,16 +2725,16 @@ function renderMeasuresTable() {
   var payEl = document.getElementById('mt-payment');
   if (payEl) payEl.textContent = _payTotal > 0 ? _payTotal.toLocaleString() + ' EGP' : '—';
 
-  // ── Repeated customers: customers who appear >1 time within filtered rows ──
-  // Correct definition: customer visited more than once in the CURRENT filter
-  // (same designer, same year, etc.) — not across the whole dataset.
-  var _filtVisits = {};
+  // ── Repeated customers: rows where Source (col G) = "Repeated" ──────────
+  // Source is set by the data entry team when a customer is a returning visit.
+  var _repeatCusts = new Set();
   filteredMeasures.forEach(function(r) {
-    if (r.customer) _filtVisits[r.customer] = (_filtVisits[r.customer] || 0) + 1;
+    if (r.source && r.source.trim().toLowerCase() === 'repeated' && r.customer) {
+      _repeatCusts.add(r.customer.trim());
+    }
   });
-  var _repeatCount = Object.values(_filtVisits).filter(function(v){ return v > 1; }).length;
   var repEl = document.getElementById('mt-repeated');
-  if (repEl) repEl.textContent = _repeatCount.toLocaleString();
+  if (repEl) repEl.textContent = _repeatCusts.size.toLocaleString();
 
   const start = (currentPage-1)*PAGE_SIZE;
   const pageRows = filteredMeasures.slice(start, start+PAGE_SIZE);
