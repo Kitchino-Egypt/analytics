@@ -489,6 +489,56 @@ tbody td.muted { color:var(--text2); }
 }
 .login-card.fade-out { animation:loginFadeOut .3s ease forwards; }
 
+.patches-grid {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-top:4px;
+}
+@media(max-width:1100px){ .patches-grid { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:700px) { .patches-grid { grid-template-columns:repeat(2,1fr); } }
+.perf-patch {
+  border-radius:16px; border:2px solid; padding:18px 15px 14px;
+  display:flex; flex-direction:column; gap:0;
+  position:relative; overflow:hidden; transition:transform .2s, box-shadow .2s;
+}
+.perf-patch:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,0.35); }
+.perf-patch::before {
+  content:attr(data-bg-icon); position:absolute; right:-8px; top:-12px;
+  font-size:90px; opacity:.07; pointer-events:none; line-height:1; user-select:none;
+}
+.patch-tier-tag {
+  font-size:9px; font-weight:800; letter-spacing:1.8px; text-transform:uppercase;
+  margin-bottom:8px; opacity:.8;
+}
+.patch-name-row { display:flex; align-items:center; gap:9px; margin-bottom:12px; }
+.patch-big-icon { font-size:30px; line-height:1; }
+.patch-name     { font-size:17px; font-weight:900; letter-spacing:.2px; }
+.patch-tagline  { font-size:10px; color:var(--text3); margin-top:1px; font-style:italic; }
+.patch-stats-bar {
+  display:flex; gap:0; background:rgba(0,0,0,0.2);
+  border-radius:8px; padding:7px 10px; margin-bottom:12px;
+}
+.patch-stat { flex:1; text-align:center; border-right:1px solid rgba(255,255,255,0.07); }
+.patch-stat:last-child { border-right:none; }
+.patch-stat-val   { font-size:15px; font-weight:800; line-height:1; }
+.patch-stat-label { font-size:8.5px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+.patch-divider    { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:0 0 10px; }
+.patch-designers  { display:flex; flex-direction:column; gap:6px; }
+.patch-designer   {
+  display:grid; grid-template-columns:26px 1fr auto; align-items:center; gap:8px;
+  padding:5px 6px; border-radius:8px; background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.05); transition:background .15s;
+}
+.patch-designer:hover { background:rgba(255,255,255,0.07); }
+.patch-avatar {
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:800; flex-shrink:0;
+}
+.patch-d-info { overflow:hidden; }
+.patch-d-name { font-size:11.5px; font-weight:600; color:var(--text1);
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.patch-d-meas { font-size:10px; color:var(--text3); margin-top:1px; }
+.patch-d-rate { font-size:12px; font-weight:800; white-space:nowrap; }
+.patch-more   { font-size:10px; color:var(--text3); text-align:center; padding:4px 0 0; font-style:italic; }
 </style>
 </head><body>
 <!-- ═══════════════════════════════════════════════════════
@@ -989,7 +1039,21 @@ if (_checkSession()) {
       </table>
     </div>
   </div>
+
+  <!-- PERFORMANCE PATCHES -->
+  <div style="margin-top:16px" id="designer-tiers-section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--text1);letter-spacing:.2px">Designer Performance Tiers</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px" id="tiers-subtitle">Composite score: Measures Volume 50% · Conversion Rate 50%</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3)" id="tiers-meta"></div>
+    </div>
+    <div class="patches-grid" id="designer-tiers-grid"></div>
+  </div>
 </div>
+
+
 
 <!-- PAGE 5: CONVERSION ANALYSIS -->
 <div class="page" id="page-conversion">
@@ -2160,6 +2224,149 @@ function getFilteredAreaData() {
 function getFilteredSourceData() {
   // Always from KITCHINO_STATE — populated by engine_compute()
   return KITCHINO_STATE.sourceData || [];
+}
+
+// ── TIER COMPUTATION HELPER ─────────────────────────────────────────────────
+function _computeTierMap(fullData) {
+  const TIERS = ['Pinnacle','Valor','Stride','Spark','Dawn'];
+  const eligible = fullData.filter(d => d.total >= 3);
+  if (eligible.length < 3) return {};
+  const maxM = Math.max(...eligible.map(d => d.total));
+  const maxR = Math.max(...eligible.map(d => d.total > 0 ? d.contracted/d.total*100 : 0));
+  const scored = eligible.map(d => {
+    const rate = d.total > 0 ? d.contracted/d.total*100 : 0;
+    const normM = maxM > 0 ? d.total/maxM*100 : 0;
+    const normR = maxR > 0 ? rate/maxR*100 : 0;
+    return { name: d.name, score: normM*0.5 + normR*0.5 };
+  }).sort((a,b) => b.score - a.score);
+  const n = scored.length;
+  const tierSize = n / 5;
+  const map = {};
+  scored.forEach((d, i) => {
+    map[d.name] = TIERS[Math.min(Math.floor(i / tierSize), 4)];
+  });
+  return map;
+}
+
+// ── BUILD DESIGNER PERFORMANCE PATCHES ──────────────────────────────────────
+function buildDesignerTiers() {
+  const grid = document.getElementById('designer-tiers-grid');
+  if (!grid) return;
+
+  const fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total >= 3);
+  if (!ENGINE_READY || fullData.length < 3) {
+    grid.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);grid-column:1/-1">Connect Google Sheets to generate performance tiers</div>';
+    return;
+  }
+
+  // ── Tier definitions — inspiring, unique, challenging names ──
+  const PATCHES = [
+    {
+      tag:'Tier I', name:'Pinnacle', icon:'🏆', bgIcon:'🏆',
+      color:'#ffd740', avatarBg:'rgba(255,215,64,0.18)', avatarColor:'#b8960a',
+      bg:'linear-gradient(145deg,rgba(255,215,64,0.10) 0%,rgba(255,215,64,0.04) 100%)',
+      border:'rgba(255,215,64,0.35)', tagline:'Masters of the craft'
+    },
+    {
+      tag:'Tier II', name:'Valor', icon:'⚔️', bgIcon:'⚔️',
+      color:'#ff7043', avatarBg:'rgba(255,112,67,0.18)', avatarColor:'#bf360c',
+      bg:'linear-gradient(145deg,rgba(255,112,67,0.10) 0%,rgba(255,112,67,0.04) 100%)',
+      border:'rgba(255,112,67,0.35)', tagline:'Driven by excellence'
+    },
+    {
+      tag:'Tier III', name:'Stride', icon:'💎', bgIcon:'💎',
+      color:'#1de9b6', avatarBg:'rgba(29,233,182,0.18)', avatarColor:'#00796b',
+      bg:'linear-gradient(145deg,rgba(29,233,182,0.10) 0%,rgba(29,233,182,0.04) 100%)',
+      border:'rgba(29,233,182,0.35)', tagline:'Consistent momentum'
+    },
+    {
+      tag:'Tier IV', name:'Spark', icon:'⚡', bgIcon:'⚡',
+      color:'#40c4ff', avatarBg:'rgba(64,196,255,0.18)', avatarColor:'#0277bd',
+      bg:'linear-gradient(145deg,rgba(64,196,255,0.10) 0%,rgba(64,196,255,0.04) 100%)',
+      border:'rgba(64,196,255,0.35)', tagline:'Rising energy'
+    },
+    {
+      tag:'Tier V', name:'Dawn', icon:'🌅', bgIcon:'🌅',
+      color:'#b0bec5', avatarBg:'rgba(176,190,197,0.15)', avatarColor:'#546e7a',
+      bg:'linear-gradient(145deg,rgba(176,190,197,0.07) 0%,rgba(176,190,197,0.02) 100%)',
+      border:'rgba(176,190,197,0.22)', tagline:'Building foundations'
+    },
+  ];
+
+  // ── Score & rank all designers ──
+  const maxM = Math.max(...fullData.map(d => d.total));
+  const maxR = Math.max(...fullData.map(d => d.total > 0 ? d.contracted/d.total*100 : 0));
+
+  const scored = fullData.map(d => {
+    const rate  = d.total > 0 ? +(d.contracted/d.total*100).toFixed(1) : 0;
+    const normM = maxM > 0 ? d.total/maxM*100 : 0;
+    const normR = maxR > 0 ? rate/maxR*100 : 0;
+    return { ...d, rate, score: +(normM*0.5 + normR*0.5).toFixed(1) };
+  }).sort((a,b) => b.score - a.score);
+
+  const n        = scored.length;
+  const tierSize = n / 5;
+  PATCHES.forEach(p => { p.designers = []; });
+  scored.forEach((d, i) => { PATCHES[Math.min(Math.floor(i/tierSize), 4)].designers.push(d); });
+
+  // Update meta
+  const metaEl = document.getElementById('tiers-meta');
+  if (metaEl) metaEl.textContent = n + ' designers ranked · Top 4 shown per tier';
+
+  // ── Render patches ──
+  grid.innerHTML = PATCHES.map(p => {
+    const shown = p.designers.slice(0, 4);
+    const extra = p.designers.length - shown.length;
+
+    const avgMeas = p.designers.length
+      ? Math.round(p.designers.reduce((s,d) => s+d.total, 0) / p.designers.length) : 0;
+    const avgRate = p.designers.length
+      ? (p.designers.reduce((s,d) => s+d.rate, 0) / p.designers.length).toFixed(1) : '0.0';
+    const topScore = p.designers.length ? p.designers[0].score.toFixed(0) : '—';
+
+    const designerRows = shown.map((d, idx) => {
+      const initials  = d.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+      const rateColor = d.rate >= 30 ? '#00e676' : d.rate >= 20 ? '#ffd740' : '#ff5252';
+      return `<div class="patch-designer">
+        <div class="patch-avatar" style="background:${p.avatarBg};color:${p.color};border:1px solid ${p.border}">${initials}</div>
+        <div class="patch-d-info">
+          <div class="patch-d-name" title="${d.name}">${d.name.split(' ').slice(0,2).join(' ')}</div>
+          <div class="patch-d-meas">${d.total} measures</div>
+        </div>
+        <div class="patch-d-rate" style="color:${rateColor}">${d.rate}%</div>
+      </div>`;
+    }).join('');
+
+    const extraRow = extra > 0
+      ? `<div class="patch-more">+${extra} more designer${extra>1?'s':''}</div>` : '';
+
+    return `<div class="perf-patch" data-bg-icon="${p.bgIcon}" style="background:${p.bg};border-color:${p.border}">
+      <div class="patch-tier-tag" style="color:${p.color}">${p.tag} &nbsp;·&nbsp; ${p.designers.length} designer${p.designers.length!==1?'s':''}</div>
+      <div class="patch-name-row">
+        <span class="patch-big-icon">${p.icon}</span>
+        <div>
+          <div class="patch-name" style="color:${p.color}">${p.name}</div>
+          <div class="patch-tagline">${p.tagline}</div>
+        </div>
+      </div>
+      <div class="patch-stats-bar">
+        <div class="patch-stat">
+          <div class="patch-stat-val" style="color:${p.color}">${avgMeas}</div>
+          <div class="patch-stat-label">Avg Measures</div>
+        </div>
+        <div class="patch-stat">
+          <div class="patch-stat-val" style="color:${p.color}">${avgRate}%</div>
+          <div class="patch-stat-label">Avg Conv.</div>
+        </div>
+        <div class="patch-stat">
+          <div class="patch-stat-val" style="color:${p.color}">${topScore}</div>
+          <div class="patch-stat-label">Top Score</div>
+        </div>
+      </div>
+      <hr class="patch-divider">
+      <div class="patch-designers">${designerRows}${extraRow}</div>
+    </div>`;
+  }).join('');
 }
 
 function buildDesignerCharts() {
