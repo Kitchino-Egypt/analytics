@@ -626,6 +626,11 @@ if (_checkSession()) {
   <!-- TOPBAR -->
   <div class="topbar">
     <button class="refresh-btn" onclick="toggleSidebar()" style="display:none" id="menu-btn">☰</button>
+    <!-- Mobile-only actions -->
+    <div class="mobile-topbar-actions" style="display:none;align-items:center;gap:8px;margin-right:8px">
+      <button onclick="showMobileHome()" style="background:rgba(0,230,118,0.1);border:1px solid var(--green);color:var(--green);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">⌂ Home</button>
+      <button onclick="toggleSidebar()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:16px;cursor:pointer">☰</button>
+    </div>
     <div>
       <div class="page-title" id="page-title">Executive Summary</div>
       <div class="page-subtitle" id="page-subtitle">Kitchino — High-End Kitchens & Furniture, Egypt</div>
@@ -653,6 +658,100 @@ if (_checkSession()) {
 
   <!-- PAGE CONTENT -->
   <div class="page-content">
+<!-- MOBILE HOME PAGE -->
+<div class="page" id="page-home" style="display:none">
+  <div style="padding:4px 0 20px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px;background:linear-gradient(135deg,rgba(0,230,118,0.08),rgba(29,233,182,0.04));border:1px solid rgba(0,230,118,0.2);border-radius:12px">
+      <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--green),var(--teal));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#000;flex-shrink:0">K</div>
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">Kitchino Analytics</div>
+        <div style="font-size:11px;color:var(--text2)">Select a dashboard to open</div>
+      </div>
+    </div>
+
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">OVERVIEW</div>
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+      <div onclick="showPage('executive')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px;cursor:pointer;active:opacity:.8">
+        <div style="font-size:20px;margin-bottom:6px">📊</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Executive Summary</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">KPIs & trends</div>
+      </div>
+      <div onclick="showPage('ceo')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">👁</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">CEO View</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Executive KPIs & search</div>
+      </div>
+      <div onclick="showPage('daily')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">⚡</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Daily Operations</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Today's activity</div>
+      </div>
+      <div onclick="showPage('presentation')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🖥</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Presentation View</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Slides format</div>
+      </div>
+    </div>
+
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">TRACKING</div>
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+      <div onclick="showPage('measures')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">📋</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Measures Tracking</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">All records</div>
+      </div>
+      <div onclick="showPage('followup')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--red);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🔔</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Customer Follow-up</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Pending contracts</div>
+      </div>
+      <div onclick="showPage('monthly')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">📅</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Monthly Trends</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Month-over-month</div>
+      </div>
+    </div>
+
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">PERFORMANCE</div>
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+      <div onclick="showPage('designers')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🏆</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Designers</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Rankings & rates</div>
+      </div>
+      <div onclick="showPage('conversion')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🎯</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Conversion Analysis</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Contract funnel</div>
+      </div>
+      <div onclick="showPage('geographic')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green2);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">📍</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Geographic Analysis</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Areas & regions</div>
+      </div>
+      <div onclick="showPage('sources')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">📡</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Lead Sources</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Channel performance</div>
+      </div>
+    </div>
+
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">INTELLIGENCE</div>
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      <div onclick="showPage('kpi')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🔬</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">KPI Deep Dive</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Detailed metrics</div>
+      </div>
+      <div onclick="showPage('forecast')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🔮</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Forecast</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Next month outlook</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PAGE 1: EXECUTIVE SUMMARY -->
 <div class="page active" id="page-executive">
   <!-- Current Month Hero Card -->
@@ -3025,7 +3124,15 @@ function showPage(name) {
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-  el.addEventListener('click', () => showPage(el.dataset.page));
+  el.addEventListener('click', () => {
+    showPage(el.dataset.page);
+    if (window.innerWidth <= 900) {
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('visible');
+    }
+  });
 });
 
 // ============================================================
@@ -3211,6 +3318,18 @@ function exportTable(tableId) {
 
 function exportPDF() { window.print(); }
 
+function showMobileHome() {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg = document.getElementById('page-home');
+  if (pg) pg.classList.add('active');
+  document.getElementById('page-title').textContent = 'Kitchino Analytics';
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('visible');
+}
+
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
@@ -3373,8 +3492,13 @@ window.addEventListener('DOMContentLoaded', () => {
   renderMeasuresTable();       // populate filteredMeasures first
   computeFilteredState();      // initialize centralized state
   updateKPICards();            // push state to KPI cards
-  buildExecutiveCharts();      // buildExecutiveCharts reads KITCHINO_STATE
-  builtPages.add('executive');
+  // On mobile: show home screen by default; on desktop: show executive summary
+  if (window.innerWidth <= 900) {
+    showMobileHome();
+  } else {
+    buildExecutiveCharts();
+    builtPages.add('executive');
+  }
   renderTopPerformers();
   renderMeasuresTable();
   updateBadges();
