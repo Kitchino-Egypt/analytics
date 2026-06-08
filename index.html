@@ -771,7 +771,7 @@ if (_checkSession()) {
     <div class="kpi-card green"><div class="kpi-label">Total Records</div><div class="kpi-value" id="mt-total">1,767</div></div>
     <div class="kpi-card teal"><div class="kpi-label">Filtered Results</div><div class="kpi-value" id="mt-filtered">1,767</div></div>
     <div class="kpi-card gold"><div class="kpi-label">Total Payment</div><div class="kpi-value" id="mt-payment">—</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Repeated Customers</div><div class="kpi-value" id="mt-repeated">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Repeated Customers (Unique)</div><div class="kpi-value" id="mt-repeated">—</div></div>
   </div>
 
   <div class="table-card">
@@ -2729,7 +2729,8 @@ function renderMeasuresTable() {
   // Source is set by the data entry team when a customer is a returning visit.
   var _repeatCusts = new Set();
   filteredMeasures.forEach(function(r) {
-    if (r.source && r.source.trim().toLowerCase() === 'repeated' && r.customer) {
+    var _src = (r.source || '').trim().toLowerCase();
+    if ((_src === 'repeated' || _src === 'repeted' || _src.startsWith('repeat') || _src.startsWith('repet')) && r.customer) {
       _repeatCusts.add(r.customer.trim());
     }
   });
