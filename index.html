@@ -1255,6 +1255,9 @@ if (_checkSession()) {
 // No static fallback data. Connect Google Sheets to load live data.
 // ══════════════════════════════════════════════════════════════════
 let filteredMeasures = [];   // populated by engine_compute() after ENGINE_READY
+let DESIGNERS = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
+let AREAS     = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
+let MONTHS    = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let CONTRACTS_DATA   = [];   // populated by _fetchContracts() from ContractsConnector.gs
 // ════════════════════════════════════════════════════════════════════════════
 // KITCHINO BI ENGINE — Row-level aggregation (mirrors Google Data Studio)
@@ -1703,6 +1706,11 @@ async function _fetchAllRows() {
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
       ENGINE_READY      = true;
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
+      // Populate filter dropdowns dynamically from live data
+      DESIGNERS = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.designer||'').filter(Boolean))].sort();
+      AREAS     = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.area||'').filter(Boolean))].sort();
+      MONTHS    = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r._monthName||'').filter(Boolean))];
+      _refreshFilterDropdowns();
       computeFilteredState();
       updateKPICards();
       builtPages.clear();
@@ -2849,15 +2857,34 @@ function buildFollowupCharts() {
 // ============================================================
 // FILTERS & NAVIGATION
 // ============================================================
-function populateFilters() {
+function _refreshFilterDropdowns() {
+  // Designer dropdown
   const dSel = document.getElementById('filter-designer');
-  DESIGNERS.forEach(d => { const o=document.createElement('option');o.value=d;o.textContent=d;dSel.appendChild(o); });
-
+  if (dSel) {
+    const cur = dSel.value;
+    dSel.innerHTML = '<option value="all">All Designers</option>';
+    DESIGNERS.forEach(d => { const o=document.createElement('option');o.value=d;o.textContent=d;if(d===cur)o.selected=true;dSel.appendChild(o); });
+  }
+  // Area dropdown
   const aSel = document.getElementById('filter-area');
-  AREAS.forEach(a => { const o=document.createElement('option');o.value=a;o.textContent=a;aSel.appendChild(o); });
-
+  if (aSel) {
+    const cur = aSel.value;
+    aSel.innerHTML = '<option value="all">All Areas</option>';
+    AREAS.forEach(a => { const o=document.createElement('option');o.value=a;o.textContent=a;if(a===cur)o.selected=true;aSel.appendChild(o); });
+  }
+  // Month filter on Measures Tracking page
   const mSel = document.getElementById('mt-month-filter');
-  MONTHS.forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=m;mSel.appendChild(o); });
+  if (mSel) {
+    const cur = mSel.value;
+    mSel.innerHTML = '<option value="all">All Months</option>';
+    MONTHS.forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=m;if(m===cur)o.selected=true;mSel.appendChild(o); });
+  }
+}
+
+function populateFilters() {
+  // Arrays populated dynamically after engine loads via _refreshFilterDropdowns()
+  // This is a safe no-op at init time when arrays are empty
+  if (DESIGNERS.length || AREAS.length) _refreshFilterDropdowns();
 }
 
 function applyFilters() {
