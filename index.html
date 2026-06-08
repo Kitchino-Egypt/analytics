@@ -905,7 +905,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="kpi"><span class="nav-icon">🔬</span>KPI Deep Dive</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
   </div>
-  <div class="sidebar-footer" style="padding:10px 14px 14px">
+  <div class="sidebar-footer" style="padding:10px 14px 14px;display:none">
     <!-- Status dot + label (always visible) -->
     <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
       <div id="connect-status-dot" style="width:7px;height:7px;border-radius:50%;background:#9e9ec8;flex-shrink:0"></div>
@@ -914,7 +914,7 @@ if (_checkSession()) {
       </div>
     </div>
 
-    <!-- Connect button — visible in main source -->
+    <!-- Connect button — hidden in shared version -->
     <button class="connect-btn" onclick="openConnectModal()" style="width:100%">⚙ Connect Google Sheets</button>
 
     <div id="connect-inline-panel" style="display:none">
