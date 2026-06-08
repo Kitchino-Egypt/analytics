@@ -2716,6 +2716,28 @@ function renderMeasuresTable() {
 
   document.getElementById('mt-filtered').textContent = filteredMeasures.length.toLocaleString();
 
+  // ── Payment total from filtered rows ──────────────────────────────────────
+  var _payTotal = 0;
+  filteredMeasures.forEach(function(r) {
+    var n = parseFloat(String(r.payment || '').replace(/,/g,''));
+    if (!isNaN(n) && n > 0) _payTotal += n;
+  });
+  var payEl = document.getElementById('mt-payment');
+  if (payEl) payEl.textContent = _payTotal > 0 ? _payTotal.toLocaleString() + ' EGP' : '—';
+
+  // ── Repeated customers: customers in filtered set who have >1 visit total ──
+  // Uses full ENGINE_CLEAN_ROWS so a customer is "repeated" if they visited
+  // multiple times across the whole dataset, even across different designers.
+  var _allVisits = {};
+  (ENGINE_CLEAN_ROWS || []).forEach(function(r) {
+    if (r.customer) _allVisits[r.customer] = (_allVisits[r.customer] || 0) + 1;
+  });
+  var _filteredCusts = new Set(filteredMeasures.map(function(r){ return r.customer; }).filter(Boolean));
+  var _repeatCount = 0;
+  _filteredCusts.forEach(function(c) { if (_allVisits[c] > 1) _repeatCount++; });
+  var repEl = document.getElementById('mt-repeated');
+  if (repEl) repEl.textContent = _repeatCount.toLocaleString();
+
   const start = (currentPage-1)*PAGE_SIZE;
   const pageRows = filteredMeasures.slice(start, start+PAGE_SIZE);
   document.getElementById('show-range').textContent = `${start+1}–${Math.min(start+PAGE_SIZE,filteredMeasures.length)} of ${filteredMeasures.length}`;
