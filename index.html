@@ -1024,10 +1024,10 @@ if (_checkSession()) {
 <!-- PAGE 9: LEAD SOURCES -->
 <div class="page" id="page-sources">
   <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">Top Source (Volume)</div><div class="kpi-value" style="font-size:18px">Walk-in</div><div class="kpi-sub">717 measures</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Best Conv. Source</div><div class="kpi-value" style="font-size:18px">Agent</div><div class="kpi-sub">39.5% rate</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Digital Sources</div><div class="kpi-value">119</div><div class="kpi-sub">Insta + FB + Google</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Repeat Customers</div><div class="kpi-value">166</div><div class="kpi-sub">9.4% of total</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Top Source (Volume)</div><div class="kpi-value" style="font-size:18px" id="src-kpi-top-name">—</div><div class="kpi-sub" id="src-kpi-top-sub">— measures</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Best Conv. Source</div><div class="kpi-value" style="font-size:18px" id="src-kpi-best-name">—</div><div class="kpi-sub" id="src-kpi-best-sub">— rate</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Total Sources</div><div class="kpi-value" id="src-kpi-count">—</div><div class="kpi-sub" id="src-kpi-count-sub">active channels</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Total Measures</div><div class="kpi-value" id="src-kpi-total">—</div><div class="kpi-sub" id="src-kpi-total-sub">from all sources</div></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -2426,6 +2426,20 @@ function buildSourceCharts() {
     return;
   }
   const sorted = [...getFilteredSourceData()].sort((a,b)=>b.total-a.total);
+  // Populate dynamic KPI cards
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  if (sorted.length > 0) {
+    set('src-kpi-top-name', sorted[0].source);
+    set('src-kpi-top-sub', sorted[0].total.toLocaleString() + ' measures');
+    const bestConv = [...sorted].filter(s=>s.total>=3).sort((a,b)=>b.conversionRate-a.conversionRate);
+    set('src-kpi-best-name', bestConv.length ? bestConv[0].source : sorted[0].source);
+    set('src-kpi-best-sub', bestConv.length ? bestConv[0].conversionRate + '% rate' : '—');
+    set('src-kpi-count', sorted.length.toString());
+    set('src-kpi-count-sub', sorted.length + ' active channels');
+    const total = sorted.reduce((s,x)=>s+x.total,0);
+    set('src-kpi-total', total.toLocaleString());
+    set('src-kpi-total-sub', 'from all sources');
+  }
   makeChart('chart-source-volume', {
     type:'doughnut',
     data:{
@@ -2897,6 +2911,18 @@ function applyFilters() {
   computeFilteredState();
   // ── 3. Push to KPI cards from centralized state ──────────────────────────
   updateKPICards();
+  // ── 3b. Immediately rebuild the active page with new filtered state ───────
+  (function() {
+    const activePage = document.querySelector('.page.active')?.id.replace('page-','');
+    if (activePage && builtPages.has(activePage)) {
+      builtPages.delete(activePage);
+      if (PAGE_BUILDERS[activePage]) { PAGE_BUILDERS[activePage](); builtPages.add(activePage); }
+      if (activePage==='sources')   renderSourceTable();
+      if (activePage==='designers') renderDesignerTable();
+      if (activePage==='geographic') renderAreaTable();
+      if (activePage==='monthly')   renderMonthlyTable();
+    }
+  })();
 
   // ── 4. Re-fetch live Sheets (if connected), then rebuild all pages ────────
   if (sheetsUrl) {
