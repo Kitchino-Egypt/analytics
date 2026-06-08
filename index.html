@@ -4794,24 +4794,35 @@ function _prefillSidebarUrls() {
   const cUrl = (sv && sv.contractsUrl) || localStorage.getItem('kitchino_contracts_url') || '';
   const mEl = document.getElementById('sidebar-measures-url');
   const cEl = document.getElementById('sidebar-contracts-url');
-  if (mEl && mUrl) mEl.value = mUrl;
-  if (cEl && cUrl) cEl.value = cUrl;
-}
-function showReconciliationPanel() {
-  const panel = document.getElementById('reconciliation-panel');
-  if (!panel) return;
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  if (panel.style.display === 'block') renderReconciliationPanel();
+  if (mEl) mEl.value = mUrl;
+  if (cEl) cEl.value = cUrl;
 }
 
-function closeConnectModal() { document.getElementById('connect-modal').classList.remove('open'); }
+window.addEventListener('DOMContentLoaded', () => {
+  populateFilters();
+  refreshYearDropdown();
+  renderMeasuresTable();
+  computeFilteredState();
+  updateKPICards();
+  buildExecutiveCharts();
+  builtPages.add('executive');
+  renderTopPerformers();
+  renderMeasuresTable();
+  updateBadges();
 
-function runDiagnostic(action) {
-  const url = document.getElementById('sheets-url').value.trim();
-  const out = document.getElementById('diag-output');
-  if (!url) { out.innerHTML = '<span style="color:var(--red)">⚠ Paste URL first</span>'; return; }
-  if (!url.startsWith('https://script.google.com')) {
-    out.innerHTML = '<span style="color:var(--red)">⚠ URL must start with https://script.google.com/macros/s/...</span>'; return;
+  if (window.innerWidth <= 900) {
+    const btn = document.getElementById('menu-btn');
+    if (btn) btn.style.display = 'inline-flex';
   }
-  out.innerHTML = '<span style="color:var(--gold)">🔄 Testing ' + action + '…</span>';
-  const cbName = '_diag
+
+  // AUTO-FETCH ON LOAD
+  if (sheetsUrl) {
+    _silentFetch(false).then(() => { _fetchContracts(); _startPolling(); });
+  } else {
+    _setSourceLabel('local');
+    _fetchContracts();
+  }
+});
+</script>
+</body>
+</html>
