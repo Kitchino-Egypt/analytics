@@ -3010,7 +3010,7 @@ document.querySelectorAll('.nav-item[data-page]').forEach(el => {
 // ============================================================
 // GOOGLE SHEETS LIVE CONNECTION  (JSONP — works from file://)
 // ============================================================
-let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || '';
+let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || 'https://script.google.com/macros/s/AKfycbxpw9huYT7FI3KaVkzmKxRK9z94yoGCgfdWzhxQmfhtf4Kxx1IFMn6PY_uhWeKyZ5mk/exec';
 let _liveData  = null;   // cached live dataset
 
 function openConnectModal() {
@@ -3266,7 +3266,7 @@ async function _silentFetch(isAutoRefresh) {
 
 // ── CONTRACTS FETCH — separate JSONP call to ContractsConnector.gs ──────────
 async function _fetchContracts() {
-  const cUrl = localStorage.getItem('kitchino_contracts_url') || '';
+  const cUrl = localStorage.getItem('kitchino_contracts_url') || 'https://script.google.com/macros/s/AKfycbwVDszfL66suLTChfNC0zmdu9GAV_-6AmkwKqsCWGVjBVRtrz5WTLr9mItfG_Tk_koLYw/exec';
   if (!cUrl) return;
   try {
     const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
