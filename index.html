@@ -262,277 +262,6 @@ tbody td.muted { color:var(--text2); }
   padding:14px; transition:.2s;
 }
 .designer-card:hover { border-color:var(--green); }
-
-/* EXEC DESIGNER BUTTON PANEL */
-.designer-btn-grid {
-  display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 4px;
-  max-height:230px; overflow-y:auto;
-}
-.designer-btn {
-  display:flex; flex-direction:column; align-items:center; gap:4px;
-  background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08);
-  border-radius:10px; padding:10px 14px; cursor:pointer;
-  transition:all .2s; min-width:88px; color:var(--text1); font-family:inherit;
-}
-.designer-btn:hover { border-color:var(--green); background:rgba(0,230,118,0.07); transform:translateY(-1px); }
-.designer-btn.dbtn-active { border-color:var(--green); background:rgba(0,230,118,0.14); }
-.dbtn-name {
-  font-size:10.5px; font-weight:600; color:var(--text2);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:98px; text-align:center;
-}
-.dbtn-count { font-size:22px; font-weight:700; color:var(--green); line-height:1; }
-.dbtn-rank  { font-size:10px; color:var(--text3); }
-.designer-btn-detail {
-  margin-top:12px; background:rgba(0,230,118,0.05);
-  border:1px solid rgba(0,230,118,0.18); border-radius:10px; padding:14px 18px;
-  animation:fadeIn .2s ease;
-}
-.dbd-header { font-size:13px; font-weight:700; color:var(--text1); margin-bottom:12px; }
-.dbd-stats  { display:flex; gap:0; }
-.dbd-stat   { flex:1; text-align:center; border-right:1px solid rgba(255,255,255,0.07); padding:0 8px; }
-.dbd-stat:last-child { border-right:none; }
-.dbd-val    { font-size:20px; font-weight:700; color:var(--text1); }
-.dbd-label  { font-size:10px; color:var(--text3); margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
-
-/* DESIGNER DETAIL — CUSTOMER BREAKDOWN */
-.dbd-divider { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:14px 0 10px; }
-.dbd-list-header {
-  display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
-}
-.dbd-list-title { font-size:11px; font-weight:700; color:var(--text2); letter-spacing:.4px; }
-.dbd-list-title .dbd-sub { text-transform:none; font-weight:400; font-size:10px; color:var(--text3); }
-.dbd-search {
-  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
-  border-radius:6px; padding:4px 10px; font-size:11px; color:var(--text1);
-  width:160px; outline:none; font-family:inherit;
-}
-.dbd-search:focus { border-color:var(--green); }
-.dbd-search::placeholder { color:var(--text3); }
-.dbd-customer-list {
-  max-height:220px; overflow-y:auto; margin-top:4px;
-  scrollbar-width:thin; scrollbar-color:rgba(0,230,118,0.3) transparent;
-}
-.dbd-customer-list::-webkit-scrollbar { width:4px; }
-.dbd-customer-list::-webkit-scrollbar-thumb { background:rgba(0,230,118,0.3); border-radius:4px; }
-.dbd-customer-row {
-  display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:10px;
-  padding:7px 4px; border-bottom:1px solid rgba(255,255,255,0.04);
-  transition:background .15s;
-}
-.dbd-customer-row:hover { background:rgba(255,255,255,0.03); border-radius:6px; }
-.dbd-customer-row:last-child { border-bottom:none; }
-.dbd-cust-name { font-size:12px; color:var(--text1); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dbd-order-type {
-  font-size:10px; color:var(--text3); background:rgba(255,255,255,0.05);
-  padding:2px 7px; border-radius:10px; white-space:nowrap;
-}
-.dbd-status-pill {
-  font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; white-space:nowrap;
-}
-.dbd-pill-contracted { background:rgba(0,230,118,0.15); color:var(--green); }
-.dbd-pill-discussion { background:rgba(255,215,64,0.15);  color:var(--gold); }
-.dbd-pill-cancelled  { background:rgba(255,82,82,0.15);   color:var(--red); }
-.dbd-pill-other      { background:rgba(160,160,192,0.1);  color:var(--text3); }
-.dbd-empty { padding:20px; text-align:center; color:var(--text3); font-size:12px; }
-
-/* DESIGNER PERFORMANCE PATCHES */
-.patches-grid {
-  display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-top:4px;
-}
-@media(max-width:1100px){ .patches-grid { grid-template-columns:repeat(3,1fr); } }
-@media(max-width:700px) { .patches-grid { grid-template-columns:repeat(2,1fr); } }
-.perf-patch {
-  border-radius:16px; border:2px solid; padding:18px 15px 14px;
-  display:flex; flex-direction:column; gap:0;
-  position:relative; overflow:hidden; transition:transform .2s, box-shadow .2s;
-}
-.perf-patch:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,0,0,0.35); }
-.perf-patch::before {
-  content:attr(data-bg-icon); position:absolute; right:-8px; top:-12px;
-  font-size:90px; opacity:.07; pointer-events:none; line-height:1; user-select:none;
-}
-.patch-tier-tag {
-  font-size:9px; font-weight:800; letter-spacing:1.8px; text-transform:uppercase;
-  margin-bottom:8px; opacity:.8;
-}
-.patch-name-row { display:flex; align-items:center; gap:9px; margin-bottom:12px; }
-.patch-big-icon { font-size:30px; line-height:1; }
-.patch-name     { font-size:17px; font-weight:900; letter-spacing:.2px; }
-.patch-tagline  { font-size:10px; color:var(--text3); margin-top:1px; font-style:italic; }
-.patch-stats-bar {
-  display:flex; gap:0; background:rgba(0,0,0,0.2);
-  border-radius:8px; padding:7px 10px; margin-bottom:12px;
-}
-.patch-stat { flex:1; text-align:center; border-right:1px solid rgba(255,255,255,0.07); }
-.patch-stat:last-child { border-right:none; }
-.patch-stat-val   { font-size:15px; font-weight:800; line-height:1; }
-.patch-stat-label { font-size:8.5px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
-.patch-divider    { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:0 0 10px; }
-.patch-designers  { display:flex; flex-direction:column; gap:6px; }
-.patch-designer   {
-  display:grid; grid-template-columns:26px 1fr auto; align-items:center; gap:8px;
-  padding:5px 6px; border-radius:8px; background:rgba(255,255,255,0.03);
-  border:1px solid rgba(255,255,255,0.05); transition:background .15s;
-}
-.patch-designer:hover { background:rgba(255,255,255,0.07); }
-.patch-avatar {
-  width:26px; height:26px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:10px; font-weight:800; flex-shrink:0;
-}
-.patch-d-info { overflow:hidden; }
-.patch-d-name { font-size:11.5px; font-weight:600; color:var(--text1);
-                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.patch-d-meas { font-size:10px; color:var(--text3); margin-top:1px; }
-.patch-d-rate { font-size:12px; font-weight:800; white-space:nowrap; }
-.patch-more   { font-size:10px; color:var(--text3); text-align:center; padding:4px 0 0; font-style:italic; }
-
-/* EXEC BOTTOM CARDS — AREAS / SOURCES / DESIGNERS */
-.exec-card-select {
-  width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);
-  border-radius:8px; padding:6px 10px; font-size:11px; color:var(--text1);
-  font-family:inherit; outline:none; cursor:pointer; margin-bottom:12px;
-  appearance:none; -webkit-appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23606080'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 10px center;
-}
-.exec-card-select:focus { border-color:var(--green); }
-.exec-list-row {
-  display:grid; grid-template-columns:20px 1fr auto; align-items:center; gap:8px;
-  padding:7px 4px; border-bottom:1px solid rgba(255,255,255,0.05);
-  transition:background .15s; cursor:pointer; border-radius:6px;
-}
-.exec-list-row:hover { background:rgba(255,255,255,0.05); }
-.exec-list-row.active { background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2); }
-.exec-list-row:last-child { border-bottom:none; }
-.exec-expand-table {
-  margin-top:10px; border-radius:8px; overflow:hidden;
-  border:1px solid rgba(255,255,255,0.08); font-size:11px;
-  animation:fadeIn .2s ease;
-}
-.exec-expand-header {
-  display:flex; justify-content:space-between; align-items:center;
-  padding:8px 12px; background:rgba(0,0,0,0.25);
-  font-size:10px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.6px; color:var(--text3);
-}
-.exec-expand-header span { color:var(--text2); font-weight:400; text-transform:none; letter-spacing:0; }
-.exec-expand-tbody { max-height:180px; overflow-y:auto;
-  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent; }
-.exec-expand-row {
-  display:grid; gap:6px; padding:6px 12px;
-  border-bottom:1px solid rgba(255,255,255,0.04);
-  align-items:center; font-size:11px;
-}
-.exec-expand-row:last-child { border-bottom:none; }
-.exec-expand-row:hover { background:rgba(255,255,255,0.03); }
-.exec-expand-cell { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text2); }
-.exec-status-pill { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; }
-.exec-rank {
-  font-size:10px; font-weight:700; color:var(--text3);
-  text-align:center; line-height:1;
-}
-.exec-rank.gold  { color:#ffd740; }
-.exec-rank.silver{ color:#b0bec5; }
-.exec-rank.bronze{ color:#ff7043; }
-.exec-item-info  { overflow:hidden; }
-.exec-item-name  { font-size:12px; font-weight:600; color:var(--text1);
-                   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.exec-item-bar   {
-  height:3px; border-radius:2px; margin-top:4px;
-  background:rgba(255,255,255,0.07); overflow:hidden;
-}
-.exec-item-fill  { height:100%; border-radius:2px; }
-.exec-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
-.exec-item-count { font-size:13px; font-weight:800; color:var(--text1); }
-.exec-item-rate  { font-size:10px; font-weight:600; }
-.exec-detail-box {
-  margin-top:10px; padding:10px 12px; border-radius:8px;
-  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
-  font-size:11px;
-}
-.exec-detail-row { display:flex; justify-content:space-between; padding:3px 0;
-                   border-bottom:1px solid rgba(255,255,255,0.05); }
-.exec-detail-row:last-child { border-bottom:none; }
-
-.perf-row {
-  display:flex; align-items:center; gap:10px;
-  padding:8px 4px; border-bottom:1px solid rgba(255,255,255,0.05);
-  transition:background .15s;
-}
-.perf-row:hover { background:rgba(255,255,255,0.03); border-radius:7px; }
-.perf-row:last-child { border-bottom:none; }
-.perf-avatar {
-  width:28px; height:28px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
-  font-size:10px; font-weight:800; flex-shrink:0; letter-spacing:-.5px;
-}
-.perf-info   { flex:1; min-width:0; }
-.perf-name   { font-size:12px; font-weight:600; color:var(--text1);
-               white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.perf-meas   { font-size:10px; color:var(--text3); margin-top:1px; }
-.perf-right  { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
-.perf-rate   { font-size:13px; font-weight:800; }
-.perf-trend  { font-size:10px; font-weight:700; }
-.perf-bar-wrap { height:3px; background:rgba(255,255,255,0.07); border-radius:2px; margin-top:3px; }
-.perf-bar-fill { height:100%; border-radius:2px; }
-
-.insight-row {
-  display:flex; gap:10px; align-items:flex-start;
-  padding:8px 4px; border-bottom:1px solid rgba(255,255,255,0.05);
-  font-size:11.5px; line-height:1.55; transition:background .15s;
-}
-.insight-row:hover { background:rgba(255,255,255,0.03); border-radius:7px; }
-.insight-row:last-child { border-bottom:none; }
-.insight-icon { font-size:15px; flex-shrink:0; margin-top:1px; }
-.insight-text { color:var(--text2); flex:1; }
-.insight-val  { font-weight:700; color:var(--text1); }
-.insight-badge {
-  font-size:10px; font-weight:700; padding:1px 7px; border-radius:10px;
-  white-space:nowrap; align-self:center; flex-shrink:0;
-}
-
-/* DAILY OPS SUB-FILTER */
-.sub-filter-bar {
-  display:flex; flex-wrap:wrap; align-items:center; gap:16px;
-  padding:10px 16px 12px; border-bottom:1px solid var(--border);
-  background:rgba(255,255,255,0.02);
-}
-.sub-filter-group { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.sub-filter-label { font-size:10px; font-weight:700; text-transform:uppercase;
-                    letter-spacing:.8px; color:var(--text3); white-space:nowrap; }
-.sfpill {
-  padding:4px 12px; border-radius:20px; border:1.5px solid rgba(255,255,255,0.1);
-  background:transparent; color:var(--text2); font-size:11px; font-weight:600;
-  cursor:pointer; font-family:inherit; transition:all .18s; white-space:nowrap;
-}
-.sfpill:hover  { border-color:rgba(255,255,255,0.25); color:var(--text1); }
-.sfpill.active { border-color:var(--green); background:rgba(0,230,118,0.12); color:var(--green); }
-.sfpill.active-gold { border-color:var(--gold); background:rgba(255,215,64,0.12); color:var(--gold); }
-.sfpill.active-red  { border-color:var(--red);  background:rgba(255,82,82,0.12);  color:var(--red); }
-.sfpill.active-teal { border-color:var(--teal); background:rgba(29,233,182,0.12); color:var(--teal); }
-.sub-filter-sep { width:1px; height:20px; background:var(--border); align-self:center; }
-
-/* FORECAST PAGE */
-.fc-method-box {
-  display:flex; align-items:flex-start; gap:14px;
-  background:rgba(0,230,118,0.04); border:1px solid rgba(0,230,118,0.12);
-  border-radius:10px; padding:16px 20px; margin-top:16px;
-}
-.fc-method-icon { font-size:24px; flex-shrink:0; margin-top:2px; }
-.fc-method-title { font-size:13px; font-weight:700; color:var(--text1); margin-bottom:6px; }
-.fc-method-body  { font-size:12px; color:var(--text2); line-height:1.75; }
-.fc-table { width:100%; border-collapse:collapse; font-size:12px; }
-.fc-table th { padding:8px 10px; text-align:left; color:var(--text3); font-weight:600;
-               font-size:10px; text-transform:uppercase; letter-spacing:.5px;
-               border-bottom:1px solid var(--border); }
-.fc-table td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text2); }
-.fc-table tr:hover td { background:rgba(255,255,255,0.03); }
-.fc-badge { display:inline-block; padding:2px 7px; border-radius:12px; font-size:10px; font-weight:600; }
-.fc-badge-up   { background:rgba(0,230,118,0.15); color:var(--green); }
-.fc-badge-flat { background:rgba(255,215,64,0.15);  color:var(--gold); }
-.fc-badge-down { background:rgba(255,82,82,0.15);   color:var(--red); }
-.fc-confidence { font-size:10px; color:var(--text3); }
 .d-avatar {
   width:38px; height:38px; border-radius:50%;
   background:linear-gradient(135deg,var(--green3),var(--teal));
@@ -592,14 +321,11 @@ tbody td.muted { color:var(--text2); }
 /* RESPONSIVE */
 @media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } }
 @media(max-width:900px) {
-  .sidebar { transform:translateX(-100%); transition:.3s; position:fixed; z-index:200; }
-  .sidebar.open { transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,.6); }
+  .sidebar { transform:translateX(-100%); transition:.3s; }
+  .sidebar.open { transform:translateX(0); }
   .main { margin-left:0; }
   .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(2,1fr); }
   .chart-2,.chart-3,.chart-32,.row-2,.row-3 { grid-template-columns:1fr; }
-  #menu-btn { display:inline-flex !important; align-items:center; justify-content:center; font-size:18px; padding:6px 10px; }
-  #sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:199; }
-  #sidebar-overlay.visible { display:block; }
 }
 @media(max-width:600px) { .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:1fr 1fr; } }
 
@@ -743,7 +469,6 @@ tbody td.muted { color:var(--text2); }
 
 </style>
 </head><body>
-<div id="sidebar-overlay" onclick="toggleSidebar()"></div>
 <!-- ═══════════════════════════════════════════════════════
      KITCHINO LOGIN SCREEN
 ═══════════════════════════════════════════════════════ -->
@@ -788,19 +513,10 @@ async function _sha256(str) {
 }
 
 function _checkSession() {
-  // Check window.name first (survives hard refresh on file://)
-  try {
-    const wn = JSON.parse(window.name || '{}');
-    if (wn._ka_ts) {
-      const elapsed = (Date.now() - parseInt(wn._ka_ts)) / 3600000;
-      if (elapsed < _KA_SESSION_HOURS) return true;
-    }
-  } catch(e) {}
-  // Fallback to localStorage
   try {
     const ts = localStorage.getItem(_KA_STORAGE_KEY);
     if (!ts) return false;
-    const elapsed = (Date.now() - parseInt(ts)) / 3600000;
+    const elapsed = (Date.now() - parseInt(ts)) / 3600000; // hours
     return elapsed < _KA_SESSION_HOURS;
   } catch(e) { return false; }
 }
@@ -811,12 +527,6 @@ function _grantAccess() {
   setTimeout(() => {
     document.getElementById('kitchino-login-overlay').classList.add('hidden');
   }, 300);
-  // Save to BOTH window.name and localStorage for maximum persistence
-  try {
-    const wn = (() => { try { return JSON.parse(window.name||'{}'); } catch(e){ return {}; }})();
-    wn._ka_ts = Date.now();
-    window.name = JSON.stringify(wn);
-  } catch(e) {}
   try { localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString()); } catch(e) {}
 }
 
@@ -901,26 +611,13 @@ if (_checkSession()) {
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
-    <div class="nav-item" data-page="forecast"><span class="nav-icon">🔮</span>Forecast</div>
     <div class="nav-item" data-page="kpi"><span class="nav-icon">🔬</span>KPI Deep Dive</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
   </div>
-  <div class="sidebar-footer" style="padding:10px 14px 14px;display:none">
-    <!-- Status dot + label (always visible) -->
-    <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
-      <div id="connect-status-dot" style="width:7px;height:7px;border-radius:50%;background:#9e9ec8;flex-shrink:0"></div>
-      <div id="data-source-label" style="font-size:10px;color:#9e9ec8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-        Not connected
-      </div>
-    </div>
-
-    <!-- Connect button — hidden in shared version -->
-    <button class="connect-btn" onclick="openConnectModal()" style="width:100%">⚙ Connect Google Sheets</button>
-
-    <div id="connect-inline-panel" style="display:none">
-      <input id="sidebar-measures-url" type="hidden" />
-      <input id="sidebar-contracts-url" type="hidden" />
-    </div>
+  <div class="sidebar-footer" style="display:none">
+    <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Data Source</div>
+    <button class="connect-btn" onclick="openConnectModal()">⚙ Connect Google Sheets</button>
+    <div style="margin-top:10px;font-size:10px;color:var(--text3);text-align:center;" id="data-source-label">📁 Local Data Mode</div>
   </div>
 </nav>
 
@@ -958,29 +655,13 @@ if (_checkSession()) {
   <div class="page-content">
 <!-- PAGE 1: EXECUTIVE SUMMARY -->
 <div class="page active" id="page-executive">
-
-  <!-- CURRENT MONTH HERO CARD -->
-  <div id="current-month-hero" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(29,233,182,0.12),rgba(0,200,150,0.06));border:1px solid rgba(29,233,182,0.35);border-radius:14px;padding:16px 24px;margin-bottom:18px;gap:20px">
-    <div style="display:flex;align-items:center;gap:14px">
-      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🗓️</div>
-      <div>
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700;margin-bottom:2px">Current Month Measures</div>
-        <div style="font-size:11px;color:var(--text3)" id="current-month-label">—</div>
-      </div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:42px;font-weight:800;color:var(--green);line-height:1" id="kpi-current-month">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px" id="current-month-vs-prev">vs previous month</div>
-    </div>
-  </div>
-
   <div class="kpi-grid kpi-6" id="exec-kpis">
-    <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-sub-total">Connect Google Sheets</div></div>
-    <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Measures Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub" id="kpi-sub-contracted">measures → contracts</div></div>
-    <div class="kpi-card"><div class="kpi-icon">👥</div><div class="kpi-label">Total Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub" id="kpi-sub-customers">unique customer names</div></div>
-    <div class="kpi-card gold"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-repeat">—</div><div class="kpi-sub" id="kpi-sub-repeat">visited exactly once</div></div>
-    <div class="kpi-card blue"><div class="kpi-icon">🤝</div><div class="kpi-label">Customers Contracted</div><div class="kpi-value" id="kpi-cust-contracted">—</div><div class="kpi-sub" id="kpi-sub-cust-contracted">unique customers signed</div></div>
-    <div class="kpi-card purple" style="border-color:rgba(206,147,216,0.3)"><div class="kpi-icon">📈</div><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub" id="kpi-sub-rate">contracted ÷ total measures</div></div>
+    <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub"><span class="kpi-up">↑ 18%</span> vs last year</div></div>
+    <div class="kpi-card"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub"><span class="kpi-up">↑ 12%</span> growth</div></div>
+    <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub"><span class="kpi-up">↑ 23%</span> conversion</div></div>
+    <div class="kpi-card gold"><div class="kpi-icon">💬</div><div class="kpi-label">In Discussion</div><div class="kpi-value" id="kpi-discussion">—</div><div class="kpi-sub"><span class="kpi-up">34.5%</span> of pipeline</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-label">Cancelled</div><div class="kpi-value" id="kpi-cancelled">—</div><div class="kpi-sub"><span class="kpi-down">42.1%</span> cancellation</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">📈</div><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub"><span class="kpi-up">↑ 2.4pp</span> this year</div></div>
   </div>
 
   <div class="chart-grid chart-32">
@@ -998,9 +679,9 @@ if (_checkSession()) {
 
   <div class="chart-grid chart-2">
     <div class="chart-card">
-      <div class="chart-title">Designer Performance</div>
-      <div class="chart-subtitle" id="exec-des-subtitle">Click a designer to view their stats</div>
-      <div id="designer-buttons-panel"></div>
+      <div class="chart-title">Top Designer Conversion Rates</div>
+      <div class="chart-subtitle">% contracted per designer (min 50 measures)</div>
+      <div class="chart-wrap"><canvas id="chart-designer-rates" height="220"></canvas></div>
     </div>
     <div class="chart-card">
       <div class="chart-title">Lead Source Performance</div>
@@ -1010,42 +691,20 @@ if (_checkSession()) {
   </div>
 
   <div class="section-row row-3">
-    <!-- TOP AREAS -->
     <div class="chart-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div>
-          <div class="chart-title">📍 Top Areas</div>
-          <div class="chart-subtitle">Click any area to see its customer breakdown</div>
-        </div>
-        <div style="font-size:10px;color:var(--text3)" id="areas-card-total"></div>
-      </div>
-      <div id="exec-areas-list"></div>
-      <div id="exec-area-detail"></div>
+      <div class="chart-title">🏆 Top Performers</div>
+      <div class="chart-subtitle" style="margin-bottom:12px">Highest conversion rate</div>
+      <div id="top-performers-list"></div>
     </div>
-
-    <!-- LEAD SOURCES -->
     <div class="chart-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div>
-          <div class="chart-title">📡 Lead Sources</div>
-          <div class="chart-subtitle">Click any source to see its customer breakdown</div>
-        </div>
-        <div style="font-size:10px;color:var(--text3)" id="sources-card-total"></div>
-      </div>
-      <div id="exec-sources-list"></div>
-      <div id="exec-source-detail"></div>
+      <div class="chart-title">⚠ Needs Attention</div>
+      <div class="chart-subtitle" style="margin-bottom:12px">Below average conversion</div>
+      <div id="low-performers-list"></div>
     </div>
-
-    <!-- TOP DESIGNERS -->
     <div class="chart-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div>
-          <div class="chart-title">🏆 Top Designers</div>
-          <div class="chart-subtitle" id="designers-card-sub">Ranked by conversion rate</div>
-        </div>
-        <div style="font-size:10px;color:var(--text3)" id="designers-card-avg"></div>
-      </div>
-      <div id="exec-designers-list"></div>
+      <div class="chart-title">🤖 AI Insights</div>
+      <div class="chart-subtitle" style="margin-bottom:12px">Operational intelligence</div>
+      <div id="ai-insights-list"></div>
     </div>
   </div>
 </div>
@@ -1081,34 +740,8 @@ if (_checkSession()) {
   <div class="table-card">
     <div class="table-header">
       <div class="table-title">📋 Contracts Follow-up List</div>
-      <div class="table-actions">
-        <span id="daily-table-count" style="font-size:11px;color:var(--text3);margin-right:8px"></span>
-        <button class="btn-sm" onclick="exportTable('followup-table')">⬇ Export</button>
-      </div>
+      <div class="table-actions"><button class="btn-sm" onclick="exportTable('followup-table')">⬇ Export</button></div>
     </div>
-
-    <!-- Sub-filter bar -->
-    <div class="sub-filter-bar">
-      <!-- Contract Type group -->
-      <div class="sub-filter-group">
-        <span class="sub-filter-label">Type</span>
-        <button class="sfpill active" id="sf-type-all"      onclick="setDailyFilter('type','all')">All</button>
-        <button class="sfpill"        id="sf-type-contract"  onclick="setDailyFilter('type','contract')">📄 عقد / Contract</button>
-        <button class="sfpill"        id="sf-type-invoice"   onclick="setDailyFilter('type','invoice')">🧾 فاتورة</button>
-      </div>
-
-      <div class="sub-filter-sep"></div>
-
-      <!-- Aging Category group -->
-      <div class="sub-filter-group">
-        <span class="sub-filter-label">Aging</span>
-        <button class="sfpill active" id="sf-age-all"   onclick="setDailyFilter('age','all')">All</button>
-        <button class="sfpill"        id="sf-age-fresh"  onclick="setDailyFilter('age','0-30')">🟢 0–30 days</button>
-        <button class="sfpill"        id="sf-age-watch"  onclick="setDailyFilter('age','30-45')">🟡 30–45 days</button>
-        <button class="sfpill"        id="sf-age-urgent" onclick="setDailyFilter('age','45+')">🔴 45+ days</button>
-      </div>
-    </div>
-
     <div style="overflow-x:auto">
       <table id="followup-table">
         <thead><tr><th>#</th><th>Customer Name</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Contract Date</th><th>Age (Days)</th><th>Aging Category</th><th>Action</th></tr></thead>
@@ -1121,44 +754,10 @@ if (_checkSession()) {
 <!-- PAGE 3: MEASURES TRACKING -->
 <div class="page" id="page-measures">
   <div class="kpi-grid kpi-4">
-    <div class="kpi-card green">
-      <div class="kpi-label">Total Records</div>
-      <div class="kpi-value" id="mt-total">—</div>
-      <div class="kpi-sub">all years in sheet</div>
-    </div>
-    <div class="kpi-card teal">
-      <div class="kpi-label">Filtered Results</div>
-      <div class="kpi-value" id="mt-filtered">—</div>
-      <div class="kpi-sub">matching current filters</div>
-    </div>
-    <div class="kpi-card gold">
-      <div class="kpi-label">Total Payment</div>
-      <div class="kpi-value" id="mt-payment">—</div>
-      <div class="kpi-sub" id="mt-payment-sub">connect to load</div>
-    </div>
-    <div class="kpi-card blue">
-      <div class="kpi-label">Repeated Customers</div>
-      <div class="kpi-value" id="mt-repeated">—</div>
-      <div class="kpi-sub" id="mt-repeated-sub">multiple visits</div>
-    </div>
-  </div>
-
-  <!-- Payment Per Month Chart -->
-  <div class="chart-card" style="margin-bottom:16px">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-      <div>
-        <div class="chart-title">Payment Collection — Monthly</div>
-        <div class="chart-subtitle" id="payment-chart-subtitle">Total payment amount collected per month</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center;font-size:11px">
-        <span style="color:var(--green)">■ Payment Collected</span>
-        <span style="color:rgba(0,230,118,0.2)">■ Unpaid / No Payment</span>
-        <span id="payment-total-badge" style="background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.3);padding:3px 10px;border-radius:12px;color:var(--green);font-weight:700;font-size:11px">Total: —</span>
-      </div>
-    </div>
-    <div style="position:relative;height:200px">
-      <canvas id="chart-payment-monthly"></canvas>
-    </div>
+    <div class="kpi-card green"><div class="kpi-label">Total Records</div><div class="kpi-value" id="mt-total">1,767</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Filtered Results</div><div class="kpi-value" id="mt-filtered">1,767</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Total Payment</div><div class="kpi-value" id="mt-payment">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Repeated Customers</div><div class="kpi-value" id="mt-repeated">—</div></div>
   </div>
 
   <div class="table-card">
@@ -1233,7 +832,18 @@ if (_checkSession()) {
     </div>
   </div>
 
-  <!-- Charts removed — replaced by Performance Patches below -->
+  <div class="chart-grid chart-2">
+    <div class="chart-card">
+      <div class="chart-title">Designer Conversion Rate Ranking</div>
+      <div class="chart-subtitle">% contracted / total measures</div>
+      <div class="chart-wrap"><canvas id="chart-designer-ranking" height="300"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Volume vs Conversion</div>
+      <div class="chart-subtitle">Total measures per designer</div>
+      <div class="chart-wrap"><canvas id="chart-designer-volume" height="300"></canvas></div>
+    </div>
+  </div>
 
   <div class="table-card">
     <div class="table-header"><div class="table-title">Designer Performance Breakdown</div></div>
@@ -1244,18 +854,6 @@ if (_checkSession()) {
       </table>
     </div>
   </div>
-
-  <!-- PERFORMANCE PATCHES -->
-  <div style="margin-top:16px" id="designer-tiers-section">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-size:15px;font-weight:800;color:var(--text1);letter-spacing:.2px">Designer Performance Tiers</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:3px" id="tiers-subtitle">Composite score: Measures Volume 50% · Conversion Rate 50%</div>
-      </div>
-      <div style="font-size:11px;color:var(--text3)" id="tiers-meta"></div>
-    </div>
-    <div class="patches-grid" id="designer-tiers-grid"></div>
-  </div>
 </div>
 
 <!-- PAGE 5: CONVERSION ANALYSIS -->
@@ -1263,7 +861,7 @@ if (_checkSession()) {
   <div class="kpi-grid kpi-4">
     <div class="kpi-card green"><div class="kpi-label">Overall Conv. Rate</div><div class="kpi-value" id="kpi-rate">—</div></div>
     <div class="kpi-card teal"><div class="kpi-label">Best Month Rate</div><div class="kpi-value">32.0%</div><div class="kpi-sub">May 2025</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Best Area Rate</div><div class="kpi-value" id="kpi-best-area-rate">—</div><div class="kpi-sub" id="kpi-best-area-name">top area by conversion</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Best Area Rate</div><div class="kpi-value">34.5%</div><div class="kpi-sub">الساحل الشمالي</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Best Source Rate</div><div class="kpi-value">39.5%</div><div class="kpi-sub">Agent</div></div>
   </div>
 
@@ -1299,7 +897,7 @@ if (_checkSession()) {
   <div class="kpi-grid kpi-4">
     <div class="kpi-card green"><div class="kpi-label">Top Area</div><div class="kpi-value" style="font-size:18px">التجمع</div><div class="kpi-sub">840 measures</div></div>
     <div class="kpi-card teal"><div class="kpi-label">Areas Covered</div><div class="kpi-value">34</div><div class="kpi-sub">Across Egypt</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Best Conv. Area</div><div class="kpi-value" style="font-size:18px" id="kpi-best-area-name2">—</div><div class="kpi-sub" id="kpi-best-area-rate2">top area by conversion</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Best Conv. Area</div><div class="kpi-value" style="font-size:18px">الساحل الشمالي</div><div class="kpi-sub">34.5%</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Lowest Conv.</div><div class="kpi-value" style="font-size:18px">العبور</div><div class="kpi-sub">2.9%</div></div>
   </div>
 
@@ -1473,98 +1071,68 @@ if (_checkSession()) {
 
 <!-- PAGE 11: CEO VIEW -->
 <div class="page" id="page-ceo">
-
-  <!-- ── EXECUTIVE SCORECARDS ─────────────────────────────────────────── -->
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
-
-    <!-- 1. Total Measures -->
     <div class="kpi-card green" style="text-align:center;padding:24px 20px">
       <div id="ceo-year-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Measures</div>
       <div style="font-size:48px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
       <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-yoy-label">All time</div>
     </div>
-
-    <!-- 2. Current Month Measures -->
     <div class="kpi-card teal" style="text-align:center;padding:24px 20px">
       <div id="ceo-cur-month-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Latest Month Measures</div>
       <div style="font-size:48px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-cur-month">—</div>
       <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-cur-month-sub">—</div>
     </div>
-
-    <!-- 3. Conversion Rate -->
     <div class="kpi-card gold" style="text-align:center;padding:24px 20px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Overall Conversion Rate</div>
       <div style="font-size:48px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-conv-rate">—</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-rate-label">contracted ÷ total measures</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-rate-label">contracted ÷ total</div>
     </div>
   </div>
-
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
-
-    <!-- 4. Best Designer of the Month -->
     <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--purple);background:linear-gradient(135deg,rgba(206,147,216,0.06),var(--card))">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Best Designer of the Month</div>
-      <div style="font-size:22px;font-weight:800;color:var(--purple);line-height:1.2;min-height:28px" id="ceo-best-designer-name">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-best-designer-count">— measures this month</div>
+      <div style="font-size:18px;font-weight:800;color:var(--purple);min-height:24px" id="ceo-best-designer-name">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-best-designer-count">—</div>
     </div>
-
-    <!-- 5. Top Area -->
     <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--blue);background:linear-gradient(135deg,rgba(64,196,255,0.06),var(--card))">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Top Area</div>
-      <div style="font-size:22px;font-weight:800;color:var(--blue);line-height:1.2;min-height:28px" id="ceo-top-area-name">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-area-count">— measures</div>
+      <div style="font-size:18px;font-weight:800;color:var(--blue);min-height:24px" id="ceo-top-area-name">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-area-count">—</div>
     </div>
-
-    <!-- 6. Top Measure Source -->
     <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--green2);background:linear-gradient(135deg,rgba(105,240,174,0.06),var(--card))">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Top Measure Source</div>
-      <div style="font-size:22px;font-weight:800;color:var(--green2);line-height:1.2;min-height:28px" id="ceo-top-source-name">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-source-count">— measures</div>
+      <div style="font-size:18px;font-weight:800;color:var(--green2);min-height:24px" id="ceo-top-source-name">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-source-count">—</div>
     </div>
   </div>
-
-  <!-- ── PORTAL SEARCH ──────────────────────────────────────────────────── -->
-  <div class="chart-card" style="margin-bottom:18px;padding:18px 20px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-      <span style="font-size:16px">🔍</span>
-      <span style="font-size:13px;font-weight:700;color:var(--text)">Portal Search</span>
-      <span style="font-size:10px;color:var(--text3)">Search across Designer · Area · Measure Source</span>
-      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-        <button onclick="clearCEOSearch()" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">Clear</button>
-      </div>
+  <div class="chart-card" style="margin-bottom:18px;padding:16px 18px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span>🔍</span><span style="font-size:13px;font-weight:700">Portal Search</span>
+      <span style="font-size:10px;color:var(--text3)">Designer · Area · Source</span>
+      <button onclick="clearCEOSearch()" style="margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--text2);padding:3px 10px;border-radius:5px;font-size:10px;cursor:pointer">Clear</button>
     </div>
-    <div style="position:relative;margin-bottom:12px">
-      <input type="text" id="ceo-portal-search"
-        placeholder="Type a designer name, area, or source…"
-        oninput="runCEOSearch()"
-        style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);
-               padding:10px 16px 10px 40px;border-radius:8px;font-size:13px;outline:none;
-               transition:border-color .2s;"
-        onfocus="this.style.borderColor='var(--green)'"
-        onblur="this.style.borderColor='var(--border)'">
-      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none">🔍</span>
+    <div style="position:relative">
+      <input type="text" id="ceo-portal-search" placeholder="Type a designer, area, or source…" oninput="runCEOSearch()"
+        style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:9px 14px 9px 36px;border-radius:8px;font-size:12px;outline:none"
+        onfocus="this.style.borderColor='var(--green)'" onblur="this.style.borderColor='var(--border)'">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);pointer-events:none">🔍</span>
     </div>
-    <div id="ceo-search-results" style="display:none">
-      <!-- Designer results -->
-      <div id="ceo-sr-designers" style="margin-bottom:12px;display:none">
+    <div id="ceo-search-results" style="display:none;margin-top:12px">
+      <div id="ceo-sr-designers" style="display:none;margin-bottom:10px">
         <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--purple);text-transform:uppercase;margin-bottom:6px">Designers</div>
-        <div id="ceo-sr-designers-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+        <div id="ceo-sr-designers-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px"></div>
       </div>
-      <!-- Area results -->
-      <div id="ceo-sr-areas" style="margin-bottom:12px;display:none">
+      <div id="ceo-sr-areas" style="display:none;margin-bottom:10px">
         <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--blue);text-transform:uppercase;margin-bottom:6px">Areas</div>
-        <div id="ceo-sr-areas-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+        <div id="ceo-sr-areas-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px"></div>
       </div>
-      <!-- Source results -->
-      <div id="ceo-sr-sources" style="margin-bottom:4px;display:none">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green2);text-transform:uppercase;margin-bottom:6px">Measure Sources</div>
-        <div id="ceo-sr-sources-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+      <div id="ceo-sr-sources" style="display:none;margin-bottom:4px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green2);text-transform:uppercase;margin-bottom:6px">Sources</div>
+        <div id="ceo-sr-sources-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:7px"></div>
       </div>
-      <div id="ceo-sr-empty" style="display:none;text-align:center;padding:20px;color:var(--text3);font-size:12px">No matches found</div>
+      <div id="ceo-sr-empty" style="display:none;text-align:center;padding:18px;color:var(--text3);font-size:12px">No matches found</div>
     </div>
   </div>
-
-  <!-- ── CHARTS + SCORECARD ─────────────────────────────────────────────── -->
   <div class="chart-grid chart-2" style="margin-bottom:22px">
     <div class="chart-card">
       <div class="chart-title">Performance Summary</div>
@@ -1575,7 +1143,6 @@ if (_checkSession()) {
       <div style="margin-top:10px" id="scorecard-list"></div>
     </div>
   </div>
-
   <div class="chart-card">
     <div class="chart-title">Executive Intelligence — Key Findings</div>
     <div style="margin-top:12px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px" id="exec-findings"></div>
@@ -1620,75 +1187,6 @@ if (_checkSession()) {
     <div class="chart-title" style="font-size:16px;margin-bottom:16px">2025 Monthly Performance — At a Glance</div>
     <div class="chart-wrap"><canvas id="chart-pres-trend" height="180"></canvas></div>
   </div>
-</div>
-
-<div class="page" id="page-forecast">
-
-  <!-- KPI Strip -->
-  <div class="kpi-grid kpi-4" style="margin-bottom:16px">
-    <div class="kpi-card green">
-      <div class="kpi-icon">🔮</div>
-      <div class="kpi-label">Next Month Measures</div>
-      <div class="kpi-value" id="fc-kpi-measures">—</div>
-      <div class="kpi-sub" id="fc-kpi-measures-sub">predicted</div>
-    </div>
-    <div class="kpi-card teal">
-      <div class="kpi-icon">✅</div>
-      <div class="kpi-label">Next Month Contracts</div>
-      <div class="kpi-value" id="fc-kpi-contracts">—</div>
-      <div class="kpi-sub" id="fc-kpi-contracts-sub">predicted</div>
-    </div>
-    <div class="kpi-card blue">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-label">Predicted Conversion</div>
-      <div class="kpi-value" id="fc-kpi-rate">—</div>
-      <div class="kpi-sub">next month forecast</div>
-    </div>
-    <div class="kpi-card gold">
-      <div class="kpi-icon">📅</div>
-      <div class="kpi-label">6-Month Pipeline</div>
-      <div class="kpi-value" id="fc-kpi-6m">—</div>
-      <div class="kpi-sub">total predicted measures</div>
-    </div>
-  </div>
-
-  <!-- Main measures forecast chart -->
-  <div class="chart-card" style="margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px">
-      <div>
-        <div class="chart-title">Measures Volume Forecast — 6 Month Outlook</div>
-        <div class="chart-subtitle" id="fc-main-subtitle">Trend + Seasonality model · Shaded area = confidence band</div>
-      </div>
-      <div id="fc-trend-badge" style="font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(0,230,118,0.1);color:var(--green);font-weight:600;white-space:nowrap;align-self:center"></div>
-    </div>
-    <div class="chart-wrap"><canvas id="chart-forecast-main" height="200"></canvas></div>
-  </div>
-
-  <!-- Two-column: Conversion forecast + Breakdown table -->
-  <div class="chart-grid chart-2" style="margin-bottom:0">
-    <div class="chart-card">
-      <div class="chart-title">Conversion Rate Forecast</div>
-      <div class="chart-subtitle">Historical trend vs projected %</div>
-      <div class="chart-wrap"><canvas id="chart-forecast-rate" height="220"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">6-Month Breakdown</div>
-      <div class="chart-subtitle">Predicted measures · contracts · confidence range</div>
-      <div id="fc-breakdown-table" style="overflow-x:auto;margin-top:8px"></div>
-    </div>
-  </div>
-
-  <!-- Method note -->
-  <div class="fc-method-box">
-    <div class="fc-method-icon">🧮</div>
-    <div>
-      <div class="fc-method-title">Forecast Methodology</div>
-      <div class="fc-method-body" id="fc-method-text">
-        Uses <strong>Trend + Seasonality decomposition</strong>. Historical monthly data is split into a linear growth trend and a calendar-month seasonal pattern. Future values are projected as <em>trend × seasonal index</em>. The shaded confidence band represents ±1.5 standard deviations of historical residuals — wider bands mean higher uncertainty. Accuracy decreases beyond 3 months. This model updates automatically whenever new data is loaded from Google Sheets.
-      </div>
-    </div>
-  </div>
-
 </div>
 
   </div><!-- end page-content -->
@@ -1881,7 +1379,6 @@ function engine_cleanRows(rawRows) {
     const designer  = norm(r.designer);
     const status    = norm(r.status);
     const area      = norm(r.area);
-    const location  = norm(r.location);   // col N — specific location inside area
     const source    = norm(r.source);
     const orderType = norm(r.orderType);
     const payment   = norm(r.payment);
@@ -1909,7 +1406,7 @@ function engine_cleanRows(rawRows) {
     else                                                  R.breakdown.byStatus.blank++;
 
     clean.push({
-      code: orderCode, orderCode, customer, designer, status, area, location,
+      code: orderCode, orderCode, customer, designer, status, area,
       source, orderType, payment,
       visitDate:   r.visitDate || '',
       month:       _ENGINE_MONTHS[mIdx],
@@ -2000,48 +1497,6 @@ function engine_sources(rows) {
     .map(s=>({...s, conversionRate:s.total>0?+(s.contracted/s.total*100).toFixed(1):0}));
 }
 
-// ── Payment total (sum of numeric payments) ───────────────────────────────────
-function engine_paymentTotal(rows) {
-  let total = 0, paidCount = 0;
-  rows.forEach(r => {
-    const raw = r.payment;
-    if (!raw && raw !== 0) return;
-    const n = parseFloat(String(raw).replace(/,/g, ''));
-    if (!isNaN(n) && n > 0) { total += n; paidCount++; }
-  });
-  return { total, paidCount };
-}
-
-// ── Payment per month ──────────────────────────────────────────────────────────
-function engine_paymentMonthly(rows) {
-  const map = {};
-  const MONTH_NAMES = ['January','February','March','April','May','June',
-                       'July','August','September','October','November','December'];
-  rows.forEach(r => {
-    // Use pre-computed engine fields (_year, _monthOrder, _monthName) for speed
-    const yr  = r._year;
-    const mo  = (r._monthOrder || 1) - 1;   // 0-indexed month
-    if (!yr) return;
-    const key = yr + '_' + (mo + 1);
-    if (!map[key]) {
-      map[key] = {
-        year: yr,
-        month: r._monthName || MONTH_NAMES[mo],
-        monthOrder: mo + 1,
-        total: 0, paidCount: 0, paidAmount: 0, unpaidCount: 0
-      };
-    }
-    map[key].total++;
-    const raw = r.payment;
-    const n = raw ? parseFloat(String(raw).replace(/,/g, '')) : NaN;
-    if (!isNaN(n) && n > 0) { map[key].paidCount++; map[key].paidAmount += n; }
-    else map[key].unpaidCount++;
-  });
-  return Object.values(map).sort((a, b) =>
-    a.year !== b.year ? a.year.localeCompare(b.year) : a.monthOrder - b.monthOrder
-  );
-}
-
 // ── Order type aggregation ────────────────────────────────────────────────────
 function engine_orderTypes(rows) {
   const map = {};
@@ -2107,10 +1562,6 @@ function engine_compute() {
   KITCHINO_STATE.sourceData      = engine_sources(filtered);
   KITCHINO_STATE.orderTypeData   = engine_orderTypes(filtered);
   KITCHINO_STATE.paymentData     = engine_payments(filtered);
-  const _pt = engine_paymentTotal(filtered);
-  KITCHINO_STATE.paymentTotal    = _pt.total;
-  KITCHINO_STATE.paymentPaidCount = _pt.paidCount;
-  KITCHINO_STATE.paymentMonthly  = engine_paymentMonthly(filtered);
   filteredMeasures = filtered;
   engine_log(yearF, filtered);
   engine_validate();   // enterprise self-audit — runs after every compute
@@ -2238,27 +1689,11 @@ async function _fetchAllRows() {
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
       ENGINE_READY      = true;
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
-      // ── Persist to localStorage cache so next load is instant ──
-      try {
-        localStorage.setItem('kitchino_rows_cache', JSON.stringify(data.data));
-        localStorage.setItem('kitchino_cache_ts', Date.now().toString());
-        console.log('[ENGINE] Cache saved to localStorage');
-      } catch(e) { console.warn('[ENGINE] Cache save failed (storage full?):', e.message); }
-      // Remove any "no data" placeholders from chart boxes
-      document.querySelectorAll('.no-data-msg').forEach(el => el.remove());
-      document.querySelectorAll('canvas[id^="chart-"]').forEach(el => el.style.display = '');
-      // Rebuild year dropdown from real engine data
-      refreshYearDropdown();
       computeFilteredState();
       updateKPICards();
       builtPages.clear();
       const pg = document.querySelector('.page.active')?.id.replace('page-','')||'executive';
       showPage(pg);
-      // If user is already on measures page, build payment chart immediately
-      if (pg === 'measures') buildPaymentChart();
-      // Rebuild bottom cards on executive page with fresh data
-      if (pg === 'executive') renderTopPerformers();
-      else renderTopPerformers(); // always update regardless of active page
     }
   } catch(err) {
     console.warn('[ENGINE] Row fetch failed — static fallback active:',err.message);
@@ -2339,11 +1774,9 @@ let KITCHINO_STATE = {
   allDesignerData: [],   // from engine_designers() — year only (for ranking)
   areaData:        [],   // from engine_areas() — filtered rows
   sourceData:    [],   // from engine_sources()
-  orderTypeData:   [],   // from engine_orderTypes()
-  paymentData:     [],   // from engine_payments() — [{label,count}]
-  paymentTotal:    0,    // sum of all numeric payment values (filtered rows)
-  paymentMonthly:  [],   // [{month, monthOrder, year, total, paidCount, paidAmount}]
-  monthlyData:     [],   // from engine_monthly()
+  orderTypeData: [],   // from engine_orderTypes()
+  paymentData:   [],   // from engine_payments()
+  monthlyData:   [],   // from engine_monthly()
 
   // KPI totals — derived once from designerData
   total:          0,
@@ -2380,11 +1813,8 @@ function computeFilteredState() {
   KITCHINO_STATE.allDesignerData = [];
   KITCHINO_STATE.areaData        = [];
   KITCHINO_STATE.sourceData      = [];
-  KITCHINO_STATE.orderTypeData    = [];
-  KITCHINO_STATE.paymentData      = [];
-  KITCHINO_STATE.paymentTotal     = 0;
-  KITCHINO_STATE.paymentPaidCount = 0;
-  KITCHINO_STATE.paymentMonthly   = [];
+  KITCHINO_STATE.orderTypeData   = [];
+  KITCHINO_STATE.paymentData     = [];
   filteredMeasures = [];
   return KITCHINO_STATE;
 }
@@ -2397,141 +1827,37 @@ function updateKPICards() {
   const s   = KITCHINO_STATE;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   if (!ENGINE_READY) {
-    ['kpi-total','kpi-customers','kpi-contracted','kpi-repeat','kpi-cust-contracted','kpi-rate',
+    ['kpi-total','kpi-customers','kpi-contracted','kpi-discussion','kpi-cancelled','kpi-rate',
      'ceo-kpi-total','ceo-kpi-contracted','ceo-kpi-discussion','pres-kpi-total','pres-kpi-contracted','pres-kpi-rate'].forEach(id => {
       const el = document.getElementById(id); if (el) el.textContent = '—';
     });
     set('ceo-kpi-rate-label', '— Conversion Rate');
     set('mt-total', '—');
-    set('kpi-sub-total',           'Connect Google Sheets to load data');
-    set('kpi-sub-contracted',      'measures → contracts');
-    set('kpi-sub-customers',       'unique customer names');
-    set('kpi-sub-repeat',          'visited more than once');
-    set('kpi-sub-cust-contracted', 'unique customers signed');
-    set('kpi-sub-rate',            'contracted ÷ total measures');
     return;
   }
   // Executive Summary KPI cards
-  // ── Compute repeat customers + customers contracted from live rows ──
-  const _rows = filteredMeasures || [];
-  const _custVisits = {};
-  const _custContracted = new Set();
-  _rows.forEach(r => {
-    if (!r.customer) return;
-    _custVisits[r.customer] = (_custVisits[r.customer] || 0) + 1;
-    const st = (r.status || '').toLowerCase();
-    if (st.includes('تعاقد') || st.includes('contract')) _custContracted.add(r.customer);
-  });
-  const _uniqueOnceCount = Object.values(_custVisits).filter(v => v === 1).length;
-  const _repeatCount     = Object.values(_custVisits).filter(v => v > 1).length;
-  const _custContrCount  = _custContracted.size;
-
-  set('kpi-total',           s.total.toLocaleString());
-  set('kpi-contracted',      s.contracted.toLocaleString());
-  set('kpi-customers',       s.uniqueCustomers.toLocaleString());
-  set('kpi-repeat',          _uniqueOnceCount.toLocaleString());
-  set('kpi-cust-contracted', _custContrCount.toLocaleString());
-  set('kpi-rate',            s.conversionRate + '%');
-
-  // Dynamic sub-labels
-  const _pct  = (n) => s.total > 0         ? (n/s.total*100).toFixed(1)+'%'         : '0%';
-  const _cpct = (n) => s.uniqueCustomers > 0 ? (n/s.uniqueCustomers*100).toFixed(1)+'%' : '0%';
-  set('kpi-sub-total',           s.total > 0 ? (s.year !== 'all' ? s.year + ' measures recorded' : 'all years combined') : 'Connect Google Sheets');
-  set('kpi-sub-contracted',      _pct(s.contracted) + ' of all measures');
-  set('kpi-sub-customers',       s.uniqueCustomers > 0 ? _repeatCount + ' repeat · ' + _uniqueOnceCount + ' first-time' : 'unique customer names');
-  set('kpi-sub-repeat',          s.uniqueCustomers > 0 ? _cpct(_uniqueOnceCount) + ' of all customers' : 'visited exactly once');
-  set('kpi-sub-cust-contracted', s.uniqueCustomers > 0 ? _cpct(_custContrCount) + ' of all customers' : 'unique customers signed');
-  set('kpi-sub-rate',            s.contracted + ' contracted of ' + s.total + ' measures');
+  set('kpi-total',      s.total.toLocaleString());
+  set('kpi-customers',  s.uniqueCustomers.toLocaleString());
+  set('kpi-contracted', s.contracted.toLocaleString());
+  set('kpi-discussion', s.discussion.toLocaleString());
+  set('kpi-cancelled',  s.cancelled.toLocaleString());
+  set('kpi-rate',       s.conversionRate + '%');
   // CEO View dynamic KPIs
   set('ceo-kpi-total',      s.total.toLocaleString());
   set('ceo-kpi-contracted', s.contracted.toLocaleString());
   set('ceo-kpi-discussion', s.discussion.toLocaleString());
   set('ceo-kpi-conv-rate',  s.conversionRate + '%');
-  set('ceo-kpi-rate-label', s.contracted + ' contracted of ' + s.total + ' measures');
-  const yearLabel = s.year !== 'all' ? 'Total Measures ' + s.year : 'Total Measures — All Years';
-  const el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
-
-  // ── CEO SCORECARD: Latest Month Measures ──────────────────────────────
-  (function() {
-    const MONTH_NAMES = ['January','February','March','April','May','June',
-                         'July','August','September','October','November','December'];
-    // Find latest year+month in the current filtered rows
-    let latestYear = 0, latestMo = 0;
-    (filteredMeasures || []).forEach(function(r) {
-      const ry = parseInt(r._year || 0, 10);
-      const rm = r._monthOrder || 0;
-      if (ry > latestYear || (ry === latestYear && rm > latestMo)) {
-        latestYear = ry; latestMo = rm;
-      }
-    });
-    let curCount = 0;
-    if (latestYear > 0 && latestMo > 0) {
-      const lyStr = String(latestYear);
-      (filteredMeasures || []).forEach(function(r) {
-        if (r._year === lyStr && r._monthOrder === latestMo) curCount++;
-      });
-    }
-    const lbl = latestYear > 0 ? MONTH_NAMES[latestMo - 1] + ' ' + latestYear : 'Latest Month';
-    set('ceo-kpi-cur-month', curCount.toLocaleString());
-    set('ceo-cur-month-label', lbl);
-    set('ceo-kpi-cur-month-sub', curCount > 0 ? curCount + ' measure visits recorded' : 'No data for this month');
-  })();
-
-  // ── CEO SCORECARD: Best Designer of the Month ──────────────────────────
-  (function() {
-    const MONTH_NAMES = ['January','February','March','April','May','June',
-                         'July','August','September','October','November','December'];
-    // Find latest month in filtered rows
-    let latestYear = 0, latestMo = 0;
-    (filteredMeasures || []).forEach(function(r) {
-      const ry = parseInt(r._year || 0, 10);
-      const rm = r._monthOrder || 0;
-      if (ry > latestYear || (ry === latestYear && rm > latestMo)) { latestYear = ry; latestMo = rm; }
-    });
-    const designerCounts = {};
-    if (latestYear > 0 && latestMo > 0) {
-      const lyStr = String(latestYear);
-      (filteredMeasures || []).forEach(function(r) {
-        if (r._year === lyStr && r._monthOrder === latestMo) {
-          const d = r.designer || 'Unknown';
-          designerCounts[d] = (designerCounts[d] || 0) + 1;
-        }
-      });
-    }
-    const entries = Object.entries(designerCounts).sort((a,b) => b[1] - a[1]);
-    if (entries.length > 0) {
-      const lbl = latestYear > 0 ? MONTH_NAMES[latestMo-1] + ' ' + latestYear : '';
-      set('ceo-best-designer-name', entries[0][0]);
-      set('ceo-best-designer-count', entries[0][1] + ' measures' + (lbl ? ' · ' + lbl : ''));
-    } else {
-      set('ceo-best-designer-name', '—');
-      set('ceo-best-designer-count', 'No data');
-    }
-  })();
-
-  // ── CEO SCORECARD: Top Area ────────────────────────────────────────────
-  (function() {
-    const areas = (s.areaData || []).filter(a => a.area && a.area !== 'Unknown');
-    if (areas.length > 0) {
-      set('ceo-top-area-name', areas[0].area);
-      set('ceo-top-area-count', areas[0].total.toLocaleString() + ' measures · ' + areas[0].conversionRate + '% CVR');
-    } else {
-      set('ceo-top-area-name', '—');
-      set('ceo-top-area-count', 'No data');
-    }
-  })();
-
-  // ── CEO SCORECARD: Top Source ──────────────────────────────────────────
-  (function() {
-    const sources = (s.sourceData || []).filter(src => src.source && src.source !== 'Unknown');
-    if (sources.length > 0) {
-      set('ceo-top-source-name', sources[0].source);
-      set('ceo-top-source-count', sources[0].total.toLocaleString() + ' measures · ' + sources[0].conversionRate + '% CVR');
-    } else {
-      set('ceo-top-source-name', '—');
-      set('ceo-top-source-count', 'No data');
-    }
-  })();
+  set('ceo-kpi-rate-label', s.contracted + ' contracted of ' + s.total);
+  var yearLabel = s.year !== 'all' ? 'Total Measures ' + s.year : 'Total Measures — All Years';
+  var el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
+  // Latest Month
+  (function(){var MN=['January','February','March','April','May','June','July','August','September','October','November','December'],lY=0,lM=0;(filteredMeasures||[]).forEach(function(r){var ry=parseInt(r._year||0,10),rm=r._monthOrder||0;if(ry>lY||(ry===lY&&rm>lM)){lY=ry;lM=rm;}});var cnt=0;if(lY>0&&lM>0){var ly=String(lY);(filteredMeasures||[]).forEach(function(r){if(r._year===ly&&r._monthOrder===lM)cnt++;});}var lbl=lY>0?MN[lM-1]+' '+lY:'Latest Month';set('ceo-kpi-cur-month',cnt.toLocaleString());set('ceo-cur-month-label',lbl);set('ceo-kpi-cur-month-sub',cnt>0?cnt+' visits':'No data');})();
+  // Best Designer of Month
+  (function(){var MN=['January','February','March','April','May','June','July','August','September','October','November','December'],lY=0,lM=0;(filteredMeasures||[]).forEach(function(r){var ry=parseInt(r._year||0,10),rm=r._monthOrder||0;if(ry>lY||(ry===lY&&rm>lM)){lY=ry;lM=rm;}});var dc={};if(lY>0&&lM>0){var ly=String(lY);(filteredMeasures||[]).forEach(function(r){if(r._year===ly&&r._monthOrder===lM){var d=r.designer||'Unknown';dc[d]=(dc[d]||0)+1;}});}var e=Object.entries(dc).sort(function(a,b){return b[1]-a[1];});if(e.length){set('ceo-best-designer-name',e[0][0]);set('ceo-best-designer-count',e[0][1]+' measures'+(lY>0?' · '+MN[lM-1]+' '+lY:''));}else{set('ceo-best-designer-name','—');set('ceo-best-designer-count','No data');}})();
+  // Top Area
+  (function(){var a=(s.areaData||[]).filter(function(x){return x.area&&x.area!=='Unknown';});if(a.length){set('ceo-top-area-name',a[0].area);set('ceo-top-area-count',a[0].total.toLocaleString()+' measures · '+a[0].conversionRate+'% CVR');}else{set('ceo-top-area-name','—');set('ceo-top-area-count','No data');}})();
+  // Top Source
+  (function(){var s2=(s.sourceData||[]).filter(function(x){return x.source&&x.source!=='Unknown';});if(s2.length){set('ceo-top-source-name',s2[0].source);set('ceo-top-source-count',s2[0].total.toLocaleString()+' measures · '+s2[0].conversionRate+'% CVR');}else{set('ceo-top-source-name','—');set('ceo-top-source-count','No data');}})();
   const el3 = document.getElementById('pres-year-label'); if(el3) el3.textContent = 'Total Measure Visits' + (s.year !== 'all' ? ' ' + s.year : '');
   // Presentation View dynamic KPIs
   set('pres-kpi-total',      s.total.toLocaleString());
@@ -2539,43 +1865,6 @@ function updateKPICards() {
   set('pres-kpi-rate',       Math.round(s.conversionRate) + '%');
   // Measures Tracking table header total
   set('mt-total', s.total.toLocaleString());
-
-  // ── CURRENT MONTH HERO CARD ──────────────────────────────────────────────────
-  (function() {
-    const now    = new Date();
-    const curY   = now.getFullYear().toString();
-    const curMo  = now.getMonth() + 1;   // 1-indexed (matches _monthOrder)
-    const prevMo = curMo === 1 ? 12 : curMo - 1;
-    const prevY  = curMo === 1 ? (parseInt(curY,10) - 1).toString() : curY;
-    const MONTH_NAMES = ['January','February','March','April','May','June',
-                         'July','August','September','October','November','December'];
-    const curLabel   = MONTH_NAMES[curMo - 1] + ' ' + curY;
-    const prevLabel  = MONTH_NAMES[prevMo - 1];
-
-    // Use ENGINE_CLEAN_ROWS directly — unaffected by year filter
-    let curCount = 0, prevCount = 0;
-    (ENGINE_CLEAN_ROWS || []).forEach(function(r) {
-      if (r._year === curY  && r._monthOrder === curMo)  curCount++;
-      if (r._year === prevY && r._monthOrder === prevMo) prevCount++;
-    });
-
-    const heroEl  = document.getElementById('kpi-current-month');
-    const labelEl = document.getElementById('current-month-label');
-    const vsEl    = document.getElementById('current-month-vs-prev');
-    if (heroEl)  heroEl.textContent  = curCount.toLocaleString();
-    if (labelEl) labelEl.textContent = curLabel;
-    if (vsEl) {
-      if (prevCount > 0) {
-        const diff = curCount - prevCount;
-        const pct  = Math.abs(Math.round(diff / prevCount * 100));
-        vsEl.textContent = (diff >= 0 ? '▲ +' : '▼ ') + diff + ' (' + pct + '%) vs ' + prevLabel;
-        vsEl.style.color = diff >= 0 ? 'var(--green)' : 'var(--red)';
-      } else {
-        vsEl.textContent = curCount === 0 ? 'No measures added yet for ' + curLabel : 'No data for ' + prevLabel + ' to compare';
-        vsEl.style.color = 'var(--text3)';
-      }
-    }
-  })();
 }
 
 // Rebuild year dropdown from available data years
@@ -2597,23 +1886,12 @@ function refreshYearDropdown() {
 function buildExecutiveCharts() {
   updateKPICards();
   if (!ENGINE_READY) {
-    const banner = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;gap:12px;color:var(--text3)">
-      <div style="font-size:32px">📊</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text2)">No data loaded</div>
-      <div style="font-size:12px">Paste your Google Sheets connector URL in the sidebar and click <strong style="color:var(--green)">Connect & Load Data</strong></div>
-    </div>`;
-    ['chart-monthly-trend','chart-status-pie','chart-sources-exec'].forEach(id => {
+    ['chart-monthly-trend','chart-status-pie','chart-designer-rates','chart-sources-exec'].forEach(id => {
       const el = document.getElementById(id);
-      if (el) { el.style.display='none'; const box=el.closest('.chart-card'); if(box&&!box.querySelector('.no-data-msg')){const d=document.createElement('div');d.className='no-data-msg';d.innerHTML=banner;box.appendChild(d);} }
+      if (el) { const ctx = el.getContext('2d'); ctx.clearRect(0,0,el.width,el.height); }
     });
-    // Also clear designer buttons panel when not connected
-    const _dbp = document.getElementById('designer-buttons-panel');
-    if (_dbp) { _dbp.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);font-size:12px">Connect Google Sheets to load designer data</div>'; }
     return;
   }
-  ['chart-monthly-trend','chart-status-pie','chart-sources-exec'].forEach(id=>{
-    const el=document.getElementById(id); if(el){el.style.display=''; const m=el.closest('.chart-card')?.querySelector('.no-data-msg'); if(m)m.remove();}
-  });
   // ── Read from KITCHINO_STATE — guaranteed same snapshot as KPI cards ──────
   const data       = KITCHINO_STATE.monthlyData;
   const multiYear  = [...new Set(data.map(m=>m.year).filter(Boolean))].length > 1;
@@ -2652,8 +1930,16 @@ function buildExecutiveCharts() {
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'65%'}
   });
 
-  // Designer buttons panel
-  buildDesignerButtons();
+  // Designer rates (top 8)
+  const sorted = [...KITCHINO_STATE.designerData].sort((a,b)=>b.contracted/b.total-a.contracted/a.total).slice(0,8);
+  makeChart('chart-designer-rates', {
+    type:'bar',
+    data:{
+      labels:sorted.map(d=>d.name.split(' ')[0]+' '+d.name.split(' ')[1]),
+      datasets:[{label:'Conversion %',data:sorted.map(d=>+(d.contracted/d.total*100).toFixed(1)),backgroundColor:sorted.map((_,i)=>`hsl(${140+i*8},60%,${55-i*2}%)`),borderRadius:4}]
+    },
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{max:40,grid:{color:'rgba(37,37,69,0.5)'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}}
+  });
 
   // Sources exec
   const srcSorted = [...(KITCHINO_STATE.sourceData || [])].sort((a,b)=>b.total-a.total).slice(0,8);
@@ -2665,165 +1951,6 @@ function buildExecutiveCharts() {
     },
     options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:30}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
   });
-
-  // Bottom cards — always rebuild with live data
-  renderTopPerformers();
-}
-
-// ============================================================
-// EXEC DESIGNER BUTTON PANEL
-// ============================================================
-function buildDesignerButtons() {
-  const panel = document.getElementById('designer-buttons-panel');
-  if (!panel) return;
-  if (!ENGINE_READY || !(KITCHINO_STATE.designerData || []).length) {
-    panel.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);font-size:12px">No designer data available</div>';
-    return;
-  }
-
-  // Sort by measures count descending
-  const data = [...KITCHINO_STATE.designerData].sort((a, b) => b.total - a.total);
-
-  // Unique customers per designer from filteredMeasures
-  const custByDesigner = {};
-  (filteredMeasures || []).forEach(r => {
-    if (!r.designer || !r.customer) return;
-    if (!custByDesigner[r.designer]) custByDesigner[r.designer] = new Set();
-    custByDesigner[r.designer].add(r.customer);
-  });
-
-  let html = '<div class="designer-btn-grid">';
-  data.forEach((d, i) => {
-    const rate = d.total > 0 ? (d.contracted / d.total * 100).toFixed(1) : '0.0';
-    const custCount = custByDesigner[d.name] ? custByDesigner[d.name].size : 0;
-    const safeKey = JSON.stringify({name: d.name, total: d.total, customers: custCount, contracted: d.contracted, rate: parseFloat(rate)});
-    html += `<button class="designer-btn" onclick="selectDesignerBtn(this, ${safeKey.replace(/"/g,'&quot;')})" data-name="${d.name.replace(/"/g,'&quot;')}">
-      <span class="dbtn-rank">#${i+1}</span>
-      <span class="dbtn-count">${d.total}</span>
-      <span class="dbtn-name">${d.name}</span>
-    </button>`;
-  });
-  html += '</div>';
-  html += '<div id="designer-btn-detail" class="designer-btn-detail" style="display:none"></div>';
-
-  panel.innerHTML = html;
-
-  // update subtitle
-  const sub = document.getElementById('exec-des-subtitle');
-  if (sub) sub.textContent = data.length + ' designers · Click to view stats';
-}
-
-function selectDesignerBtn(btn, payload) {
-  const detail = document.getElementById('designer-btn-detail');
-  if (!detail) return;
-
-  // Toggle: clicking active button collapses detail
-  if (btn.classList.contains('dbtn-active')) {
-    btn.classList.remove('dbtn-active');
-    detail.style.display = 'none';
-    return;
-  }
-
-  // Deactivate all, activate clicked
-  document.querySelectorAll('.designer-btn').forEach(b => b.classList.remove('dbtn-active'));
-  btn.classList.add('dbtn-active');
-
-  const { name, total, customers, contracted, rate } = payload;
-  const rateNum  = parseFloat(rate);
-  const rateColor = rateNum >= 30 ? 'var(--green)' : rateNum >= 20 ? 'var(--gold)' : 'var(--red)';
-
-  // ── Pull live rows for this designer ──
-  const rows = (filteredMeasures || []).filter(r => r.designer === name);
-
-  // Build per-customer record: last status wins (most recent row)
-  const custMap = {};
-  rows.forEach(r => {
-    const cust  = r.customer || '—';
-    const type  = r.orderType || r.order_type || '—';
-    const stat  = (r.status || '').toLowerCase();
-    if (!custMap[cust]) custMap[cust] = { name: cust, types: new Set(), status: stat, count: 0 };
-    custMap[cust].types.add(type !== '—' ? type : null);
-    custMap[cust].count++;
-    // priority: contracted > discussion > cancelled > other
-    const priority = s => s.includes('تعاقد') || s.includes('contract') ? 3
-                        : s.includes('مناقش') || s.includes('discuss')  ? 2
-                        : s.includes('الغاء') || s.includes('cancel')   ? 1 : 0;
-    if (priority(stat) > priority(custMap[cust].status)) custMap[cust].status = stat;
-  });
-
-  // Sort: contracted first, then discussion, then cancelled, then alpha
-  const custList = Object.values(custMap).sort((a, b) => {
-    const order = s => s.includes('تعاقد')||s.includes('contract') ? 0
-                     : s.includes('مناقش')||s.includes('discuss')  ? 1
-                     : s.includes('الغاء')||s.includes('cancel')   ? 2 : 3;
-    return order(a.status) - order(b.status) || a.name.localeCompare(b.name);
-  });
-
-  const pillClass = s =>
-    s.includes('تعاقد') || s.includes('contract') ? 'dbd-pill-contracted' :
-    s.includes('مناقش') || s.includes('discuss')  ? 'dbd-pill-discussion' :
-    s.includes('الغاء') || s.includes('cancel')   ? 'dbd-pill-cancelled'  : 'dbd-pill-other';
-
-  const pillLabel = s =>
-    s.includes('تعاقد') || s.includes('contract') ? 'Contracted' :
-    s.includes('مناقش') || s.includes('discuss')  ? 'Discussion' :
-    s.includes('الغاء') || s.includes('cancel')   ? 'Cancelled'  : s || '—';
-
-  // ── Render customer rows ──
-  function renderRows(list) {
-    if (!list.length) return '<div class="dbd-empty">No customers found</div>';
-    return list.map(c => {
-      const typeStr = [...c.types].filter(Boolean).join(', ') || '—';
-      return `<div class="dbd-customer-row">
-        <span class="dbd-cust-name" title="${c.name}">${c.name}</span>
-        <span class="dbd-order-type">${typeStr}</span>
-        <span class="dbd-status-pill ${pillClass(c.status)}">${pillLabel(c.status)}</span>
-      </div>`;
-    }).join('');
-  }
-
-  const listId   = 'dbd-clist-' + name.replace(/\s+/g,'_');
-  const searchId = 'dbd-search-' + name.replace(/\s+/g,'_');
-
-  detail.innerHTML = `
-    <div class="dbd-header">📐 ${name}</div>
-    <div class="dbd-stats">
-      <div class="dbd-stat"><div class="dbd-val">${total}</div><div class="dbd-label">Measures</div></div>
-      <div class="dbd-stat"><div class="dbd-val">${customers}</div><div class="dbd-label">Customers</div></div>
-      <div class="dbd-stat"><div class="dbd-val" style="color:${rateColor}">${rate}%</div><div class="dbd-label">Conversion</div></div>
-      <div class="dbd-stat"><div class="dbd-val" style="color:var(--green)">${contracted}</div><div class="dbd-label">Contracted</div></div>
-    </div>
-    <hr class="dbd-divider">
-    <div class="dbd-list-header">
-      <span class="dbd-list-title">
-        CUSTOMERS &nbsp;
-        <span style="color:var(--green);font-size:13px">${custList.length}</span><span class="dbd-sub"> unique</span>
-        &nbsp;·&nbsp;
-        <span style="color:var(--teal);font-size:13px">${rows.length}</span><span class="dbd-sub"> total visits</span>
-      </span>
-      <input class="dbd-search" id="${searchId}" placeholder="Search customer or order type…" oninput="filterDesignerCustomers('${listId}','${searchId}')">
-    </div>
-    <div class="dbd-customer-list" id="${listId}">${renderRows(custList)}</div>`;
-
-  // Store full list for search filtering
-  detail._custList = custList;
-  detail._renderRows = renderRows;
-  detail.style.display = 'block';
-}
-
-function filterDesignerCustomers(listId, searchId) {
-  const detail  = document.getElementById('designer-btn-detail');
-  const listEl  = document.getElementById(listId);
-  const searchEl = document.getElementById(searchId);
-  if (!listEl || !searchEl || !detail._custList) return;
-  const q = searchEl.value.toLowerCase().trim();
-  const filtered = q
-    ? detail._custList.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        [...c.types].some(t => t && t.toLowerCase().includes(q)) ||
-        c.status.toLowerCase().includes(q))
-    : detail._custList;
-  listEl.innerHTML = detail._renderRows(filtered);
 }
 
 function buildDailyCharts() {
@@ -2870,161 +1997,108 @@ function buildDesignerCharts() {
   const singleMode = designerF !== 'all';
 
   if (!ENGINE_READY) {
-    const tierGrid = document.getElementById('designer-tiers-grid');
-    if (tierGrid) tierGrid.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);grid-column:1/-1">Connect Google Sheets to load designer data</div>';
-    renderDesignerKPIs();
+    const placeholder = '<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px">🔗 Connect Google Sheets to load designer data</div>';
+    ['chart-designer-ranking','chart-designer-mix'].forEach(id => {
+      const cv = document.getElementById(id);
+      if (cv) cv.closest('.chart-box')?.querySelector('.chart-title') && (cv.style.display='none');
+    });
+    const el = document.getElementById('designer-table-body');
+    if (el) el.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Connect Google Sheets to load data</td></tr>';
     return;
   }
 
-  // Full designer dataset — exclusively from engine
-  const yearF   = KITCHINO_STATE.year;
-  let fullData  = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
+  // Full designer dataset for ranking — exclusively from engine
+  const yearF = KITCHINO_STATE.year;
+  let fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
+
+  const totalAll = fullData.reduce((s,d)=>s+d.total,0);
+  const contrAll = fullData.reduce((s,d)=>s+d.contracted,0);
+  const avgRate  = totalAll > 0 ? +(contrAll/totalAll*100).toFixed(1) : 0;
+
+  // Ranking chart — always all designers, selected one highlighted gold
+  const sorted = [...fullData].sort((a,b)=>b.contracted/b.total-a.contracted/a.total);
+  const rates  = sorted.map(d=>+(d.contracted/d.total*100).toFixed(1));
+  makeChart('chart-designer-ranking', {
+    type:'bar',
+    data:{
+      labels: sorted.map(d=>d.name.split(' ').slice(0,2).join(' ')),
+      datasets:[{
+        label:'Conv. Rate %',
+        data: rates,
+        backgroundColor: sorted.map(d => {
+          if (singleMode && d.name === designerF) return 'rgba(255,215,64,0.9)';   // gold = selected
+          const r = d.total > 0 ? d.contracted/d.total*100 : 0;
+          return r >= avgRate ? 'rgba(0,230,118,0.6)' : 'rgba(255,82,82,0.45)';
+        }),
+        borderColor: sorted.map(d => {
+          if (singleMode && d.name === designerF) return GOLD;
+          const r = d.total > 0 ? d.contracted/d.total*100 : 0;
+          return r >= avgRate ? GREEN : RED;
+        }),
+        borderWidth: sorted.map(d => singleMode && d.name === designerF ? 2.5 : 1.5),
+        borderRadius: 3
+      }]
+    },
+    options:{
+      indexAxis:'y',responsive:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+'%'}}},
+      scales:{x:{max:50,grid:{color:'rgba(37,37,69,0.5)'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:9}}}}
+    }
+  });
+
+  // Volume / detail chart
+  if (singleMode) {
+    // Single designer — show status donut + title update
+    const d = fullData.find(x => x.name === designerF) || fullData[0];
+    const rankPos = sorted.findIndex(x => x.name === designerF) + 1;
+    document.getElementById('chart-designer-volume').closest('.chart-card').querySelector('.chart-title').textContent =
+      d.name.split(' ')[0] + ' — Status Breakdown';
+    document.getElementById('chart-designer-volume').closest('.chart-card').querySelector('.chart-subtitle').textContent =
+      `Rank #${rankPos} of ${sorted.length} designers`;
+    makeChart('chart-designer-volume', {
+      type:'doughnut',
+      data:{
+        labels:['Contracted','In Discussion','Cancelled'],
+        datasets:[{
+          data:[d.contracted, d.discussion, d.cancelled],
+          backgroundColor:['rgba(0,230,118,0.8)','rgba(255,215,64,0.6)','rgba(255,82,82,0.5)'],
+          borderColor:['#1a2035','#1a2035','#1a2035'],
+          borderWidth:2
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{position:'bottom'},
+          tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} (${(ctx.raw/d.total*100).toFixed(1)}%)`}}
+        }
+      }
+    });
+  } else {
+    // All designers — stacked volume bar
+    document.getElementById('chart-designer-volume').closest('.chart-card').querySelector('.chart-title').textContent = 'Volume vs Conversion';
+    document.getElementById('chart-designer-volume').closest('.chart-card').querySelector('.chart-subtitle').textContent = 'Total measures per designer';
+    const bySorted = [...fullData].sort((a,b)=>b.total-a.total);
+    makeChart('chart-designer-volume', {
+      type:'bar',
+      data:{
+        labels: bySorted.map(d=>d.name.split(' ').slice(0,2).join(' ')),
+        datasets:[
+          {label:'Contracted', data:bySorted.map(d=>d.contracted), backgroundColor:'rgba(0,230,118,0.7)',borderRadius:3},
+          {label:'Discussion', data:bySorted.map(d=>d.discussion), backgroundColor:'rgba(255,215,64,0.5)',borderRadius:3},
+          {label:'Cancelled',  data:bySorted.map(d=>d.cancelled),  backgroundColor:'rgba(255,82,82,0.3)', borderRadius:3}
+        ]
+      },
+      options:{responsive:true,plugins:{legend:{position:'bottom'}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{maxRotation:35,font:{size:9}}},
+          y:{stacked:true,grid:{color:'rgba(37,37,69,0.5)'}}
+        }
+      }
+    });
+  }
 
   renderDesignerKPIs();
-  buildDesignerTiers();
-}
-
-// ── TIER COMPUTATION HELPER ─────────────────────────────────────────────────
-function _computeTierMap(fullData) {
-  const TIERS = ['Pinnacle','Valor','Stride','Spark','Dawn'];
-  const eligible = fullData.filter(d => d.total >= 3);
-  if (eligible.length < 3) return {};
-  const maxM = Math.max(...eligible.map(d => d.total));
-  const maxR = Math.max(...eligible.map(d => d.total > 0 ? d.contracted/d.total*100 : 0));
-  const scored = eligible.map(d => {
-    const rate = d.total > 0 ? d.contracted/d.total*100 : 0;
-    const normM = maxM > 0 ? d.total/maxM*100 : 0;
-    const normR = maxR > 0 ? rate/maxR*100 : 0;
-    return { name: d.name, score: normM*0.5 + normR*0.5 };
-  }).sort((a,b) => b.score - a.score);
-  const n = scored.length;
-  const tierSize = n / 5;
-  const map = {};
-  scored.forEach((d, i) => {
-    map[d.name] = TIERS[Math.min(Math.floor(i / tierSize), 4)];
-  });
-  return map;
-}
-
-// ── BUILD DESIGNER PERFORMANCE PATCHES ──────────────────────────────────────
-function buildDesignerTiers() {
-  const grid = document.getElementById('designer-tiers-grid');
-  if (!grid) return;
-
-  const fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total >= 3);
-  if (!ENGINE_READY || fullData.length < 3) {
-    grid.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);grid-column:1/-1">Connect Google Sheets to generate performance tiers</div>';
-    return;
-  }
-
-  // ── Tier definitions — inspiring, unique, challenging names ──
-  const PATCHES = [
-    {
-      tag:'Tier I', name:'Pinnacle', icon:'🏆', bgIcon:'🏆',
-      color:'#ffd740', avatarBg:'rgba(255,215,64,0.18)', avatarColor:'#b8960a',
-      bg:'linear-gradient(145deg,rgba(255,215,64,0.10) 0%,rgba(255,215,64,0.04) 100%)',
-      border:'rgba(255,215,64,0.35)', tagline:'Masters of the craft'
-    },
-    {
-      tag:'Tier II', name:'Valor', icon:'⚔️', bgIcon:'⚔️',
-      color:'#ff7043', avatarBg:'rgba(255,112,67,0.18)', avatarColor:'#bf360c',
-      bg:'linear-gradient(145deg,rgba(255,112,67,0.10) 0%,rgba(255,112,67,0.04) 100%)',
-      border:'rgba(255,112,67,0.35)', tagline:'Driven by excellence'
-    },
-    {
-      tag:'Tier III', name:'Stride', icon:'💎', bgIcon:'💎',
-      color:'#1de9b6', avatarBg:'rgba(29,233,182,0.18)', avatarColor:'#00796b',
-      bg:'linear-gradient(145deg,rgba(29,233,182,0.10) 0%,rgba(29,233,182,0.04) 100%)',
-      border:'rgba(29,233,182,0.35)', tagline:'Consistent momentum'
-    },
-    {
-      tag:'Tier IV', name:'Spark', icon:'⚡', bgIcon:'⚡',
-      color:'#40c4ff', avatarBg:'rgba(64,196,255,0.18)', avatarColor:'#0277bd',
-      bg:'linear-gradient(145deg,rgba(64,196,255,0.10) 0%,rgba(64,196,255,0.04) 100%)',
-      border:'rgba(64,196,255,0.35)', tagline:'Rising energy'
-    },
-    {
-      tag:'Tier V', name:'Dawn', icon:'🌅', bgIcon:'🌅',
-      color:'#b0bec5', avatarBg:'rgba(176,190,197,0.15)', avatarColor:'#546e7a',
-      bg:'linear-gradient(145deg,rgba(176,190,197,0.07) 0%,rgba(176,190,197,0.02) 100%)',
-      border:'rgba(176,190,197,0.22)', tagline:'Building foundations'
-    },
-  ];
-
-  // ── Score & rank all designers ──
-  const maxM = Math.max(...fullData.map(d => d.total));
-  const maxR = Math.max(...fullData.map(d => d.total > 0 ? d.contracted/d.total*100 : 0));
-
-  const scored = fullData.map(d => {
-    const rate  = d.total > 0 ? +(d.contracted/d.total*100).toFixed(1) : 0;
-    const normM = maxM > 0 ? d.total/maxM*100 : 0;
-    const normR = maxR > 0 ? rate/maxR*100 : 0;
-    return { ...d, rate, score: +(normM*0.5 + normR*0.5).toFixed(1) };
-  }).sort((a,b) => b.score - a.score);
-
-  const n        = scored.length;
-  const tierSize = n / 5;
-  PATCHES.forEach(p => { p.designers = []; });
-  scored.forEach((d, i) => { PATCHES[Math.min(Math.floor(i/tierSize), 4)].designers.push(d); });
-
-  // Update meta
-  const metaEl = document.getElementById('tiers-meta');
-  if (metaEl) metaEl.textContent = n + ' designers ranked · Top 4 shown per tier';
-
-  // ── Render patches ──
-  grid.innerHTML = PATCHES.map(p => {
-    const shown = p.designers.slice(0, 4);
-    const extra = p.designers.length - shown.length;
-
-    const avgMeas = p.designers.length
-      ? Math.round(p.designers.reduce((s,d) => s+d.total, 0) / p.designers.length) : 0;
-    const avgRate = p.designers.length
-      ? (p.designers.reduce((s,d) => s+d.rate, 0) / p.designers.length).toFixed(1) : '0.0';
-    const topScore = p.designers.length ? p.designers[0].score.toFixed(0) : '—';
-
-    const designerRows = shown.map((d, idx) => {
-      const initials  = d.name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
-      const rateColor = d.rate >= 30 ? '#00e676' : d.rate >= 20 ? '#ffd740' : '#ff5252';
-      return `<div class="patch-designer">
-        <div class="patch-avatar" style="background:${p.avatarBg};color:${p.color};border:1px solid ${p.border}">${initials}</div>
-        <div class="patch-d-info">
-          <div class="patch-d-name" title="${d.name}">${d.name.split(' ').slice(0,2).join(' ')}</div>
-          <div class="patch-d-meas">${d.total} measures</div>
-        </div>
-        <div class="patch-d-rate" style="color:${rateColor}">${d.rate}%</div>
-      </div>`;
-    }).join('');
-
-    const extraRow = extra > 0
-      ? `<div class="patch-more">+${extra} more designer${extra>1?'s':''}</div>` : '';
-
-    return `<div class="perf-patch" data-bg-icon="${p.bgIcon}" style="background:${p.bg};border-color:${p.border}">
-      <div class="patch-tier-tag" style="color:${p.color}">${p.tag} &nbsp;·&nbsp; ${p.designers.length} designer${p.designers.length!==1?'s':''}</div>
-      <div class="patch-name-row">
-        <span class="patch-big-icon">${p.icon}</span>
-        <div>
-          <div class="patch-name" style="color:${p.color}">${p.name}</div>
-          <div class="patch-tagline">${p.tagline}</div>
-        </div>
-      </div>
-      <div class="patch-stats-bar">
-        <div class="patch-stat">
-          <div class="patch-stat-val" style="color:${p.color}">${avgMeas}</div>
-          <div class="patch-stat-label">Avg Measures</div>
-        </div>
-        <div class="patch-stat">
-          <div class="patch-stat-val" style="color:${p.color}">${avgRate}%</div>
-          <div class="patch-stat-label">Avg Conv.</div>
-        </div>
-        <div class="patch-stat">
-          <div class="patch-stat-val" style="color:${p.color}">${topScore}</div>
-          <div class="patch-stat-label">Top Score</div>
-        </div>
-      </div>
-      <hr class="patch-divider">
-      <div class="patch-designers">${designerRows}${extraRow}</div>
-    </div>`;
-  }).join('');
 }
 
 // Render Designer page KPI scorecards — responds to year + designer filter
@@ -3170,22 +2244,7 @@ function buildGeographicCharts() {
   if (!ENGINE_READY) {
     const el = document.getElementById('area-table-body');
     if (el) el.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Connect Google Sheets to load geographic data</td></tr>';
-    ['kpi-best-area-rate','kpi-best-area-name','kpi-best-area-name2','kpi-best-area-rate2'].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.textContent='—';
-    });
     return;
-  }
-  // Populate best-area KPI cards from engine data
-  const aData = (KITCHINO_STATE.areaData||[]).filter(a=>a.total>=10);
-  if (aData.length) {
-    const best = aData.reduce((a,b)=>b.conversionRate>a.conversionRate?b:a, aData[0]);
-    const bestRate = best.conversionRate + '%';
-    const bestName = best.area;
-    const setEl = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
-    setEl('kpi-best-area-rate', bestRate);
-    setEl('kpi-best-area-name', bestName);
-    setEl('kpi-best-area-name2', bestName);
-    setEl('kpi-best-area-rate2', bestRate);
   }
   const sorted = [...getFilteredAreaData()].sort((a,b)=>b.total-a.total).slice(0,12);
   makeChart('chart-area-volume', {
@@ -3437,49 +2496,14 @@ function buildCEOCharts() {
 // ============================================================
 // TABLE RENDERERS
 // ============================================================
-// Daily Ops sub-filter state
-let _dailyTypeFilter = 'all';
-let _dailyAgeFilter  = 'all';
-
-function setDailyFilter(group, val) {
-  if (group === 'type') {
-    _dailyTypeFilter = val;
-    // Update pill active states
-    ['all','contract','invoice'].forEach(v => {
-      const el = document.getElementById('sf-type-' + v);
-      if (el) el.className = 'sfpill' + (v === val ? ' active-teal' : '');
-    });
-    if (val === 'all') document.getElementById('sf-type-all').className = 'sfpill active';
-  } else {
-    _dailyAgeFilter = val;
-    const colorMap = { 'all':'active', '0-30':'active', '30-45':'active-gold', '45+':'active-red' };
-    ['all','fresh','watch','urgent'].forEach((k,i) => {
-      const v = ['all','0-30','30-45','45+'][i];
-      const el = document.getElementById('sf-age-' + k);
-      if (el) el.className = 'sfpill' + (v === val ? ' ' + colorMap[val] : '');
-    });
-  }
-  renderFollowupTable();
-}
-
 function renderFollowupTable() {
-  const ageFallback = document.getElementById('fu-aging-filter')?.value || 'all';
-  const ageFilter   = _dailyAgeFilter !== 'all' ? _dailyAgeFilter : ageFallback;
-  const typeFilter  = _dailyTypeFilter;
-  const search      = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
+  const filter = document.getElementById('fu-aging-filter')?.value || 'all';
+  const search = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
 
   const data = CONTRACTS_DATA.filter(c => {
-    // Age filter
-    if(ageFilter === '45+')   return c.age > 45;
-    if(ageFilter === '30-45') return c.age >= 30 && c.age <= 45;
-    if(ageFilter === '0-30')  return c.age < 30;
-    return true;
-  }).filter(c => {
-    // Type filter — check status/type field for contract vs invoice
-    if (typeFilter === 'all') return true;
-    const raw = (c.type || c.status || c.contractType || '').toLowerCase();
-    if (typeFilter === 'invoice')  return raw.includes('فاتورة') || raw.includes('invoice') || raw.includes('bill');
-    if (typeFilter === 'contract') return !raw.includes('فاتورة') && !raw.includes('invoice') && !raw.includes('bill');
+    if(filter === '45+') return c.age > 45;
+    if(filter === '30-45') return c.age >= 30 && c.age <= 45;
+    if(filter === '0-30') return c.age < 30;
     return true;
   }).filter(c => {
     if (!search) return true;
@@ -3487,10 +2511,6 @@ function renderFollowupTable() {
            String(c.orderId||'').toLowerCase().includes(search) ||
            (c.designer||'').toLowerCase().includes(search);
   });
-
-  // Update count badge
-  const countEl = document.getElementById('daily-table-count');
-  if (countEl) countEl.textContent = data.length + ' / ' + CONTRACTS_DATA.length + ' records';
 
   let rowsHtml;
   if (data.length === 0) {
@@ -3607,112 +2627,6 @@ function renderSourceTable() {
   }).join('');
 }
 
-// ── Payment Per Month chart ───────────────────────────────────────────────────
-function buildPaymentChart() {
-  if (!ENGINE_READY) return;
-  const data = KITCHINO_STATE.paymentMonthly || [];
-  if (!data.length) return;
-
-  const yearF = KITCHINO_STATE.year;
-  const multiYear = [...new Set(data.map(m => m.year))].length > 1;
-
-  const labels     = data.map(m => multiYear ? m.month.substr(0,3)+' '+m.year.substr(2) : m.month.substr(0,3));
-  const amounts    = data.map(m => Math.round(m.paidAmount));
-  const paidCounts = data.map(m => m.paidCount);
-  const totalCount = data.map(m => m.total);
-
-  // Update the total badge
-  const grandTotal = amounts.reduce((s, v) => s + v, 0);
-  const badge = document.getElementById('payment-total-badge');
-  if (badge) {
-    badge.textContent = grandTotal >= 1000000
-      ? 'Total: EGP ' + (grandTotal/1000000).toFixed(2) + 'M'
-      : 'Total: EGP ' + grandTotal.toLocaleString();
-  }
-
-  // Update subtitle
-  const sub = document.getElementById('payment-chart-subtitle');
-  if (sub) {
-    sub.textContent = yearF !== 'all'
-      ? 'Payment collected per month — ' + yearF
-      : 'Payment collected per month — All Years';
-  }
-
-  makeChart('chart-payment-monthly', {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Payment Amount (EGP)',
-          data: amounts,
-          backgroundColor: amounts.map(v => v > 0 ? 'rgba(0,230,118,0.7)' : 'rgba(0,230,118,0.12)'),
-          borderColor:     amounts.map(v => v > 0 ? '#00e676' : 'rgba(0,230,118,0.2)'),
-          borderWidth: 1.5,
-          borderRadius: 4,
-          yAxisID: 'y'
-        },
-        {
-          label: 'Paid Orders',
-          data: paidCounts,
-          type: 'line',
-          borderColor: '#ffd740',
-          backgroundColor: 'rgba(255,215,64,0.1)',
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: '#ffd740',
-          tension: 0.3,
-          yAxisID: 'y2'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              if (ctx.datasetIndex === 0) {
-                const v = ctx.raw;
-                return 'Amount: EGP ' + (v >= 1000000 ? (v/1000000).toFixed(2)+'M' : v.toLocaleString());
-              }
-              return 'Paid orders: ' + ctx.raw;
-            },
-            afterBody: (items) => {
-              const idx = items[0]?.dataIndex;
-              if (idx === undefined) return [];
-              const total = totalCount[idx];
-              const paid  = paidCounts[idx];
-              return ['Total measures: ' + total, 'Without payment: ' + (total - paid)];
-            }
-          }
-        }
-      },
-      scales: {
-        x:  { grid: { display: false }, ticks: { font: { size: 9 } } },
-        y:  {
-          position: 'left',
-          grid: { color: 'rgba(37,37,69,0.5)' },
-          ticks: {
-            callback: v => v >= 1000000 ? (v/1000000).toFixed(1)+'M'
-                        : v >= 1000    ? (v/1000).toFixed(0)+'K'
-                        : v,
-            font: { size: 9 }
-          }
-        },
-        y2: {
-          position: 'right',
-          grid: { display: false },
-          ticks: { stepSize: 1, precision: 0, font: { size: 9 } }
-        }
-      }
-    }
-  });
-}
-
 function renderMeasuresTable() {
   const search = (document.getElementById('global-search')?.value||'').toLowerCase();
   const statusF = document.getElementById('mt-status-filter')?.value || 'all';
@@ -3724,8 +2638,7 @@ function renderMeasuresTable() {
   // Engine-only: all rows from ENGINE_CLEAN_ROWS
   if (!ENGINE_READY) {
     const tbl = document.getElementById('measures-tbody');
-    if (tbl) tbl.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)"><div style="font-size:24px;margin-bottom:8px">📊</div><div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px">No measures loaded</div><div style="font-size:12px">Paste your Google Sheets connector URL in the sidebar</div></td></tr>';
-    const totEl = document.getElementById('mt-filtered'); if(totEl) totEl.textContent='0';
+    if (tbl) tbl.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Connect Google Sheets to load measures data</td></tr>';
     return;
   }
   filteredMeasures = ENGINE_CLEAN_ROWS.filter(r => {
@@ -3740,35 +2653,6 @@ function renderMeasuresTable() {
 
   document.getElementById('mt-filtered').textContent = filteredMeasures.length.toLocaleString();
 
-  // ── Payment KPIs from filtered rows ──────────────────────────────────
-  const _ptEl   = document.getElementById('mt-payment');
-  const _ptSub  = document.getElementById('mt-payment-sub');
-  const _ptData = engine_paymentTotal(filteredMeasures);
-  if (_ptEl) {
-    if (_ptData.total > 0) {
-      const formatted = _ptData.total >= 1000000
-        ? 'EGP ' + (_ptData.total/1000000).toFixed(2) + 'M'
-        : 'EGP ' + Math.round(_ptData.total).toLocaleString();
-      _ptEl.textContent = formatted;
-    } else {
-      _ptEl.textContent = '—';
-    }
-  }
-  if (_ptSub) _ptSub.textContent = _ptData.paidCount > 0
-    ? _ptData.paidCount + ' paid orders'
-    : 'no payment data';
-
-  // ── Repeated customers (customers with >1 visit in filtered rows) ──
-  const _custMap = {};
-  filteredMeasures.forEach(r => { const c = (r.customer||'').trim(); if (c) _custMap[c] = (_custMap[c]||0)+1; });
-  const _repeated = Object.values(_custMap).filter(v => v > 1).length;
-  const _repEl = document.getElementById('mt-repeated');
-  if (_repEl) _repEl.textContent = _repeated > 0 ? _repeated.toLocaleString() : '0';
-  const _repSub = document.getElementById('mt-repeated-sub');
-  if (_repSub) _repSub.textContent = _repeated > 0
-    ? (_repeated/_custMap.size*100).toFixed(1)+'% of customers'
-    : 'no repeats in view';
-
   const start = (currentPage-1)*PAGE_SIZE;
   const pageRows = filteredMeasures.slice(start, start+PAGE_SIZE);
   document.getElementById('show-range').textContent = `${start+1}–${Math.min(start+PAGE_SIZE,filteredMeasures.length)} of ${filteredMeasures.length}`;
@@ -3778,7 +2662,7 @@ function renderMeasuresTable() {
     const statusBadge = r.status==='تعاقد'?'badge-green':r.status==='مناقشة'?'badge-gold':'badge-red';
     const statusLabel = r.status==='تعاقد'?'✅ Contracted':r.status==='مناقشة'?'💬 Discussion':'❌ Cancelled';
     return `<tr>
-      <td class="muted">${r.orderCode || r.code || '—'}</td>
+      <td class="muted">${r.code}</td>
       <td>${r.customer}</td>
       <td>${r.designer}</td>
       <td class="muted">${r.visitDate}</td>
@@ -3787,7 +2671,7 @@ function renderMeasuresTable() {
       <td class="muted">${r.orderType}</td>
       <td class="muted">${r.area}</td>
       <td><span class="badge ${statusBadge}">${statusLabel}</span></td>
-      <td class="muted">${(()=>{ const p=r.payment; if(!p||p==='0'||p===0) return '—'; const n=parseFloat(p); return !isNaN(n)&&n>0 ? 'EGP '+Math.round(n).toLocaleString() : String(p); })()}</td>
+      <td class="muted">${r.payment ? 'EGP '+r.payment.toLocaleString() : '—'}</td>
     </tr>`;
   }).join('');
 }
@@ -3802,369 +2686,57 @@ function changePage(dir) {
 // POPULATING EXEC PERFORMERS & INSIGHTS
 // ============================================================
 function renderTopPerformers() {
-  renderExecAreaCard();
-  renderExecSourceCard();
-  renderExecDesignerCard();
-}
+  const allD = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
 
-// ── Helper: build clickable exec row ────────────────────────────────────────
-function _execRow(rank, key, name, count, maxCount, rate, accentColor, clickFn) {
-  const barPct    = maxCount > 0 ? Math.round(count / maxCount * 100) : 0;
-  const rankClass = rank===1?'gold':rank===2?'silver':rank===3?'bronze':'';
-  const rateColor = rate==null?'var(--text3)':rate>=30?'#00e676':rate>=20?'#ffd740':'#ff5252';
-  const safeKey   = (key||'').replace(/'/g, "\\'");
-  return `<div class="exec-list-row" id="exec-row-${clickFn}-${rank}"
-    onclick="${clickFn}('${safeKey}', this)">
-    <div class="exec-rank ${rankClass}">${rank}</div>
-    <div class="exec-item-info">
-      <div class="exec-item-name" title="${name}">${name}</div>
-      <div class="exec-item-bar">
-        <div class="exec-item-fill" style="width:${barPct}%;background:${accentColor}"></div>
-      </div>
-    </div>
-    <div class="exec-item-right">
-      <div class="exec-item-count">${count.toLocaleString()}</div>
-      ${rate!=null?`<div class="exec-item-rate" style="color:${rateColor}">${rate}% conv</div>`:''}
-    </div>
-  </div>`;
-}
+  const placeholder = '<div style="font-size:12px;color:var(--text3);padding:12px 0">Connect Google Sheets to load designer data</div>';
 
-function _execNoData(el) {
-  if (el) el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Connect Google Sheets to load data</div>';
-}
+  const topEl = document.getElementById('top-performers-list');
+  const lowEl = document.getElementById('low-performers-list');
 
-// Build the expandable customer table
-function _buildExpandTable(rows, titleLabel, count, columns) {
-  // columns: [{field, label, width}]
-  const colWidths = columns.map(c => c.width || '1fr').join(' ');
-  const headerCols = columns.map(c =>
-    `<div style="color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px">${c.label}</div>`
-  ).join('');
-  const dataRows = rows.slice(0, 50).map(r => {
-    const cells = columns.map(c => {
-      const val = r[c.field] || '—';
-      if (c.field === 'status') {
-        const st = (val+'').toLowerCase();
-        const cls = st.includes('تعاقد')||st.includes('contract') ? 'background:rgba(0,230,118,0.15);color:#00e676'
-                  : st.includes('مناقش')||st.includes('discuss')  ? 'background:rgba(255,215,64,0.15);color:#ffd740'
-                  : st.includes('الغاء')||st.includes('cancel')   ? 'background:rgba(255,82,82,0.15);color:#ff5252'
-                  : 'background:rgba(160,160,192,0.1);color:#a0a0c0';
-        return `<div><span class="exec-status-pill" style="${cls}">${val}</span></div>`;
-      }
-      return `<div class="exec-expand-cell" title="${val}">${val}</div>`;
-    }).join('');
-    return `<div class="exec-expand-row" style="grid-template-columns:${colWidths}">${cells}</div>`;
-  }).join('');
-  const more = rows.length > 50 ? `<div style="padding:6px 12px;font-size:10px;color:var(--text3);text-align:center">+${rows.length-50} more records</div>` : '';
-  return `<div class="exec-expand-table">
-    <div class="exec-expand-header">
-      ${titleLabel}
-      <span>${count} measures</span>
-    </div>
-    <div class="exec-expand-row" style="grid-template-columns:${colWidths};background:rgba(0,0,0,0.15);padding:5px 12px">
-      ${headerCols}
-    </div>
-    <div class="exec-expand-tbody">
-      ${dataRows}
-      ${more}
-    </div>
-  </div>`;
-}
-
-// ── AREAS CARD ───────────────────────────────────────────────────────────────
-function renderExecAreaCard() {
-  const listEl   = document.getElementById('exec-areas-list');
-  const detailEl = document.getElementById('exec-area-detail');
-  const totEl    = document.getElementById('areas-card-total');
-  const areaData = [...(KITCHINO_STATE.areaData || [])].sort((a,b) => b.total - a.total);
-  if (!ENGINE_READY || !areaData.length) { _execNoData(listEl); return; }
-  const maxCount = areaData[0].total;
-  const totalAll = areaData.reduce((s,a) => s+a.total, 0);
-  if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures';
-  if (listEl) listEl.innerHTML = areaData.slice(0,5).map((a,i) =>
-    _execRow(i+1, a.area, a.area, a.total, maxCount, null, 'rgba(64,196,255,0.65)', 'drillArea')
-  ).join('');
-  if (detailEl) detailEl.innerHTML = '';
-}
-
-function drillArea(areaName, rowEl) {
-  const detailEl = document.getElementById('exec-area-detail');
-  const wasActive = rowEl.classList.contains('active');
-  document.querySelectorAll('#exec-areas-list .exec-list-row').forEach(r => r.classList.remove('active'));
-  if (wasActive) { if (detailEl) detailEl.innerHTML = ''; return; }
-  rowEl.classList.add('active');
-
-  // Filter rows for this area, then group by Location (col N)
-  const rows = (filteredMeasures || []).filter(r => r.area === areaName);
-
-  if (!rows.length) {
-    if (detailEl) detailEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:11px">No data for this area</div>';
+  if (!allD.length) {
+    if (topEl) topEl.innerHTML = placeholder;
+    if (lowEl) lowEl.innerHTML = placeholder;
     return;
   }
 
-  // Group by location field (column N — specific location inside area)
-  const locMap = {};
-  rows.forEach(r => {
-    const loc = (r.location || '').trim() || '(no location)';
-    locMap[loc] = (locMap[loc] || 0) + 1;
-  });
-
-  // Sort by count descending
-  const locs = Object.entries(locMap)
-    .map(([loc, count]) => ({ loc, count }))
-    .sort((a, b) => b.count - a.count);
-
-  const maxCount = locs[0]?.count || 1;
-
-  const rowsHtml = locs.map((l, i) => {
-    const barW = Math.round(l.count / maxCount * 100);
-    const rankColor = i === 0 ? '#ffd740' : i === 1 ? '#b0bec5' : i === 2 ? '#ff7043' : 'var(--text3)';
-    return '<div style="display:grid;grid-template-columns:22px 1fr 70px;align-items:center;gap:10px;' +
-      'padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
-      '<div style="font-size:10px;font-weight:700;color:' + rankColor + ';text-align:center">' + (i+1) + '</div>' +
-      '<div>' +
-        '<div style="font-size:12px;font-weight:600;color:var(--text1);margin-bottom:4px">' + l.loc + '</div>' +
-        '<div style="height:4px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden">' +
-          '<div style="height:100%;width:' + barW + '%;background:rgba(64,196,255,0.7);border-radius:3px;transition:width .4s"></div>' +
-        '</div>' +
-      '</div>' +
-      '<div style="font-size:14px;font-weight:800;color:var(--blue);text-align:right">' + l.count.toLocaleString() + '</div>' +
-      '</div>';
+  const sorted = [...allD].sort((a,b)=>b.contracted/b.total-a.contracted/a.total).slice(0,5);
+  if (topEl) topEl.innerHTML = sorted.map((d,i) => {
+    const rate = +(d.contracted/d.total*100).toFixed(1);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="width:20px;height:20px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#000;flex-shrink:0">${i+1}</div>
+      <div style="flex:1;font-size:12px">${d.name}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--green)">${rate}%</div>
+    </div>`;
   }).join('');
 
-  if (detailEl) detailEl.innerHTML =
-    '<div class="exec-expand-table">' +
-      '<div class="exec-expand-header" style="background:rgba(64,196,255,0.08)">' +
-        '📍 ' + areaName + ' <span style="color:var(--blue)">' + locs.length + ' location' + (locs.length !== 1 ? 's' : '') + ' · ' + rows.length + ' measures</span>' +
-      '</div>' +
-      '<div style="display:grid;grid-template-columns:22px 1fr 70px;gap:10px;padding:5px 10px;' +
-        'background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">' +
-        '<div>#</div><div>Location</div><div style="text-align:right">Measures</div>' +
-      '</div>' +
-      '<div class="exec-expand-tbody" style="max-height:200px">' + rowsHtml + '</div>' +
-    '</div>';
-}
+  const low = [...allD].sort((a,b)=>a.contracted/a.total-b.contracted/b.total).slice(0,5);
+  if (lowEl) lowEl.innerHTML = low.map((d,i) => {
+    const rate = +(d.contracted/d.total*100).toFixed(1);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="width:20px;height:20px;background:rgba(255,82,82,0.2);border:1px solid var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--red);flex-shrink:0">${i+1}</div>
+      <div style="flex:1;font-size:12px">${d.name}</div>
+      <div style="font-size:12px;font-weight:700;color:var(--red)">${rate}%</div>
+    </div>`;
+  }).join('');
 
-
-// ── LEAD SOURCES CARD ────────────────────────────────────────────────────────
-function renderExecSourceCard() {
-  const listEl   = document.getElementById('exec-sources-list');
-  const detailEl = document.getElementById('exec-source-detail');
-  const totEl    = document.getElementById('sources-card-total');
-  const srcData  = [...(KITCHINO_STATE.sourceData || [])].sort((a,b) => b.total - a.total);
-  if (!ENGINE_READY || !srcData.length) { _execNoData(listEl); return; }
-  const maxCount = srcData[0].total;
-  const totalAll = srcData.reduce((s,x) => s+x.total, 0);
-  if (totEl) totEl.textContent = srcData.length + ' sources · ' + totalAll.toLocaleString() + ' measures';
-  if (listEl) listEl.innerHTML = srcData.slice(0,5).map((s,i) =>
-    _execRow(i+1, s.source, s.source, s.total, maxCount, null, 'rgba(206,147,216,0.65)', 'drillSource')
+  const insights = [
+    {icon:'💡',text:'<strong>التجمع</strong> drives 47.5% of all measures — prioritize inventory & staffing there'},
+    {icon:'🚀',text:'<strong>Agent</strong> channel has highest 39.5% conversion — expand agent partnerships'},
+    {icon:'⚠',text:'<strong>December</strong> shows only 4% conversion — investigate end-of-year drop'},
+    {icon:'📈',text:'<strong>Q2 peak</strong>: April–May best months — schedule major campaigns around this window'},
+    {icon:'🎯',text:'<strong>Mohamed Atef</strong> leads with 33% rate — replicate his process across team'},
+    {icon:'🔄',text:'<strong>Discussion stage</strong> holds 610 customers — follow-up can add ~140 contracts'}
+  ];
+  document.getElementById('ai-insights-list').innerHTML = insights.map(i =>
+    `<div style="display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px;line-height:1.5">
+      <span style="font-size:14px;flex-shrink:0">${i.icon}</span><span style="color:var(--text2)">${i.text}</span>
+    </div>`
   ).join('');
-  if (detailEl) detailEl.innerHTML = '';
 }
 
-function drillSource(sourceName, rowEl) {
-  const detailEl = document.getElementById('exec-source-detail');
-  const wasActive = rowEl.classList.contains('active');
-  document.querySelectorAll('#exec-sources-list .exec-list-row').forEach(r => r.classList.remove('active'));
-  if (wasActive) { if (detailEl) detailEl.innerHTML = ''; return; }
-  rowEl.classList.add('active');
-  const rows = (filteredMeasures || []).filter(r => r.source === sourceName);
-  if (!rows.length) { if (detailEl) detailEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:11px">No data</div>'; return; }
-  // Group by area — shows which areas this source covers
-  const areaMap = {};
-  rows.forEach(r => {
-    const a = (r.area || '—').trim() || '—';
-    if (!areaMap[a]) areaMap[a] = { total:0, contracted:0 };
-    areaMap[a].total++;
-    if (r._contracted) areaMap[a].contracted++;
-  });
-  const areas = Object.entries(areaMap)
-    .map(([area, d]) => ({ area, ...d, rate: d.total>0?+(d.contracted/d.total*100).toFixed(1):0 }))
-    .sort((a,b) => b.total - a.total);
-  const maxA = areas[0]?.total || 1;
-  const rowsHtml = areas.map((a,i) => {
-    const barW = Math.round(a.total/maxA*100);
-    const rateColor = a.rate>=30?'#00e676':a.rate>=20?'#ffd740':'#ff5252';
-    return '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
-      '<div style="font-size:10px;color:var(--text3);text-align:center">' + (i+1) + '</div>' +
-      '<div><div style="font-size:12px;font-weight:600;color:var(--text1)">' + a.area + '</div>' +
-      '<div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:4px;overflow:hidden">' +
-      '<div style="height:100%;width:' + barW + '%;background:rgba(206,147,216,0.6);border-radius:2px"></div></div></div>' +
-      '<div style="font-size:13px;font-weight:800;color:var(--text1);text-align:right">' + a.total.toLocaleString() + '</div>' +
-      '<div style="font-size:10px;font-weight:700;color:' + rateColor + ';text-align:right">' + a.rate + '% conv</div></div>';
-  }).join('');
-  if (detailEl) detailEl.innerHTML = '<div class="exec-expand-table">' +
-    '<div class="exec-expand-header">📡 ' + sourceName + ' — Areas Covered <span>' + rows.length + ' measures</span></div>' +
-    '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;gap:8px;padding:5px 10px;background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)"><div>#</div><div>Area / Location</div><div style=\"text-align:right\">Measures</div><div style=\"text-align:right\">Conv%</div></div>' +
-    '<div class="exec-expand-tbody">' + rowsHtml + '</div></div>';
-}
-
-// ── TOP DESIGNERS CARD ────────────────────────────────────────────────────────
-function renderExecDesignerCard() {
-  const listEl = document.getElementById('exec-designers-list');
-  const subEl  = document.getElementById('designers-card-sub');
-  const avgEl  = document.getElementById('designers-card-avg');
-  const allD   = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total >= 1).sort((a,b) => b.total - a.total);
-  if (!ENGINE_READY || !allD.length) { _execNoData(listEl); return; }
-  const top5     = allD.slice(0,5);
-  const maxCount = top5[0].total;
-  const totM     = allD.reduce((s,d)=>s+d.total,0);
-  const totC     = allD.reduce((s,d)=>s+d.contracted,0);
-  const avg      = totM>0?(totC/totM*100).toFixed(1):0;
-  if (subEl) subEl.textContent = 'Top 5 by measures volume · ' + allD.length + ' designers';
-  if (avgEl) avgEl.textContent = 'Team avg ' + avg + '%';
-  if (listEl) listEl.innerHTML = top5.map((d,i) => {
-    const rate = d.total>0?+(d.contracted/d.total*100).toFixed(1):null;
-    return _execRow(i+1, d.name, d.name.split(' ').slice(0,2).join(' '), d.total, maxCount, rate, 'rgba(0,230,118,0.65)', 'drillDesigner');
-  }).join('');
-}
-
-function drillDesigner(designerName, rowEl) {
-  const listEl = document.getElementById('exec-designers-list');
-  const wasActive = rowEl.classList.contains('active');
-  listEl?.querySelectorAll('.exec-list-row').forEach(r => r.classList.remove('active'));
-  listEl?.querySelector('.exec-designer-expand')?.remove();
-  if (wasActive) return;
-  rowEl.classList.add('active');
-  const rows = (filteredMeasures||[]).filter(r=>r.designer===designerName);
-  if (!rows.length) return;
-  const areaMap = {};
-  rows.forEach(r => {
-    const a = (r.area||'—').trim()||'—';
-    if (!areaMap[a]) areaMap[a] = {total:0,contracted:0};
-    areaMap[a].total++;
-    if (r._contracted) areaMap[a].contracted++;
-  });
-  const areas = Object.entries(areaMap)
-    .map(([area,d])=>({area,...d,rate:d.total>0?+(d.contracted/d.total*100).toFixed(1):0}))
-    .sort((a,b)=>b.total-a.total);
-  const maxA = areas[0]?.total||1;
-  const rowsHtml = areas.map((a,i) => {
-    const barW = Math.round(a.total/maxA*100);
-    const rateColor = a.rate>=30?'#00e676':a.rate>=20?'#ffd740':'#ff5252';
-    return '<div style="display:grid;grid-template-columns:24px 1fr 50px 50px;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
-      '<div style="font-size:10px;color:var(--text3);text-align:center">' + (i+1) + '</div>' +
-      '<div><div style="font-size:11px;font-weight:600;color:var(--text1)">' + a.area + '</div>' +
-      '<div style="height:2px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:3px;overflow:hidden">' +
-      '<div style="height:100%;width:' + barW + '%;background:rgba(0,230,118,0.6);border-radius:2px"></div></div></div>' +
-      '<div style="font-size:12px;font-weight:700;color:var(--text1);text-align:right">' + a.total + '</div>' +
-      '<div style="font-size:10px;font-weight:700;color:' + rateColor + ';text-align:right">' + a.rate + '%</div></div>';
-  }).join('');
-  const div = document.createElement('div');
-  div.className = 'exec-designer-expand';
-  div.innerHTML = '<div class="exec-expand-table" style="margin-top:8px">' +
-    '<div class="exec-expand-header">🏆 ' + designerName.split(' ').slice(0,2).join(' ') + ' — by Area <span>' + rows.length + ' measures</span></div>' +
-    '<div class="exec-expand-tbody">' + rowsHtml + '</div></div>';
-  rowEl.insertAdjacentElement('afterend', div);
-}
-
-// ============================================================
-// CEO PORTAL SEARCH
-// ============================================================
-function runCEOSearch() {
-  const q = (document.getElementById('ceo-portal-search')?.value || '').trim().toLowerCase();
-  const resultsWrap = document.getElementById('ceo-search-results');
-  const emptyEl     = document.getElementById('ceo-sr-empty');
-  if (!resultsWrap) return;
-
-  if (!q) {
-    resultsWrap.style.display = 'none';
-    return;
-  }
-  resultsWrap.style.display = 'block';
-
-  const s = KITCHINO_STATE;
-
-  // ── Designers ──────────────────────────────────────────────────────────
-  const designers = (s.allDesignerData || s.designerData || [])
-    .filter(d => d.name && d.name.toLowerCase().includes(q));
-  const dWrap = document.getElementById('ceo-sr-designers');
-  const dBody = document.getElementById('ceo-sr-designers-body');
-  if (dWrap && dBody) {
-    if (designers.length > 0) {
-      dWrap.style.display = 'block';
-      dBody.innerHTML = designers.map(d => `
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;cursor:pointer;transition:.15s"
-             onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'"
-             onclick="applyDesignerFilter('${d.name.replace(/'/g,"\\'")}')">
-          <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:3px">${d.name}</div>
-          <div style="font-size:10px;color:var(--text3)">${d.total} measures &nbsp;·&nbsp; ${d.conversionRate}% CVR &nbsp;·&nbsp; ${d.contracted} contracted</div>
-        </div>`).join('');
-    } else {
-      dWrap.style.display = 'none';
-    }
-  }
-
-  // ── Areas ──────────────────────────────────────────────────────────────
-  const areas = (s.areaData || [])
-    .filter(a => a.area && a.area.toLowerCase().includes(q));
-  const aWrap = document.getElementById('ceo-sr-areas');
-  const aBody = document.getElementById('ceo-sr-areas-body');
-  if (aWrap && aBody) {
-    if (areas.length > 0) {
-      aWrap.style.display = 'block';
-      aBody.innerHTML = areas.map(a => `
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;cursor:pointer;transition:.15s"
-             onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"
-             onclick="applyAreaFilter('${a.area.replace(/'/g,"\\'")}')">
-          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:3px">${a.area}</div>
-          <div style="font-size:10px;color:var(--text3)">${a.total} measures &nbsp;·&nbsp; ${a.conversionRate}% CVR &nbsp;·&nbsp; ${a.contracted} contracted</div>
-        </div>`).join('');
-    } else {
-      aWrap.style.display = 'none';
-    }
-  }
-
-  // ── Sources ────────────────────────────────────────────────────────────
-  const sources = (s.sourceData || [])
-    .filter(src => src.source && src.source.toLowerCase().includes(q));
-  const srcWrap = document.getElementById('ceo-sr-sources');
-  const srcBody = document.getElementById('ceo-sr-sources-body');
-  if (srcWrap && srcBody) {
-    if (sources.length > 0) {
-      srcWrap.style.display = 'block';
-      srcBody.innerHTML = sources.map(src => `
-        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;cursor:pointer;transition:.15s"
-             onmouseover="this.style.borderColor='var(--green2)'" onmouseout="this.style.borderColor='var(--border)'"
-             onclick="applySourceFilter('${src.source.replace(/'/g,"\\'")}')">
-          <div style="font-size:12px;font-weight:700;color:var(--green2);margin-bottom:3px">${src.source}</div>
-          <div style="font-size:10px;color:var(--text3)">${src.total} measures &nbsp;·&nbsp; ${src.conversionRate}% CVR &nbsp;·&nbsp; ${src.contracted} contracted</div>
-        </div>`).join('');
-    } else {
-      srcWrap.style.display = 'none';
-    }
-  }
-
-  // ── Empty state ────────────────────────────────────────────────────────
-  const hasResults = designers.length > 0 || areas.length > 0 || sources.length > 0;
-  if (emptyEl) emptyEl.style.display = hasResults ? 'none' : 'block';
-}
-
-function clearCEOSearch() {
-  const inp = document.getElementById('ceo-portal-search');
-  if (inp) inp.value = '';
-  const wrap = document.getElementById('ceo-search-results');
-  if (wrap) wrap.style.display = 'none';
-}
-
-// Apply a designer filter from CEO search — switches to Designers page
-function applyDesignerFilter(name) {
-  const sel = document.getElementById('filter-designer');
-  if (sel) { sel.value = name; applyFilters(); }
-  showPage('designers');
-}
-
-// Apply an area filter from CEO search — switches to Geographic page
-function applyAreaFilter(name) {
-  const sel = document.getElementById('filter-area');
-  if (sel) { sel.value = name; applyFilters(); }
-  showPage('geographic');
-}
-
-// Apply a source filter from CEO search — switches to Sources page
-function applySourceFilter(name) {
-  showPage('sources');
-}
+function runCEOSearch(){var q=(document.getElementById('ceo-portal-search')||{value:''}).value.trim().toLowerCase(),wrap=document.getElementById('ceo-search-results');if(!wrap)return;if(!q){wrap.style.display='none';return;}wrap.style.display='block';var s=KITCHINO_STATE,d=(s.allDesignerData||s.designerData||[]).filter(function(x){return x.name&&x.name.toLowerCase().indexOf(q)>=0;}),a=(s.areaData||[]).filter(function(x){return x.area&&x.area.toLowerCase().indexOf(q)>=0;}),r=(s.sourceData||[]).filter(function(x){return x.source&&x.source.toLowerCase().indexOf(q)>=0;});function card(label,color,page,items,key){var w=document.getElementById('ceo-sr-'+key),b=document.getElementById('ceo-sr-'+key+'-body');if(!w||!b)return;if(items.length){w.style.display='block';b.innerHTML=items.map(function(i){return'<div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;cursor:pointer" onclick="showPage(\''+page+'\')"><div style="font-size:12px;font-weight:700;color:'+color+'">'+i[label]+'</div><div style="font-size:10px;color:var(--text3)">'+i.total+' measures · '+i.conversionRate+'% CVR</div></div>';}).join('');}else{w.style.display='none';}}
+card('name','var(--purple)','designers',d,'designers');card('area','var(--blue)','geographic',a,'areas');card('source','var(--green2)','sources',r,'sources');var empty=document.getElementById('ceo-sr-empty');if(empty)empty.style.display=(d.length||a.length||r.length)?'none':'block';}
+function clearCEOSearch(){var i=document.getElementById('ceo-portal-search');if(i)i.value='';var w=document.getElementById('ceo-search-results');if(w)w.style.display='none';}
 
 function renderScorecard() {
   if (!ENGINE_READY) return;
@@ -4249,20 +2821,14 @@ function populateFilters() {
 
 function applyFilters() {
   currentPage = 1;
-  // ── 1. Compute centralized state FIRST (engine_compute populates all data)
-  computeFilteredState();
-  // ── 2. Push to KPI cards ──────────────────────────────────────────────────
-  updateKPICards();
-  // ── 2b. Rebuild exec bottom cards (top/low performers + insights) ─────────
-  renderTopPerformers();
-  // ── 3. Update measures table (uses updated filteredMeasures from engine) ──
+  // ── 1. Update the measures table (populates filteredMeasures) ────────────
   renderMeasuresTable();
-  // ── 3b. Rebuild payment chart if on measures page ─────────────────────────
-  if (document.querySelector('.page.active')?.id === 'page-measures') {
-    buildPaymentChart();
-  }
-  // ── 4. Also re-filter the Daily Operations follow-up table ───────────────
+  // ── 1b. Also re-filter the Daily Operations follow-up table ──────────────
   renderFollowupTable();
+  // ── 2. Compute centralized state ONCE from current filter snapshot ───────
+  computeFilteredState();
+  // ── 3. Push to KPI cards from centralized state ──────────────────────────
+  updateKPICards();
 
   // ── 4. Re-fetch live Sheets (if connected), then rebuild all pages ────────
   if (sheetsUrl) {
@@ -4283,15 +2849,10 @@ function applyFilters() {
 }
 
 function _rebuildFilteredPages() {
-  const activePage = document.querySelector('.page.active')?.id.replace('page-','');
-  // Always rebuild measures page data when filters change (not cached like charts)
-  if (activePage === 'measures') {
-    renderMeasuresTable();
-    buildPaymentChart();
-  }
-  ['executive','monthly','ceo','presentation','conversion','designers','geographic','sources','kpi','followup','measures'].forEach(p => {
+  ['executive','monthly','ceo','presentation','conversion','designers','geographic','sources','kpi','followup'].forEach(p => {
     if (builtPages.has(p)) {
       builtPages.delete(p);
+      const activePage = document.querySelector('.page.active')?.id.replace('page-','');
       if (p === activePage) showPage(p);
     }
   });
@@ -4304,383 +2865,20 @@ const PAGE_TITLES = {
   kpi:'KPI Deep Dive',ceo:'CEO View',presentation:'Presentation View'
 };
 
-// ══════════════════════════════════════════════════════════════════
-// FORECAST ENGINE — Trend + Seasonality Decomposition
-// ══════════════════════════════════════════════════════════════════
-function engine_linReg(y) {
-  const n = y.length;
-  if (n < 2) return { slope: 0, intercept: y[0] || 0, predict: () => y[0] || 0 };
-  const xMean = (n - 1) / 2;
-  const yMean = y.reduce((s, v) => s + v, 0) / n;
-  let ssxy = 0, ssxx = 0;
-  y.forEach((v, i) => { ssxy += (i - xMean) * (v - yMean); ssxx += (i - xMean) ** 2; });
-  const slope = ssxx === 0 ? 0 : ssxy / ssxx;
-  const intercept = yMean - slope * xMean;
-  return { slope, intercept, predict: i => slope * i + intercept };
-}
-
-function engine_seasonalIndices(values, monthOrders) {
-  const byMonth = {};
-  values.forEach((v, i) => {
-    const mo = monthOrders[i] || 1;
-    if (!byMonth[mo]) byMonth[mo] = [];
-    byMonth[mo].push(v);
-  });
-  const overall = values.reduce((s, v) => s + v, 0) / (values.length || 1);
-  const indices = {};
-  for (let mo = 1; mo <= 12; mo++) {
-    const vals = byMonth[mo] || [];
-    indices[mo] = vals.length > 0 && overall > 0
-      ? (vals.reduce((s, v) => s + v, 0) / vals.length) / overall
-      : 1.0;
-  }
-  return indices;
-}
-
-function engine_forecastResidualSD(values, trend, siIdx, monthOrders) {
-  if (values.length < 3) return 0;
-  const residuals = values.map((v, i) => {
-    const pred = trend.predict(i) * (siIdx[monthOrders[i]] || 1);
-    return v - pred;
-  });
-  const mean = residuals.reduce((s, v) => s + v, 0) / residuals.length;
-  const variance = residuals.reduce((s, v) => s + (v - mean) ** 2, 0) / residuals.length;
-  return Math.sqrt(variance);
-}
-
-function engine_buildForecast(monthlyData, horizonMonths) {
-  if (!monthlyData || monthlyData.length < 3) return null;
-
-  const MNAMES = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
-
-  const totals    = monthlyData.map(m => m.total || 0);
-  const contracts = monthlyData.map(m => m.contracted || 0);
-  const monthOrds = monthlyData.map(m => m.monthOrder || 1);
-
-  const trendM = engine_linReg(totals);
-  const trendC = engine_linReg(contracts);
-  const siM    = engine_seasonalIndices(totals, monthOrds);
-  const siC    = engine_seasonalIndices(contracts, monthOrds);
-  const sdM    = engine_forecastResidualSD(totals, trendM, siM, monthOrds);
-  const sdC    = engine_forecastResidualSD(contracts, trendC, siC, monthOrds);
-
-  const lastRow      = monthlyData[monthlyData.length - 1];
-  const lastMO       = lastRow.monthOrder || 12;
-  const lastYear     = parseInt(lastRow.year) || 2026;
-  const n            = monthlyData.length;
-
-  const points = [];
-  for (let h = 1; h <= horizonMonths; h++) {
-    const rawMO  = (lastMO - 1 + h) % 12;
-    const mo     = rawMO + 1;
-    const yr     = lastYear + Math.floor((lastMO - 1 + h) / 12);
-    const tIdx   = n + h - 1;
-
-    const mPred  = Math.max(0, Math.round(trendM.predict(tIdx) * (siM[mo] || 1)));
-    const cPred  = Math.max(0, Math.round(trendC.predict(tIdx) * (siC[mo] || 1)));
-    const rPred  = mPred > 0 ? +(cPred / mPred * 100).toFixed(1) : 0;
-
-    points.push({
-      label:     MNAMES[mo-1].substr(0,3)+' '+String(yr).substr(2),
-      fullLabel: MNAMES[mo-1]+' '+yr,
-      year: yr, month: MNAMES[mo-1], monthOrder: mo,
-      measures:  mPred, contracts: cPred, rate: rPred,
-      mLow:  Math.max(0, Math.round(mPred - 1.5 * sdM)),
-      mHigh: Math.round(mPred + 1.5 * sdM),
-      cLow:  Math.max(0, Math.round(cPred - 1.5 * sdC)),
-      cHigh: Math.round(cPred + 1.5 * sdC),
-    });
-  }
-
-  return { points, slope: trendM.slope, slopeC: trendC.slope, sdM, sdC, siM };
-}
-
-// ── BUILD FORECAST PAGE ──────────────────────────────────────
-function buildForecastCharts() {
-  if (!ENGINE_READY) {
-    ['chart-forecast-main','chart-forecast-rate'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.style.display = 'none';
-        const box = el.closest('.chart-card');
-        if (box && !box.querySelector('.no-data-msg')) {
-          const d = document.createElement('div');
-          d.className = 'no-data-msg';
-          d.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Connect Google Sheets to generate forecast</div>';
-          box.appendChild(d);
-        }
-      }
-    });
-    ['fc-kpi-measures','fc-kpi-contracts','fc-kpi-rate','fc-kpi-6m'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.textContent = '—';
-    });
-    return;
-  }
-
-  const historical = KITCHINO_STATE.monthlyData || [];
-  if (historical.length < 3) {
-    document.getElementById('fc-main-subtitle').textContent = 'Need at least 3 months of data to generate a forecast';
-    return;
-  }
-
-  const HORIZON   = 6;
-  const fc        = engine_buildForecast(historical, HORIZON);
-  if (!fc) return;
-
-  const { points, slope } = fc;
-
-  // ── KPI cards ──
-  const next       = points[0];
-  const sixMTotal  = points.reduce((s, p) => s + p.measures, 0);
-  const sixMContr  = points.reduce((s, p) => s + p.contracts, 0);
-  const trendDir   = slope > 1 ? '↑ Growing' : slope < -1 ? '↓ Declining' : '→ Stable';
-  const trendColor = slope > 1 ? 'var(--green)' : slope < -1 ? 'var(--red)' : 'var(--gold)';
-
-  const _set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  _set('fc-kpi-measures', next.measures.toLocaleString());
-  _set('fc-kpi-measures-sub', next.mLow+'–'+next.mHigh+' confidence range');
-  _set('fc-kpi-contracts', next.contracts.toLocaleString());
-  _set('fc-kpi-contracts-sub', next.cLow+'–'+next.cHigh+' confidence range');
-  _set('fc-kpi-rate', next.rate+'%');
-  _set('fc-kpi-6m', sixMTotal.toLocaleString());
-
-  const tBadge = document.getElementById('fc-trend-badge');
-  if (tBadge) { tBadge.textContent = trendDir; tBadge.style.color = trendColor; tBadge.style.background = trendColor.replace('var(--green)', 'rgba(0,230,118,0.1)').replace('var(--red)','rgba(255,82,82,0.1)').replace('var(--gold)','rgba(255,215,64,0.1)'); }
-
-  const histLen   = historical.length;
-  const multiYear = [...new Set(historical.map(m=>m.year).filter(Boolean))].length > 1;
-
-  // ── Historical labels ──
-  const histLabels = historical.map(m => {
-    const mn = (m.month||'').substr(0,3);
-    return multiYear ? mn+' '+String(m.year||'').substr(2) : mn;
-  });
-  const fcLabels   = points.map(p => p.label);
-  const allLabels  = [...histLabels, ...fcLabels];
-
-  // ── Historical data ──
-  const histTotals     = historical.map(m => m.total || 0);
-  const histContracts  = historical.map(m => m.contracted || 0);
-  const histRates      = historical.map(m => m.total > 0 ? +(m.contracted/m.total*100).toFixed(1) : 0);
-
-  // ── Forecast arrays (padded with null for historical positions) ──
-  const fcTotals   = [...Array(histLen).fill(null), ...points.map(p => p.measures)];
-  const fcLow      = [...Array(histLen).fill(null), ...points.map(p => p.mLow)];
-  const fcHigh     = [...Array(histLen).fill(null), ...points.map(p => p.mHigh)];
-  const fcRates    = [...Array(histLen).fill(null), ...points.map(p => p.rate)];
-
-  // Bridge point: connect last historical to first forecast
-  const bridgeTotals = [...Array(histLen-1).fill(null), histTotals[histLen-1], points[0].measures, ...Array(HORIZON-1).fill(null)];
-  const bridgeRates  = [...Array(histLen-1).fill(null), histRates[histLen-1],  points[0].rate,     ...Array(HORIZON-1).fill(null)];
-
-  // ── MAIN CHART ──
-  ['chart-forecast-main'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='';const m=el.closest('.chart-card')?.querySelector('.no-data-msg');if(m)m.remove();}});
-
-  makeChart('chart-forecast-main', {
-    type: 'line',
-    data: {
-      labels: allLabels,
-      datasets: [
-        // Confidence band — upper (filled down to lower)
-        {
-          label: 'Upper Band', data: fcHigh, borderColor: 'transparent',
-          backgroundColor: 'rgba(0,230,118,0.08)', fill: '+1',
-          pointRadius: 0, tension: 0.3, borderWidth: 0
-        },
-        // Confidence band — lower
-        {
-          label: 'Lower Band', data: fcLow, borderColor: 'transparent',
-          backgroundColor: 'rgba(0,230,118,0.08)', fill: false,
-          pointRadius: 0, tension: 0.3, borderWidth: 0
-        },
-        // Historical measures (solid)
-        {
-          label: 'Historical Measures', data: [...histTotals, ...Array(HORIZON).fill(null)],
-          borderColor: GREEN, backgroundColor: 'rgba(0,230,118,0.12)',
-          fill: false, tension: 0.3, borderWidth: 2.5,
-          pointRadius: 3, pointBackgroundColor: GREEN
-        },
-        // Bridge connector (thin, seamless join)
-        {
-          label: '_bridge', data: bridgeTotals,
-          borderColor: GREEN, fill: false, tension: 0.2,
-          borderWidth: 1.5, borderDash: [4,3], pointRadius: 0
-        },
-        // Forecast line (dashed)
-        {
-          label: 'Forecast Measures', data: fcTotals,
-          borderColor: GREEN, backgroundColor: 'transparent',
-          fill: false, tension: 0.3, borderWidth: 2,
-          borderDash: [6, 4],
-          pointRadius: [0,0,0,0,0,0].concat(Array(HORIZON).fill(4)),
-          pointBackgroundColor: '#0a0a18', pointBorderColor: GREEN, pointBorderWidth: 2
-        },
-        // Historical contracted
-        {
-          label: 'Historical Contracts', data: [...histContracts, ...Array(HORIZON).fill(null)],
-          borderColor: TEAL, fill: false, tension: 0.3, borderWidth: 1.5,
-          pointRadius: 2, pointBackgroundColor: TEAL
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            filter: item => !item.datasetLabel?.startsWith('_') && item.text !== 'Upper Band' && item.text !== 'Lower Band',
-            color: '#a0a0c0', font: { size: 11 }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              if (ctx.dataset.label?.startsWith('_') || ctx.dataset.label==='Upper Band' || ctx.dataset.label==='Lower Band') return null;
-              return ' '+ctx.dataset.label+': '+(ctx.parsed.y != null ? Math.round(ctx.parsed.y).toLocaleString() : '—');
-            }
-          }
-        },
-        annotation: {}
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { font: { size: 9 }, color: '#606080', maxRotation: 30 }
-        },
-        y: {
-          grid: { color: 'rgba(37,37,69,0.5)' },
-          ticks: { font: { size: 10 }, color: '#606080' }
-        }
-      }
-    }
-  });
-
-  // ── RATE FORECAST CHART ──
-  ['chart-forecast-rate'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='';const m=el.closest('.chart-card')?.querySelector('.no-data-msg');if(m)m.remove();}});
-
-  makeChart('chart-forecast-rate', {
-    type: 'line',
-    data: {
-      labels: allLabels,
-      datasets: [
-        {
-          label: 'Historical Conversion %',
-          data: [...histRates, ...Array(HORIZON).fill(null)],
-          borderColor: TEAL, fill: false, tension: 0.35,
-          borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: TEAL
-        },
-        {
-          label: '_bridge_r', data: bridgeRates,
-          borderColor: TEAL, fill: false, tension: 0.2,
-          borderWidth: 1.5, borderDash: [4,3], pointRadius: 0
-        },
-        {
-          label: 'Forecast Conversion %',
-          data: fcRates,
-          borderColor: GOLD, fill: false, tension: 0.35,
-          borderWidth: 2, borderDash: [6, 4],
-          pointRadius: [0,0,0,0,0,0].concat(Array(HORIZON).fill(4)),
-          pointBackgroundColor: '#0a0a18', pointBorderColor: GOLD, pointBorderWidth: 2
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            filter: item => !item.text?.startsWith('_'),
-            color: '#a0a0c0', font: { size: 11 }
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              if (ctx.dataset.label?.startsWith('_')) return null;
-              return ' '+ctx.dataset.label+': '+(ctx.parsed.y != null ? ctx.parsed.y.toFixed(1)+'%' : '—');
-            }
-          }
-        }
-      },
-      scales: {
-        x: { grid:{display:false}, ticks:{font:{size:9},color:'#606080',maxRotation:30} },
-        y: { grid:{color:'rgba(37,37,69,0.5)'}, ticks:{font:{size:10},color:'#606080',callback:v=>v+'%'} }
-      }
-    }
-  });
-
-  // ── BREAKDOWN TABLE ──
-  const trendLabel = slope > 0.5 ? 'up' : slope < -0.5 ? 'down' : 'flat';
-  let tableHTML = `<table class="fc-table">
-    <thead><tr>
-      <th>Month</th>
-      <th>Measures</th>
-      <th>Range</th>
-      <th>Contracts</th>
-      <th>Rate</th>
-    </tr></thead><tbody>`;
-
-  points.forEach(p => {
-    const rateColor = p.rate >= 25 ? 'var(--green)' : p.rate >= 15 ? 'var(--gold)' : 'var(--red)';
-    const trend = p.measures > (points[0].measures * 0.98) && p.measures < (points[0].measures * 1.02) ? 'flat'
-                : p.measures > points[0].measures ? 'up' : 'down';
-    const badge = trend === 'up' ? 'fc-badge-up' : trend === 'down' ? 'fc-badge-down' : 'fc-badge-flat';
-    const arrow = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
-    tableHTML += `<tr>
-      <td style="color:var(--text1);font-weight:600">${p.fullLabel}</td>
-      <td><span class="fc-badge ${badge}">${arrow} ${p.measures.toLocaleString()}</span></td>
-      <td class="fc-confidence">${p.mLow.toLocaleString()}–${p.mHigh.toLocaleString()}</td>
-      <td style="color:var(--teal)">${p.contracts}</td>
-      <td style="color:${rateColor};font-weight:600">${p.rate}%</td>
-    </tr>`;
-  });
-  tableHTML += '</tbody></table>';
-
-  const tableEl = document.getElementById('fc-breakdown-table');
-  if (tableEl) tableEl.innerHTML = tableHTML;
-
-  // ── Method note: update with real stats ──
-  const slopeStr = slope > 0 ? '+'+slope.toFixed(1) : slope.toFixed(1);
-  const methodEl = document.getElementById('fc-method-text');
-  if (methodEl) {
-    methodEl.innerHTML = `Uses <strong>Trend + Seasonality decomposition</strong> on ${histLen} months of historical data.
-    Detected growth slope: <strong style="color:${trendColor}">${slopeStr} measures/month</strong>.
-    Seasonal indices computed from monthly patterns across all years.
-    Future values = <em>trend × seasonal index</em>.
-    Confidence band = ±1.5 standard deviations of historical residuals (±${Math.round(fc.sdM)} measures).
-    Accuracy is highest for months 1–3; treat months 4–6 as directional.`;
-  }
-}
-
 const PAGE_BUILDERS = {
-  executive:    buildExecutiveCharts,
-  forecast:     buildForecastCharts,
-  daily:        buildDailyCharts,
-  measures:     () => { currentPage = 1; renderMeasuresTable(); buildPaymentChart(); },
-  designers:    buildDesignerCharts,
-  conversion:   buildConversionCharts,
-  geographic:   buildGeographicCharts,
-  monthly:      () => { buildMonthlyCharts(); renderMonthlyKPIs(); },
-  sources:      buildSourceCharts,
-  kpi:          buildKPICharts,
-  ceo:          buildCEOCharts,
+  executive: buildExecutiveCharts,
+  daily: buildDailyCharts,
+  designers: buildDesignerCharts,
+  conversion: buildConversionCharts,
+  geographic: buildGeographicCharts,
+  monthly: () => { buildMonthlyCharts(); renderMonthlyKPIs(); },
+  sources: buildSourceCharts,
+  kpi: buildKPICharts,
+  ceo: buildCEOCharts,
   presentation: () => buildCEOCharts()
 };
 
 const builtPages = new Set();
-
-function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  if (!sidebar) return;
-  const isOpen = sidebar.classList.toggle('open');
-  if (overlay) overlay.classList.toggle('visible', isOpen);
-}
 
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -4700,7 +2898,6 @@ function showPage(name) {
     builtPages.add(name);
     setTimeout(() => {
       if(PAGE_BUILDERS[name]) PAGE_BUILDERS[name]();
-      if(name==='measures')  renderMeasuresTable();
       if(name==='designers') renderDesignerTable();
       if(name==='geographic') renderAreaTable();
       if(name==='monthly') renderMonthlyTable();
@@ -4713,98 +2910,355 @@ function showPage(name) {
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-  el.addEventListener('click', () => {
-    showPage(el.dataset.page);
-    // Auto-close sidebar on mobile after navigation
-    const sidebar = document.querySelector('.sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    if (sidebar && window.innerWidth <= 900) {
-      sidebar.classList.remove('open');
-      if (overlay) overlay.classList.remove('visible');
-    }
-  });
+  el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
 // ============================================================
 // GOOGLE SHEETS LIVE CONNECTION  (JSONP — works from file://)
 // ============================================================
-// ── Persistent URL storage: window.name survives hard refresh on file://
-//    localStorage is backup for cross-tab sharing
-function _loadSavedUrls() {
-  try {
-    const wn = JSON.parse(window.name || '{}');
-    if (wn._kitchino) return wn._kitchino;
-  } catch(e) {}
-  return null;
-}
-function _saveUrls(measUrl, contrUrl) {
-  // Save to both window.name (survives Ctrl+Shift+R) and localStorage (cross-tab)
-  try {
-    const wn = (() => { try { return JSON.parse(window.name||'{}'); } catch(e){ return {}; } })();
-    wn._kitchino = { sheetsUrl: measUrl, contractsUrl: contrUrl };
-    window.name = JSON.stringify(wn);
-  } catch(e) {}
-  try { localStorage.setItem('kitchino_sheets_url', measUrl); } catch(e) {}
-  try { if (contrUrl) localStorage.setItem('kitchino_contracts_url', contrUrl); } catch(e) {}
-}
-// ── HARDCODED DATA SOURCES (auto-connect, no manual entry needed) ──
-const _MEASURES_URL   = 'https://script.google.com/macros/s/AKfycbxpw9huYT7FI3KaVkzmKxRK9z94yoGCgfdWzhxQmfhtf4Kxx1IFMn6PY_uhWeKyZ5mk/exec';
-const _CONTRACTS_URL  = 'https://script.google.com/macros/s/AKfycbwVDszfL66suLTChfNC0zmdu9GAV_-6AmkwKqsCWGVjBVRtrz5WTLr9mItfG_Tk_koLYw/exec';
-const _savedUrls = _loadSavedUrls();
-let sheetsUrl = _MEASURES_URL;
-try { localStorage.setItem('kitchino_sheets_url',    _MEASURES_URL);  } catch(e) {}
-try { localStorage.setItem('kitchino_contracts_url', _CONTRACTS_URL); } catch(e) {}
+let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || '';
 let _liveData  = null;   // cached live dataset
 
 function openConnectModal() {
-  // Legacy: open the advanced modal (still accessible via Audit menu)
   document.getElementById('connect-modal').classList.add('open');
   document.getElementById('sheets-url').value = sheetsUrl;
-  const _sv = _loadSavedUrls();
-  document.getElementById('contracts-url').value =
-    (_sv && _sv.contractsUrl) || localStorage.getItem('kitchino_contracts_url') || '';
+  document.getElementById('contracts-url').value = localStorage.getItem('kitchino_contracts_url') || '';
+}
+function showReconciliationPanel() {
+  const panel = document.getElementById('reconciliation-panel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') renderReconciliationPanel();
 }
 
-function toggleConnectPanel() {
-  const panel = document.getElementById('connect-inline-panel');
-  const arrow = document.getElementById('connect-toggle-arrow');
-  const open  = panel.style.display === 'none';
-  panel.style.display = open ? 'block' : 'none';
-  if (arrow) arrow.textContent = open ? '▲' : '▼';
-}
+function closeConnectModal() { document.getElementById('connect-modal').classList.remove('open'); }
 
-function sidebarConnect() {
-  const mUrl = document.getElementById('sidebar-measures-url')?.value.trim() || '';
-  const cUrl = document.getElementById('sidebar-contracts-url')?.value.trim() || '';
-  if (!mUrl) {
-    _setSourceLabel('local');
-    document.getElementById('sidebar-measures-url').focus();
-    return;
+function runDiagnostic(action) {
+  const url = document.getElementById('sheets-url').value.trim();
+  const out = document.getElementById('diag-output');
+  if (!url) { out.innerHTML = '<span style="color:var(--red)">⚠ Paste URL first</span>'; return; }
+  if (!url.startsWith('https://script.google.com')) {
+    out.innerHTML = '<span style="color:var(--red)">⚠ URL must start with https://script.google.com/macros/s/...</span>'; return;
   }
-  sheetsUrl = mUrl;
-  _saveUrls(mUrl, cUrl);
-  if (cUrl) try { localStorage.setItem('kitchino_contracts_url', cUrl); } catch(e) {}
-  _setSourceLabel('fetching');
-  _silentFetch(false).then(() => { _fetchContracts(); _startPolling(); });
+  out.innerHTML = '<span style="color:var(--gold)">🔄 Testing ' + action + '…</span>';
+  const cbName = '_diagCallback_' + Date.now();
+  const timer = setTimeout(() => {
+    delete window[cbName];
+    const s = document.getElementById('__diag_script__');
+    if (s) s.remove();
+    out.innerHTML = '<span style="color:var(--red)">✗ TIMEOUT (15s) — Script did not respond.<br>Check: Is it deployed as Web App? Access = Anyone?<br>Did you click "New Version" when updating?</span>';
+  }, 15000);
+  window[cbName] = function(data) {
+    clearTimeout(timer);
+    delete window[cbName];
+    const s = document.getElementById('__diag_script__');
+    if (s) s.remove();
+    const ok = data && (data.status === 'ok' || data.summary);
+    const color = ok ? 'var(--green)' : 'var(--red)';
+    const icon  = ok ? '✓' : '✗';
+    out.innerHTML = '<span style="color:' + color + '">' + icon + ' ' + action + ' responded OK</span><br>'
+      + '<span style="color:var(--text2)">' + JSON.stringify(data).substring(0, 400) + (JSON.stringify(data).length > 400 ? '…' : '') + '</span>';
+  };
+  const sep = url.includes('?') ? '&' : '?';
+  const scr = document.createElement('script');
+  scr.id  = '__diag_script__';
+  scr.src = url + sep + 'action=' + action + '&callback=' + cbName;
+  scr.onerror = () => {
+    clearTimeout(timer);
+    delete window[cbName];
+    out.innerHTML = '<span style="color:var(--red)">✗ Script load FAILED — check the URL is correct and deployed.</span>';
+  };
+  document.head.appendChild(scr);
 }
 
-function _prefillSidebarUrls() {
-  const sv = _loadSavedUrls();
-  const mUrl = (sv && sv.sheetsUrl) || localStorage.getItem('kitchino_sheets_url') || sheetsUrl || '';
-  const cUrl = (sv && sv.contractsUrl) || localStorage.getItem('kitchino_contracts_url') || '';
-  const mEl = document.getElementById('sidebar-measures-url');
-  const cEl = document.getElementById('sidebar-contracts-url');
-  if (mEl) mEl.value = mUrl;
-  if (cEl) cEl.value = cUrl;
+// JSONP loader — injects a <script> tag so file:// CORS is never triggered
+function jsonpFetch(url, callbackName, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    // Each request gets its OWN script element keyed by callbackName.
+    // This allows concurrent JSONP calls (e.g. getAllRows + getContracts)
+    // without scripts overwriting each other.
+    const scriptId = '__jsonp_' + callbackName + '__';
+
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timed out after ' + (timeoutMs/1000) + 's'));
+    }, timeoutMs || 15000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[callbackName];
+      const old = document.getElementById(scriptId);
+      if (old && old.parentNode) old.parentNode.removeChild(old);
+    }
+
+    window[callbackName] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    // Remove any stale script with this same callback (e.g. from a previous timed-out call)
+    const stale = document.getElementById(scriptId);
+    if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+
+    const sep = url.includes('?') ? '&' : '?';
+    const script = document.createElement('script');
+    script.id  = scriptId;
+    script.src = url + sep + 'callback=' + callbackName;
+    script.onerror = () => { cleanup(); reject(new Error('Script load failed — check the URL')); };
+    document.head.appendChild(script);
+  });
+}
+
+async function connectGoogleSheets() {
+  const url = document.getElementById('sheets-url').value.trim();
+  if (!url) return;
+  sheetsUrl = url;
+  localStorage.setItem('kitchino_sheets_url', url);
+  closeConnectModal();
+  document.getElementById('data-source-label').textContent = '🔄 Fetching live data…';
+
+  try {
+    // Single call — getAllData returns summary + monthly + designers + areas + sources + contracts
+    const yearF = document.getElementById('filter-year')?.value || 'all';
+    const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
+    const data = await jsonpFetch(url + '?action=getAll' + yearParam, '_kitchinoLiveData', 20000);
+
+    if (data.status !== 'ok' && data.summary && data.summary.status !== 'ok') {
+      throw new Error(data.message || 'Unexpected response from Apps Script');
+    }
+
+    _liveData = data;
+    applyLiveData(data);
+
+    document.getElementById('data-source-label').textContent = '🟢 Live — Google Sheets';
+    document.getElementById('data-source-label').style.color = 'var(--green)';
+
+    builtPages.clear();
+    showPage('executive');
+    _fetchAllRows();     // load raw rows for BI engine
+    _fetchContracts();
+    _startPolling();
+
+  } catch (err) {
+    document.getElementById('data-source-label').textContent = '⚠ Local data mode';
+    console.error('Sheets connection error:', err);
+    alert(
+      '⚠ Could not load live data:\n' + err.message +
+      '\n\nTips:\n' +
+      '• Make sure you re-deployed after pasting the new connector code\n' +
+      '• Set "Who has access" to Anyone\n' +
+      '• Copy the full Web App URL (starts with https://script.google.com/macros/s/)\n\n' +
+      'Dashboard will show zeros until Google Sheets is connected.'
+    );
+  }
+}
+
+// applyLiveData: no-op in engine-only mode
+// All KPIs are computed by the BI engine from raw row-level data.
+// getSummary/getMonthly/getDesignerStats etc. are no longer used.
+function applyLiveData(d) {
+  // Engine-only mode: getSummary endpoint is NOT used.
+  // Contracts data update (still aggregated):
+  if (d.contracts && d.contracts.status === 'ok' && Array.isArray(d.contracts.data) && d.contracts.data.length) {
+    console.log('[applyLiveData] Contracts received:', d.contracts.data.length, 'records (rendered by follow-up page)');
+  }
+  refreshYearDropdown();
+  // Engine already computed state via _fetchAllRows → no need to recompute
+  if (!ENGINE_READY) computeFilteredState();
+}
+
+function refreshData() {
+  if (sheetsUrl) {
+    connectGoogleSheets();
+  } else {
+    builtPages.clear();
+    showPage('executive');
+  }
+}
+
+// ============================================================
+// EXPORT FUNCTIONS
+// ============================================================
+function exportTable(tableId) {
+  const table = document.getElementById(tableId);
+  if(!table) return;
+  let csv = '';
+  table.querySelectorAll('tr').forEach(row => {
+    const cols = [...row.querySelectorAll('th,td')].map(c=>'"'+c.textContent.replace(/"/g,'""')+'"');
+    csv += cols.join(',') + '\n';
+  });
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kitchino_export_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+}
+
+function exportPDF() { window.print(); }
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function updateBadges() {
+  const overdue = CONTRACTS_DATA.filter(c=>c.age>30).length;
+  const badge = document.getElementById('followup-badge');
+  if(badge) badge.textContent = overdue;
+}
+
+// ── AUTO-REFRESH ARCHITECTURE ────────────────────────────────────────────────
+// Interval handle — kept so we can clear/restart it if the URL changes
+let _autoRefreshTimer = null;
+const AUTO_REFRESH_MS  = 5 * 60 * 1000;   // 5 minutes
+
+// Format a Date as "HH:MM" local time
+function _fmtTime(d) {
+  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+}
+
+// Set the data-source label (always called after every fetch attempt)
+function _setSourceLabel(state, extra) {
+  const el = document.getElementById('data-source-label');
+  if (!el) return;
+  const map = {
+    live:    { icon:'🟢', text:'Live — Google Sheets', color:'var(--green)' },
+    fetching:{ icon:'🔄', text:'Fetching live data…',  color:'var(--text2)' },
+    stale:   { icon:'⚠',  text:'Stale — last fetch failed', color:'var(--gold)' },
+    local:   { icon:'📁', text:'Local data mode (no Sheets URL)', color:'var(--text2)' },
+  };
+  const s = map[state] || map.local;
+  el.textContent = s.icon + ' ' + s.text + (extra ? '  ' + extra : '');
+  el.style.color = s.color;
+}
+
+// Core silent-fetch — used by auto-refresh and manual refresh
+async function _silentFetch(isAutoRefresh) {
+  if (!sheetsUrl) return;
+  _setSourceLabel('fetching');
+  try {
+    const yearF    = document.getElementById('filter-year')?.value || 'all';
+    const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
+    const data = await jsonpFetch(
+      sheetsUrl + '?action=getAll' + yearParam,
+      '_kitchinoAutoRefresh',
+      20000
+    );
+    if (!data || (data.status && data.status !== 'ok' && !data.monthly)) {
+      throw new Error(data?.message || 'Unexpected response');
+    }
+    _liveData = data;
+    applyLiveData(data);
+    builtPages.clear();
+    const _activePg = document.querySelector('.page.active')?.id.replace('page-','') || 'executive';
+    showPage(_activePg);
+    _fetchAllRows();     // BI engine: load raw rows for row-level aggregation
+    // Always refresh contracts after measures load
+    _fetchContracts();
+    const ts = '· updated ' + _fmtTime(new Date());
+    _setSourceLabel('live', ts);
+    localStorage.setItem('kitchino_last_fetch', Date.now());
+  } catch(err) {
+    const lastOk = localStorage.getItem('kitchino_last_fetch');
+    const ago    = lastOk
+      ? Math.round((Date.now() - parseInt(lastOk)) / 60000) + ' min ago'
+      : 'unknown';
+    _setSourceLabel('stale', '· last OK ' + ago);
+    if (!isAutoRefresh) {
+      // Only show alert on manual refresh — silent on auto
+      console.warn('Sheets fetch failed:', err.message);
+    }
+  }
+}
+
+// ── CONTRACTS FETCH — separate JSONP call to ContractsConnector.gs ──────────
+async function _fetchContracts() {
+  const cUrl = localStorage.getItem('kitchino_contracts_url') || '';
+  if (!cUrl) return;
+  try {
+    const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
+    if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
+      CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...data.data);
+      buildFollowupCharts();
+      renderFollowupTable();
+      updateBadges();
+      console.log('Contracts loaded:', data.count, 'records');
+    }
+  } catch (err) {
+    console.warn('Contracts fetch failed:', err.message);
+  }
+}
+
+function runContractsDiagnostic() {
+  const cUrl = document.getElementById('contracts-url')?.value.trim() || localStorage.getItem('kitchino_contracts_url') || '';
+  const out  = document.getElementById('diag-output');
+  if (!cUrl) { out.innerHTML = '<span style="color:var(--red)">⚠ Paste Contracts URL first</span>'; return; }
+  out.innerHTML = '<span style="color:var(--gold)">🔄 Testing Contracts URL…</span>';
+  const cbName = '_diagContracts_' + Date.now();
+  const timer  = setTimeout(() => {
+    delete window[cbName];
+    const s = document.getElementById('__diag_contracts__');
+    if (s) s.remove();
+    out.innerHTML = '<span style="color:var(--red)">✗ TIMEOUT — Is the Contracts script deployed? Access = Anyone?</span>';
+  }, 15000);
+  window[cbName] = function(data) {
+    clearTimeout(timer);
+    delete window[cbName];
+    const s = document.getElementById('__diag_contracts__');
+    if (s) s.remove();
+    const ok = data && data.status === 'ok';
+    out.innerHTML = '<span style="color:' + (ok ? 'var(--green)' : 'var(--red)') + '">'
+      + (ok ? '✓ Contracts OK — ' + data.count + ' records returned' : '✗ ' + (data.message || 'Error'))
+      + '</span><br><span style="color:var(--text2)">'
+      + JSON.stringify(data).substring(0, 300) + '</span>';
+  };
+  const scr = document.createElement('script');
+  scr.id  = '__diag_contracts__';
+  scr.src = cUrl + (cUrl.includes('?') ? '&' : '?') + 'callback=' + cbName;
+  scr.onerror = () => {
+    clearTimeout(timer);
+    delete window[cbName];
+    out.innerHTML = '<span style="color:var(--red)">✗ Script load FAILED — check the Contracts URL.</span>';
+  };
+  document.head.appendChild(scr);
+}
+
+// Start (or restart) the 5-minute polling interval
+function _startPolling() {
+  if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
+  _autoRefreshTimer = setInterval(() => _silentFetch(true), AUTO_REFRESH_MS);
+}
+
+// Override the existing connectGoogleSheets to use the new silent-fetch path
+async function connectGoogleSheets() {
+  const url = document.getElementById('sheets-url')?.value.trim();
+  if (!url) return;
+  sheetsUrl = url;
+  localStorage.setItem('kitchino_sheets_url', url);
+  const cUrl = document.getElementById('contracts-url')?.value.trim();
+  if (cUrl) localStorage.setItem('kitchino_contracts_url', cUrl);
+  closeConnectModal();
+  await _silentFetch(false);
+  await _fetchContracts();
+  _startPolling();
+}
+
+// Override refreshData to use silent-fetch
+function refreshData() {
+  if (sheetsUrl) {
+    _silentFetch(false);
+  } else {
+    builtPages.clear();
+    showPage('executive');
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   populateFilters();
-  refreshYearDropdown();
-  renderMeasuresTable();
-  computeFilteredState();
-  updateKPICards();
-  buildExecutiveCharts();
+  refreshYearDropdown();       // auto-populate years from data
+  renderMeasuresTable();       // populate filteredMeasures first
+  computeFilteredState();      // initialize centralized state
+  updateKPICards();            // push state to KPI cards
+  buildExecutiveCharts();      // buildExecutiveCharts reads KITCHINO_STATE
   builtPages.add('executive');
   renderTopPerformers();
   renderMeasuresTable();
@@ -4812,15 +3266,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (window.innerWidth <= 900) {
     const btn = document.getElementById('menu-btn');
-    if (btn) btn.style.display = 'inline-flex';
+    if (btn) btn.style.display = 'block';
   }
 
-  // AUTO-FETCH ON LOAD
+  // ── AUTO-FETCH ON LOAD ───────────────────────────────────────────────────
+  // If a Sheets URL was previously saved, fetch immediately on open.
+  // No user action required — dashboard always boots with fresh data.
   if (sheetsUrl) {
     _silentFetch(false).then(() => { _fetchContracts(); _startPolling(); });
   } else {
     _setSourceLabel('local');
-    _fetchContracts();
+    _fetchContracts();   // contracts can load even without measures URL
   }
 });
 </script>
