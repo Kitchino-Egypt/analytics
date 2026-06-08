@@ -321,13 +321,25 @@ tbody td.muted { color:var(--text2); }
 /* RESPONSIVE */
 @media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } }
 @media(max-width:900px) {
-  .sidebar { transform:translateX(-100%); transition:.3s; }
-  .sidebar.open { transform:translateX(0); }
-  .main { margin-left:0; }
+  .sidebar { transform:translateX(-100%) !important; transition:transform .3s ease; z-index:200 !important; }
+  .sidebar.open { transform:translateX(0) !important; box-shadow:4px 0 24px rgba(0,0,0,.7); }
+  .main { margin-left:0 !important; }
   .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(2,1fr); }
   .chart-2,.chart-3,.chart-32,.row-2,.row-3 { grid-template-columns:1fr; }
+  .topbar { padding:0 12px; height:52px; }
+  .topbar-filters { display:none !important; }
+  .mobile-topbar-actions { display:flex !important; }
+  .page-content { padding:12px 10px; }
+  #sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:199; }
+  #sidebar-overlay.visible { display:block; }
+  #page-home { display:none; }
+  #page-home.active { display:block !important; }
 }
 @media(max-width:600px) { .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:1fr 1fr; } }
+@media(min-width:901px) {
+  #page-home { display:none !important; }
+  .mobile-topbar-actions { display:none !important; }
+}
 
 /* TOOLTIP */
 .tooltip-wrap { position:relative; display:inline-block; }
@@ -3493,7 +3505,9 @@ window.addEventListener('DOMContentLoaded', () => {
   computeFilteredState();      // initialize centralized state
   updateKPICards();            // push state to KPI cards
   // On mobile: show home screen by default; on desktop: show executive summary
-  if (window.innerWidth <= 900) {
+  // Use both window.innerWidth and matchMedia for reliable mobile detection
+  var _isMobile = window.innerWidth <= 900 || window.matchMedia('(max-width:900px)').matches;
+  if (_isMobile) {
     showMobileHome();
   } else {
     buildExecutiveCharts();
