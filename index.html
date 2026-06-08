@@ -2725,16 +2725,14 @@ function renderMeasuresTable() {
   var payEl = document.getElementById('mt-payment');
   if (payEl) payEl.textContent = _payTotal > 0 ? _payTotal.toLocaleString() + ' EGP' : '—';
 
-  // ── Repeated customers: customers in filtered set who have >1 visit total ──
-  // Uses full ENGINE_CLEAN_ROWS so a customer is "repeated" if they visited
-  // multiple times across the whole dataset, even across different designers.
-  var _allVisits = {};
-  (ENGINE_CLEAN_ROWS || []).forEach(function(r) {
-    if (r.customer) _allVisits[r.customer] = (_allVisits[r.customer] || 0) + 1;
+  // ── Repeated customers: customers who appear >1 time within filtered rows ──
+  // Correct definition: customer visited more than once in the CURRENT filter
+  // (same designer, same year, etc.) — not across the whole dataset.
+  var _filtVisits = {};
+  filteredMeasures.forEach(function(r) {
+    if (r.customer) _filtVisits[r.customer] = (_filtVisits[r.customer] || 0) + 1;
   });
-  var _filteredCusts = new Set(filteredMeasures.map(function(r){ return r.customer; }).filter(Boolean));
-  var _repeatCount = 0;
-  _filteredCusts.forEach(function(c) { if (_allVisits[c] > 1) _repeatCount++; });
+  var _repeatCount = Object.values(_filtVisits).filter(function(v){ return v > 1; }).length;
   var repEl = document.getElementById('mt-repeated');
   if (repEl) repEl.textContent = _repeatCount.toLocaleString();
 
