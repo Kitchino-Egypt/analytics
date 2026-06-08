@@ -591,37 +591,14 @@ tbody td.muted { color:var(--text2); }
 
 /* RESPONSIVE */
 @media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } }
-/* MOBILE OVERLAY */
-#sidebar-overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55);
-  z-index:99; backdrop-filter:blur(2px);
-}
-#sidebar-overlay.visible { display:block; }
-
 @media(max-width:900px) {
-  .sidebar { transform:translateX(-100%); transition:.3s; z-index:100; }
-  .sidebar.open { transform:translateX(0); box-shadow:4px 0 32px rgba(0,0,0,0.5); }
+  .sidebar { transform:translateX(-100%); transition:.3s; }
+  .sidebar.open { transform:translateX(0); }
   .main { margin-left:0; }
   .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(2,1fr); }
   .chart-2,.chart-3,.chart-32,.row-2,.row-3 { grid-template-columns:1fr; }
-  .topbar { padding:0 12px; gap:8px; }
-  .topbar-filters { gap:5px; flex-wrap:wrap; }
-  .filter-select { font-size:10px; padding:5px 6px; }
-  .search-box { width:110px; font-size:10px; }
-  .refresh-btn { font-size:10px; padding:5px 8px; }
-  #menu-btn { display:flex !important; align-items:center; gap:5px; font-size:13px;
-    padding:7px 12px; background:rgba(0,230,118,0.12); border:1px solid rgba(0,230,118,0.3);
-    color:var(--green); border-radius:7px; font-weight:700; white-space:nowrap; }
-  .page-content { padding:14px 12px; }
-  .kpi-card { padding:12px 14px; }
-  .kpi-value { font-size:22px; }
 }
-@media(max-width:600px) {
-  .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:1fr 1fr; }
-  .topbar-filters .filter-select:nth-child(n+3),
-  .topbar-filters .search-box { display:none; }
-  #menu-btn { font-size:12px; padding:6px 10px; }
-}
+@media(max-width:600px) { .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:1fr 1fr; } }
 
 /* TOOLTIP */
 .tooltip-wrap { position:relative; display:inline-block; }
@@ -837,13 +814,6 @@ function _grantAccess() {
     window.name = JSON.stringify(wn);
   } catch(e) {}
   try { localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString()); } catch(e) {}
-  // If data didn't load before login, fetch now
-  if (!ENGINE_READY && sheetsUrl) {
-    setTimeout(() => {
-      _setSourceLabel('fetching');
-      _fetchAllRows().then(() => { _fetchContracts(); _startPolling(); });
-    }, 400);
-  }
 }
 
 async function attemptLogin() {
@@ -940,7 +910,9 @@ if (_checkSession()) {
       </div>
     </div>
 
-    <!-- Connection panel hidden — URLs are hardcoded, no manual entry needed -->
+    <!-- Connect button — visible in main source -->
+    <button class="connect-btn" onclick="openConnectModal()" style="width:100%">⚙ Connect Google Sheets</button>
+
     <div id="connect-inline-panel" style="display:none">
       <input id="sidebar-measures-url" type="hidden" />
       <input id="sidebar-contracts-url" type="hidden" />
@@ -948,14 +920,11 @@ if (_checkSession()) {
   </div>
 </nav>
 
-<!-- MOBILE SIDEBAR OVERLAY -->
-<div id="sidebar-overlay" onclick="closeSidebar()"></div>
-
 <!-- MAIN -->
 <div class="main">
   <!-- TOPBAR -->
   <div class="topbar">
-    <button onclick="toggleSidebar()" id="menu-btn" style="display:none">☰ Menu</button>
+    <button class="refresh-btn" onclick="toggleSidebar()" style="display:none" id="menu-btn">☰</button>
     <div>
       <div class="page-title" id="page-title">Executive Summary</div>
       <div class="page-subtitle" id="page-subtitle">Kitchino — High-End Kitchens & Furniture, Egypt</div>
@@ -986,21 +955,18 @@ if (_checkSession()) {
 <!-- PAGE 1: EXECUTIVE SUMMARY -->
 <div class="page active" id="page-executive">
 
-  <!-- CURRENT MONTH SPOTLIGHT — CEO scorecard -->
-  <div style="background:linear-gradient(135deg,rgba(0,230,118,.1),rgba(29,233,182,.06));border:1px solid rgba(0,230,118,.3);border-radius:12px;padding:16px 24px;margin-bottom:16px;display:flex;align-items:center;gap:28px;flex-wrap:wrap">
-    <div>
-      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.9px;margin-bottom:6px">📅 This Month</div>
-      <div style="font-size:48px;font-weight:900;color:var(--green);line-height:1" id="kpi-current-month">—</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px" id="kpi-current-month-label">measures</div>
-    </div>
-    <div style="width:1px;height:60px;background:var(--border);flex-shrink:0"></div>
-    <div style="flex:1;min-width:200px">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px" id="kpi-month-name">Current Month Performance</div>
-      <div style="display:flex;gap:24px;flex-wrap:wrap">
-        <div><div style="font-size:20px;font-weight:800;color:var(--green)" id="kpi-month-contracted">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Contracted</div></div>
-        <div><div style="font-size:20px;font-weight:800;color:var(--gold)" id="kpi-month-discussion">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Discussion</div></div>
-        <div><div style="font-size:20px;font-weight:800;color:var(--teal)" id="kpi-month-rate">—</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Conv. Rate</div></div>
+  <!-- CURRENT MONTH HERO CARD -->
+  <div id="current-month-hero" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(29,233,182,0.12),rgba(0,200,150,0.06));border:1px solid rgba(29,233,182,0.35);border-radius:14px;padding:16px 24px;margin-bottom:18px;gap:20px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🗓️</div>
+      <div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--green);font-weight:700;margin-bottom:2px">Current Month Measures</div>
+        <div style="font-size:11px;color:var(--text3)" id="current-month-label">—</div>
       </div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:42px;font-weight:800;color:var(--green);line-height:1" id="kpi-current-month">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px" id="current-month-vs-prev">vs previous month</div>
     </div>
   </div>
 
@@ -1503,27 +1469,101 @@ if (_checkSession()) {
 
 <!-- PAGE 11: CEO VIEW -->
 <div class="page" id="page-ceo">
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px">
-    <div class="kpi-card green" style="text-align:center;padding:28px">
-      <div id="ceo-year-label" style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Total Measures 2025</div>
-      <div style="font-size:56px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:10px" id="ceo-yoy-label">↑ 18% YoY Growth</div>
+
+  <!-- ── EXECUTIVE SCORECARDS ─────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+
+    <!-- 1. Total Measures -->
+    <div class="kpi-card green" style="text-align:center;padding:24px 20px">
+      <div id="ceo-year-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Measures</div>
+      <div style="font-size:48px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-yoy-label">All time</div>
     </div>
-    <div class="kpi-card teal" style="text-align:center;padding:28px">
-      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Contracts Closed</div>
-      <div style="font-size:56px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-contracted">—</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:10px" id="ceo-kpi-rate-label">— Conversion Rate</div>
+
+    <!-- 2. Current Month Measures -->
+    <div class="kpi-card teal" style="text-align:center;padding:24px 20px">
+      <div id="ceo-cur-month-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Latest Month Measures</div>
+      <div style="font-size:48px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-cur-month">—</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-cur-month-sub">—</div>
     </div>
-    <div class="kpi-card gold" style="text-align:center;padding:28px">
-      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Pipeline Value</div>
-      <div style="font-size:56px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-discussion">—</div>
-      <div style="font-size:12px;color:var(--text2);margin-top:10px">Customers in Discussion</div>
+
+    <!-- 3. Conversion Rate -->
+    <div class="kpi-card gold" style="text-align:center;padding:24px 20px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Overall Conversion Rate</div>
+      <div style="font-size:48px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-conv-rate">—</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-rate-label">contracted ÷ total measures</div>
     </div>
   </div>
 
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
+
+    <!-- 4. Best Designer of the Month -->
+    <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--purple);background:linear-gradient(135deg,rgba(206,147,216,0.06),var(--card))">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Best Designer of the Month</div>
+      <div style="font-size:22px;font-weight:800;color:var(--purple);line-height:1.2;min-height:28px" id="ceo-best-designer-name">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-best-designer-count">— measures this month</div>
+    </div>
+
+    <!-- 5. Top Area -->
+    <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--blue);background:linear-gradient(135deg,rgba(64,196,255,0.06),var(--card))">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Top Area</div>
+      <div style="font-size:22px;font-weight:800;color:var(--blue);line-height:1.2;min-height:28px" id="ceo-top-area-name">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-area-count">— measures</div>
+    </div>
+
+    <!-- 6. Top Measure Source -->
+    <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--green2);background:linear-gradient(135deg,rgba(105,240,174,0.06),var(--card))">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Top Measure Source</div>
+      <div style="font-size:22px;font-weight:800;color:var(--green2);line-height:1.2;min-height:28px" id="ceo-top-source-name">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-source-count">— measures</div>
+    </div>
+  </div>
+
+  <!-- ── PORTAL SEARCH ──────────────────────────────────────────────────── -->
+  <div class="chart-card" style="margin-bottom:18px;padding:18px 20px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span style="font-size:16px">🔍</span>
+      <span style="font-size:13px;font-weight:700;color:var(--text)">Portal Search</span>
+      <span style="font-size:10px;color:var(--text3)">Search across Designer · Area · Measure Source</span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button onclick="clearCEOSearch()" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">Clear</button>
+      </div>
+    </div>
+    <div style="position:relative;margin-bottom:12px">
+      <input type="text" id="ceo-portal-search"
+        placeholder="Type a designer name, area, or source…"
+        oninput="runCEOSearch()"
+        style="width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--text);
+               padding:10px 16px 10px 40px;border-radius:8px;font-size:13px;outline:none;
+               transition:border-color .2s;"
+        onfocus="this.style.borderColor='var(--green)'"
+        onblur="this.style.borderColor='var(--border)'">
+      <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none">🔍</span>
+    </div>
+    <div id="ceo-search-results" style="display:none">
+      <!-- Designer results -->
+      <div id="ceo-sr-designers" style="margin-bottom:12px;display:none">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--purple);text-transform:uppercase;margin-bottom:6px">Designers</div>
+        <div id="ceo-sr-designers-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+      </div>
+      <!-- Area results -->
+      <div id="ceo-sr-areas" style="margin-bottom:12px;display:none">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--blue);text-transform:uppercase;margin-bottom:6px">Areas</div>
+        <div id="ceo-sr-areas-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+      </div>
+      <!-- Source results -->
+      <div id="ceo-sr-sources" style="margin-bottom:4px;display:none">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--green2);text-transform:uppercase;margin-bottom:6px">Measure Sources</div>
+        <div id="ceo-sr-sources-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+      </div>
+      <div id="ceo-sr-empty" style="display:none;text-align:center;padding:20px;color:var(--text3);font-size:12px">No matches found</div>
+    </div>
+  </div>
+
+  <!-- ── CHARTS + SCORECARD ─────────────────────────────────────────────── -->
   <div class="chart-grid chart-2" style="margin-bottom:22px">
     <div class="chart-card">
-      <div class="chart-title">2025 Performance Summary</div>
+      <div class="chart-title">Performance Summary</div>
       <div class="chart-wrap"><canvas id="chart-ceo-trend" height="220"></canvas></div>
     </div>
     <div class="chart-card">
@@ -2187,36 +2227,37 @@ function engine_log(yearF, filtered) {
 // ── Fetch all raw rows from connector ─────────────────────────────────────────
 async function _fetchAllRows() {
   if (!sheetsUrl) return;
-  const url = sheetsUrl + '?action=getMeasures&pageSize=9999';
   try {
-    const data = await _jsonpLoad(url, '_kitchinoAllRows', 35000);
-    if (!data || data.status !== 'ok' || !Array.isArray(data.data)) {
-      const msg = (data && data.message) ? data.message : 'No data returned';
-      _setSourceLabel('stale', ' · ' + msg);
-      return;
+    const data = await jsonpFetch(sheetsUrl+'?action=getMeasures&pageSize=9999','_kitchinoAllRows',30000);
+    if (data && data.status==='ok' && Array.isArray(data.data) && data.data.length) {
+      ENGINE_RAW_ROWS   = data.data;
+      ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
+      ENGINE_READY      = true;
+      console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
+      // ── Persist to localStorage cache so next load is instant ──
+      try {
+        localStorage.setItem('kitchino_rows_cache', JSON.stringify(data.data));
+        localStorage.setItem('kitchino_cache_ts', Date.now().toString());
+        console.log('[ENGINE] Cache saved to localStorage');
+      } catch(e) { console.warn('[ENGINE] Cache save failed (storage full?):', e.message); }
+      // Remove any "no data" placeholders from chart boxes
+      document.querySelectorAll('.no-data-msg').forEach(el => el.remove());
+      document.querySelectorAll('canvas[id^="chart-"]').forEach(el => el.style.display = '');
+      // Rebuild year dropdown from real engine data
+      refreshYearDropdown();
+      computeFilteredState();
+      updateKPICards();
+      builtPages.clear();
+      const pg = document.querySelector('.page.active')?.id.replace('page-','')||'executive';
+      showPage(pg);
+      // If user is already on measures page, build payment chart immediately
+      if (pg === 'measures') buildPaymentChart();
+      // Rebuild bottom cards on executive page with fresh data
+      if (pg === 'executive') renderTopPerformers();
+      else renderTopPerformers(); // always update regardless of active page
     }
-    ENGINE_RAW_ROWS   = data.data;
-    ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
-    ENGINE_READY      = true;
-    console.log('[ENGINE] Ready —', ENGINE_CLEAN_ROWS.length, 'rows loaded');
-    try {
-      localStorage.setItem('kitchino_rows_cache', JSON.stringify(data.data));
-      localStorage.setItem('kitchino_cache_ts', Date.now().toString());
-    } catch(e) {}
-    document.querySelectorAll('.no-data-msg').forEach(el => el.remove());
-    document.querySelectorAll('canvas[id^="chart-"]').forEach(el => el.style.display = '');
-    refreshYearDropdown();
-    computeFilteredState();
-    updateKPICards();
-    builtPages.clear();
-    const pg = document.querySelector('.page.active')?.id.replace('page-','') || 'executive';
-    showPage(pg);
-    renderTopPerformers();
-    if (pg === 'measures') buildPaymentChart();
-    _setSourceLabel('live', ' · updated ' + new Date().toLocaleTimeString());
   } catch(err) {
-    _setSourceLabel('stale', ' · ' + (err.message || 'Load failed'));
-    console.error('[ENGINE] Load failed:', err.message);
+    console.warn('[ENGINE] Row fetch failed — static fallback active:',err.message);
   }
 }
 // ════════════════════════════════════════════════════════════════════════════
@@ -2401,9 +2442,92 @@ function updateKPICards() {
   set('ceo-kpi-total',      s.total.toLocaleString());
   set('ceo-kpi-contracted', s.contracted.toLocaleString());
   set('ceo-kpi-discussion', s.discussion.toLocaleString());
-  set('ceo-kpi-rate-label', s.conversionRate + '% Conversion Rate');
+  set('ceo-kpi-conv-rate',  s.conversionRate + '%');
+  set('ceo-kpi-rate-label', s.contracted + ' contracted of ' + s.total + ' measures');
   const yearLabel = s.year !== 'all' ? 'Total Measures ' + s.year : 'Total Measures — All Years';
   const el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
+
+  // ── CEO SCORECARD: Latest Month Measures ──────────────────────────────
+  (function() {
+    const MONTH_NAMES = ['January','February','March','April','May','June',
+                         'July','August','September','October','November','December'];
+    // Find latest year+month in the current filtered rows
+    let latestYear = 0, latestMo = 0;
+    (filteredMeasures || []).forEach(function(r) {
+      const ry = parseInt(r._year || 0, 10);
+      const rm = r._monthOrder || 0;
+      if (ry > latestYear || (ry === latestYear && rm > latestMo)) {
+        latestYear = ry; latestMo = rm;
+      }
+    });
+    let curCount = 0;
+    if (latestYear > 0 && latestMo > 0) {
+      const lyStr = String(latestYear);
+      (filteredMeasures || []).forEach(function(r) {
+        if (r._year === lyStr && r._monthOrder === latestMo) curCount++;
+      });
+    }
+    const lbl = latestYear > 0 ? MONTH_NAMES[latestMo - 1] + ' ' + latestYear : 'Latest Month';
+    set('ceo-kpi-cur-month', curCount.toLocaleString());
+    set('ceo-cur-month-label', lbl);
+    set('ceo-kpi-cur-month-sub', curCount > 0 ? curCount + ' measure visits recorded' : 'No data for this month');
+  })();
+
+  // ── CEO SCORECARD: Best Designer of the Month ──────────────────────────
+  (function() {
+    const MONTH_NAMES = ['January','February','March','April','May','June',
+                         'July','August','September','October','November','December'];
+    // Find latest month in filtered rows
+    let latestYear = 0, latestMo = 0;
+    (filteredMeasures || []).forEach(function(r) {
+      const ry = parseInt(r._year || 0, 10);
+      const rm = r._monthOrder || 0;
+      if (ry > latestYear || (ry === latestYear && rm > latestMo)) { latestYear = ry; latestMo = rm; }
+    });
+    const designerCounts = {};
+    if (latestYear > 0 && latestMo > 0) {
+      const lyStr = String(latestYear);
+      (filteredMeasures || []).forEach(function(r) {
+        if (r._year === lyStr && r._monthOrder === latestMo) {
+          const d = r.designer || 'Unknown';
+          designerCounts[d] = (designerCounts[d] || 0) + 1;
+        }
+      });
+    }
+    const entries = Object.entries(designerCounts).sort((a,b) => b[1] - a[1]);
+    if (entries.length > 0) {
+      const lbl = latestYear > 0 ? MONTH_NAMES[latestMo-1] + ' ' + latestYear : '';
+      set('ceo-best-designer-name', entries[0][0]);
+      set('ceo-best-designer-count', entries[0][1] + ' measures' + (lbl ? ' · ' + lbl : ''));
+    } else {
+      set('ceo-best-designer-name', '—');
+      set('ceo-best-designer-count', 'No data');
+    }
+  })();
+
+  // ── CEO SCORECARD: Top Area ────────────────────────────────────────────
+  (function() {
+    const areas = (s.areaData || []).filter(a => a.area && a.area !== 'Unknown');
+    if (areas.length > 0) {
+      set('ceo-top-area-name', areas[0].area);
+      set('ceo-top-area-count', areas[0].total.toLocaleString() + ' measures · ' + areas[0].conversionRate + '% CVR');
+    } else {
+      set('ceo-top-area-name', '—');
+      set('ceo-top-area-count', 'No data');
+    }
+  })();
+
+  // ── CEO SCORECARD: Top Source ──────────────────────────────────────────
+  (function() {
+    const sources = (s.sourceData || []).filter(src => src.source && src.source !== 'Unknown');
+    if (sources.length > 0) {
+      set('ceo-top-source-name', sources[0].source);
+      set('ceo-top-source-count', sources[0].total.toLocaleString() + ' measures · ' + sources[0].conversionRate + '% CVR');
+    } else {
+      set('ceo-top-source-name', '—');
+      set('ceo-top-source-count', 'No data');
+    }
+  })();
   const el3 = document.getElementById('pres-year-label'); if(el3) el3.textContent = 'Total Measure Visits' + (s.year !== 'all' ? ' ' + s.year : '');
   // Presentation View dynamic KPIs
   set('pres-kpi-total',      s.total.toLocaleString());
@@ -2412,7 +2536,7 @@ function updateKPICards() {
   // Measures Tracking table header total
   set('mt-total', s.total.toLocaleString());
 
-  // ── CURRENT MONTH SPOTLIGHT CARD ────────────────────────────────────────────
+  // ── CURRENT MONTH HERO CARD ──────────────────────────────────────────────────
   (function() {
     const now    = new Date();
     const curY   = now.getFullYear().toString();
@@ -2421,27 +2545,32 @@ function updateKPICards() {
     const prevY  = curMo === 1 ? (parseInt(curY,10) - 1).toString() : curY;
     const MONTH_NAMES = ['January','February','March','April','May','June',
                          'July','August','September','October','November','December'];
-    const curLabel = MONTH_NAMES[curMo - 1] + ' ' + curY;
-    const prevLabel = MONTH_NAMES[prevMo - 1];
+    const curLabel   = MONTH_NAMES[curMo - 1] + ' ' + curY;
+    const prevLabel  = MONTH_NAMES[prevMo - 1];
 
-    let curCount = 0, curContracted = 0, curDiscussion = 0, prevCount = 0;
+    // Use ENGINE_CLEAN_ROWS directly — unaffected by year filter
+    let curCount = 0, prevCount = 0;
     (ENGINE_CLEAN_ROWS || []).forEach(function(r) {
-      if (r._year === curY && r._monthOrder === curMo) {
-        curCount++;
-        if (r._contracted) curContracted++;
-        if (r._discussion) curDiscussion++;
-      }
+      if (r._year === curY  && r._monthOrder === curMo)  curCount++;
       if (r._year === prevY && r._monthOrder === prevMo) prevCount++;
     });
 
-    const curRate = curCount > 0 ? Math.round(curContracted / curCount * 100) + '%' : '0%';
-
-    set('kpi-current-month',       curCount.toLocaleString());
-    set('kpi-current-month-label', 'measures in ' + curLabel);
-    set('kpi-month-name',          curLabel + ' Performance');
-    set('kpi-month-contracted',    curContracted.toLocaleString());
-    set('kpi-month-discussion',    curDiscussion.toLocaleString());
-    set('kpi-month-rate',          curRate);
+    const heroEl  = document.getElementById('kpi-current-month');
+    const labelEl = document.getElementById('current-month-label');
+    const vsEl    = document.getElementById('current-month-vs-prev');
+    if (heroEl)  heroEl.textContent  = curCount.toLocaleString();
+    if (labelEl) labelEl.textContent = curLabel;
+    if (vsEl) {
+      if (prevCount > 0) {
+        const diff = curCount - prevCount;
+        const pct  = Math.abs(Math.round(diff / prevCount * 100));
+        vsEl.textContent = (diff >= 0 ? '▲ +' : '▼ ') + diff + ' (' + pct + '%) vs ' + prevLabel;
+        vsEl.style.color = diff >= 0 ? 'var(--green)' : 'var(--red)';
+      } else {
+        vsEl.textContent = curCount === 0 ? 'No measures added yet for ' + curLabel : 'No data for ' + prevLabel + ' to compare';
+        vsEl.style.color = 'var(--text3)';
+      }
+    }
   })();
 }
 
@@ -3925,6 +4054,114 @@ function drillDesigner(designerName, rowEl) {
   rowEl.insertAdjacentElement('afterend', div);
 }
 
+// ============================================================
+// CEO PORTAL SEARCH
+// ============================================================
+function runCEOSearch() {
+  const q = (document.getElementById('ceo-portal-search')?.value || '').trim().toLowerCase();
+  const resultsWrap = document.getElementById('ceo-search-results');
+  const emptyEl     = document.getElementById('ceo-sr-empty');
+  if (!resultsWrap) return;
+
+  if (!q) {
+    resultsWrap.style.display = 'none';
+    return;
+  }
+  resultsWrap.style.display = 'block';
+
+  const s = KITCHINO_STATE;
+
+  // ── Designers ──────────────────────────────────────────────────────────
+  const designers = (s.allDesignerData || s.designerData || [])
+    .filter(d => d.name && d.name.toLowerCase().includes(q));
+  const dWrap = document.getElementById('ceo-sr-designers');
+  const dBody = document.getElementById('ceo-sr-designers-body');
+  if (dWrap && dBody) {
+    if (designers.length > 0) {
+      dWrap.style.display = 'block';
+      dBody.innerHTML = designers.map(d => `
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;cursor:pointer;transition:.15s"
+             onmouseover="this.style.borderColor='var(--purple)'" onmouseout="this.style.borderColor='var(--border)'"
+             onclick="applyDesignerFilter('${d.name.replace(/'/g,"\\'")}')">
+          <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:3px">${d.name}</div>
+          <div style="font-size:10px;color:var(--text3)">${d.total} measures &nbsp;·&nbsp; ${d.conversionRate}% CVR &nbsp;·&nbsp; ${d.contracted} contracted</div>
+        </div>`).join('');
+    } else {
+      dWrap.style.display = 'none';
+    }
+  }
+
+  // ── Areas ──────────────────────────────────────────────────────────────
+  const areas = (s.areaData || [])
+    .filter(a => a.area && a.area.toLowerCase().includes(q));
+  const aWrap = document.getElementById('ceo-sr-areas');
+  const aBody = document.getElementById('ceo-sr-areas-body');
+  if (aWrap && aBody) {
+    if (areas.length > 0) {
+      aWrap.style.display = 'block';
+      aBody.innerHTML = areas.map(a => `
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;cursor:pointer;transition:.15s"
+             onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'"
+             onclick="applyAreaFilter('${a.area.replace(/'/g,"\\'")}')">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:3px">${a.area}</div>
+          <div style="font-size:10px;color:var(--text3)">${a.total} measures &nbsp;·&nbsp; ${a.conversionRate}% CVR &nbsp;·&nbsp; ${a.contracted} contracted</div>
+        </div>`).join('');
+    } else {
+      aWrap.style.display = 'none';
+    }
+  }
+
+  // ── Sources ────────────────────────────────────────────────────────────
+  const sources = (s.sourceData || [])
+    .filter(src => src.source && src.source.toLowerCase().includes(q));
+  const srcWrap = document.getElementById('ceo-sr-sources');
+  const srcBody = document.getElementById('ceo-sr-sources-body');
+  if (srcWrap && srcBody) {
+    if (sources.length > 0) {
+      srcWrap.style.display = 'block';
+      srcBody.innerHTML = sources.map(src => `
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;cursor:pointer;transition:.15s"
+             onmouseover="this.style.borderColor='var(--green2)'" onmouseout="this.style.borderColor='var(--border)'"
+             onclick="applySourceFilter('${src.source.replace(/'/g,"\\'")}')">
+          <div style="font-size:12px;font-weight:700;color:var(--green2);margin-bottom:3px">${src.source}</div>
+          <div style="font-size:10px;color:var(--text3)">${src.total} measures &nbsp;·&nbsp; ${src.conversionRate}% CVR &nbsp;·&nbsp; ${src.contracted} contracted</div>
+        </div>`).join('');
+    } else {
+      srcWrap.style.display = 'none';
+    }
+  }
+
+  // ── Empty state ────────────────────────────────────────────────────────
+  const hasResults = designers.length > 0 || areas.length > 0 || sources.length > 0;
+  if (emptyEl) emptyEl.style.display = hasResults ? 'none' : 'block';
+}
+
+function clearCEOSearch() {
+  const inp = document.getElementById('ceo-portal-search');
+  if (inp) inp.value = '';
+  const wrap = document.getElementById('ceo-search-results');
+  if (wrap) wrap.style.display = 'none';
+}
+
+// Apply a designer filter from CEO search — switches to Designers page
+function applyDesignerFilter(name) {
+  const sel = document.getElementById('filter-designer');
+  if (sel) { sel.value = name; applyFilters(); }
+  showPage('designers');
+}
+
+// Apply an area filter from CEO search — switches to Geographic page
+function applyAreaFilter(name) {
+  const sel = document.getElementById('filter-area');
+  if (sel) { sel.value = name; applyFilters(); }
+  showPage('geographic');
+}
+
+// Apply a source filter from CEO search — switches to Sources page
+function applySourceFilter(name) {
+  showPage('sources');
+}
+
 function renderScorecard() {
   if (!ENGINE_READY) return;
   const items = [
@@ -4464,10 +4701,7 @@ function showPage(name) {
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
-  el.addEventListener('click', () => {
-    showPage(el.dataset.page);
-    if (window.innerWidth <= 900) closeSidebar();
-  });
+  el.addEventListener('click', () => showPage(el.dataset.page));
 });
 
 // ============================================================
@@ -4530,7 +4764,7 @@ function sidebarConnect() {
   _saveUrls(mUrl, cUrl);
   if (cUrl) try { localStorage.setItem('kitchino_contracts_url', cUrl); } catch(e) {}
   _setSourceLabel('fetching');
-  _fetchAllRows().then(() => { _fetchContracts(); _startPolling(); });
+  _silentFetch(false).then(() => { _fetchContracts(); _startPolling(); });
 }
 
 function _prefillSidebarUrls() {
@@ -4559,369 +4793,4 @@ function runDiagnostic(action) {
     out.innerHTML = '<span style="color:var(--red)">⚠ URL must start with https://script.google.com/macros/s/...</span>'; return;
   }
   out.innerHTML = '<span style="color:var(--gold)">🔄 Testing ' + action + '…</span>';
-  const cbName = '_diagCallback_' + Date.now();
-  const timer = setTimeout(() => {
-    delete window[cbName];
-    const s = document.getElementById('__diag_script__');
-    if (s) s.remove();
-    out.innerHTML = '<span style="color:var(--red)">✗ TIMEOUT (15s) — Script did not respond.<br>Check: Is it deployed as Web App? Access = Anyone?<br>Did you click "New Version" when updating?</span>';
-  }, 15000);
-  window[cbName] = function(data) {
-    clearTimeout(timer);
-    delete window[cbName];
-    const s = document.getElementById('__diag_script__');
-    if (s) s.remove();
-    const ok = data && (data.status === 'ok' || data.summary);
-    const color = ok ? 'var(--green)' : 'var(--red)';
-    const icon  = ok ? '✓' : '✗';
-    out.innerHTML = '<span style="color:' + color + '">' + icon + ' ' + action + ' responded OK</span><br>'
-      + '<span style="color:var(--text2)">' + JSON.stringify(data).substring(0, 400) + (JSON.stringify(data).length > 400 ? '…' : '') + '</span>';
-  };
-  const sep = url.includes('?') ? '&' : '?';
-  const scr = document.createElement('script');
-  scr.id  = '__diag_script__';
-  scr.src = url + sep + 'action=' + action + '&callback=' + cbName;
-  scr.onerror = () => {
-    clearTimeout(timer);
-    delete window[cbName];
-    out.innerHTML = '<span style="color:var(--red)">✗ Script load FAILED — check the URL is correct and deployed.</span>';
-  };
-  document.head.appendChild(scr);
-}
-
-// JSONP loader — injects a <script> tag (no CORS restriction, works on file:// and HTTPS)
-function _jsonpLoad(url, callbackName, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    const ms = timeoutMs || 15000;
-    const scriptId = '__jsonp_' + callbackName + '__';
-    const timer = setTimeout(() => { cleanup(); reject(new Error('JSONP timed out after ' + (ms/1000) + 's — check connector URL')); }, ms);
-
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[callbackName];
-      const old = document.getElementById(scriptId);
-      if (old && old.parentNode) old.parentNode.removeChild(old);
-    }
-
-    window[callbackName] = function(data) { cleanup(); resolve(data); };
-
-    const stale = document.getElementById(scriptId);
-    if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
-
-    const sep = url.includes('?') ? '&' : '?';
-    const script = document.createElement('script');
-    script.id    = scriptId;
-    script.src   = url + sep + 'callback=' + callbackName;
-    script.onerror = () => { cleanup(); reject(new Error('Script load failed — check URL')); };
-    document.head.appendChild(script);
-  });
-}
-
-// jsonpFetch — legacy alias used by older code paths (uses JSONP on all protocols)
-function jsonpFetch(url, callbackName, timeoutMs) {
-  return _jsonpLoad(url, callbackName, timeoutMs);
-}
-
-async function connectGoogleSheets() {
-  const url = document.getElementById('sheets-url')?.value.trim();
-  if (!url) return;
-  sheetsUrl = url;
-  _saveUrls(url, document.getElementById('contracts-url')?.value.trim() || '');
-  closeConnectModal();
-  _setSourceLabel('fetching');
-  await _fetchAllRows();
-  await _fetchContracts();
-  _startPolling();
-}
-
-// applyLiveData: no-op in engine-only mode
-// All KPIs are computed by the BI engine from raw row-level data.
-// getSummary/getMonthly/getDesignerStats etc. are no longer used.
-function applyLiveData(d) {
-  // Engine-only mode: getSummary endpoint is NOT used.
-  // Contracts data update (still aggregated):
-  if (d.contracts && d.contracts.status === 'ok' && Array.isArray(d.contracts.data) && d.contracts.data.length) {
-    console.log('[applyLiveData] Contracts received:', d.contracts.data.length, 'records (rendered by follow-up page)');
-  }
-  refreshYearDropdown();
-  // Engine already computed state via _fetchAllRows → no need to recompute
-  if (!ENGINE_READY) computeFilteredState();
-}
-
-function refreshData() {
-  if (sheetsUrl) {
-    connectGoogleSheets();
-  } else {
-    builtPages.clear();
-    showPage('executive');
-  }
-}
-
-// ============================================================
-// EXPORT FUNCTIONS
-// ============================================================
-function exportTable(tableId) {
-  const table = document.getElementById(tableId);
-  if(!table) return;
-  let csv = '';
-  table.querySelectorAll('tr').forEach(row => {
-    const cols = [...row.querySelectorAll('th,td')].map(c=>'"'+c.textContent.replace(/"/g,'""')+'"');
-    csv += cols.join(',') + '\n';
-  });
-  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'kitchino_export_'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();
-}
-
-function exportPDF() { window.print(); }
-
-function toggleSidebar() {
-  const sidebar  = document.getElementById('sidebar');
-  const overlay  = document.getElementById('sidebar-overlay');
-  const isOpen   = sidebar.classList.toggle('open');
-  overlay.classList.toggle('visible', isOpen);
-}
-function closeSidebar() {
-  document.getElementById('sidebar').classList.remove('open');
-  document.getElementById('sidebar-overlay').classList.remove('visible');
-}
-
-function updateBadges() {
-  const overdue = CONTRACTS_DATA.filter(c=>c.age>30).length;
-  const badge = document.getElementById('followup-badge');
-  if(badge) badge.textContent = overdue;
-}
-
-// ── AUTO-REFRESH ARCHITECTURE ────────────────────────────────────────────────
-// Interval handle — kept so we can clear/restart it if the URL changes
-let _autoRefreshTimer = null;
-const AUTO_REFRESH_MS  = 5 * 60 * 1000;   // 5 minutes
-
-// Format a Date as "HH:MM" local time
-function _fmtTime(d) {
-  return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-}
-
-// Set the data-source label (always called after every fetch attempt)
-function _setSourceLabel(state, extra) {
-  const el = document.getElementById('data-source-label');
-  if (!el) return;
-  const map = {
-    live:     { text:'● Live — Google Sheets', color:'#00e676' },
-    fetching: { text:'● Connecting…',          color:'#ffd740' },
-    stale:    { text:'● Stale — check URL',    color:'#ff5252' },
-    local:    { text:'○ Not connected — paste URL above', color:'#9e9ec8' },
-    cache:    { text:'◎ Cached — refreshing…', color:'#40c4ff' },
-  };
-  const s = map[state] || map.local;
-  el.style.color = s.color;
-  el.textContent = s.text + (extra || '');
-  // Update status dot color
-  const dot = document.getElementById('connect-status-dot');
-  if (dot) dot.style.background = s.color;
-  // Update measures input border
-  const mEl = document.getElementById('sidebar-measures-url');
-  if (mEl) mEl.style.borderColor =
-    state === 'live'     ? 'rgba(0,230,118,0.5)' :
-    state === 'fetching' ? 'rgba(255,215,64,0.4)' :
-    state === 'cache'    ? 'rgba(64,196,255,0.3)' : 'rgba(255,255,255,0.1)';
-  // Auto-collapse panel when live
-  if (state === 'live') {
-    const panel = document.getElementById('connect-inline-panel');
-    const arrow = document.getElementById('connect-toggle-arrow');
-    if (panel) panel.style.display = 'none';
-    if (arrow) arrow.textContent = '▼';
-  }
-}
-
-// Core silent-fetch — used by auto-refresh and manual refresh
-async function _silentFetch(isAutoRefresh) {
-  if (!sheetsUrl) return;
-  _setSourceLabel('fetching');
-  try {
-    const yearF    = document.getElementById('filter-year')?.value || 'all';
-    const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
-    const data = await jsonpFetch(
-      sheetsUrl + '?action=getAll' + yearParam,
-      '_kitchinoAutoRefresh',
-      20000
-    );
-    if (!data || (data.status && data.status !== 'ok' && !data.monthly)) {
-      throw new Error(data?.message || 'Unexpected response');
-    }
-    _liveData = data;
-    applyLiveData(data);
-    builtPages.clear();
-    const _activePg = document.querySelector('.page.active')?.id.replace('page-','') || 'executive';
-    showPage(_activePg);
-    _fetchAllRows();     // BI engine: load raw rows for row-level aggregation
-    // Always refresh contracts after measures load
-    _fetchContracts();
-    const ts = '· updated ' + _fmtTime(new Date());
-    _setSourceLabel('live', ts);
-    localStorage.setItem('kitchino_last_fetch', Date.now());
-  } catch(err) {
-    const lastOk = localStorage.getItem('kitchino_last_fetch');
-    const ago    = lastOk
-      ? Math.round((Date.now() - parseInt(lastOk)) / 60000) + ' min ago'
-      : 'unknown';
-    _setSourceLabel('stale', '· last OK ' + ago);
-    if (!isAutoRefresh) {
-      // Only show alert on manual refresh — silent on auto
-      console.warn('Sheets fetch failed:', err.message);
-    }
-  }
-}
-
-// ── CONTRACTS FETCH — separate JSONP call to ContractsConnector.gs ──────────
-async function _fetchContracts() {
-  const cUrl = localStorage.getItem('kitchino_contracts_url') || '';
-  if (!cUrl) return;
-  try {
-    const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
-    if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
-      CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...data.data);
-      buildFollowupCharts();
-      renderFollowupTable();
-      updateBadges();
-      console.log('Contracts loaded:', data.count, 'records');
-    }
-  } catch (err) {
-    console.warn('Contracts fetch failed:', err.message);
-  }
-}
-
-function runContractsDiagnostic() {
-  const cUrl = document.getElementById('contracts-url')?.value.trim() || localStorage.getItem('kitchino_contracts_url') || '';
-  const out  = document.getElementById('diag-output');
-  if (!cUrl) { out.innerHTML = '<span style="color:var(--red)">⚠ Paste Contracts URL first</span>'; return; }
-  out.innerHTML = '<span style="color:var(--gold)">🔄 Testing Contracts URL…</span>';
-  const cbName = '_diagContracts_' + Date.now();
-  const timer  = setTimeout(() => {
-    delete window[cbName];
-    const s = document.getElementById('__diag_contracts__');
-    if (s) s.remove();
-    out.innerHTML = '<span style="color:var(--red)">✗ TIMEOUT — Is the Contracts script deployed? Access = Anyone?</span>';
-  }, 15000);
-  window[cbName] = function(data) {
-    clearTimeout(timer);
-    delete window[cbName];
-    const s = document.getElementById('__diag_contracts__');
-    if (s) s.remove();
-    const ok = data && data.status === 'ok';
-    out.innerHTML = '<span style="color:' + (ok ? 'var(--green)' : 'var(--red)') + '">'
-      + (ok ? '✓ Contracts OK — ' + data.count + ' records returned' : '✗ ' + (data.message || 'Error'))
-      + '</span><br><span style="color:var(--text2)">'
-      + JSON.stringify(data).substring(0, 300) + '</span>';
-  };
-  const scr = document.createElement('script');
-  scr.id  = '__diag_contracts__';
-  scr.src = cUrl + (cUrl.includes('?') ? '&' : '?') + 'callback=' + cbName;
-  scr.onerror = () => {
-    clearTimeout(timer);
-    delete window[cbName];
-    out.innerHTML = '<span style="color:var(--red)">✗ Script load FAILED — check the Contracts URL.</span>';
-  };
-  document.head.appendChild(scr);
-}
-
-// Start (or restart) the 5-minute polling interval
-function _startPolling() {
-  if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
-  _autoRefreshTimer = setInterval(() => _fetchAllRows(), AUTO_REFRESH_MS);
-}
-
-// refreshData — uses _fetchAllRows (robust dual-mode loader)
-function refreshData() {
-  if (sheetsUrl) {
-    _setSourceLabel('fetching');
-    _fetchAllRows().then(() => _fetchContracts());
-  } else {
-    builtPages.clear();
-    showPage('executive');
-  }
-}
-
-// Run immediately — script is at bottom of body so DOM is ready
-(function _kitchinoInit() {
-  try {
-  _prefillSidebarUrls();   // fill URL inputs before anything else
-  populateFilters();
-  refreshYearDropdown();
-  renderMeasuresTable();
-  computeFilteredState();
-  updateKPICards();
-  buildExecutiveCharts();
-  builtPages.add('executive');
-  renderTopPerformers();
-  renderMeasuresTable();
-  updateBadges();
-  } catch(bootErr) {
-    if (_bootLabel) { _bootLabel.textContent = '⚠ Boot error: ' + bootErr.message; _bootLabel.style.color = '#ff5252'; }
-    console.error('[BOOT ERROR]', bootErr);
-  }
-
-  if (window.innerWidth <= 900) {
-    const btn = document.getElementById('menu-btn');
-    if (btn) btn.style.display = 'block';
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // SMART BOOT — instant load from cache, silent background refresh
-  // ══════════════════════════════════════════════════════════════════════════
-  const _cachedRaw = (() => {
-    try { return JSON.parse(localStorage.getItem('kitchino_rows_cache') || 'null'); }
-    catch(e) { return null; }
-  })();
-  const _cacheTs = parseInt(localStorage.getItem('kitchino_cache_ts') || '0');
-  const _cacheAge = _cacheTs ? Math.round((Date.now() - _cacheTs) / 60000) : null;
-
-  if (_cachedRaw && Array.isArray(_cachedRaw) && _cachedRaw.length > 0) {
-    // ── INSTANT: populate engine from cache ──────────────────────────────
-    ENGINE_RAW_ROWS   = _cachedRaw;
-    ENGINE_CLEAN_ROWS = engine_cleanRows(_cachedRaw);
-    ENGINE_READY      = true;
-    refreshYearDropdown();
-    computeFilteredState();
-    updateKPICards();
-    builtPages.clear();
-    showPage('executive');
-    const _ageStr = _cacheAge !== null
-      ? (_cacheAge < 1 ? 'just now' : _cacheAge + ' min ago')
-      : '';
-    _setSourceLabel('cache', '· cached ' + _ageStr);
-    console.log('[ENGINE] Booted from cache —', ENGINE_CLEAN_ROWS.length, 'rows, age:', _ageStr);
-
-    // ── BACKGROUND: silently refresh from Sheets if URL saved ───────────
-    if (sheetsUrl) {
-      setTimeout(() => {
-        _fetchAllRows().then(() => { _fetchContracts(); _startPolling(); });
-      }, 1200); // slight delay so UI renders first
-    } else {
-      _fetchContracts();
-    }
-
-  } else if (sheetsUrl) {
-    // ── No cache yet — load rows directly, then contracts + polling ───────
-    _setSourceLabel('fetching');
-    _fetchAllRows().then(() => { _fetchContracts(); _startPolling(); });
-
-  } else {
-    // ── No cache, no URL — show connect prompt ───────────────────────────
-    _setSourceLabel('local');
-    _fetchContracts();
-    setTimeout(() => {
-      const panel = document.getElementById('connect-panel');
-      if (panel && panel.style.display === 'none') {
-        panel.style.display = '';
-        const urlInput = document.getElementById('sheets-url');
-        if (urlInput) urlInput.focus();
-      }
-    }, 800);
-  }
-})();
-</script>
-</body>
-</html>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+  const cbName = '_diag
