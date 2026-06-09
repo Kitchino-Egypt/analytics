@@ -3254,43 +3254,43 @@ function populateFilters() {
 
 function applyFilters() {
   currentPage = 1;
-  // ── 1. Update the measures table (populates filteredMeasures) ────────────
-  renderMeasuresTable();
-  // ── 1b. Also re-filter the Daily Operations follow-up table ──────────────
-  renderFollowupTable();
-  // ── 2. Compute centralized state ONCE from current filter snapshot ───────
-  computeFilteredState();
-  // ── 3. Push to KPI cards from centralized state ──────────────────────────
-  updateKPICards();
-  // ── 3b. Immediately rebuild the active page with new filtered state ───────
-  (function() {
-    const activePage = document.querySelector('.page.active')?.id.replace('page-','');
-    if (activePage && builtPages.has(activePage)) {
-      builtPages.delete(activePage);
-      if (PAGE_BUILDERS[activePage]) { PAGE_BUILDERS[activePage](); builtPages.add(activePage); }
-      if (activePage==='sources')   renderSourceTable();
-      if (activePage==='designers') renderDesignerTable();
-      if (activePage==='geographic') renderAreaTable();
-      if (activePage==='monthly')   renderMonthlyTable();
-    }
-  })();
 
-  // ── 4. Re-fetch live Sheets (if connected), then rebuild all pages ────────
-  if (sheetsUrl) {
-    const yearF    = KITCHINO_STATE.year;
-    const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
-    jsonpFetch(sheetsUrl + '?action=getAll' + yearParam, '_kitchinoLiveFilter', 15000)
-      .then(d => {
-        applyLiveData(d);
-        // After live data updates underlying arrays, re-compute state and KPIs
-        computeFilteredState();
-        updateKPICards();
-        _rebuildFilteredPages();
-      })
-      .catch(() => _rebuildFilteredPages());
-  } else {
-    _rebuildFilteredPages();
+  // ── 1. Compute centralized state ONCE from current filter snapshot ────────
+  // Engine has ALL rows in memory — filtering is purely in-memory, no network call.
+  computeFilteredState();
+
+  // ── 2. Push to KPI cards ──────────────────────────────────────────────────
+  updateKPICards();
+
+  // ── 3. Update the measures table (uses filteredMeasures from engine) ──────
+  renderMeasuresTable();
+
+  // ── 4. Update follow-up table ─────────────────────────────────────────────
+  renderFollowupTable();
+
+  // ── 5. Immediately rebuild the active page with new filtered state ────────
+  const activePage = document.querySelector('.page.active')?.id.replace('page-','');
+  if (activePage) {
+    // Always rebuild the current page (delete from builtPages to force rebuild)
+    builtPages.delete(activePage);
+    if (PAGE_BUILDERS[activePage]) {
+      PAGE_BUILDERS[activePage]();
+      builtPages.add(activePage);
+    }
+    // Re-render data tables for table-heavy pages
+    if (activePage === 'sources')    renderSourceTable();
+    if (activePage === 'designers')  renderDesignerTable();
+    if (activePage === 'geographic') renderAreaTable();
+    if (activePage === 'monthly')    renderMonthlyTable();
+    if (activePage === 'measures')   renderMeasuresTable();
+    if (activePage === 'followup')   renderFollowupTable();
   }
+
+  // ── 6. Mark all other built pages as stale — they will rebuild on next visit
+  ['executive','monthly','ceo','presentation','conversion','designers',
+   'geographic','sources','kpi','followup'].forEach(p => {
+    if (p !== activePage) builtPages.delete(p);
+  });
 }
 
 function _rebuildFilteredPages() {
