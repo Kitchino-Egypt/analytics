@@ -4484,24 +4484,17 @@ function filterDesignerCustomers(listId, searchId) {
 
 function showPaymentBreakdown() {
   if (!ENGINE_READY || !filteredMeasures || !filteredMeasures.length) return;
-  // Count paymentNote categories from filtered measures.
-  // Logic: payment > 0  → "Paid ✓" (column J is empty for these)
-  //        payment = 0  → use paymentNote value (the exception reason)
-  //        no payment field → use paymentNote or "غير محدد"
-  const counts = {};
+  // Group by paymentNote (column J = استثناءات سداد) — exactly as Data Studio "Exception Owner"
+  // Each row's label IS the raw paymentNote value; empty = 'null'
+  const counts = {};       // label → total orders
+  const custSets = {};     // label → Set of unique customer names
   let total = 0;
   filteredMeasures.forEach(r => {
-    const pay  = parseFloat(r.payment) || 0;
-    const note = (r.paymentNote || '').trim();
-    let label;
-    if (pay > 0) {
-      label = 'Paid ✓';
-    } else if (note) {
-      label = note;
-    } else {
-      label = 'غير محدد';
-    }
-    counts[label] = (counts[label]||0) + 1;
+    const note  = (r.paymentNote || '').trim();
+    const label = note || 'null';
+    counts[label]   = (counts[label]   || 0) + 1;
+    if (!custSets[label]) custSets[label] = new Set();
+    if (r.customer) custSets[label].add(r.customer.trim());
     total++;
   });
   const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
@@ -4514,22 +4507,24 @@ function showPaymentBreakdown() {
   const modal = document.getElementById('payment-breakdown-modal');
   if (modal) modal.style.display = 'flex';
 
-  // Table
+  // Table — mirrors Data Studio: Exception Owner | Total Orders | Total Customers | %
   const tEl = document.getElementById('payment-breakdown-table');
   if (tEl) {
     tEl.innerHTML =
       '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px">'
       +'<thead><tr style="border-bottom:1px solid var(--border)">'
-      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:right">فئة السداد</th>'
-      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">العدد</th>'
-      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">النسبة</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:left">Exception Owner</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">Total Orders</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">Total Customers</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">%</th>'
       +'</tr></thead><tbody>'
       + sorted.map(([k,v],i)=>
           '<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'
-          +'<td style="padding:8px 6px;color:var(--text1);direction:rtl;text-align:right">'
-          +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+colors[i]+';margin-left:6px"></span>'+k+'</td>'
+          +'<td style="padding:8px 6px;color:var(--text1)">'
+          +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+colors[i]+';margin-right:7px"></span>'+k+'</td>'
           +'<td style="padding:8px 6px;text-align:center;color:'+colors[i]+';font-weight:700">'+v+'</td>'
-          +'<td style="padding:8px 6px;text-align:center;color:var(--text2)">'+(v/total*100).toFixed(1)+'%</td>'
+          +'<td style="padding:8px 6px;text-align:center;color:var(--text2)">'+custSets[k].size+'</td>'
+          +'<td style="padding:8px 6px;text-align:center;color:var(--text3)">'+(v/total*100).toFixed(1)+'%</td>'
           +'</tr>'
         ).join('')
       +'</tbody></table>';
@@ -4559,7 +4554,6 @@ function closePaymentBreakdown() {
   const modal = document.getElementById('payment-breakdown-modal');
   if (modal) modal.style.display = 'none';
 }
-
 </script>
 </body>
 </html>
