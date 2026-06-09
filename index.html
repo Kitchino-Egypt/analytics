@@ -2893,7 +2893,7 @@ function buildMeasuresCharts() {
   filteredMeasures.forEach(r => {
     const key = (r._year||'0000') + '_' + String(r._monthOrder||0).padStart(2,'0');
     if (!monthMap[key]) monthMap[key] = {
-      label: (r._monthName||'?').substr(0,3) + (r._year ? ' '' + String(r._year).substr(2) : ''),
+      label: (r._monthName||'?').substr(0,3) + (r._year ? " '" + String(r._year).substr(2) : ''),
       sortKey: key, payment: 0, count: 0
     };
     monthMap[key].payment += (parseFloat(r.payment) || 0);
@@ -3088,9 +3088,9 @@ function buildForecastCharts() {
   for(let i=1;i<=6;i++){
     const mi = ((curOrd-1+i)%12)+1;
     const y  = curY + Math.floor((curOrd-1+i)/12);
-    fLabels.push(MONTHS_EN[mi]+' ''+String(y).substr(2));
+    fLabels.push(MONTHS_EN[mi]+" '"+String(y).substr(2));
   }
-  const actualLabels = last12.map(m=>(m.month||'?').substr(0,3)+(m.year?' ''+String(m.year).substr(2):''));
+  const actualLabels = last12.map(m=>(m.month||'?').substr(0,3)+(m.year?" '"+String(m.year).substr(2):''));
   const allLabels    = [...actualLabels, ...fLabels];
   const bandHigh = forecastCounts.map(v=>Math.round(v*1.15));
   const bandLow  = forecastCounts.map(v=>Math.round(v*0.85));
