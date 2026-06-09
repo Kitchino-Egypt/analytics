@@ -539,6 +539,66 @@ tbody td.muted { color:var(--text2); }
 .patch-d-meas { font-size:10px; color:var(--text3); margin-top:1px; }
 .patch-d-rate { font-size:12px; font-weight:800; white-space:nowrap; }
 .patch-more   { font-size:10px; color:var(--text3); text-align:center; padding:4px 0 0; font-style:italic; }
+
+/* ── DESIGNER BUTTON PANEL (Executive Summary) ─────────────────────────── */
+.designer-btn-grid {
+  display:flex; flex-wrap:wrap; gap:8px; padding:12px 0 4px;
+  max-height:230px; overflow-y:auto;
+}
+.designer-btn {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:10px; padding:10px 14px; cursor:pointer;
+  transition:all .2s; min-width:88px; color:var(--text1); font-family:inherit;
+}
+.designer-btn:hover { border-color:var(--green); background:rgba(0,230,118,0.07); transform:translateY(-1px); }
+.designer-btn.dbtn-active { border-color:var(--green); background:rgba(0,230,118,0.14); }
+.dbtn-name  { font-size:10.5px; font-weight:600; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:98px; text-align:center; }
+.dbtn-count { font-size:22px; font-weight:700; color:var(--green); line-height:1; }
+.dbtn-rank  { font-size:10px; color:var(--text3); }
+.designer-btn-detail {
+  margin-top:12px; background:rgba(0,230,118,0.05);
+  border:1px solid rgba(0,230,118,0.18); border-radius:10px; padding:14px 18px;
+  animation:fadeIn .2s ease;
+}
+.dbd-header { font-size:13px; font-weight:700; color:var(--text1); margin-bottom:12px; }
+.dbd-stats  { display:flex; gap:0; }
+.dbd-stat   { flex:1; text-align:center; border-right:1px solid rgba(255,255,255,0.07); padding:0 8px; }
+.dbd-stat:last-child { border-right:none; }
+.dbd-val    { font-size:20px; font-weight:700; color:var(--text1); }
+.dbd-label  { font-size:10px; color:var(--text3); margin-top:2px; text-transform:uppercase; letter-spacing:.4px; }
+.dbd-divider { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:14px 0 10px; }
+.dbd-list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.dbd-list-title  { font-size:11px; font-weight:700; color:var(--text2); letter-spacing:.4px; }
+.dbd-list-title .dbd-sub { text-transform:none; font-weight:400; font-size:10px; color:var(--text3); }
+.dbd-search {
+  background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+  border-radius:6px; padding:4px 10px; font-size:11px; color:var(--text1);
+  width:160px; outline:none; font-family:inherit;
+}
+.dbd-search:focus { border-color:var(--green); }
+.dbd-search::placeholder { color:var(--text3); }
+.dbd-customer-list {
+  max-height:220px; overflow-y:auto; margin-top:4px;
+  scrollbar-width:thin; scrollbar-color:rgba(0,230,118,0.3) transparent;
+}
+.dbd-customer-list::-webkit-scrollbar { width:4px; }
+.dbd-customer-list::-webkit-scrollbar-thumb { background:rgba(0,230,118,0.3); border-radius:4px; }
+.dbd-customer-row {
+  display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:10px;
+  padding:7px 4px; border-bottom:1px solid rgba(255,255,255,0.04); transition:background .15s;
+}
+.dbd-customer-row:hover { background:rgba(255,255,255,0.03); border-radius:6px; }
+.dbd-customer-row:last-child { border-bottom:none; }
+.dbd-cust-name  { font-size:12px; color:var(--text1); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dbd-order-type { font-size:10px; color:var(--text3); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:10px; white-space:nowrap; }
+.dbd-status-pill { font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+.dbd-pill-contracted { background:rgba(0,230,118,0.15); color:var(--green); }
+.dbd-pill-discussion { background:rgba(255,215,64,0.15);  color:var(--gold); }
+.dbd-pill-cancelled  { background:rgba(255,82,82,0.15);   color:var(--red); }
+.dbd-pill-other      { background:rgba(160,160,192,0.1);  color:var(--text3); }
+.dbd-empty { padding:20px; text-align:center; color:var(--text3); font-size:12px; }
+
 </style>
 </head><body>
 <!-- ═══════════════════════════════════════════════════════
@@ -684,6 +744,7 @@ if (_checkSession()) {
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
     <div class="nav-item" data-page="kpi"><span class="nav-icon">🔬</span>KPI Deep Dive</div>
+    <div class="nav-item" data-page="forecast"><span class="nav-icon">🔮</span>Forecast &amp; Pipeline</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
   </div>
   <div class="sidebar-footer" style="display:none">
@@ -864,9 +925,9 @@ if (_checkSession()) {
 
   <div class="chart-grid chart-2">
     <div class="chart-card">
-      <div class="chart-title">Top Designer Conversion Rates</div>
-      <div class="chart-subtitle">% contracted per designer (min 50 measures)</div>
-      <div class="chart-wrap"><canvas id="chart-designer-rates" height="220"></canvas></div>
+      <div class="chart-title">Designer Performance</div>
+      <div class="chart-subtitle" id="exec-des-subtitle">Click a designer to view their stats</div>
+      <div id="designer-buttons-panel"></div>
     </div>
     <div class="chart-card">
       <div class="chart-title">Lead Source Performance</div>
@@ -941,8 +1002,14 @@ if (_checkSession()) {
   <div class="kpi-grid kpi-4">
     <div class="kpi-card green"><div class="kpi-label">Total Records</div><div class="kpi-value" id="mt-total">1,767</div></div>
     <div class="kpi-card teal"><div class="kpi-label">Filtered Results</div><div class="kpi-value" id="mt-filtered">1,767</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Total Payment</div><div class="kpi-value" id="mt-payment">—</div></div>
+    <div class="kpi-card gold" onclick="showPaymentBreakdown()" style="cursor:pointer" title="Click to see payment exceptions breakdown"><div class="kpi-label">Total Payment ↗</div><div class="kpi-value" id="mt-payment">—</div><div class="kpi-sub" style="font-size:9px;opacity:0.7">Click for استثناءات breakdown</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Repeated Customers (Unique)</div><div class="kpi-value" id="mt-repeated">—</div></div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">Payment Collection — Monthly</div>
+    <div class="chart-subtitle">Total EGP collected per month (bars) · Measure count (line)</div>
+    <div class="chart-wrap"><canvas id="chart-payment-monthly" height="200"></canvas></div>
   </div>
 
   <div class="table-card">
@@ -1100,17 +1167,10 @@ if (_checkSession()) {
     <div class="kpi-card blue"><div class="kpi-label">Lowest Conv.</div><div class="kpi-value" style="font-size:18px">العبور</div><div class="kpi-sub">2.9%</div></div>
   </div>
 
-  <div class="chart-grid chart-2">
-    <div class="chart-card">
-      <div class="chart-title">Measures by Area (Top 12)</div>
-      <div class="chart-subtitle">Total measures volume</div>
-      <div class="chart-wrap"><canvas id="chart-area-volume" height="300"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Conversion Rate by Area</div>
-      <div class="chart-subtitle">% contracted per area</div>
-      <div class="chart-wrap"><canvas id="chart-area-conv" height="300"></canvas></div>
-    </div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">Measures Volume &amp; Conversion Rate by Area (Top 12)</div>
+    <div class="chart-subtitle">Bars = total measures (left axis) &nbsp;·&nbsp; Line = conversion rate % (right axis)</div>
+    <div class="chart-wrap"><canvas id="chart-area-combined" height="280"></canvas></div>
   </div>
 
   <div class="table-card">
@@ -1242,10 +1302,10 @@ if (_checkSession()) {
 <!-- PAGE 10: KPI DEEP DIVE -->
 <div class="page" id="page-kpi">
   <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">YOY Measures Growth</div><div class="kpi-value">+18%</div><div class="kpi-sub">2025 vs 2024 est.</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Avg Time to Contract</div><div class="kpi-value">~14 days</div><div class="kpi-sub">Estimation</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Cross-sell Rate</div><div class="kpi-value">~18%</div><div class="kpi-sub">Repeat customers</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">No-show Rate</div><div class="kpi-value">~8%</div><div class="kpi-sub">Est. from cancelled</div></div>
+    <div class="kpi-card green"><div class="kpi-label">YOY Measures Growth</div><div class="kpi-value" id="kpi-yoy-value">—</div><div class="kpi-sub" id="kpi-yoy-sub">2025 vs 2026</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Avg Time to Contract</div><div class="kpi-value" id="kpi-avg-contract">~14 days</div><div class="kpi-sub">Est. based on pipeline</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Cross-sell Rate</div><div class="kpi-value" id="kpi-crosssell">—</div><div class="kpi-sub" id="kpi-crosssell-sub">Repeat customers</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">No-show Rate</div><div class="kpi-value" id="kpi-noshow">—</div><div class="kpi-sub" id="kpi-noshow-sub">Cancelled ÷ total</div></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -1265,6 +1325,33 @@ if (_checkSession()) {
     <div class="chart-title">Quarterly Comparison — Measures Volume</div>
     <div class="chart-subtitle">Q1 / Q2 / Q3 / Q4 breakdown</div>
     <div class="chart-wrap"><canvas id="chart-quarterly" height="180"></canvas></div>
+  </div>
+</div>
+
+<!-- PAGE 10.5: FORECAST & PIPELINE -->
+<div class="page" id="page-forecast">
+  <div class="kpi-grid kpi-4">
+    <div class="kpi-card green"><div class="kpi-label">Next Month Measures</div><div class="kpi-value" id="fc-next-measures">—</div><div class="kpi-sub" id="fc-next-measures-sub">Forecast</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Next Month Contracts</div><div class="kpi-value" id="fc-next-contracts">—</div><div class="kpi-sub" id="fc-next-contracts-sub">Forecast</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Predicted Conversion</div><div class="kpi-value" id="fc-pred-conv">—</div><div class="kpi-sub" id="fc-pred-conv-sub">Based on trend</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">6-Month Pipeline</div><div class="kpi-value" id="fc-pipeline">—</div><div class="kpi-sub" id="fc-pipeline-sub">Cumulative forecast</div></div>
+  </div>
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">6-Month Forecast — Measures Pipeline</div>
+    <div class="chart-subtitle">Actual (solid green) · Forecast (dashed gold) · ±15% confidence band</div>
+    <div class="chart-wrap"><canvas id="chart-forecast-line" height="240"></canvas></div>
+  </div>
+  <div class="chart-grid chart-2">
+    <div class="chart-card">
+      <div class="chart-title">Monthly Trend (Last 12 Months)</div>
+      <div class="chart-subtitle">Measures &amp; contracts baseline</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-trend" height="240"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Forecast Accuracy Check</div>
+      <div class="chart-subtitle">Model vs actual (last 3 months)</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-accuracy" height="240"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -1429,6 +1516,21 @@ if (_checkSession()) {
     </div>
   </div>
 </div>
+<!-- PAYMENT BREAKDOWN MODAL -->
+<div id="payment-breakdown-modal" onclick="if(event.target===this)closePaymentBreakdown()" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;width:min(540px,94vw);max-height:82vh;overflow-y:auto;padding:26px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--text1)">Payment Exceptions Breakdown</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">استثناءات سداد — count per category (filtered data)</div>
+      </div>
+      <button onclick="closePaymentBreakdown()" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+    </div>
+    <div style="margin-bottom:18px"><canvas id="chart-payment-breakdown" height="200"></canvas></div>
+    <div id="payment-breakdown-table" style="margin-top:8px"></div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // KITCHINO ANALYTICS DASHBOARD — DATA ENGINE
@@ -2164,16 +2266,8 @@ function buildExecutiveCharts() {
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'65%'}
   });
 
-  // Designer rates (top 8)
-  const sorted = [...KITCHINO_STATE.designerData].sort((a,b)=>b.contracted/b.total-a.contracted/a.total).slice(0,8);
-  makeChart('chart-designer-rates', {
-    type:'bar',
-    data:{
-      labels:sorted.map(d=>d.name.split(' ')[0]+' '+d.name.split(' ')[1]),
-      datasets:[{label:'Conversion %',data:sorted.map(d=>+(d.contracted/d.total*100).toFixed(1)),backgroundColor:sorted.map((_,i)=>`hsl(${140+i*8},60%,${55-i*2}%)`),borderRadius:4}]
-    },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{max:40,grid:{color:'rgba(37,37,69,0.5)'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}}
-  });
+  // Designer button panel
+  buildDesignerButtons();
 
   // Sources exec
   const srcSorted = [...(KITCHINO_STATE.sourceData || [])].sort((a,b)=>b.total-a.total).slice(0,8);
@@ -2625,24 +2719,26 @@ function buildGeographicCharts() {
     if (el) el.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Connect Google Sheets to load geographic data</td></tr>';
     return;
   }
-  const sorted = [...getFilteredAreaData()].sort((a,b)=>b.total-a.total).slice(0,12);
-  makeChart('chart-area-volume', {
+  const sorted = [...getFilteredAreaData()].filter(a=>a.total>=1).sort((a,b)=>b.total-a.total).slice(0,12);
+  const convRates = sorted.map(a => a.total>0 ? +(a.contracted/a.total*100).toFixed(1) : 0);
+  makeChart('chart-area-combined', {
     type:'bar',
     data:{
       labels:sorted.map(a=>a.area),
-      datasets:[{label:'Total Measures',data:sorted.map(a=>a.total),backgroundColor:'rgba(0,230,118,0.35)',borderColor:GREEN,borderWidth:1.5,borderRadius:4}]
+      datasets:[
+        {type:'bar',  label:'Total Measures', data:sorted.map(a=>a.total), backgroundColor:'rgba(0,230,118,0.32)', borderColor:GREEN, borderWidth:1.5, borderRadius:4, yAxisID:'y'},
+        {type:'line', label:'Conv. Rate %',   data:convRates, borderColor:TEAL, backgroundColor:'transparent', borderWidth:2.5, pointRadius:4, pointBackgroundColor:TEAL, tension:.3, yAxisID:'y1'}
+      ]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
-  });
-
-  const convSort = [...getFilteredAreaData()].filter(a=>a.total>=2).sort((a,b)=>b.contracted/b.total-a.contracted/a.total).slice(0,10);
-  makeChart('chart-area-conv', {
-    type:'bar',
-    data:{
-      labels:convSort.map(a=>a.area),
-      datasets:[{label:'Conv. Rate %',data:convSort.map(a=>+(a.contracted/a.total*100).toFixed(1)),backgroundColor:convSort.map((_,i)=>`hsla(${160-i*5},70%,55%,0.6)`),borderRadius:4}]
-    },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{max:50,ticks:{callback:v=>v+'%'},grid:{color:'rgba(37,37,69,0.5)'}},y:{grid:{display:false},ticks:{font:{size:9}}}}}
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom'}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:9},maxRotation:35}},
+        y:{position:'left',  grid:{color:'rgba(37,37,69,0.5)'}, title:{display:true,text:'Measures',color:'rgba(200,200,200,0.5)',font:{size:9}}},
+        y1:{position:'right', grid:{display:false}, ticks:{callback:v=>v+'%'}, max:60, title:{display:true,text:'Conv.%',color:'rgba(200,200,200,0.5)',font:{size:9}}}
+      }
+    }
   });
 }
 
@@ -2790,6 +2886,48 @@ function buildSourceCharts() {
   });
 }
 
+function buildMeasuresCharts() {
+  if (!ENGINE_READY || !filteredMeasures || !filteredMeasures.length) return;
+  // Group filteredMeasures by year+month for payment collection chart
+  const monthMap = {};
+  filteredMeasures.forEach(r => {
+    const key = (r._year||'0000') + '_' + String(r._monthOrder||0).padStart(2,'0');
+    if (!monthMap[key]) monthMap[key] = {
+      label: (r._monthName||'?').substr(0,3) + (r._year ? ' '' + String(r._year).substr(2) : ''),
+      sortKey: key, payment: 0, count: 0
+    };
+    monthMap[key].payment += (parseFloat(r.payment) || 0);
+    monthMap[key].count++;
+  });
+  const months = Object.values(monthMap).sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
+  if (!months.length) return;
+  makeChart('chart-payment-monthly', {
+    type:'bar',
+    data:{
+      labels: months.map(m=>m.label),
+      datasets:[
+        {type:'bar',  label:'Payment (EGP)', data:months.map(m=>m.payment),
+         backgroundColor:'rgba(0,230,118,0.32)', borderColor:GREEN, borderWidth:1.5, borderRadius:4, yAxisID:'y'},
+        {type:'line', label:'Measure Count',  data:months.map(m=>m.count),
+         borderColor:TEAL, backgroundColor:'transparent', borderWidth:2.5,
+         pointRadius:4, pointBackgroundColor:TEAL, tension:.4, yAxisID:'y1'}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{position:'bottom'}},
+      scales:{
+        x:{grid:{display:false}, ticks:{font:{size:9}}},
+        y: {position:'left',  grid:{color:'rgba(37,37,69,0.5)'},
+            ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},
+            title:{display:true,text:'EGP',color:'rgba(200,200,200,0.5)',font:{size:9}}},
+        y1:{position:'right', grid:{display:false},
+            title:{display:true,text:'Visits',color:'rgba(200,200,200,0.5)',font:{size:9}}}
+      }
+    }
+  });
+}
+
 function buildKPICharts() {
   if (!ENGINE_READY) {
     ['chart-order-types','chart-payment','chart-quarterly'].forEach(id => {
@@ -2850,6 +2988,162 @@ function buildKPICharts() {
       datasets:[
         {label:'Total',      data:qTotals,backgroundColor:'rgba(0,230,118,0.3)',borderColor:GREEN,borderWidth:1.5,borderRadius:4},
         {label:'Contracted', data:qContr, backgroundColor:'rgba(29,233,182,0.5)',borderColor:TEAL, borderWidth:1.5,borderRadius:4}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
+  });
+
+  // ── Dynamic KPI Deep Dive cards ──────────────────────────────────────────────
+  const _kset = (id,v,color) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = v;
+    if (color) el.style.color = color;
+  };
+
+  // YOY Growth — 2025 vs 2026 actual data
+  const rows25 = ENGINE_CLEAN_ROWS.filter(r=>r._year==='2025');
+  const rows26 = ENGINE_CLEAN_ROWS.filter(r=>r._year==='2026');
+  if (rows25.length > 0 && rows26.length > 0) {
+    const yoyPct = +((rows26.length - rows25.length) / rows25.length * 100).toFixed(1);
+    const arrow  = yoyPct >= 0 ? '↑' : '↓';
+    _kset('kpi-yoy-value', arrow + ' ' + Math.abs(yoyPct) + '%', yoyPct>=0?'var(--green)':'var(--red)');
+    _kset('kpi-yoy-sub', '2025: ' + rows25.length.toLocaleString() + ' → 2026: ' + rows26.length.toLocaleString());
+  } else if (rows26.length === 0 && rows25.length > 0) {
+    _kset('kpi-yoy-value', rows25.length.toLocaleString());
+    _kset('kpi-yoy-sub', '2025 data · 2026 not started');
+  }
+
+  // Cross-sell Rate — customers with >1 visit / total unique customers
+  if (filteredMeasures && filteredMeasures.length > 0) {
+    const custCount = {};
+    filteredMeasures.forEach(r => { const c=(r.customer||'').trim(); if(c) custCount[c]=(custCount[c]||0)+1; });
+    const totalCust = Object.keys(custCount).length;
+    const repeated  = Object.values(custCount).filter(n=>n>1).length;
+    const csRate    = totalCust>0 ? +(repeated/totalCust*100).toFixed(1) : 0;
+    const csArrow   = csRate >= 15 ? '↑' : '↓';
+    _kset('kpi-crosssell', csArrow + ' ' + csRate + '%', csRate>=15?'var(--green)':'var(--gold)');
+    _kset('kpi-crosssell-sub', repeated + ' repeat of ' + totalCust + ' unique customers');
+  }
+
+  // No-show Rate — cancelled / total
+  if (KITCHINO_STATE.total > 0) {
+    const nsRate  = +(KITCHINO_STATE.cancelled / KITCHINO_STATE.total * 100).toFixed(1);
+    const nsArrow = nsRate <= 10 ? '↓' : '↑';
+    _kset('kpi-noshow', nsArrow + ' ' + nsRate + '%', nsRate<=10?'var(--green)':'var(--red)');
+    _kset('kpi-noshow-sub', KITCHINO_STATE.cancelled + ' cancelled of ' + KITCHINO_STATE.total);
+  }
+}
+
+function buildForecastCharts() {
+  if (!ENGINE_READY) return;
+  const _fset = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  const MONTHS_EN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // All monthly data (unfiltered — full trend signal for forecasting)
+  const allMonthly = engine_monthly(ENGINE_CLEAN_ROWS).sort((a,b)=>{
+    const ay=String(a.year||'0'), by=String(b.year||'0');
+    return ay!==by ? ay.localeCompare(by) : (a.order||0)-(b.order||0);
+  });
+
+  if (allMonthly.length < 3) {
+    ['fc-next-measures','fc-next-contracts','fc-pred-conv','fc-pipeline'].forEach(id=>_fset(id,'N/A'));
+    return;
+  }
+
+  const last12 = allMonthly.slice(-12);
+  const N  = last12.length;
+  const ys = last12.map(m=>m.total);
+  const xMean = (N-1)/2;
+  const yMean = ys.reduce((s,v)=>s+v,0)/N;
+  const denom = ys.reduce((s,v,i)=>s+Math.pow(i-xMean,2),0) || 0.001;
+  const slope  = ys.reduce((s,v,i)=>s+(i-xMean)*(v-yMean),0) / denom;
+  const intercept = yMean - slope*xMean;
+
+  // 6-month forecast
+  const forecastCounts = [];
+  for(let i=0;i<6;i++) forecastCounts.push(Math.max(0, Math.round(intercept + slope*(N+i))));
+
+  // Contracted forecast using 3-month avg conversion rate
+  const last3    = last12.slice(-3);
+  const avgConv  = last3.reduce((s,m)=>s+(m.total>0?m.contracted/m.total:0),0) / Math.max(last3.length,1);
+  const predConv = +(avgConv*100).toFixed(1);
+  const fContracts = forecastCounts.map(v=>Math.round(v*avgConv));
+  const pipeline6  = forecastCounts.reduce((s,v)=>s+v,0);
+
+  _fset('fc-next-measures', forecastCounts[0].toLocaleString());
+  _fset('fc-next-measures-sub', 'Linear trend forecast');
+  _fset('fc-next-contracts', fContracts[0].toLocaleString());
+  _fset('fc-next-contracts-sub', 'At ' + predConv + '% avg conv.');
+  _fset('fc-pred-conv', predConv + '%');
+  _fset('fc-pred-conv-sub', '3-month rolling avg');
+  _fset('fc-pipeline', pipeline6.toLocaleString());
+  _fset('fc-pipeline-sub', 'Next 6 months total');
+
+  // Build future month labels
+  const lastM = allMonthly[allMonthly.length-1];
+  let curOrd = parseInt(lastM.order)||12;
+  let curY   = parseInt(lastM.year||'2025');
+  const fLabels = [];
+  for(let i=1;i<=6;i++){
+    const mi = ((curOrd-1+i)%12)+1;
+    const y  = curY + Math.floor((curOrd-1+i)/12);
+    fLabels.push(MONTHS_EN[mi]+' ''+String(y).substr(2));
+  }
+  const actualLabels = last12.map(m=>(m.month||'?').substr(0,3)+(m.year?' ''+String(m.year).substr(2):''));
+  const allLabels    = [...actualLabels, ...fLabels];
+  const bandHigh = forecastCounts.map(v=>Math.round(v*1.15));
+  const bandLow  = forecastCounts.map(v=>Math.round(v*0.85));
+  const nullN    = new Array(N).fill(null);
+  const null6    = new Array(6).fill(null);
+
+  // Main forecast chart
+  makeChart('chart-forecast-line', {
+    type:'line',
+    data:{
+      labels: allLabels,
+      datasets:[
+        {label:'Actual',      data:[...ys,...null6],
+         borderColor:GREEN, backgroundColor:'rgba(0,230,118,0.1)', fill:true, tension:.4, pointRadius:3, borderWidth:2.5},
+        {label:'Forecast',    data:[...new Array(N-1).fill(null), ys[N-1], ...forecastCounts.slice(1)],
+         borderColor:GOLD,  backgroundColor:'rgba(255,215,0,0.05)', borderDash:[7,4], tension:.3, pointRadius:4, pointBackgroundColor:GOLD, borderWidth:2},
+        {label:'Upper +15%', data:[...nullN,...bandHigh],
+         borderColor:'rgba(255,215,0,0.3)', borderDash:[3,6], pointRadius:0, fill:false, borderWidth:1},
+        {label:'Lower -15%', data:[...nullN,...bandLow],
+         borderColor:'rgba(255,215,0,0.3)', borderDash:[3,6], pointRadius:0,
+         backgroundColor:'rgba(255,215,0,0.04)', fill:'-1', borderWidth:1}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{
+      x:{grid:{display:false},ticks:{font:{size:9}}},
+      y:{grid:{color:'rgba(37,37,69,0.5)'},min:0}
+    }}
+  });
+
+  // Trend last 12 months
+  makeChart('chart-forecast-trend', {
+    type:'bar',
+    data:{
+      labels:actualLabels,
+      datasets:[
+        {label:'Total',      data:ys,                         backgroundColor:'rgba(0,230,118,0.25)',borderColor:GREEN,borderWidth:1.5,borderRadius:3},
+        {label:'Contracted', data:last12.map(m=>m.contracted), backgroundColor:'rgba(29,233,182,0.4)',borderColor:TEAL, borderWidth:1.5,borderRadius:3}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
+  });
+
+  // Accuracy: last 3 months model vs actual
+  const acc3Labels  = last3.map(m=>(m.month||'?').substr(0,3));
+  const acc3Actual  = last3.map(m=>m.total);
+  const acc3Fore    = last3.map((m,i)=>Math.max(0,Math.round(intercept+slope*(N-3+i))));
+  makeChart('chart-forecast-accuracy', {
+    type:'bar',
+    data:{
+      labels:acc3Labels,
+      datasets:[
+        {label:'Actual',   data:acc3Actual, backgroundColor:'rgba(0,230,118,0.35)',borderColor:GREEN,borderRadius:4,borderWidth:1.5},
+        {label:'Forecast', data:acc3Fore,   backgroundColor:'rgba(255,215,0,0.35)', borderColor:GOLD, borderRadius:4,borderWidth:1.5}
       ]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
@@ -3307,7 +3601,7 @@ const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
   monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',
-  kpi:'KPI Deep Dive',ceo:'CEO View',presentation:'Presentation View'
+  kpi:'KPI Deep Dive',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View'
 };
 
 const PAGE_BUILDERS = {
@@ -3316,9 +3610,11 @@ const PAGE_BUILDERS = {
   designers: buildDesignerCharts,
   conversion: buildConversionCharts,
   geographic: buildGeographicCharts,
+  measures: buildMeasuresCharts,
   monthly: () => { buildMonthlyCharts(); renderMonthlyKPIs(); },
   sources: buildSourceCharts,
   kpi: buildKPICharts,
+  forecast: buildForecastCharts,
   ceo: buildCEOCharts,
   presentation: () => buildCEOCharts()
 };
@@ -3751,6 +4047,185 @@ window.addEventListener('DOMContentLoaded', () => {
     _fetchContracts();   // contracts can load even without measures URL
   }
 });
+
+// ============================================================
+// EXEC DESIGNER BUTTON PANEL
+// ============================================================
+function buildDesignerButtons() {
+  const panel = document.getElementById('designer-buttons-panel');
+  if (!panel) return;
+  if (!ENGINE_READY || !(KITCHINO_STATE.designerData || []).length) {
+    panel.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);font-size:12px">No designer data available</div>';
+    return;
+  }
+  const data = [...KITCHINO_STATE.designerData].sort((a, b) => b.total - a.total);
+  const custByDesigner = {};
+  (filteredMeasures || []).forEach(r => {
+    if (!r.designer || !r.customer) return;
+    if (!custByDesigner[r.designer]) custByDesigner[r.designer] = new Set();
+    custByDesigner[r.designer].add(r.customer);
+  });
+  let h = '<div class="designer-btn-grid">';
+  data.forEach((d, i) => {
+    const rate = d.total > 0 ? (d.contracted / d.total * 100).toFixed(1) : '0.0';
+    const custCount = custByDesigner[d.name] ? custByDesigner[d.name].size : 0;
+    const safeKey = JSON.stringify({name: d.name, total: d.total, customers: custCount, contracted: d.contracted, rate: parseFloat(rate)});
+    h += '<button class="designer-btn" onclick="selectDesignerBtn(this, ' + safeKey.replace(/"/g,'&quot;') + ')" data-name="' + d.name.replace(/"/g,'&quot;') + '">' +
+      '<span class="dbtn-rank">#' + (i+1) + '</span>' +
+      '<span class="dbtn-count">' + d.total + '</span>' +
+      '<span class="dbtn-name">' + d.name + '</span>' +
+      '</button>';
+  });
+  h += '</div>';
+  h += '<div id="designer-btn-detail" class="designer-btn-detail" style="display:none"></div>';
+  panel.innerHTML = h;
+  const sub = document.getElementById('exec-des-subtitle');
+  if (sub) sub.textContent = data.length + ' designers · Click to view stats';
+}
+
+function selectDesignerBtn(btn, payload) {
+  const detail = document.getElementById('designer-btn-detail');
+  if (!detail) return;
+  if (btn.classList.contains('dbtn-active')) {
+    btn.classList.remove('dbtn-active');
+    detail.style.display = 'none';
+    return;
+  }
+  document.querySelectorAll('.designer-btn').forEach(b => b.classList.remove('dbtn-active'));
+  btn.classList.add('dbtn-active');
+  const { name, total, customers, contracted, rate } = payload;
+  const rateNum  = parseFloat(rate);
+  const rateColor = rateNum >= 30 ? 'var(--green)' : rateNum >= 20 ? 'var(--gold)' : 'var(--red)';
+  const rows = (filteredMeasures || []).filter(r => r.designer === name);
+  const custMap = {};
+  rows.forEach(r => {
+    const cust = r.customer || '—';
+    const type = r.orderType || r.order_type || '—';
+    const stat = (r.status || '').toLowerCase();
+    if (!custMap[cust]) custMap[cust] = { name: cust, types: new Set(), status: stat, count: 0 };
+    custMap[cust].types.add(type !== '—' ? type : null);
+    custMap[cust].count++;
+    const priority = s => s.includes('تعاقد')||s.includes('contract') ? 3 : s.includes('مناقش')||s.includes('discuss') ? 2 : s.includes('الغاء')||s.includes('cancel') ? 1 : 0;
+    if (priority(stat) > priority(custMap[cust].status)) custMap[cust].status = stat;
+  });
+  const custList = Object.values(custMap).sort((a, b) => {
+    const order = s => s.includes('تعاقد')||s.includes('contract') ? 0 : s.includes('مناقش')||s.includes('discuss') ? 1 : s.includes('الغاء')||s.includes('cancel') ? 2 : 3;
+    return order(a.status) - order(b.status) || a.name.localeCompare(b.name);
+  });
+  const pillClass = s => s.includes('تعاقد')||s.includes('contract') ? 'dbd-pill-contracted' : s.includes('مناقش')||s.includes('discuss') ? 'dbd-pill-discussion' : s.includes('الغاء')||s.includes('cancel') ? 'dbd-pill-cancelled' : 'dbd-pill-other';
+  const pillLabel = s => s.includes('تعاقد')||s.includes('contract') ? 'Contracted' : s.includes('مناقش')||s.includes('discuss') ? 'Discussion' : s.includes('الغاء')||s.includes('cancel') ? 'Cancelled' : s || '—';
+  function renderRows(list) {
+    if (!list.length) return '<div class="dbd-empty">No customers found</div>';
+    return list.map(c => {
+      const typeStr = [...c.types].filter(Boolean).join(', ') || '—';
+      return '<div class="dbd-customer-row">' +
+        '<span class="dbd-cust-name" title="' + c.name + '">' + c.name + '</span>' +
+        '<span class="dbd-order-type">' + typeStr + '</span>' +
+        '<span class="dbd-status-pill ' + pillClass(c.status) + '">' + pillLabel(c.status) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+  const listId   = 'dbd-clist-' + name.replace(/\s+/g,'_');
+  const searchId = 'dbd-search-' + name.replace(/\s+/g,'_');
+  detail.innerHTML =
+    '<div class="dbd-header">📐 ' + name + '</div>' +
+    '<div class="dbd-stats">' +
+      '<div class="dbd-stat"><div class="dbd-val">' + total + '</div><div class="dbd-label">Measures</div></div>' +
+      '<div class="dbd-stat"><div class="dbd-val">' + customers + '</div><div class="dbd-label">Customers</div></div>' +
+      '<div class="dbd-stat"><div class="dbd-val" style="color:' + rateColor + '">' + rate + '%</div><div class="dbd-label">Conversion</div></div>' +
+      '<div class="dbd-stat"><div class="dbd-val" style="color:var(--green)">' + contracted + '</div><div class="dbd-label">Contracted</div></div>' +
+    '</div>' +
+    '<hr class="dbd-divider">' +
+    '<div class="dbd-list-header">' +
+      '<span class="dbd-list-title">CUSTOMERS &nbsp;<span style="color:var(--green);font-size:13px">' + custList.length + '</span><span class="dbd-sub"> unique</span> &nbsp;·&nbsp; <span style="color:var(--teal);font-size:13px">' + rows.length + '</span><span class="dbd-sub"> total visits</span></span>' +
+      '<input class="dbd-search" id="' + searchId + '" placeholder="Search customer or order type…" oninput="filterDesignerCustomers(\'' + listId + '\',\'' + searchId + '\')">' +
+    '</div>' +
+    '<div class="dbd-customer-list" id="' + listId + '">' + renderRows(custList) + '</div>';
+  detail._custList  = custList;
+  detail._renderRows = renderRows;
+  detail.style.display = 'block';
+}
+
+function filterDesignerCustomers(listId, searchId) {
+  const detail   = document.getElementById('designer-btn-detail');
+  const listEl   = document.getElementById(listId);
+  const searchEl = document.getElementById(searchId);
+  if (!listEl || !searchEl || !detail._custList) return;
+  const q = searchEl.value.toLowerCase().trim();
+  const filtered = q ? detail._custList.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    [...c.types].some(t => t && t.toLowerCase().includes(q)) ||
+    c.status.toLowerCase().includes(q)) : detail._custList;
+  listEl.innerHTML = detail._renderRows(filtered);
+}
+
+
+function showPaymentBreakdown() {
+  if (!ENGINE_READY || !filteredMeasures || !filteredMeasures.length) return;
+  // Count paymentNote categories from filtered measures
+  const counts = {};
+  let total = 0;
+  filteredMeasures.forEach(r => {
+    const note = (r.paymentNote || '').trim() || 'غير محدد';
+    counts[note] = (counts[note]||0) + 1;
+    total++;
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(x=>x[0]);
+  const values = sorted.map(x=>x[1]);
+  const palette = [GREEN,TEAL,GOLD,BLUE,'#ce93d8','#ef9a9a','#ffcc02','#80cbc4'];
+  const colors  = labels.map((_,i)=>palette[i%palette.length]);
+
+  // Show modal
+  const modal = document.getElementById('payment-breakdown-modal');
+  if (modal) modal.style.display = 'flex';
+
+  // Table
+  const tEl = document.getElementById('payment-breakdown-table');
+  if (tEl) {
+    tEl.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px">'
+      +'<thead><tr style="border-bottom:1px solid var(--border)">'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:right">فئة السداد</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">العدد</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">النسبة</th>'
+      +'</tr></thead><tbody>'
+      + sorted.map(([k,v],i)=>
+          '<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'
+          +'<td style="padding:8px 6px;color:var(--text1);direction:rtl;text-align:right">'
+          +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+colors[i]+';margin-left:6px"></span>'+k+'</td>'
+          +'<td style="padding:8px 6px;text-align:center;color:'+colors[i]+';font-weight:700">'+v+'</td>'
+          +'<td style="padding:8px 6px;text-align:center;color:var(--text2)">'+(v/total*100).toFixed(1)+'%</td>'
+          +'</tr>'
+        ).join('')
+      +'</tbody></table>';
+  }
+
+  // Chart
+  setTimeout(()=>{
+    makeChart('chart-payment-breakdown', {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[{label:'Count',data:values,backgroundColor:colors,borderRadius:5,borderSkipped:false}]
+      },
+      options:{
+        responsive:true, indexAxis:'y',
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{color:'rgba(37,37,69,0.5)'}},
+          y:{grid:{display:false},ticks:{font:{size:11}}}
+        }
+      }
+    });
+  },60);
+}
+
+function closePaymentBreakdown() {
+  const modal = document.getElementById('payment-breakdown-modal');
+  if (modal) modal.style.display = 'none';
+}
+
 </script>
 </body>
 </html>
