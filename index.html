@@ -599,6 +599,24 @@ tbody td.muted { color:var(--text2); }
 .dbd-pill-other      { background:rgba(160,160,192,0.1);  color:var(--text3); }
 .dbd-empty { padding:20px; text-align:center; color:var(--text3); font-size:12px; }
 
+
+/* ── Forecast page styles ─────────────────────────────────────── */
+.fc-method-box {
+  display:flex; gap:14px; background:rgba(37,37,69,0.4); border:1px solid var(--border);
+  border-radius:10px; padding:16px 18px; margin-top:16px; align-items:flex-start;
+}
+.fc-method-icon { font-size:24px; flex-shrink:0; margin-top:2px; }
+.fc-method-title { font-size:13px; font-weight:700; color:var(--text1); margin-bottom:6px; }
+.fc-method-body  { font-size:12px; color:var(--text2); line-height:1.75; }
+.fc-table { width:100%; border-collapse:collapse; font-size:12px; }
+.fc-table th { padding:8px 10px; text-align:left; color:var(--text3); font-weight:600; border-bottom:1px solid var(--border); }
+.fc-table td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text2); }
+.fc-table tr:hover td { background:rgba(255,255,255,0.03); }
+.fc-badge { display:inline-block; padding:2px 7px; border-radius:12px; font-size:10px; font-weight:600; }
+.fc-badge-up   { background:rgba(0,230,118,0.15); color:var(--green); }
+.fc-badge-flat { background:rgba(255,215,64,0.15);  color:var(--gold); }
+.fc-badge-down { background:rgba(255,82,82,0.15);   color:var(--red); }
+.fc-confidence { font-size:10px; color:var(--text3); }
 </style>
 </head><body>
 <!-- ═══════════════════════════════════════════════════════
@@ -1007,8 +1025,13 @@ if (_checkSession()) {
   </div>
 
   <div class="chart-card" style="margin-bottom:16px">
-    <div class="chart-title">Payment Collection — Monthly</div>
-    <div class="chart-subtitle">Total EGP collected per month (bars) · Measure count (line)</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <div>
+        <div class="chart-title">Payment Collection — Monthly</div>
+        <div class="chart-subtitle" id="payment-chart-subtitle">Payment collected per month</div>
+      </div>
+      <div id="payment-total-badge" style="font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(0,230,118,0.1);color:var(--green);font-weight:600;white-space:nowrap"></div>
+    </div>
     <div class="chart-wrap"><canvas id="chart-payment-monthly" height="200"></canvas></div>
   </div>
 
@@ -1271,8 +1294,8 @@ if (_checkSession()) {
   <div class="kpi-grid kpi-4">
     <div class="kpi-card green"><div class="kpi-label">Top Source (Volume)</div><div class="kpi-value" style="font-size:18px" id="src-kpi-top-name">—</div><div class="kpi-sub" id="src-kpi-top-sub">— measures</div></div>
     <div class="kpi-card teal"><div class="kpi-label">Best Conv. Source</div><div class="kpi-value" style="font-size:18px" id="src-kpi-best-name">—</div><div class="kpi-sub" id="src-kpi-best-sub">— rate</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Total Sources</div><div class="kpi-value" id="src-kpi-count">—</div><div class="kpi-sub" id="src-kpi-count-sub">active channels</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Total Measures</div><div class="kpi-value" id="src-kpi-total">—</div><div class="kpi-sub" id="src-kpi-total-sub">from all sources</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Digital Sources</div><div class="kpi-value" id="src-kpi-digital">—</div><div class="kpi-sub" id="src-kpi-digital-sub">Insta + FB + Google</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Repeat Customers</div><div class="kpi-value" id="src-kpi-repeat">—</div><div class="kpi-sub" id="src-kpi-repeat-sub">of total measures</div></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -1330,29 +1353,72 @@ if (_checkSession()) {
 
 <!-- PAGE 10.5: FORECAST & PIPELINE -->
 <div class="page" id="page-forecast">
-  <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">Next Month Measures</div><div class="kpi-value" id="fc-next-measures">—</div><div class="kpi-sub" id="fc-next-measures-sub">Forecast</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Next Month Contracts</div><div class="kpi-value" id="fc-next-contracts">—</div><div class="kpi-sub" id="fc-next-contracts-sub">Forecast</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Predicted Conversion</div><div class="kpi-value" id="fc-pred-conv">—</div><div class="kpi-sub" id="fc-pred-conv-sub">Based on trend</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">6-Month Pipeline</div><div class="kpi-value" id="fc-pipeline">—</div><div class="kpi-sub" id="fc-pipeline-sub">Cumulative forecast</div></div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-grid kpi-4" style="margin-bottom:16px">
+    <div class="kpi-card green">
+      <div class="kpi-icon">🔮</div>
+      <div class="kpi-label">Next Month Measures</div>
+      <div class="kpi-value" id="fc-kpi-measures">—</div>
+      <div class="kpi-sub" id="fc-kpi-measures-sub">predicted</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-label">Next Month Contracts</div>
+      <div class="kpi-value" id="fc-kpi-contracts">—</div>
+      <div class="kpi-sub" id="fc-kpi-contracts-sub">predicted</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Predicted Conversion</div>
+      <div class="kpi-value" id="fc-kpi-rate">—</div>
+      <div class="kpi-sub">next month forecast</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-icon">📅</div>
+      <div class="kpi-label">6-Month Pipeline</div>
+      <div class="kpi-value" id="fc-kpi-6m">—</div>
+      <div class="kpi-sub">total predicted measures</div>
+    </div>
   </div>
+
+  <!-- Main measures forecast chart -->
   <div class="chart-card" style="margin-bottom:16px">
-    <div class="chart-title">6-Month Forecast — Measures Pipeline</div>
-    <div class="chart-subtitle">Actual (solid green) · Forecast (dashed gold) · ±15% confidence band</div>
-    <div class="chart-wrap"><canvas id="chart-forecast-line" height="240"></canvas></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <div>
+        <div class="chart-title">Measures Volume Forecast — 6 Month Outlook</div>
+        <div class="chart-subtitle" id="fc-main-subtitle">Trend + Seasonality model · Shaded area = confidence band</div>
+      </div>
+      <div id="fc-trend-badge" style="font-size:11px;padding:4px 12px;border-radius:20px;background:rgba(0,230,118,0.1);color:var(--green);font-weight:600;white-space:nowrap;align-self:center"></div>
+    </div>
+    <div class="chart-wrap"><canvas id="chart-forecast-main" height="200"></canvas></div>
   </div>
-  <div class="chart-grid chart-2">
+
+  <!-- Two-column: Conversion forecast + Breakdown table -->
+  <div class="chart-grid chart-2" style="margin-bottom:0">
     <div class="chart-card">
-      <div class="chart-title">Monthly Trend (Last 12 Months)</div>
-      <div class="chart-subtitle">Measures &amp; contracts baseline</div>
-      <div class="chart-wrap"><canvas id="chart-forecast-trend" height="240"></canvas></div>
+      <div class="chart-title">Conversion Rate Forecast</div>
+      <div class="chart-subtitle">Historical trend vs projected %</div>
+      <div class="chart-wrap"><canvas id="chart-forecast-rate" height="220"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">Forecast Accuracy Check</div>
-      <div class="chart-subtitle">Model vs actual (last 3 months)</div>
-      <div class="chart-wrap"><canvas id="chart-forecast-accuracy" height="240"></canvas></div>
+      <div class="chart-title">6-Month Breakdown</div>
+      <div class="chart-subtitle">Predicted measures · contracts · confidence range</div>
+      <div id="fc-breakdown-table" style="overflow-x:auto;margin-top:8px"></div>
     </div>
   </div>
+
+  <!-- Method note -->
+  <div class="fc-method-box">
+    <div class="fc-method-icon">🧮</div>
+    <div>
+      <div class="fc-method-title">Forecast Methodology</div>
+      <div class="fc-method-body" id="fc-method-text">
+        Uses <strong>Trend + Seasonality decomposition</strong>. Historical monthly data is split into a linear growth trend and a calendar-month seasonal pattern. Future values are projected as <em>trend × seasonal index</em>. The shaded confidence band represents ±1.5 standard deviations of historical residuals. Accuracy decreases beyond 3 months.
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- PAGE 11: CEO VIEW -->
@@ -1802,6 +1868,35 @@ function engine_sources(rows) {
 }
 
 // ── Order type aggregation ────────────────────────────────────────────────────
+// ── Payment per month ────────────────────────────────────────────────────────
+function engine_paymentMonthly(rows) {
+  const map = {};
+  const MONTH_NAMES = ['January','February','March','April','May','June',
+                       'July','August','September','October','November','December'];
+  rows.forEach(r => {
+    const yr = r._year;
+    const mo = (r._monthOrder || 1) - 1;
+    if (!yr) return;
+    const key = yr + '_' + (mo + 1);
+    if (!map[key]) {
+      map[key] = {
+        year: yr,
+        month: r._monthName || MONTH_NAMES[mo],
+        monthOrder: mo + 1,
+        total: 0, paidCount: 0, paidAmount: 0, unpaidCount: 0
+      };
+    }
+    map[key].total++;
+    const raw = r.payment;
+    const n = raw ? parseFloat(String(raw).replace(/,/g, '')) : NaN;
+    if (!isNaN(n) && n > 0) { map[key].paidCount++; map[key].paidAmount += n; }
+    else map[key].unpaidCount++;
+  });
+  return Object.values(map).sort((a, b) =>
+    a.year !== b.year ? a.year.localeCompare(b.year) : a.monthOrder - b.monthOrder
+  );
+}
+
 function engine_orderTypes(rows) {
   const map = {};
   rows.forEach(r => {
@@ -2857,14 +2952,29 @@ function buildSourceCharts() {
   if (sorted.length > 0) {
     set('src-kpi-top-name', sorted[0].source);
     set('src-kpi-top-sub', sorted[0].total.toLocaleString() + ' measures');
-    const bestConv = [...sorted].filter(s=>s.total>=3).sort((a,b)=>b.conversionRate-a.conversionRate);
-    set('src-kpi-best-name', bestConv.length ? bestConv[0].source : sorted[0].source);
-    set('src-kpi-best-sub', bestConv.length ? bestConv[0].conversionRate + '% rate' : '—');
-    set('src-kpi-count', sorted.length.toString());
-    set('src-kpi-count-sub', sorted.length + ' active channels');
+    // Best conv source: exclude Unknown/empty
+    const UNKNOWN_VALS = ['unknown', '', 'غير محدد', 'other', 'اخرى'];
+    const bestConv = [...sorted]
+      .filter(s => s.total >= 3 && !UNKNOWN_VALS.includes((s.source||'').toLowerCase().trim()))
+      .sort((a,b) => (b.contracted/b.total) - (a.contracted/a.total));
+    const bName = bestConv.length ? bestConv[0].source : sorted.filter(s=>!UNKNOWN_VALS.includes((s.source||'').toLowerCase().trim()))[0]?.source || sorted[0].source;
+    const bRate = bestConv.length ? +(bestConv[0].contracted/bestConv[0].total*100).toFixed(1) : 0;
+    set('src-kpi-best-name', bName);
+    set('src-kpi-best-sub', bestConv.length ? bRate + '% rate' : '—');
+    // Digital sources: Instagram, Facebook, Google
+    const DIGITAL_KEYS = ['instagram', 'insta', 'facebook', 'fb', 'google', 'social', 'digital'];
+    const digitalTotal = sorted.filter(s => DIGITAL_KEYS.some(k => (s.source||'').toLowerCase().includes(k)))
+      .reduce((sum, s) => sum + s.total, 0);
+    set('src-kpi-digital', digitalTotal.toLocaleString());
+    set('src-kpi-digital-sub', 'Insta + FB + Google');
+    // Repeat customers from filteredMeasures
     const total = sorted.reduce((s,x)=>s+x.total,0);
-    set('src-kpi-total', total.toLocaleString());
-    set('src-kpi-total-sub', 'from all sources');
+    const REPEAT_KEYS = ['repeat', 'repet', 'مكرر', 'عميل قديم'];
+    const repeatRows = (filteredMeasures||[]).filter(r => REPEAT_KEYS.some(k => (r.source||'').toLowerCase().includes(k)));
+    const repeatCusts = new Set(repeatRows.map(r => r.customer).filter(Boolean));
+    const repeatPct = total > 0 ? (repeatCusts.size / total * 100).toFixed(1) : 0;
+    set('src-kpi-repeat', repeatCusts.size.toLocaleString());
+    set('src-kpi-repeat-sub', repeatPct + '% of total');
   }
   makeChart('chart-source-volume', {
     type:'doughnut',
@@ -2886,43 +2996,80 @@ function buildSourceCharts() {
   });
 }
 
-function buildMeasuresCharts() {
-  if (!ENGINE_READY || !filteredMeasures || !filteredMeasures.length) return;
-  // Group filteredMeasures by year+month for payment collection chart
-  const monthMap = {};
-  filteredMeasures.forEach(r => {
-    const key = (r._year||'0000') + '_' + String(r._monthOrder||0).padStart(2,'0');
-    if (!monthMap[key]) monthMap[key] = {
-      label: (r._monthName||'?').substr(0,3) + (r._year ? " '" + String(r._year).substr(2) : ''),
-      sortKey: key, payment: 0, count: 0
-    };
-    monthMap[key].payment += (parseFloat(r.payment) || 0);
-    monthMap[key].count++;
-  });
-  const months = Object.values(monthMap).sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
-  if (!months.length) return;
+function buildPaymentChart() {
+  if (!ENGINE_READY) return;
+  const data = KITCHINO_STATE.paymentMonthly || [];
+  if (!data.length) return;
+
+  const yearF     = KITCHINO_STATE.year;
+  const multiYear = [...new Set(data.map(m => m.year))].length > 1;
+  const labels     = data.map(m => multiYear ? m.month.substr(0,3)+' '+m.year.substr(2) : m.month.substr(0,3));
+  const amounts    = data.map(m => Math.round(m.paidAmount));
+  const paidCounts = data.map(m => m.paidCount);
+  const totalCount = data.map(m => m.total);
+
+  const grandTotal = amounts.reduce((s, v) => s + v, 0);
+  const badge = document.getElementById('payment-total-badge');
+  if (badge) {
+    badge.textContent = grandTotal >= 1000000
+      ? 'Total: EGP ' + (grandTotal/1000000).toFixed(2) + 'M'
+      : 'Total: EGP ' + grandTotal.toLocaleString();
+  }
+  const sub = document.getElementById('payment-chart-subtitle');
+  if (sub) {
+    sub.textContent = yearF !== 'all'
+      ? 'Payment collected per month — ' + yearF
+      : 'Payment collected per month — All Years';
+  }
+
   makeChart('chart-payment-monthly', {
-    type:'bar',
-    data:{
-      labels: months.map(m=>m.label),
-      datasets:[
-        {type:'bar',  label:'Payment (EGP)', data:months.map(m=>m.payment),
-         backgroundColor:'rgba(0,230,118,0.32)', borderColor:GREEN, borderWidth:1.5, borderRadius:4, yAxisID:'y'},
-        {type:'line', label:'Measure Count',  data:months.map(m=>m.count),
-         borderColor:TEAL, backgroundColor:'transparent', borderWidth:2.5,
-         pointRadius:4, pointBackgroundColor:TEAL, tension:.4, yAxisID:'y1'}
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Payment Amount (EGP)',
+          data: amounts,
+          backgroundColor: amounts.map(v => v > 0 ? 'rgba(0,230,118,0.7)' : 'rgba(0,230,118,0.12)'),
+          borderColor:     amounts.map(v => v > 0 ? '#00e676' : 'rgba(0,230,118,0.2)'),
+          borderWidth: 1.5, borderRadius: 4, yAxisID: 'y'
+        },
+        {
+          label: 'Paid Orders', data: paidCounts,
+          type: 'line', borderColor: '#ffd740',
+          backgroundColor: 'rgba(255,215,64,0.1)',
+          borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#ffd740',
+          tension: 0.3, yAxisID: 'y2'
+        }
       ]
     },
-    options:{
-      responsive:true,
-      plugins:{legend:{position:'bottom'}},
-      scales:{
-        x:{grid:{display:false}, ticks:{font:{size:9}}},
-        y: {position:'left',  grid:{color:'rgba(37,37,69,0.5)'},
-            ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},
-            title:{display:true,text:'EGP',color:'rgba(200,200,200,0.5)',font:{size:9}}},
-        y1:{position:'right', grid:{display:false},
-            title:{display:true,text:'Visits',color:'rgba(200,200,200,0.5)',font:{size:9}}}
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex === 0) {
+                const v = ctx.raw;
+                return 'Amount: EGP ' + (v >= 1000000 ? (v/1000000).toFixed(2)+'M' : v.toLocaleString());
+              }
+              return 'Paid orders: ' + ctx.raw;
+            },
+            afterBody: (items) => {
+              const idx = items[0]?.dataIndex;
+              if (idx === undefined) return [];
+              return ['Total measures: ' + totalCount[idx], 'Without payment: ' + (totalCount[idx] - paidCounts[idx])];
+            }
+          }
+        }
+      },
+      scales: {
+        x:  { grid:{display:false}, ticks:{font:{size:9}} },
+        y:  { position:'left', grid:{color:'rgba(37,37,69,0.5)'},
+              ticks:{callback:v=>v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v,font:{size:9}} },
+        y2: { position:'right', grid:{display:false}, ticks:{stepSize:1,precision:0,font:{size:9}} }
       }
     }
   });
@@ -3035,119 +3182,294 @@ function buildKPICharts() {
   }
 }
 
-function buildForecastCharts() {
-  if (!ENGINE_READY) return;
-  const _fset = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  const MONTHS_EN = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function engine_linReg(y) {
+  const n = y.length;
+  if (n < 2) return { slope: 0, intercept: y[0] || 0, predict: () => y[0] || 0 };
+  const xMean = (n - 1) / 2;
+  const yMean = y.reduce((s, v) => s + v, 0) / n;
+  let ssxy = 0, ssxx = 0;
+  y.forEach((v, i) => { ssxy += (i - xMean) * (v - yMean); ssxx += (i - xMean) ** 2; });
+  const slope = ssxx === 0 ? 0 : ssxy / ssxx;
+  const intercept = yMean - slope * xMean;
+  return { slope, intercept, predict: i => slope * i + intercept };
+}
 
-  // All monthly data (unfiltered — full trend signal for forecasting)
-  const allMonthly = engine_monthly(ENGINE_CLEAN_ROWS).sort((a,b)=>{
-    const ay=String(a.year||'0'), by=String(b.year||'0');
-    return ay!==by ? ay.localeCompare(by) : (a.order||0)-(b.order||0);
+function engine_seasonalIndices(values, monthOrders) {
+  const byMonth = {};
+  values.forEach((v, i) => {
+    const mo = monthOrders[i] || 1;
+    if (!byMonth[mo]) byMonth[mo] = [];
+    byMonth[mo].push(v);
   });
+  const overall = values.reduce((s, v) => s + v, 0) / (values.length || 1);
+  const indices = {};
+  for (let mo = 1; mo <= 12; mo++) {
+    const vals = byMonth[mo] || [];
+    indices[mo] = vals.length > 0 && overall > 0
+      ? (vals.reduce((s, v) => s + v, 0) / vals.length) / overall : 1.0;
+  }
+  return indices;
+}
 
-  if (allMonthly.length < 3) {
-    ['fc-next-measures','fc-next-contracts','fc-pred-conv','fc-pipeline'].forEach(id=>_fset(id,'N/A'));
+function engine_forecastResidualSD(values, trend, siIdx, monthOrders) {
+  if (values.length < 3) return 0;
+  const residuals = values.map((v, i) => {
+    const pred = trend.predict(i) * (siIdx[monthOrders[i]] || 1);
+    return v - pred;
+  });
+  const mean = residuals.reduce((s, v) => s + v, 0) / residuals.length;
+  const variance = residuals.reduce((s, v) => s + (v - mean) ** 2, 0) / residuals.length;
+  return Math.sqrt(variance);
+}
+
+function engine_buildForecast(monthlyData, horizonMonths) {
+  if (!monthlyData || monthlyData.length < 3) return null;
+  const MNAMES = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const totals    = monthlyData.map(m => m.total || 0);
+  const contracts = monthlyData.map(m => m.contracted || 0);
+  const monthOrds = monthlyData.map(m => m.order || m.monthOrder || 1);
+  const trendM = engine_linReg(totals);
+  const trendC = engine_linReg(contracts);
+  const siM    = engine_seasonalIndices(totals, monthOrds);
+  const siC    = engine_seasonalIndices(contracts, monthOrds);
+  const sdM    = engine_forecastResidualSD(totals, trendM, siM, monthOrds);
+  const sdC    = engine_forecastResidualSD(contracts, trendC, siC, monthOrds);
+  const lastRow  = monthlyData[monthlyData.length - 1];
+  const lastMO   = lastRow.order || lastRow.monthOrder || 12;
+  const lastYear = parseInt(lastRow.year) || 2026;
+  const n        = monthlyData.length;
+  const points = [];
+  for (let h = 1; h <= horizonMonths; h++) {
+    const rawMO = (lastMO - 1 + h) % 12;
+    const mo    = rawMO + 1;
+    const yr    = lastYear + Math.floor((lastMO - 1 + h) / 12);
+    const tIdx  = n + h - 1;
+    const mPred = Math.max(0, Math.round(trendM.predict(tIdx) * (siM[mo] || 1)));
+    const cPred = Math.max(0, Math.round(trendC.predict(tIdx) * (siC[mo] || 1)));
+    const rPred = mPred > 0 ? +(cPred / mPred * 100).toFixed(1) : 0;
+    points.push({
+      label: MNAMES[mo-1].substr(0,3)+' '+String(yr).substr(2),
+      fullLabel: MNAMES[mo-1]+' '+yr,
+      year: yr, month: MNAMES[mo-1], monthOrder: mo,
+      measures: mPred, contracts: cPred, rate: rPred,
+      mLow:  Math.max(0, Math.round(mPred - 1.5 * sdM)),
+      mHigh: Math.round(mPred + 1.5 * sdM),
+      cLow:  Math.max(0, Math.round(cPred - 1.5 * sdC)),
+      cHigh: Math.round(cPred + 1.5 * sdC),
+    });
+  }
+  return { points, slope: trendM.slope, slopeC: trendC.slope, sdM, sdC, siM };
+}
+
+function buildForecastCharts() {
+  if (!ENGINE_READY) {
+    ['chart-forecast-main','chart-forecast-rate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.display = 'none';
+        const box = el.closest('.chart-card');
+        if (box && !box.querySelector('.no-data-msg')) {
+          const d = document.createElement('div');
+          d.className = 'no-data-msg';
+          d.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Connect Google Sheets to generate forecast</div>';
+          box.appendChild(d);
+        }
+      }
+    });
+    ['fc-kpi-measures','fc-kpi-contracts','fc-kpi-rate','fc-kpi-6m'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.textContent = '—';
+    });
     return;
   }
 
-  const last12 = allMonthly.slice(-12);
-  const N  = last12.length;
-  const ys = last12.map(m=>m.total);
-  const xMean = (N-1)/2;
-  const yMean = ys.reduce((s,v)=>s+v,0)/N;
-  const denom = ys.reduce((s,v,i)=>s+Math.pow(i-xMean,2),0) || 0.001;
-  const slope  = ys.reduce((s,v,i)=>s+(i-xMean)*(v-yMean),0) / denom;
-  const intercept = yMean - slope*xMean;
-
-  // 6-month forecast
-  const forecastCounts = [];
-  for(let i=0;i<6;i++) forecastCounts.push(Math.max(0, Math.round(intercept + slope*(N+i))));
-
-  // Contracted forecast using 3-month avg conversion rate
-  const last3    = last12.slice(-3);
-  const avgConv  = last3.reduce((s,m)=>s+(m.total>0?m.contracted/m.total:0),0) / Math.max(last3.length,1);
-  const predConv = +(avgConv*100).toFixed(1);
-  const fContracts = forecastCounts.map(v=>Math.round(v*avgConv));
-  const pipeline6  = forecastCounts.reduce((s,v)=>s+v,0);
-
-  _fset('fc-next-measures', forecastCounts[0].toLocaleString());
-  _fset('fc-next-measures-sub', 'Linear trend forecast');
-  _fset('fc-next-contracts', fContracts[0].toLocaleString());
-  _fset('fc-next-contracts-sub', 'At ' + predConv + '% avg conv.');
-  _fset('fc-pred-conv', predConv + '%');
-  _fset('fc-pred-conv-sub', '3-month rolling avg');
-  _fset('fc-pipeline', pipeline6.toLocaleString());
-  _fset('fc-pipeline-sub', 'Next 6 months total');
-
-  // Build future month labels
-  const lastM = allMonthly[allMonthly.length-1];
-  let curOrd = parseInt(lastM.order)||12;
-  let curY   = parseInt(lastM.year||'2025');
-  const fLabels = [];
-  for(let i=1;i<=6;i++){
-    const mi = ((curOrd-1+i)%12)+1;
-    const y  = curY + Math.floor((curOrd-1+i)/12);
-    fLabels.push(MONTHS_EN[mi]+" '"+String(y).substr(2));
+  const historical = KITCHINO_STATE.monthlyData || [];
+  if (historical.length < 3) {
+    const sub = document.getElementById('fc-main-subtitle');
+    if (sub) sub.textContent = 'Need at least 3 months of data to generate a forecast';
+    return;
   }
-  const actualLabels = last12.map(m=>(m.month||'?').substr(0,3)+(m.year?" '"+String(m.year).substr(2):''));
-  const allLabels    = [...actualLabels, ...fLabels];
-  const bandHigh = forecastCounts.map(v=>Math.round(v*1.15));
-  const bandLow  = forecastCounts.map(v=>Math.round(v*0.85));
-  const nullN    = new Array(N).fill(null);
-  const null6    = new Array(6).fill(null);
 
-  // Main forecast chart
-  makeChart('chart-forecast-line', {
-    type:'line',
-    data:{
+  const HORIZON  = 6;
+  const fc       = engine_buildForecast(historical, HORIZON);
+  if (!fc) return;
+
+  const { points, slope } = fc;
+
+  const next      = points[0];
+  const sixMTotal = points.reduce((s, p) => s + p.measures, 0);
+  const trendDir   = slope > 1 ? '↑ Growing' : slope < -1 ? '↓ Declining' : '→ Stable';
+  const trendColor = slope > 1 ? 'var(--green)' : slope < -1 ? 'var(--red)' : 'var(--gold)';
+
+  const _set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  _set('fc-kpi-measures', next.measures.toLocaleString());
+  _set('fc-kpi-measures-sub', next.mLow+'–'+next.mHigh+' confidence range');
+  _set('fc-kpi-contracts', next.contracts.toLocaleString());
+  _set('fc-kpi-contracts-sub', next.cLow+'–'+next.cHigh+' confidence range');
+  _set('fc-kpi-rate', next.rate+'%');
+  _set('fc-kpi-6m', sixMTotal.toLocaleString());
+
+  const tBadge = document.getElementById('fc-trend-badge');
+  if (tBadge) {
+    tBadge.textContent = trendDir;
+    tBadge.style.color = trendColor;
+    tBadge.style.background = slope > 1 ? 'rgba(0,230,118,0.1)' : slope < -1 ? 'rgba(255,82,82,0.1)' : 'rgba(255,215,64,0.1)';
+  }
+
+  const histLen   = historical.length;
+  const multiYear = [...new Set(historical.map(m=>m.year).filter(Boolean))].length > 1;
+
+  const histLabels = historical.map(m => {
+    const mn = (m.month||'').substr(0,3);
+    return multiYear ? mn+' '+String(m.year||'').substr(2) : mn;
+  });
+  const fcLabels  = points.map(p => p.label);
+  const allLabels = [...histLabels, ...fcLabels];
+
+  const histTotals    = historical.map(m => m.total || 0);
+  const histContracts = historical.map(m => m.contracted || 0);
+  const histRates     = historical.map(m => m.total > 0 ? +(m.contracted/m.total*100).toFixed(1) : 0);
+
+  const fcTotals = [...Array(histLen).fill(null), ...points.map(p => p.measures)];
+  const fcLow    = [...Array(histLen).fill(null), ...points.map(p => p.mLow)];
+  const fcHigh   = [...Array(histLen).fill(null), ...points.map(p => p.mHigh)];
+  const fcRates  = [...Array(histLen).fill(null), ...points.map(p => p.rate)];
+
+  const bridgeTotals = [...Array(histLen-1).fill(null), histTotals[histLen-1], points[0].measures, ...Array(HORIZON-1).fill(null)];
+  const bridgeRates  = [...Array(histLen-1).fill(null), histRates[histLen-1],  points[0].rate,     ...Array(HORIZON-1).fill(null)];
+
+  ['chart-forecast-main'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='';const m=el.closest('.chart-card')?.querySelector('.no-data-msg');if(m)m.remove();}});
+
+  makeChart('chart-forecast-main', {
+    type: 'line',
+    data: {
       labels: allLabels,
-      datasets:[
-        {label:'Actual',      data:[...ys,...null6],
-         borderColor:GREEN, backgroundColor:'rgba(0,230,118,0.1)', fill:true, tension:.4, pointRadius:3, borderWidth:2.5},
-        {label:'Forecast',    data:[...new Array(N-1).fill(null), ys[N-1], ...forecastCounts.slice(1)],
-         borderColor:GOLD,  backgroundColor:'rgba(255,215,0,0.05)', borderDash:[7,4], tension:.3, pointRadius:4, pointBackgroundColor:GOLD, borderWidth:2},
-        {label:'Upper +15%', data:[...nullN,...bandHigh],
-         borderColor:'rgba(255,215,0,0.3)', borderDash:[3,6], pointRadius:0, fill:false, borderWidth:1},
-        {label:'Lower -15%', data:[...nullN,...bandLow],
-         borderColor:'rgba(255,215,0,0.3)', borderDash:[3,6], pointRadius:0,
-         backgroundColor:'rgba(255,215,0,0.04)', fill:'-1', borderWidth:1}
+      datasets: [
+        { label: 'Upper Band', data: fcHigh, borderColor: 'transparent',
+          backgroundColor: 'rgba(0,230,118,0.08)', fill: '+1',
+          pointRadius: 0, tension: 0.3, borderWidth: 0 },
+        { label: 'Lower Band', data: fcLow, borderColor: 'transparent',
+          backgroundColor: 'rgba(0,230,118,0.08)', fill: false,
+          pointRadius: 0, tension: 0.3, borderWidth: 0 },
+        { label: 'Historical Measures', data: [...histTotals, ...Array(HORIZON).fill(null)],
+          borderColor: GREEN, backgroundColor: 'rgba(0,230,118,0.12)',
+          fill: false, tension: 0.3, borderWidth: 2.5,
+          pointRadius: 3, pointBackgroundColor: GREEN },
+        { label: '_bridge', data: bridgeTotals,
+          borderColor: GREEN, fill: false, tension: 0.2,
+          borderWidth: 1.5, borderDash: [4,3], pointRadius: 0 },
+        { label: 'Forecast Measures', data: fcTotals,
+          borderColor: GREEN, backgroundColor: 'transparent',
+          fill: false, tension: 0.3, borderWidth: 2, borderDash: [6, 4],
+          pointRadius: Array(histLen).fill(0).concat(Array(HORIZON).fill(4)),
+          pointBackgroundColor: '#0a0a18', pointBorderColor: GREEN, pointBorderWidth: 2 },
+        { label: 'Historical Contracts', data: [...histContracts, ...Array(HORIZON).fill(null)],
+          borderColor: TEAL, fill: false, tension: 0.3, borderWidth: 1.5,
+          pointRadius: 2, pointBackgroundColor: TEAL }
       ]
     },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{
-      x:{grid:{display:false},ticks:{font:{size:9}}},
-      y:{grid:{color:'rgba(37,37,69,0.5)'},min:0}
-    }}
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            filter: item => !item.text?.startsWith('_') && item.text !== 'Upper Band' && item.text !== 'Lower Band',
+            color: '#a0a0c0', font: { size: 11 }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label?.startsWith('_') || ctx.dataset.label==='Upper Band' || ctx.dataset.label==='Lower Band') return null;
+              return ' '+ctx.dataset.label+': '+(ctx.parsed.y != null ? Math.round(ctx.parsed.y).toLocaleString() : '—');
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:9},color:'#606080',maxRotation:30} },
+        y: { grid:{color:'rgba(37,37,69,0.5)'}, ticks:{font:{size:10},color:'#606080'} }
+      }
+    }
   });
 
-  // Trend last 12 months
-  makeChart('chart-forecast-trend', {
-    type:'bar',
-    data:{
-      labels:actualLabels,
-      datasets:[
-        {label:'Total',      data:ys,                         backgroundColor:'rgba(0,230,118,0.25)',borderColor:GREEN,borderWidth:1.5,borderRadius:3},
-        {label:'Contracted', data:last12.map(m=>m.contracted), backgroundColor:'rgba(29,233,182,0.4)',borderColor:TEAL, borderWidth:1.5,borderRadius:3}
+  ['chart-forecast-rate'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='';const m=el.closest('.chart-card')?.querySelector('.no-data-msg');if(m)m.remove();}});
+
+  makeChart('chart-forecast-rate', {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [
+        { label: 'Historical Conversion %',
+          data: [...histRates, ...Array(HORIZON).fill(null)],
+          borderColor: TEAL, fill: false, tension: 0.35,
+          borderWidth: 2.5, pointRadius: 3, pointBackgroundColor: TEAL },
+        { label: '_bridge_r', data: bridgeRates,
+          borderColor: TEAL, fill: false, tension: 0.2,
+          borderWidth: 1.5, borderDash: [4,3], pointRadius: 0 },
+        { label: 'Forecast Conversion %', data: fcRates,
+          borderColor: GOLD, fill: false, tension: 0.35,
+          borderWidth: 2, borderDash: [6, 4],
+          pointRadius: Array(histLen).fill(0).concat(Array(HORIZON).fill(4)),
+          pointBackgroundColor: '#0a0a18', pointBorderColor: GOLD, pointBorderWidth: 2 }
       ]
     },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { filter: item => !item.text?.startsWith('_'), color: '#a0a0c0', font:{size:11} }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label?.startsWith('_')) return null;
+              return ' '+ctx.dataset.label+': '+(ctx.parsed.y != null ? ctx.parsed.y.toFixed(1)+'%' : '—');
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{display:false}, ticks:{font:{size:9},color:'#606080',maxRotation:30} },
+        y: { grid:{color:'rgba(37,37,69,0.5)'}, ticks:{font:{size:10},color:'#606080',callback:v=>v+'%'} }
+      }
+    }
   });
 
-  // Accuracy: last 3 months model vs actual
-  const acc3Labels  = last3.map(m=>(m.month||'?').substr(0,3));
-  const acc3Actual  = last3.map(m=>m.total);
-  const acc3Fore    = last3.map((m,i)=>Math.max(0,Math.round(intercept+slope*(N-3+i))));
-  makeChart('chart-forecast-accuracy', {
-    type:'bar',
-    data:{
-      labels:acc3Labels,
-      datasets:[
-        {label:'Actual',   data:acc3Actual, backgroundColor:'rgba(0,230,118,0.35)',borderColor:GREEN,borderRadius:4,borderWidth:1.5},
-        {label:'Forecast', data:acc3Fore,   backgroundColor:'rgba(255,215,0,0.35)', borderColor:GOLD, borderRadius:4,borderWidth:1.5}
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
+  // BREAKDOWN TABLE
+  let tableHTML = '<table class="fc-table"><thead><tr><th>Month</th><th>Measures</th><th>Range</th><th>Contracts</th><th>Rate</th></tr></thead><tbody>';
+  points.forEach(p => {
+    const rateColor = p.rate >= 25 ? 'var(--green)' : p.rate >= 15 ? 'var(--gold)' : 'var(--red)';
+    const trend = p.measures > (points[0].measures * 1.02) ? 'up' : p.measures < (points[0].measures * 0.98) ? 'down' : 'flat';
+    const badge = trend === 'up' ? 'fc-badge-up' : trend === 'down' ? 'fc-badge-down' : 'fc-badge-flat';
+    const arrow = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
+    tableHTML += '<tr>' +
+      '<td style="color:var(--text1);font-weight:600">'+p.fullLabel+'</td>' +
+      '<td><span class="fc-badge '+badge+'">'+arrow+' '+p.measures.toLocaleString()+'</span></td>' +
+      '<td class="fc-confidence">'+p.mLow.toLocaleString()+'–'+p.mHigh.toLocaleString()+'</td>' +
+      '<td style="color:var(--teal)">'+p.contracts+'</td>' +
+      '<td style="color:'+rateColor+';font-weight:600">'+p.rate+'%</td>' +
+      '</tr>';
   });
+  tableHTML += '</tbody></table>';
+  const tableEl = document.getElementById('fc-breakdown-table');
+  if (tableEl) tableEl.innerHTML = tableHTML;
+
+  // Method note
+  const slopeStr = slope > 0 ? '+'+slope.toFixed(1) : slope.toFixed(1);
+  const methodEl = document.getElementById('fc-method-text');
+  if (methodEl) {
+    methodEl.innerHTML = 'Uses <strong>Trend + Seasonality decomposition</strong> on ' + histLen + ' months of historical data. ' +
+      'Detected growth slope: <strong style="color:'+trendColor+'">'+slopeStr+' measures/month</strong>. ' +
+      'Seasonal indices computed from monthly patterns across all years. ' +
+      'Future values = <em>trend × seasonal index</em>. ' +
+      'Confidence band = ±1.5 standard deviations of historical residuals (±'+Math.round(fc.sdM)+' measures). ' +
+      'Accuracy is highest for months 1–3; treat months 4–6 as directional.';
+  }
 }
 
 function buildCEOCharts() {
@@ -3610,7 +3932,7 @@ const PAGE_BUILDERS = {
   designers: buildDesignerCharts,
   conversion: buildConversionCharts,
   geographic: buildGeographicCharts,
-  measures: buildMeasuresCharts,
+  measures: () => { currentPage = 1; renderMeasuresTable(); buildPaymentChart(); },
   monthly: () => { buildMonthlyCharts(); renderMonthlyKPIs(); },
   sources: buildSourceCharts,
   kpi: buildKPICharts,
@@ -4162,12 +4484,24 @@ function filterDesignerCustomers(listId, searchId) {
 
 function showPaymentBreakdown() {
   if (!ENGINE_READY || !filteredMeasures || !filteredMeasures.length) return;
-  // Count paymentNote categories from filtered measures
+  // Count paymentNote categories from filtered measures.
+  // Logic: payment > 0  → "Paid ✓" (column J is empty for these)
+  //        payment = 0  → use paymentNote value (the exception reason)
+  //        no payment field → use paymentNote or "غير محدد"
   const counts = {};
   let total = 0;
   filteredMeasures.forEach(r => {
-    const note = (r.paymentNote || '').trim() || 'غير محدد';
-    counts[note] = (counts[note]||0) + 1;
+    const pay  = parseFloat(r.payment) || 0;
+    const note = (r.paymentNote || '').trim();
+    let label;
+    if (pay > 0) {
+      label = 'Paid ✓';
+    } else if (note) {
+      label = note;
+    } else {
+      label = 'غير محدد';
+    }
+    counts[label] = (counts[label]||0) + 1;
     total++;
   });
   const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
