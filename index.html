@@ -1745,14 +1745,15 @@ function engine_cleanRows(rawRows) {
       return s;
     };
 
-    const customer  = norm(r.customer);
-    const designer  = norm(r.designer);
-    const status    = norm(r.status);
-    const area      = norm(r.area);
-    const source    = norm(r.source);
-    const orderType = norm(r.orderType);
-    const payment   = norm(r.payment);
-    const orderCode = norm(r.orderCode);
+    const customer     = norm(r.customer);
+    const designer     = norm(r.designer);
+    const status       = norm(r.status);
+    const area         = norm(r.area);
+    const source       = norm(r.source);
+    const orderType    = norm(r.orderType);
+    const payment      = norm(r.payment);
+    const paymentNote  = norm(r.paymentNote);
+    const orderCode    = norm(r.orderCode);
 
     // Field presence flags
     if (!customer)  R.flags.missingCustomer++;
@@ -1777,7 +1778,7 @@ function engine_cleanRows(rawRows) {
 
     clean.push({
       code: orderCode, orderCode, customer, designer, status, area,
-      source, orderType, payment,
+      source, orderType, payment, paymentNote,
       visitDate:   r.visitDate || '',
       month:       _ENGINE_MONTHS[mIdx],
       _date:       date,
