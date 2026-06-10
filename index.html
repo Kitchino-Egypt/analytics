@@ -1423,21 +1423,70 @@ if (_checkSession()) {
 
 <!-- PAGE 11: CEO VIEW -->
 <div class="page" id="page-ceo">
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
-    <div class="kpi-card green" style="text-align:center;padding:24px 20px">
-      <div id="ceo-year-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Measures</div>
-      <div style="font-size:48px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-yoy-label">All time</div>
+  <!-- CEO: Customer Pipeline Funnel -->
+  <div class="chart-card" style="margin-bottom:16px;padding:20px 22px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2)">Customer Pipeline — Measure to Contract Flow</span>
+      <span style="margin-left:auto;font-size:9px;color:var(--text3)" id="ceo-year-label">All Time</span>
     </div>
-    <div class="kpi-card teal" style="text-align:center;padding:24px 20px">
-      <div id="ceo-cur-month-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Latest Month Measures</div>
-      <div style="font-size:48px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-cur-month">—</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-cur-month-sub">—</div>
+    <!-- Funnel steps -->
+    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:16px">
+      <div style="flex:1;text-align:center">
+        <div style="background:rgba(0,230,118,0.12);border:1px solid rgba(0,230,118,0.4);border-radius:8px;padding:16px 8px 12px">
+          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Total Measures</div>
+          <div style="font-size:34px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px" id="ceo-yoy-label">visits</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 8px;color:var(--text3);font-size:16px;flex-shrink:0">&#9654;</div>
+      <div style="flex:1;text-align:center">
+        <div style="background:rgba(29,233,182,0.12);border:1px solid rgba(29,233,182,0.4);border-radius:8px;padding:16px 8px 12px">
+          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unique Customers</div>
+          <div style="font-size:34px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-unique">—</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">by CRM ID</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 8px;color:var(--text3);font-size:16px;flex-shrink:0">&#9654;</div>
+      <div style="flex:1;text-align:center">
+        <div style="background:rgba(255,215,64,0.12);border:1px solid rgba(255,215,64,0.4);border-radius:8px;padding:16px 8px 12px">
+          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Contracted Customers</div>
+          <div style="font-size:34px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-contracted-cust">—</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">unique CRM IDs</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 8px;color:var(--text3);font-size:16px;flex-shrink:0">&#9654;</div>
+      <div style="flex:1;text-align:center">
+        <div style="background:rgba(64,196,255,0.12);border:1px solid rgba(64,196,255,0.4);border-radius:8px;padding:16px 8px 12px">
+          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Contracted Orders</div>
+          <div style="font-size:34px;font-weight:900;color:var(--blue);line-height:1" id="ceo-kpi-contracted-orders">—</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">total projects</div>
+        </div>
+      </div>
     </div>
-    <div class="kpi-card gold" style="text-align:center;padding:24px 20px">
-      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Overall Conversion Rate</div>
-      <div style="font-size:48px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-conv-rate">—</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:8px" id="ceo-kpi-rate-label">contracted ÷ total</div>
+    <!-- Conversion Rate + Cross-Sales -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.25);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Customer Conversion Rate</div>
+        <div style="font-size:44px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-conv-rate">—</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px" id="ceo-kpi-rate-label">Contracted Customers ÷ Unique Customers</div>
+      </div>
+      <div style="background:rgba(255,215,64,0.07);border:1px solid rgba(255,215,64,0.25);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cross-Sales Ratio</div>
+        <div style="font-size:44px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-crosssales">—</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Avg Orders per Contracted Customer</div>
+      </div>
+    </div>
+  </div>
+  <!-- Latest Month -->
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px">
+    <div class="kpi-card teal" style="text-align:center;padding:20px">
+      <div id="ceo-cur-month-label" style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Latest Month</div>
+      <div style="font-size:40px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-cur-month">—</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:6px" id="ceo-kpi-cur-month-sub">—</div>
+    </div>
+    <div class="chart-card" style="padding:16px 18px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Monthly Trend</div>
+      <div class="chart-wrap"><canvas id="chart-ceo-trend" height="110"></canvas></div>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
@@ -1485,15 +1534,9 @@ if (_checkSession()) {
       <div id="ceo-sr-empty" style="display:none;text-align:center;padding:18px;color:var(--text3);font-size:12px">No matches found</div>
     </div>
   </div>
-  <div class="chart-grid chart-2" style="margin-bottom:22px">
-    <div class="chart-card">
-      <div class="chart-title">Performance Summary</div>
-      <div class="chart-wrap"><canvas id="chart-ceo-trend" height="220"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Business Health Scorecard</div>
-      <div style="margin-top:10px" id="scorecard-list"></div>
-    </div>
+  <div class="chart-card" style="margin-bottom:22px">
+    <div class="chart-title">Business Health Scorecard</div>
+    <div style="margin-top:10px" id="scorecard-list"></div>
   </div>
   <div class="chart-card">
     <div class="chart-title">Executive Intelligence — Key Findings</div>
@@ -1945,16 +1988,20 @@ function engine_compute() {
   const contracted = filtered.filter(r=>r._contracted).length;
   const discussion = filtered.filter(r=>r._discussion).length;
   const cancelled  = filtered.filter(r=>r._cancelled).length;
-  const uniqueCust = new Set(filtered.map(r=>r.customer).filter(Boolean)).size;
-  KITCHINO_STATE.year            = yearF;
-  KITCHINO_STATE.designer        = designerF;
-  KITCHINO_STATE.area            = areaF;
-  KITCHINO_STATE.total           = total;
-  KITCHINO_STATE.contracted      = contracted;
-  KITCHINO_STATE.discussion      = discussion;
-  KITCHINO_STATE.cancelled       = cancelled;
-  KITCHINO_STATE.uniqueCustomers = uniqueCust;
-  KITCHINO_STATE.conversionRate  = total>0?+(contracted/total*100).toFixed(1):0;
+  const allCustIds = new Set(filtered.map(r=>(r.orderCode||r.customer||'').trim()).filter(Boolean));
+  const contractedCustIds = new Set(filtered.filter(r=>r._contracted).map(r=>(r.orderCode||r.customer||'').trim()).filter(Boolean));
+  KITCHINO_STATE.year                = yearF;
+  KITCHINO_STATE.designer            = designerF;
+  KITCHINO_STATE.area                = areaF;
+  KITCHINO_STATE.total               = total;
+  KITCHINO_STATE.contracted          = contracted;
+  KITCHINO_STATE.discussion          = discussion;
+  KITCHINO_STATE.cancelled           = cancelled;
+  KITCHINO_STATE.uniqueCustomers     = allCustIds.size;
+  KITCHINO_STATE.contractedCustomers = contractedCustIds.size;
+  KITCHINO_STATE.conversionRate      = total>0?+(contracted/total*100).toFixed(1):0;
+  KITCHINO_STATE.customerConvRate    = allCustIds.size>0?+(contractedCustIds.size/allCustIds.size*100).toFixed(1):0;
+  KITCHINO_STATE.crossSalesRatio     = contractedCustIds.size>0?+(contracted/contractedCustIds.size).toFixed(2):0;
   KITCHINO_STATE.monthlyData     = engine_monthly(filtered);
   KITCHINO_STATE.designerData    = engine_designers(filtered);
   KITCHINO_STATE.allDesignerData = engine_designers(yearOnly);
@@ -2190,6 +2237,9 @@ let KITCHINO_STATE = {
   cancelled:      0,
   conversionRate: 0,
   uniqueCustomers: 0,
+  contractedCustomers: 0,
+  customerConvRate: 0,
+  crossSalesRatio: 0,
 };
 
 /**
@@ -2211,8 +2261,11 @@ function computeFilteredState() {
   KITCHINO_STATE.contracted      = 0;
   KITCHINO_STATE.discussion      = 0;
   KITCHINO_STATE.cancelled       = 0;
-  KITCHINO_STATE.uniqueCustomers = 0;
-  KITCHINO_STATE.conversionRate  = 0;
+  KITCHINO_STATE.uniqueCustomers     = 0;
+  KITCHINO_STATE.contractedCustomers = 0;
+  KITCHINO_STATE.conversionRate      = 0;
+  KITCHINO_STATE.customerConvRate    = 0;
+  KITCHINO_STATE.crossSalesRatio     = 0;
   KITCHINO_STATE.monthlyData     = [];
   KITCHINO_STATE.designerData    = [];
   KITCHINO_STATE.allDesignerData = [];
@@ -2248,12 +2301,15 @@ function updateKPICards() {
   set('kpi-cancelled',  s.cancelled.toLocaleString());
   set('kpi-rate',       s.conversionRate + '%');
   // CEO View dynamic KPIs
-  set('ceo-kpi-total',      s.total.toLocaleString());
-  set('ceo-kpi-contracted', s.contracted.toLocaleString());
-  set('ceo-kpi-discussion', s.discussion.toLocaleString());
-  set('ceo-kpi-conv-rate',  s.conversionRate + '%');
-  set('ceo-kpi-rate-label', s.contracted + ' contracted of ' + s.total);
-  var yearLabel = s.year !== 'all' ? 'Total Measures ' + s.year : 'Total Measures — All Years';
+  set('ceo-kpi-total',             s.total.toLocaleString());
+  set('ceo-kpi-unique',            s.uniqueCustomers.toLocaleString());
+  set('ceo-kpi-contracted-orders', s.contracted.toLocaleString());
+  set('ceo-kpi-contracted-cust',   s.contractedCustomers.toLocaleString());
+  set('ceo-kpi-conv-rate',         s.customerConvRate + '%');
+  set('ceo-kpi-rate-label',        s.contractedCustomers + ' contracted of ' + s.uniqueCustomers + ' unique customers');
+  set('ceo-kpi-crosssales',        s.crossSalesRatio + '×');
+  set('ceo-kpi-crosssales-sub',    s.contracted + ' orders ÷ ' + s.contractedCustomers + ' customers');
+  var yearLabel = s.year !== 'all' ? s.year : 'All Time';
   var el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
   // Latest Month
   (function(){var MN=['January','February','March','April','May','June','July','August','September','October','November','December'],lY=0,lM=0;(filteredMeasures||[]).forEach(function(r){var ry=parseInt(r._year||0,10),rm=r._monthOrder||0;if(ry>lY||(ry===lY&&rm>lM)){lY=ry;lM=rm;}});var cnt=0;if(lY>0&&lM>0){var ly=String(lY);(filteredMeasures||[]).forEach(function(r){if(r._year===ly&&r._monthOrder===lM)cnt++;});}var lbl=lY>0?MN[lM-1]+' '+lY:'Latest Month';set('ceo-kpi-cur-month',cnt.toLocaleString());set('ceo-cur-month-label',lbl);set('ceo-kpi-cur-month-sub',cnt>0?cnt+' visits':'No data');})();
