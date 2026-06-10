@@ -1460,9 +1460,9 @@ if (_checkSession()) {
       <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-order-conv-sub">Contracted Orders ÷ Total Orders</div>
     </div>
     <div class="chart-card" style="text-align:center;padding:18px 12px">
-      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cross-Sales Rate</div>
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cross-Sales Ratio</div>
       <div style="font-size:38px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-crosssales">—</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Customers with &gt;1 Order ÷ Unique Customers</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Contracted Orders ÷ Contracted Customers</div>
     </div>
   </div>
   <!-- Latest Month -->
@@ -1976,8 +1976,11 @@ function engine_compute() {
   const contracted = filtered.filter(r=>r._contracted).length;
   const discussion = filtered.filter(r=>r._discussion).length;
   const cancelled  = filtered.filter(r=>r._cancelled).length;
-  const allCustIds = new Set(filtered.map(r=>(r.orderCode||r.customer||'').trim()).filter(Boolean));
-  const contractedCustIds = new Set(filtered.filter(r=>r._contracted).map(r=>(r.orderCode||r.customer||'').trim()).filter(Boolean));
+  // Use customer name (normalised) as the unique customer identifier.
+  // orderCode is a per-project code — unique per row — so it cannot deduplicate customers.
+  const custKey = r => (r.customer||'').trim().toLowerCase();
+  const allCustIds = new Set(filtered.map(custKey).filter(Boolean));
+  const contractedCustIds = new Set(filtered.filter(r=>r._contracted).map(custKey).filter(Boolean));
   KITCHINO_STATE.year                = yearF;
   KITCHINO_STATE.designer            = designerF;
   KITCHINO_STATE.area                = areaF;
@@ -1992,7 +1995,7 @@ function engine_compute() {
   KITCHINO_STATE.crossSalesRatio     = contractedCustIds.size>0?+(contracted/contractedCustIds.size).toFixed(2):0;
   // Cross-sales rate = % of unique customers who have >1 total order
   const custOrderCount = {};
-  filtered.forEach(r => { const id=(r.orderCode||r.customer||'').trim(); if(id) custOrderCount[id]=(custOrderCount[id]||0)+1; });
+  filtered.forEach(r => { const id=custKey(r); if(id) custOrderCount[id]=(custOrderCount[id]||0)+1; });
   const multiOrderCusts = Object.values(custOrderCount).filter(n=>n>1).length;
   KITCHINO_STATE.crossSalesRate = allCustIds.size>0?+(multiOrderCusts/allCustIds.size*100).toFixed(1):0;
   KITCHINO_STATE.monthlyData     = engine_monthly(filtered);
@@ -2304,8 +2307,8 @@ function updateKPICards() {
   set('ceo-kpi-rate-label',        s.contractedCustomers + ' contracted of ' + s.uniqueCustomers + ' unique customers');
   set('ceo-kpi-order-conv',        s.conversionRate + '%');
   set('ceo-kpi-order-conv-sub',    s.contracted + ' orders ÷ ' + s.total + ' total');
-  set('ceo-kpi-crosssales',        s.crossSalesRate + '%');
-  set('ceo-kpi-crosssales-sub',    'Customers with >1 Order ÷ Unique Customers');
+  set('ceo-kpi-crosssales',        s.crossSalesRatio + '×');
+  set('ceo-kpi-crosssales-sub',    s.contracted + ' orders ÷ ' + s.contractedCustomers + ' contracted customers');
   var yearLabel = s.year !== 'all' ? s.year : 'All Time';
   var el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
   // Latest Month
