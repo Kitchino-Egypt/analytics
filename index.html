@@ -1427,9 +1427,9 @@ if (_checkSession()) {
   <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" id="ceo-year-label">All Time</div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
     <div class="kpi-card green" style="text-align:center;padding:22px 12px">
-      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Measures</div>
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Visits</div>
       <div style="font-size:40px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-yoy-label">Individual Projects</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-yoy-label">Indiv. Projects by CRM ID</div>
     </div>
     <div class="kpi-card teal" style="text-align:center;padding:22px 12px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Customers</div>
@@ -1439,7 +1439,7 @@ if (_checkSession()) {
     <div class="kpi-card gold" style="text-align:center;padding:22px 12px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Contracted Orders</div>
       <div style="font-size:40px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-contracted-orders">—</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:8px">Signed Projects</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px">Orders with Status: تعاقد</div>
     </div>
     <div class="kpi-card blue" style="text-align:center;padding:22px 12px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Contracted Customers</div>
@@ -1462,7 +1462,7 @@ if (_checkSession()) {
     <div class="chart-card" style="text-align:center;padding:18px 12px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cross-Sales Ratio</div>
       <div style="font-size:38px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-crosssales">—</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Contracted Orders ÷ Contracted Customers</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Customers with &gt;1 Order ÷ Unique Customers</div>
     </div>
   </div>
   <!-- Latest Month -->
@@ -2307,8 +2307,8 @@ function updateKPICards() {
   set('ceo-kpi-rate-label',        s.contractedCustomers + ' contracted of ' + s.uniqueCustomers + ' unique customers');
   set('ceo-kpi-order-conv',        s.conversionRate + '%');
   set('ceo-kpi-order-conv-sub',    s.contracted + ' orders ÷ ' + s.total + ' total');
-  set('ceo-kpi-crosssales',        s.crossSalesRatio + '×');
-  set('ceo-kpi-crosssales-sub',    s.contracted + ' orders ÷ ' + s.contractedCustomers + ' contracted customers');
+  set('ceo-kpi-crosssales',        s.crossSalesRate.toFixed ? (+(s.crossSalesRate/100).toFixed(2)) : '—');
+  set('ceo-kpi-crosssales-sub',    'Customers with >1 order ÷ ' + s.uniqueCustomers + ' unique customers');
   var yearLabel = s.year !== 'all' ? s.year : 'All Time';
   var el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
   // Latest Month
