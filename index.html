@@ -617,6 +617,52 @@ tbody td.muted { color:var(--text2); }
 .fc-badge-flat { background:rgba(255,215,64,0.15);  color:var(--gold); }
 .fc-badge-down { background:rgba(255,82,82,0.15);   color:var(--red); }
 .fc-confidence { font-size:10px; color:var(--text3); }
+
+/* ── EXEC LIST CARDS ───────────────────────────────────────── */
+.exec-list-row {
+  display:grid; grid-template-columns:20px 1fr auto; align-items:center; gap:8px;
+  padding:7px 4px; border-bottom:1px solid rgba(255,255,255,0.05);
+  transition:background .15s; cursor:pointer; border-radius:6px;
+}
+.exec-list-row:hover { background:rgba(255,255,255,0.05); }
+.exec-list-row.active { background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2); }
+.exec-list-row:last-child { border-bottom:none; }
+.exec-expand-table {
+  margin-top:10px; border-radius:8px; overflow:hidden;
+  border:1px solid rgba(255,255,255,0.08); font-size:11px;
+  animation:fadeIn .2s ease;
+}
+.exec-expand-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 12px; background:rgba(0,0,0,0.25);
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.6px; color:var(--text3);
+}
+.exec-expand-header span { color:var(--text2); font-weight:400; text-transform:none; letter-spacing:0; }
+.exec-expand-tbody { max-height:200px; overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent; }
+.exec-expand-row {
+  display:grid; gap:6px; padding:6px 12px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+  align-items:center; font-size:11px;
+}
+.exec-expand-row:last-child { border-bottom:none; }
+.exec-expand-row:hover { background:rgba(255,255,255,0.03); }
+.exec-expand-cell { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text2); }
+.exec-status-pill { font-size:9.5px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; }
+.exec-rank { font-size:10px; font-weight:700; color:var(--text3); text-align:center; line-height:1; }
+.exec-rank.gold   { color:#ffd740; }
+.exec-rank.silver { color:#b0bec5; }
+.exec-rank.bronze { color:#ff7043; }
+.exec-item-info { overflow:hidden; }
+.exec-item-name { font-size:12px; font-weight:600; color:var(--text1);
+                  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.exec-item-bar  { height:3px; border-radius:2px; margin-top:4px;
+                  background:rgba(255,255,255,0.07); overflow:hidden; }
+.exec-item-fill { height:100%; border-radius:2px; }
+.exec-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
+.exec-item-count { font-size:13px; font-weight:800; color:var(--text1); }
+.exec-item-rate  { font-size:10px; font-weight:600; }
 </style>
 </head><body>
 <!-- ═══════════════════════════════════════════════════════
@@ -947,11 +993,38 @@ if (_checkSession()) {
       <div class="chart-subtitle" id="exec-des-subtitle">Click a designer to view their stats</div>
       <div id="designer-buttons-panel"></div>
     </div>
+    <!-- hidden chart still rendered so JS doesn't error; zero size -->
+    <canvas id="chart-sources-exec" style="display:none" height="0"></canvas>
+
+    <!-- EXEC AREAS CARD -->
     <div class="chart-card">
-      <div class="chart-title">Lead Source Performance</div>
-      <div class="chart-subtitle">Measures volume by source</div>
-      <div class="chart-wrap"><canvas id="chart-sources-exec" height="220"></canvas></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div class="chart-title">📍 Top Areas</div>
+          <div class="chart-subtitle">Click any area to see its locations</div>
+        </div>
+        <div style="font-size:10px;color:var(--text3)" id="areas-card-total"></div>
+      </div>
+      <div id="exec-areas-list"></div>
+      <div id="exec-area-detail"></div>
     </div>
+  </div>
+
+  <!-- EXEC SOURCES CARD (full-width below the 2-col grid) -->
+  <div class="chart-grid chart-2" style="margin-bottom:18px">
+    <div class="chart-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div class="chart-title">📡 Lead Sources</div>
+          <div class="chart-subtitle">Click any source to see areas covered</div>
+        </div>
+        <div style="font-size:10px;color:var(--text3)" id="sources-card-total"></div>
+      </div>
+      <div id="exec-sources-list"></div>
+      <div id="exec-source-detail"></div>
+    </div>
+    <!-- spacer to keep 2-col grid balanced -->
+    <div></div>
   </div>
 
   <div class="section-row row-3">
@@ -1477,21 +1550,26 @@ if (_checkSession()) {
       <div class="chart-wrap"><canvas id="chart-ceo-trend" height="110"></canvas></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px">
-    <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--purple);background:linear-gradient(135deg,rgba(206,147,216,0.06),var(--card))">
-      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Best Designer of the Month</div>
-      <div style="font-size:18px;font-weight:800;color:var(--purple);min-height:24px" id="ceo-best-designer-name">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-best-designer-count">—</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+    <div class="kpi-card" style="text-align:center;padding:18px 12px;border-color:var(--purple);background:linear-gradient(135deg,rgba(206,147,216,0.06),var(--card))">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Busiest Designer This Month</div>
+      <div style="font-size:15px;font-weight:800;color:var(--purple);min-height:24px" id="ceo-best-designer-name">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px" id="ceo-best-designer-count">—</div>
     </div>
-    <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--blue);background:linear-gradient(135deg,rgba(64,196,255,0.06),var(--card))">
+    <div class="kpi-card" style="text-align:center;padding:18px 12px;border-color:var(--gold);background:linear-gradient(135deg,rgba(255,215,64,0.06),var(--card))">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Best Conversion Designer</div>
+      <div style="font-size:15px;font-weight:800;color:var(--gold);min-height:24px" id="ceo-conv-designer-name">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px" id="ceo-conv-designer-count">—</div>
+    </div>
+    <div class="kpi-card" style="text-align:center;padding:18px 12px;border-color:var(--blue);background:linear-gradient(135deg,rgba(64,196,255,0.06),var(--card))">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Top Area</div>
-      <div style="font-size:18px;font-weight:800;color:var(--blue);min-height:24px" id="ceo-top-area-name">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-area-count">—</div>
+      <div style="font-size:15px;font-weight:800;color:var(--blue);min-height:24px" id="ceo-top-area-name">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px" id="ceo-top-area-count">—</div>
     </div>
-    <div class="kpi-card" style="text-align:center;padding:20px;border-color:var(--green2);background:linear-gradient(135deg,rgba(105,240,174,0.06),var(--card))">
+    <div class="kpi-card" style="text-align:center;padding:18px 12px;border-color:var(--green2);background:linear-gradient(135deg,rgba(105,240,174,0.06),var(--card))">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Top Measure Source</div>
-      <div style="font-size:18px;font-weight:800;color:var(--green2);min-height:24px" id="ceo-top-source-name">—</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:6px" id="ceo-top-source-count">—</div>
+      <div style="font-size:15px;font-weight:800;color:var(--green2);min-height:24px" id="ceo-top-source-name">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px" id="ceo-top-source-count">—</div>
     </div>
   </div>
   <div class="chart-card" style="margin-bottom:18px;padding:16px 18px">
@@ -2315,6 +2393,8 @@ function updateKPICards() {
   (function(){var MN=['January','February','March','April','May','June','July','August','September','October','November','December'],lY=0,lM=0;(filteredMeasures||[]).forEach(function(r){var ry=parseInt(r._year||0,10),rm=r._monthOrder||0;if(ry>lY||(ry===lY&&rm>lM)){lY=ry;lM=rm;}});var cnt=0;if(lY>0&&lM>0){var ly=String(lY);(filteredMeasures||[]).forEach(function(r){if(r._year===ly&&r._monthOrder===lM)cnt++;});}var lbl=lY>0?MN[lM-1]+' '+lY:'Latest Month';set('ceo-kpi-cur-month',cnt.toLocaleString());set('ceo-cur-month-label',lbl);set('ceo-kpi-cur-month-sub',cnt>0?cnt+' visits':'No data');})();
   // Best Designer of Month
   (function(){var MN=['January','February','March','April','May','June','July','August','September','October','November','December'],lY=0,lM=0;(filteredMeasures||[]).forEach(function(r){var ry=parseInt(r._year||0,10),rm=r._monthOrder||0;if(ry>lY||(ry===lY&&rm>lM)){lY=ry;lM=rm;}});var dc={};if(lY>0&&lM>0){var ly=String(lY);(filteredMeasures||[]).forEach(function(r){if(r._year===ly&&r._monthOrder===lM){var d=r.designer||'Unknown';dc[d]=(dc[d]||0)+1;}});}var e=Object.entries(dc).sort(function(a,b){return b[1]-a[1];});if(e.length){set('ceo-best-designer-name',e[0][0]);set('ceo-best-designer-count',e[0][1]+' measures'+(lY>0?' · '+MN[lM-1]+' '+lY:''));}else{set('ceo-best-designer-name','—');set('ceo-best-designer-count','No data');}})();
+  // Best Conversion Designer this month (min. 3 measures)
+  (function(){var MN=['January','February','March','April','May','June','July','August','September','October','November','December'],lY=0,lM=0;(filteredMeasures||[]).forEach(function(r){var ry=parseInt(r._year||0,10),rm=r._monthOrder||0;if(ry>lY||(ry===lY&&rm>lM)){lY=ry;lM=rm;}});var dd={};if(lY>0&&lM>0){var ly=String(lY);(filteredMeasures||[]).forEach(function(r){if(r._year===ly&&r._monthOrder===lM){var d=r.designer||'Unknown';if(!dd[d])dd[d]={total:0,contracted:0};dd[d].total++;if(r._contracted)dd[d].contracted++;}});}var e=Object.entries(dd).filter(function(x){return x[1].total>=3;}).map(function(x){return{name:x[0],total:x[1].total,contracted:x[1].contracted,rate:x[1].total>0?+(x[1].contracted/x[1].total*100).toFixed(1):0};}).sort(function(a,b){return b.rate-a.rate;});var lbl=lY>0?MN[lM-1]+' '+lY:'';if(e.length){set('ceo-conv-designer-name',e[0].name);set('ceo-conv-designer-count',e[0].rate+'% CVR · '+e[0].contracted+'/'+e[0].total+' measures'+(lbl?' · '+lbl:''));}else{set('ceo-conv-designer-name','—');set('ceo-conv-designer-count','No data · min. 3 measures');}})();
   // Top Area
   (function(){var a=(s.areaData||[]).filter(function(x){return x.area&&x.area!=='Unknown';});if(a.length){set('ceo-top-area-name',a[0].area);set('ceo-top-area-count',a[0].total.toLocaleString()+' measures · '+a[0].conversionRate+'% CVR');}else{set('ceo-top-area-name','—');set('ceo-top-area-count','No data');}})();
   // Top Source
@@ -2431,6 +2511,11 @@ function buildExecutiveCharts() {
     },
     options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:30}},y:{grid:{color:'rgba(37,37,69,0.5)'}}}}
   });
+
+  // Refresh list-based cards after data loads
+  renderTopPerformers();
+  renderExecAreaCard();
+  renderExecSourceCard();
 }
 
 function buildDailyCharts() {
@@ -3774,6 +3859,141 @@ function changePage(dir) {
 // ============================================================
 // POPULATING EXEC PERFORMERS & INSIGHTS
 // ============================================================
+
+// ── EXEC LIST CARD HELPERS ──────────────────────────────────────────────────
+function _execRow(rank, key, name, count, maxCount, rate, accentColor, clickFn) {
+  const barPct    = maxCount > 0 ? Math.round(count / maxCount * 100) : 0;
+  const rankClass = rank===1?'gold':rank===2?'silver':rank===3?'bronze':'';
+  const rateColor = rate==null?'var(--text3)':rate>=30?'#00e676':rate>=20?'#ffd740':'#ff5252';
+  const safeKey   = (key||'').replace(/'/g, "\'");
+  return `<div class="exec-list-row" id="exec-row-${clickFn}-${rank}"
+    onclick="${clickFn}('${safeKey}', this)">
+    <div class="exec-rank ${rankClass}">${rank}</div>
+    <div class="exec-item-info">
+      <div class="exec-item-name" title="${name}">${name}</div>
+      <div class="exec-item-bar">
+        <div class="exec-item-fill" style="width:${barPct}%;background:${accentColor}"></div>
+      </div>
+    </div>
+    <div class="exec-item-right">
+      <div class="exec-item-count">${count.toLocaleString()}</div>
+      ${rate!=null?`<div class="exec-item-rate" style="color:${rateColor}">${rate}% conv</div>`:''}
+    </div>
+  </div>`;
+}
+
+function _execNoData(el) {
+  if (el) el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Connect Google Sheets to load data</div>';
+}
+
+// ── AREAS CARD ────────────────────────────────────────────────────────────────
+function renderExecAreaCard() {
+  const listEl   = document.getElementById('exec-areas-list');
+  const detailEl = document.getElementById('exec-area-detail');
+  const totEl    = document.getElementById('areas-card-total');
+  const areaData = [...(KITCHINO_STATE.areaData || [])].sort((a,b) => b.total - a.total);
+  if (!ENGINE_READY || !areaData.length) { _execNoData(listEl); return; }
+  const maxCount = areaData[0].total;
+  const totalAll = areaData.reduce((s,a) => s+a.total, 0);
+  if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures';
+  if (listEl) listEl.innerHTML = areaData.slice(0,8).map((a,i) =>
+    _execRow(i+1, a.area, a.area, a.total, maxCount, null, 'rgba(64,196,255,0.65)', 'drillArea')
+  ).join('');
+  if (detailEl) detailEl.innerHTML = '';
+}
+
+function drillArea(areaName, rowEl) {
+  const detailEl = document.getElementById('exec-area-detail');
+  const wasActive = rowEl.classList.contains('active');
+  document.querySelectorAll('#exec-areas-list .exec-list-row').forEach(r => r.classList.remove('active'));
+  if (wasActive) { if (detailEl) detailEl.innerHTML = ''; return; }
+  rowEl.classList.add('active');
+  const rows = (filteredMeasures || []).filter(r => r.area === areaName);
+  if (!rows.length) {
+    if (detailEl) detailEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:11px">No data for this area</div>';
+    return;
+  }
+  const locMap = {};
+  rows.forEach(r => {
+    const loc = (r.location || '').trim() || '(no location)';
+    locMap[loc] = (locMap[loc] || 0) + 1;
+  });
+  const locs = Object.entries(locMap).map(([loc,count]) => ({loc,count})).sort((a,b) => b.count-a.count);
+  const maxC = locs[0]?.count || 1;
+  const rowsHtml = locs.map((l,i) => {
+    const barW = Math.round(l.count/maxC*100);
+    const rankColor = i===0?'#ffd740':i===1?'#b0bec5':i===2?'#ff7043':'var(--text3)';
+    return '<div style="display:grid;grid-template-columns:22px 1fr 70px;align-items:center;gap:10px;' +
+      'padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
+      '<div style="font-size:10px;font-weight:700;color:' + rankColor + ';text-align:center">' + (i+1) + '</div>' +
+      '<div><div style="font-size:12px;font-weight:600;color:var(--text1);margin-bottom:4px">' + l.loc + '</div>' +
+      '<div style="height:4px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden">' +
+      '<div style="height:100%;width:' + barW + '%;background:rgba(64,196,255,0.7);border-radius:3px;transition:width .4s"></div></div></div>' +
+      '<div style="font-size:14px;font-weight:800;color:var(--blue);text-align:right">' + l.count.toLocaleString() + '</div>' +
+      '</div>';
+  }).join('');
+  if (detailEl) detailEl.innerHTML =
+    '<div class="exec-expand-table">' +
+    '<div class="exec-expand-header" style="background:rgba(64,196,255,0.08)">📍 ' + areaName +
+    ' <span style="color:var(--blue)">' + locs.length + ' location' + (locs.length!==1?'s':'') + ' · ' + rows.length + ' measures</span></div>' +
+    '<div style="display:grid;grid-template-columns:22px 1fr 70px;gap:10px;padding:5px 10px;' +
+    'background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">' +
+    '<div>#</div><div>Location</div><div style="text-align:right">Measures</div></div>' +
+    '<div class="exec-expand-tbody" style="max-height:220px">' + rowsHtml + '</div></div>';
+}
+
+// ── LEAD SOURCES CARD ─────────────────────────────────────────────────────────
+function renderExecSourceCard() {
+  const listEl   = document.getElementById('exec-sources-list');
+  const detailEl = document.getElementById('exec-source-detail');
+  const totEl    = document.getElementById('sources-card-total');
+  const srcData  = [...(KITCHINO_STATE.sourceData || [])].sort((a,b) => b.total - a.total);
+  if (!ENGINE_READY || !srcData.length) { _execNoData(listEl); return; }
+  const maxCount = srcData[0].total;
+  const totalAll = srcData.reduce((s,x) => s+x.total, 0);
+  if (totEl) totEl.textContent = srcData.length + ' sources · ' + totalAll.toLocaleString() + ' measures';
+  if (listEl) listEl.innerHTML = srcData.slice(0,8).map((s,i) =>
+    _execRow(i+1, s.source, s.source, s.total, maxCount, null, 'rgba(206,147,216,0.65)', 'drillSource')
+  ).join('');
+  if (detailEl) detailEl.innerHTML = '';
+}
+
+function drillSource(sourceName, rowEl) {
+  const detailEl = document.getElementById('exec-source-detail');
+  const wasActive = rowEl.classList.contains('active');
+  document.querySelectorAll('#exec-sources-list .exec-list-row').forEach(r => r.classList.remove('active'));
+  if (wasActive) { if (detailEl) detailEl.innerHTML = ''; return; }
+  rowEl.classList.add('active');
+  const rows = (filteredMeasures || []).filter(r => r.source === sourceName);
+  if (!rows.length) { if (detailEl) detailEl.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text3);font-size:11px">No data</div>'; return; }
+  const areaMap = {};
+  rows.forEach(r => {
+    const a = (r.area || '—').trim() || '—';
+    if (!areaMap[a]) areaMap[a] = {total:0, contracted:0};
+    areaMap[a].total++;
+    if (r._contracted) areaMap[a].contracted++;
+  });
+  const areas = Object.entries(areaMap)
+    .map(([area,d]) => ({area, ...d, rate:d.total>0?+(d.contracted/d.total*100).toFixed(1):0}))
+    .sort((a,b) => b.total-a.total);
+  const maxA = areas[0]?.total || 1;
+  const rowsHtml = areas.map((a,i) => {
+    const barW = Math.round(a.total/maxA*100);
+    const rateColor = a.rate>=30?'#00e676':a.rate>=20?'#ffd740':'#ff5252';
+    return '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
+      '<div style="font-size:10px;color:var(--text3);text-align:center">' + (i+1) + '</div>' +
+      '<div><div style="font-size:12px;font-weight:600;color:var(--text1)">' + a.area + '</div>' +
+      '<div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:4px;overflow:hidden">' +
+      '<div style="height:100%;width:' + barW + '%;background:rgba(206,147,216,0.6);border-radius:2px"></div></div></div>' +
+      '<div style="font-size:13px;font-weight:800;color:var(--text1);text-align:right">' + a.total.toLocaleString() + '</div>' +
+      '<div style="font-size:10px;font-weight:700;color:' + rateColor + ';text-align:right">' + a.rate + '% conv</div></div>';
+  }).join('');
+  if (detailEl) detailEl.innerHTML = '<div class="exec-expand-table">' +
+    '<div class="exec-expand-header">📡 ' + sourceName + ' — Areas Covered <span>' + rows.length + ' measures</span></div>' +
+    '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;gap:8px;padding:5px 10px;background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)"><div>#</div><div>Area</div><div style="text-align:right">Measures</div><div style="text-align:right">Conv%</div></div>' +
+    '<div class="exec-expand-tbody">' + rowsHtml + '</div></div>';
+}
+
 function renderTopPerformers() {
   const allD = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
 
