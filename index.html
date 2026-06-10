@@ -3887,15 +3887,31 @@ function _execNoData(el) {
 }
 
 // ── AREAS CARD ────────────────────────────────────────────────────────────────
-function renderExecAreaCard() {
+function renderExecAreaCard(overrideRows) {
   const listEl   = document.getElementById('exec-areas-list');
   const detailEl = document.getElementById('exec-area-detail');
   const totEl    = document.getElementById('areas-card-total');
-  const areaData = [...(KITCHINO_STATE.areaData || [])].sort((a,b) => b.total - a.total);
+
+  let areaData;
+  if (overrideRows) {
+    // Build area aggregation from provided rows (designer-filtered)
+    const areaMap = {};
+    overrideRows.forEach(r => {
+      const a = (r.area || '—').trim() || '—';
+      if (!areaMap[a]) areaMap[a] = { area:a, total:0, contracted:0 };
+      areaMap[a].total++;
+      if (r._contracted) areaMap[a].contracted++;
+    });
+    areaData = Object.values(areaMap).sort((a,b) => b.total - a.total);
+  } else {
+    areaData = [...(KITCHINO_STATE.areaData || [])].sort((a,b) => b.total - a.total);
+  }
+
   if (!ENGINE_READY || !areaData.length) { _execNoData(listEl); return; }
   const maxCount = areaData[0].total;
   const totalAll = areaData.reduce((s,a) => s+a.total, 0);
-  if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures';
+  const subtitle = overrideRows ? ' (this designer)' : '';
+  if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures' + subtitle;
   if (listEl) listEl.innerHTML = areaData.slice(0,8).map((a,i) =>
     _execRow(i+1, a.area, a.area, a.total, maxCount, null, 'rgba(64,196,255,0.65)', 'drillArea')
   ).join('');
@@ -4018,15 +4034,30 @@ function renderTopPerformers() {
     </div>`;
   }).join('');
 
-  const low = [...allD].sort((a,b)=>a.contracted/a.total-b.contracted/b.total).slice(0,5);
-  if (lowEl) lowEl.innerHTML = low.map((d,i) => {
+  // Needs Attention: high-volume designers below average CVR, exclude Unknown/N/A
+  const SKIP = ['unknown','n/a','','—','-'];
+  const qualified = allD.filter(d => {
+    const n = (d.name||'').trim().toLowerCase();
+    return d.total >= 10 && !SKIP.includes(n);
+  });
+  const avgCVR = qualified.length > 0
+    ? qualified.reduce((s,d) => s + d.contracted/d.total*100, 0) / qualified.length
+    : 0;
+  const low = qualified
+    .filter(d => (d.contracted/d.total*100) < avgCVR)
+    .sort((a,b) => b.total - a.total)   // highest volume first — most impactful
+    .slice(0, 5);
+  if (lowEl) lowEl.innerHTML = low.length ? low.map((d,i) => {
     const rate = +(d.contracted/d.total*100).toFixed(1);
     return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
       <div style="width:20px;height:20px;background:rgba(255,82,82,0.2);border:1px solid var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--red);flex-shrink:0">${i+1}</div>
-      <div style="flex:1;font-size:12px">${d.name}</div>
+      <div style="flex:1">
+        <div style="font-size:12px">${d.name}</div>
+        <div style="font-size:10px;color:var(--text3)">${d.total} measures · avg is ${avgCVR.toFixed(1)}%</div>
+      </div>
       <div style="font-size:12px;font-weight:700;color:var(--red)">${rate}%</div>
     </div>`;
-  }).join('');
+  }).join('') : '<div style="font-size:12px;color:var(--text3);padding:12px 0">All high-volume designers are above average 🎉</div>';
 
   const insights = [
     {icon:'💡',text:'<strong>التجمع</strong> drives 47.5% of all measures — prioritize inventory & staffing there'},
@@ -4690,6 +4721,8 @@ function selectDesignerBtn(btn, payload) {
   if (btn.classList.contains('dbtn-active')) {
     btn.classList.remove('dbtn-active');
     detail.style.display = 'none';
+    // Reset area card back to global view
+    renderExecAreaCard();
     return;
   }
   document.querySelectorAll('.designer-btn').forEach(b => b.classList.remove('dbtn-active'));
@@ -4745,6 +4778,9 @@ function selectDesignerBtn(btn, payload) {
   detail._custList  = custList;
   detail._renderRows = renderRows;
   detail.style.display = 'block';
+
+  // Cross-filter: update Area card to show this designer's areas
+  renderExecAreaCard(rows);
 }
 
 function filterDesignerCustomers(listId, searchId) {
