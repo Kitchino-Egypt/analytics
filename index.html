@@ -1863,6 +1863,7 @@ function engine_cleanRows(rawRows) {
     const payment      = norm(r.payment);
     const paymentNote  = norm(r.paymentNote);
     const orderCode    = norm(r.orderCode);
+    const location     = norm(r.location);
 
     // Field presence flags
     if (!customer)  R.flags.missingCustomer++;
@@ -1886,7 +1887,7 @@ function engine_cleanRows(rawRows) {
     else                                                  R.breakdown.byStatus.blank++;
 
     clean.push({
-      code: orderCode, orderCode, customer, designer, status, area,
+      code: orderCode, orderCode, customer, designer, status, area, location,
       source, orderType, payment, paymentNote,
       visitDate:   r.visitDate || '',
       month:       _ENGINE_MONTHS[mIdx],
