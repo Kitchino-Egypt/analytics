@@ -3936,10 +3936,27 @@ function renderExecAreaCard(overrideRows) {
   const maxCount = areaData[0].total;
   const totalAll = areaData.reduce((s,a) => s+a.total, 0);
   const subtitle = overrideRows ? ' (this designer)' : '';
-  if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures' + subtitle;
-  if (listEl) listEl.innerHTML = areaData.slice(0,8).map((a,i) =>
-    _execRow(i+1, a.area, a.area, a.total, maxCount, null, 'rgba(64,196,255,0.65)', 'drillArea')
-  ).join('');
+  const totalContracted = areaData.reduce((s,a) => s+(a.contracted||0), 0);
+  if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures · ' + totalContracted.toLocaleString() + ' contracted' + subtitle;
+  if (listEl) listEl.innerHTML = areaData.slice(0,8).map((a,i) => {
+    const barPct    = maxCount > 0 ? Math.round(a.total / maxCount * 100) : 0;
+    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const cvr       = a.total > 0 ? +(a.contracted/a.total*100).toFixed(1) : 0;
+    const cvrColor  = cvr >= 30 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff5252';
+    const safeArea  = (a.area||'').replace(/'/g, "\'");
+    return `<div class="exec-list-row" onclick="drillArea('${safeArea}', this)">
+      <div class="exec-rank ${rankClass}">${i+1}</div>
+      <div class="exec-item-info">
+        <div class="exec-item-name" title="${a.area}">${a.area}</div>
+        <div class="exec-item-bar"><div class="exec-item-fill" style="width:${barPct}%;background:rgba(64,196,255,0.65)"></div></div>
+      </div>
+      <div class="exec-item-right">
+        <div class="exec-item-count">${a.total.toLocaleString()} <span style="font-size:10px;font-weight:400;color:var(--text3)">visits</span></div>
+        <div style="font-size:10px;font-weight:700;color:#00e676">${(a.contracted||0).toLocaleString()} <span style="font-weight:400;color:var(--text3)">contracted</span></div>
+        <div class="exec-item-rate" style="color:${cvrColor}">${cvr}% conv</div>
+      </div>
+    </div>`;
+  }).join('');
   if (detailEl) detailEl.innerHTML = '';
 }
 
@@ -3957,29 +3974,39 @@ function drillArea(areaName, rowEl) {
   const locMap = {};
   rows.forEach(r => {
     const loc = (r.location || '').trim() || '(no location)';
-    locMap[loc] = (locMap[loc] || 0) + 1;
+    if (!locMap[loc]) locMap[loc] = { count:0, contracted:0 };
+    locMap[loc].count++;
+    if (r._contracted) locMap[loc].contracted++;
   });
-  const locs = Object.entries(locMap).map(([loc,count]) => ({loc,count})).sort((a,b) => b.count-a.count);
+  const locs = Object.entries(locMap)
+    .map(([loc,d]) => ({loc, count:d.count, contracted:d.contracted}))
+    .sort((a,b) => b.count - a.count);
   const maxC = locs[0]?.count || 1;
+  const totalContracted = rows.filter(r => r._contracted).length;
   const rowsHtml = locs.map((l,i) => {
-    const barW = Math.round(l.count/maxC*100);
+    const barW      = Math.round(l.count/maxC*100);
+    const cvr       = l.count > 0 ? +(l.contracted/l.count*100).toFixed(1) : 0;
+    const cvrColor  = cvr >= 30 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff5252';
     const rankColor = i===0?'#ffd740':i===1?'#b0bec5':i===2?'#ff7043':'var(--text3)';
-    return '<div style="display:grid;grid-template-columns:22px 1fr 70px;align-items:center;gap:10px;' +
+    return '<div style="display:grid;grid-template-columns:22px 1fr 70px 60px 52px;align-items:center;gap:8px;' +
       'padding:7px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
       '<div style="font-size:10px;font-weight:700;color:' + rankColor + ';text-align:center">' + (i+1) + '</div>' +
       '<div><div style="font-size:12px;font-weight:600;color:var(--text1);margin-bottom:4px">' + l.loc + '</div>' +
       '<div style="height:4px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden">' +
       '<div style="height:100%;width:' + barW + '%;background:rgba(64,196,255,0.7);border-radius:3px;transition:width .4s"></div></div></div>' +
-      '<div style="font-size:14px;font-weight:800;color:var(--blue);text-align:right">' + l.count.toLocaleString() + '</div>' +
+      '<div style="font-size:13px;font-weight:800;color:var(--blue);text-align:right">' + l.count.toLocaleString() + '</div>' +
+      '<div style="font-size:13px;font-weight:800;color:#00e676;text-align:right">' + l.contracted.toLocaleString() + '</div>' +
+      '<div style="font-size:10px;font-weight:700;color:' + cvrColor + ';text-align:right">' + cvr + '%</div>' +
       '</div>';
   }).join('');
   if (detailEl) detailEl.innerHTML =
     '<div class="exec-expand-table">' +
     '<div class="exec-expand-header" style="background:rgba(64,196,255,0.08)">📍 ' + areaName +
-    ' <span style="color:var(--blue)">' + locs.length + ' location' + (locs.length!==1?'s':'') + ' · ' + rows.length + ' measures</span></div>' +
-    '<div style="display:grid;grid-template-columns:22px 1fr 70px;gap:10px;padding:5px 10px;' +
+    ' <span style="color:var(--blue)">' + locs.length + ' location' + (locs.length!==1?'s':'') +
+    ' · ' + rows.length + ' visits · <span style=\'color:#00e676\'>' + totalContracted + ' contracted</span></span></div>' +
+    '<div style="display:grid;grid-template-columns:22px 1fr 70px 60px 52px;gap:8px;padding:5px 10px;' +
     'background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">' +
-    '<div>#</div><div>Location</div><div style="text-align:right">Measures</div></div>' +
+    '<div>#</div><div>Location</div><div style="text-align:right">Visits</div><div style="text-align:right">Contracted</div><div style="text-align:right">CVR%</div></div>' +
     '<div class="exec-expand-tbody" style="max-height:220px">' + rowsHtml + '</div></div>';
 }
 
