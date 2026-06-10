@@ -1423,58 +1423,46 @@ if (_checkSession()) {
 
 <!-- PAGE 11: CEO VIEW -->
 <div class="page" id="page-ceo">
-  <!-- CEO: Customer Pipeline Funnel -->
-  <div class="chart-card" style="margin-bottom:16px;padding:20px 22px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text2)">Customer Pipeline — Measure to Contract Flow</span>
-      <span style="margin-left:auto;font-size:9px;color:var(--text3)" id="ceo-year-label">All Time</span>
+  <!-- CEO: 4 Primary KPI Cards -->
+  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" id="ceo-year-label">All Time</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+    <div class="kpi-card green" style="text-align:center;padding:22px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Measures</div>
+      <div style="font-size:40px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-yoy-label">Individual Projects</div>
     </div>
-    <!-- Funnel steps -->
-    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:16px">
-      <div style="flex:1;text-align:center">
-        <div style="background:rgba(0,230,118,0.12);border:1px solid rgba(0,230,118,0.4);border-radius:8px;padding:16px 8px 12px">
-          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Total Measures</div>
-          <div style="font-size:34px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:6px" id="ceo-yoy-label">visits</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;padding:0 8px;color:var(--text3);font-size:16px;flex-shrink:0">&#9654;</div>
-      <div style="flex:1;text-align:center">
-        <div style="background:rgba(29,233,182,0.12);border:1px solid rgba(29,233,182,0.4);border-radius:8px;padding:16px 8px 12px">
-          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Unique Customers</div>
-          <div style="font-size:34px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-unique">—</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:6px">by CRM ID</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;padding:0 8px;color:var(--text3);font-size:16px;flex-shrink:0">&#9654;</div>
-      <div style="flex:1;text-align:center">
-        <div style="background:rgba(255,215,64,0.12);border:1px solid rgba(255,215,64,0.4);border-radius:8px;padding:16px 8px 12px">
-          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Contracted Customers</div>
-          <div style="font-size:34px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-contracted-cust">—</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:6px">unique CRM IDs</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;padding:0 8px;color:var(--text3);font-size:16px;flex-shrink:0">&#9654;</div>
-      <div style="flex:1;text-align:center">
-        <div style="background:rgba(64,196,255,0.12);border:1px solid rgba(64,196,255,0.4);border-radius:8px;padding:16px 8px 12px">
-          <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Contracted Orders</div>
-          <div style="font-size:34px;font-weight:900;color:var(--blue);line-height:1" id="ceo-kpi-contracted-orders">—</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:6px">total projects</div>
-        </div>
-      </div>
+    <div class="kpi-card teal" style="text-align:center;padding:22px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Customers</div>
+      <div style="font-size:40px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-unique">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px">Unique CRM IDs</div>
     </div>
-    <!-- Conversion Rate + Cross-Sales -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div style="background:rgba(0,230,118,0.07);border:1px solid rgba(0,230,118,0.25);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Customer Conversion Rate</div>
-        <div style="font-size:44px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-conv-rate">—</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px" id="ceo-kpi-rate-label">Contracted Customers ÷ Unique Customers</div>
-      </div>
-      <div style="background:rgba(255,215,64,0.07);border:1px solid rgba(255,215,64,0.25);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cross-Sales Ratio</div>
-        <div style="font-size:44px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-crosssales">—</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Avg Orders per Contracted Customer</div>
-      </div>
+    <div class="kpi-card gold" style="text-align:center;padding:22px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Contracted Orders</div>
+      <div style="font-size:40px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-contracted-orders">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px">Signed Projects</div>
+    </div>
+    <div class="kpi-card blue" style="text-align:center;padding:22px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Contracted Customers</div>
+      <div style="font-size:40px;font-weight:900;color:var(--blue);line-height:1" id="ceo-kpi-contracted-cust">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px">Unique CRM IDs</div>
+    </div>
+  </div>
+  <!-- CEO: 3 Conversion / Rate Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+    <div class="chart-card" style="text-align:center;padding:18px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Customer Conversion Rate</div>
+      <div style="font-size:38px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-conv-rate">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-rate-label">Contracted Customers ÷ Unique Customers</div>
+    </div>
+    <div class="chart-card" style="text-align:center;padding:18px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Order Conversion Rate</div>
+      <div style="font-size:38px;font-weight:900;color:var(--teal);line-height:1" id="ceo-kpi-order-conv">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-order-conv-sub">Contracted Orders ÷ Total Orders</div>
+    </div>
+    <div class="chart-card" style="text-align:center;padding:18px 12px">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cross-Sales Rate</div>
+      <div style="font-size:38px;font-weight:900;color:var(--gold);line-height:1" id="ceo-kpi-crosssales">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px" id="ceo-kpi-crosssales-sub">Customers with &gt;1 Order ÷ Unique Customers</div>
     </div>
   </div>
   <!-- Latest Month -->
@@ -2002,6 +1990,11 @@ function engine_compute() {
   KITCHINO_STATE.conversionRate      = total>0?+(contracted/total*100).toFixed(1):0;
   KITCHINO_STATE.customerConvRate    = allCustIds.size>0?+(contractedCustIds.size/allCustIds.size*100).toFixed(1):0;
   KITCHINO_STATE.crossSalesRatio     = contractedCustIds.size>0?+(contracted/contractedCustIds.size).toFixed(2):0;
+  // Cross-sales rate = % of unique customers who have >1 total order
+  const custOrderCount = {};
+  filtered.forEach(r => { const id=(r.orderCode||r.customer||'').trim(); if(id) custOrderCount[id]=(custOrderCount[id]||0)+1; });
+  const multiOrderCusts = Object.values(custOrderCount).filter(n=>n>1).length;
+  KITCHINO_STATE.crossSalesRate = allCustIds.size>0?+(multiOrderCusts/allCustIds.size*100).toFixed(1):0;
   KITCHINO_STATE.monthlyData     = engine_monthly(filtered);
   KITCHINO_STATE.designerData    = engine_designers(filtered);
   KITCHINO_STATE.allDesignerData = engine_designers(yearOnly);
@@ -2240,6 +2233,7 @@ let KITCHINO_STATE = {
   contractedCustomers: 0,
   customerConvRate: 0,
   crossSalesRatio: 0,
+  crossSalesRate: 0,
 };
 
 /**
@@ -2266,6 +2260,7 @@ function computeFilteredState() {
   KITCHINO_STATE.conversionRate      = 0;
   KITCHINO_STATE.customerConvRate    = 0;
   KITCHINO_STATE.crossSalesRatio     = 0;
+  KITCHINO_STATE.crossSalesRate      = 0;
   KITCHINO_STATE.monthlyData     = [];
   KITCHINO_STATE.designerData    = [];
   KITCHINO_STATE.allDesignerData = [];
@@ -2307,8 +2302,10 @@ function updateKPICards() {
   set('ceo-kpi-contracted-cust',   s.contractedCustomers.toLocaleString());
   set('ceo-kpi-conv-rate',         s.customerConvRate + '%');
   set('ceo-kpi-rate-label',        s.contractedCustomers + ' contracted of ' + s.uniqueCustomers + ' unique customers');
-  set('ceo-kpi-crosssales',        s.crossSalesRatio + '×');
-  set('ceo-kpi-crosssales-sub',    s.contracted + ' orders ÷ ' + s.contractedCustomers + ' customers');
+  set('ceo-kpi-order-conv',        s.conversionRate + '%');
+  set('ceo-kpi-order-conv-sub',    s.contracted + ' orders ÷ ' + s.total + ' total');
+  set('ceo-kpi-crosssales',        s.crossSalesRate + '%');
+  set('ceo-kpi-crosssales-sub',    'Customers with >1 Order ÷ Unique Customers');
   var yearLabel = s.year !== 'all' ? s.year : 'All Time';
   var el2 = document.getElementById('ceo-year-label'); if(el2) el2.textContent = yearLabel;
   // Latest Month
