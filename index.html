@@ -349,6 +349,7 @@ tbody td.muted { color:var(--text2); }
 @media(min-width:901px) {
   #page-home { display:none !important; }
   .mobile-topbar-actions { display:none !important; }
+  #mob-filter-panel { display:none !important; }
 }
 
 /* TOOLTIP */
@@ -826,6 +827,7 @@ if (_checkSession()) {
     <!-- Mobile-only actions -->
     <div class="mobile-topbar-actions" style="display:none;align-items:center;gap:8px;margin-right:8px">
       <button onclick="showMobileHome()" style="background:rgba(0,230,118,0.1);border:1px solid var(--green);color:var(--green);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">⌂ Home</button>
+      <button onclick="toggleMobFilters()" id="mob-filter-btn" style="background:var(--card);border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">⊞ Filters</button>
       <button onclick="toggleSidebar()" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:16px;cursor:pointer">☰</button>
     </div>
     <div>
@@ -851,6 +853,28 @@ if (_checkSession()) {
       <button class="refresh-btn" onclick="exportPDF()">⬇ Export</button>
       <button class="refresh-btn" onclick="showReconciliationPanel()" style="background:rgba(29,233,182,0.15);color:var(--teal);border-color:var(--teal)" title="Data Audit Report">⚙ Audit</button>
     </div>
+  </div>
+
+  <!-- MOBILE FILTER PANEL -->
+  <div id="mob-filter-panel" style="display:none;background:var(--card);border-bottom:1px solid var(--border);padding:10px 12px;gap:8px;flex-direction:column">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <select class="filter-select" id="mob-filter-year" onchange="applyMobFilters()" style="font-size:12px;padding:7px 10px">
+        <option value="all">All Years</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+      </select>
+      <select class="filter-select" id="mob-filter-designer" onchange="applyMobFilters()" style="font-size:12px;padding:7px 10px">
+        <option value="all">All Designers</option>
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+      <select class="filter-select" id="mob-filter-area" onchange="applyMobFilters()" style="font-size:12px;padding:7px 10px">
+        <option value="all">All Areas</option>
+      </select>
+      <button onclick="resetMobFilters()" style="background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.3);color:var(--red);padding:7px 12px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">✕ Reset</button>
+    </div>
+    <div id="mob-filter-summary" style="font-size:10px;color:var(--text3);text-align:center"></div>
   </div>
 
   <!-- PAGE CONTENT -->
@@ -4164,6 +4188,19 @@ function _refreshFilterDropdowns() {
     aSel.innerHTML = '<option value="all">All Areas</option>';
     AREAS.forEach(a => { const o=document.createElement('option');o.value=a;o.textContent=a;if(a===cur)o.selected=true;aSel.appendChild(o); });
   }
+  // Mobile mirrors
+  const mdSel = document.getElementById('mob-filter-designer');
+  if (mdSel) {
+    const cur = mdSel.value;
+    mdSel.innerHTML = '<option value="all">All Designers</option>';
+    DESIGNERS.forEach(d => { const o=document.createElement('option');o.value=d;o.textContent=d;if(d===cur)o.selected=true;mdSel.appendChild(o); });
+  }
+  const maSel = document.getElementById('mob-filter-area');
+  if (maSel) {
+    const cur = maSel.value;
+    maSel.innerHTML = '<option value="all">All Areas</option>';
+    AREAS.forEach(a => { const o=document.createElement('option');o.value=a;o.textContent=a;if(a===cur)o.selected=true;maSel.appendChild(o); });
+  }
   // Month filter on Measures Tracking page
   const mSel = document.getElementById('mt-month-filter');
   if (mSel) {
@@ -4177,6 +4214,54 @@ function populateFilters() {
   // Arrays populated dynamically after engine loads via _refreshFilterDropdowns()
   // This is a safe no-op at init time when arrays are empty
   if (DESIGNERS.length || AREAS.length) _refreshFilterDropdowns();
+}
+
+function toggleMobFilters() {
+  const panel = document.getElementById('mob-filter-panel');
+  const btn   = document.getElementById('mob-filter-btn');
+  if (!panel) return;
+  const open = panel.style.display === 'flex';
+  panel.style.display = open ? 'none' : 'flex';
+  if (btn) {
+    btn.style.background    = open ? 'var(--card)'                : 'rgba(0,230,118,0.1)';
+    btn.style.borderColor   = open ? 'var(--border)'              : 'var(--green)';
+    btn.style.color         = open ? 'var(--text2)'               : 'var(--green)';
+  }
+}
+
+function applyMobFilters() {
+  // Sync mobile → desktop selects
+  const sync = (mobId, deskId) => {
+    const mob  = document.getElementById(mobId);
+    const desk = document.getElementById(deskId);
+    if (mob && desk) desk.value = mob.value;
+  };
+  sync('mob-filter-year',     'filter-year');
+  sync('mob-filter-designer', 'filter-designer');
+  sync('mob-filter-area',     'filter-area');
+  // Update summary label
+  _updateMobFilterSummary();
+  applyFilters();
+}
+
+function resetMobFilters() {
+  ['mob-filter-year','mob-filter-designer','mob-filter-area'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = 'all';
+  });
+  applyMobFilters();
+}
+
+function _updateMobFilterSummary() {
+  const y = document.getElementById('mob-filter-year')?.value     || 'all';
+  const d = document.getElementById('mob-filter-designer')?.value || 'all';
+  const a = document.getElementById('mob-filter-area')?.value     || 'all';
+  const parts = [];
+  if (y !== 'all') parts.push(y);
+  if (d !== 'all') parts.push(d);
+  if (a !== 'all') parts.push(a);
+  const el = document.getElementById('mob-filter-summary');
+  if (el) el.textContent = parts.length ? 'Active: ' + parts.join(' · ') : 'No filters applied';
 }
 
 function applyFilters() {
