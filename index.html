@@ -5725,4 +5725,15 @@ function togglePresMode() {
   if (_presFullscreen) {
     if (sidebar) { sidebar._pd = sidebar.style.display; sidebar.style.setProperty('display','none','important'); }
     if (topbar)  { topbar._pd  = topbar.style.display;  topbar.style.setProperty('display','none','important'); }
-    if (wrap)    { wrap._ml = wrap.style.marginLeft; wrap._w = wrap.style.
+    if (wrap)    { wrap._ml = wrap.style.marginLeft; wrap._w = wrap.style.width; wrap.style.marginLeft='0'; wrap.style.width='100vw'; }
+    document.body.style.overflow = 'hidden';
+  } else {
+    if (sidebar) { sidebar.style.removeProperty('display'); if (sidebar._pd) sidebar.style.display = sidebar._pd; }
+    if (topbar)  { topbar.style.removeProperty('display');  if (topbar._pd)  topbar.style.display  = topbar._pd; }
+    if (wrap)    { wrap.style.marginLeft = wrap._ml||''; wrap.style.width = wrap._w||''; }
+    document.body.style.overflow = '';
+  }
+}
+</script>
+</body>
+</html>
