@@ -916,6 +916,9 @@ if (_checkSession()) {
       <select class="filter-select" id="filter-area" onchange="applyFilters()">
         <option value="all">All Areas</option>
       </select>
+      <select class="filter-select" id="filter-month" onchange="applyFilters()" style="min-width:120px">
+        <option value="all">All Months</option>
+      </select>
       <input type="text" class="search-box" id="global-search" placeholder="🔍 Search customer / ID…" oninput="applyFilters()">
       <div class="live-dot" title="Live"></div>
       <button class="refresh-btn" onclick="refreshData()">↻ Refresh</button>
@@ -938,10 +941,15 @@ if (_checkSession()) {
         <option value="all">All Designers</option>
       </select>
     </div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <select class="filter-select" id="mob-filter-area" onchange="applyMobFilters()" style="font-size:12px;padding:7px 10px">
         <option value="all">All Areas</option>
       </select>
+      <select class="filter-select" id="mob-filter-month" onchange="applyMobFilters()" style="font-size:12px;padding:7px 10px">
+        <option value="all">All Months</option>
+      </select>
+    </div>
+    <div style="display:flex;justify-content:flex-end">
       <button onclick="resetMobFilters()" style="background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.3);color:var(--red);padding:7px 12px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">✕ Reset</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -1977,7 +1985,7 @@ let CONTRACTS_DATA   = [];   // populated by _fetchContracts() from ContractsCon
 let ENGINE_RAW_ROWS   = [];    // Raw rows received from getMeasures connector
 let ENGINE_CLEAN_ROWS = [];    // Validated & normalized operational rows
 let ENGINE_READY      = false; // true once raw rows are loaded and cleaned
-let MOB_FILTERS = { year:'all', designer:'all', area:'all' }; // mobile filter state
+let MOB_FILTERS = { year:'all', designer:'all', area:'all', month:'all' }; // mobile filter state
 // ── Enterprise Data Quality Report — populated by engine_cleanRows() ──────────
 let ENGINE_QUALITY_REPORT = {
   timestamp:    null,
@@ -2163,11 +2171,12 @@ function engine_cleanRows(rawRows) {
 
 // ── Filter rows — identical logic to Data Studio dimension filters ────────────
 function engine_filterRows(rows, filters) {
-  const { year, designer, area } = filters || {};
+  const { year, designer, area, month } = filters || {};
   return rows.filter(r => {
-    if (year     && year     !== 'all' && r._year    !== year)     return false;
-    if (designer && designer !== 'all' && r.designer !== designer) return false;
-    if (area     && area     !== 'all' && r.area     !== area)     return false;
+    if (year     && year     !== 'all' && r._year      !== year)     return false;
+    if (designer && designer !== 'all' && r.designer   !== designer) return false;
+    if (area     && area     !== 'all' && r.area       !== area)     return false;
+    if (month    && month    !== 'all' && r._monthName !== month)    return false;
     return true;
   });
 }
@@ -2300,7 +2309,8 @@ function engine_compute() {
   const yearF     = _fv('year',     'filter-year');
   const designerF = _fv('designer', 'filter-designer');
   const areaF     = _fv('area',     'filter-area');
-  const filtered  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, designer:designerF, area:areaF});
+  const monthF    = _fv('month',    'filter-month');
+  const filtered  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, designer:designerF, area:areaF, month:monthF});
   const yearOnly  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF});
   const total      = filtered.length;
   const contracted = filtered.filter(r=>r._contracted).length;
@@ -2581,6 +2591,7 @@ function computeFilteredState() {
   const yearF     = (MOB_FILTERS.year     !== 'all') ? MOB_FILTERS.year     : (document.getElementById('filter-year')?.value     || 'all');
   const designerF = (MOB_FILTERS.designer !== 'all') ? MOB_FILTERS.designer : (document.getElementById('filter-designer')?.value || 'all');
   const areaF     = (MOB_FILTERS.area     !== 'all') ? MOB_FILTERS.area     : (document.getElementById('filter-area')?.value     || 'all');
+  const monthF    = (MOB_FILTERS.month    !== 'all') ? MOB_FILTERS.month    : (document.getElementById('filter-month')?.value     || 'all');
   KITCHINO_STATE.year            = yearF;
   KITCHINO_STATE.designer        = designerF;
   KITCHINO_STATE.area            = areaF;
@@ -4512,6 +4523,20 @@ function _refreshFilterDropdowns() {
     maSel.innerHTML = '<option value="all">All Areas</option>';
     AREAS.forEach(a => { const o=document.createElement('option');o.value=a;o.textContent=a;if(a===cur)o.selected=true;maSel.appendChild(o); });
   }
+  // Global month filter (topbar)
+  const gmSel = document.getElementById('filter-month');
+  if (gmSel) {
+    const cur = gmSel.value;
+    gmSel.innerHTML = '<option value="all">All Months</option>';
+    MONTHS.forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=m;if(m===cur)o.selected=true;gmSel.appendChild(o); });
+  }
+  // Mobile month filter mirror
+  const mobmSel = document.getElementById('mob-filter-month');
+  if (mobmSel) {
+    const cur = mobmSel.value;
+    mobmSel.innerHTML = '<option value="all">All Months</option>';
+    MONTHS.forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=m;if(m===cur)o.selected=true;mobmSel.appendChild(o); });
+  }
   // Month filter on Measures Tracking page
   const mSel = document.getElementById('mt-month-filter');
   if (mSel) {
@@ -4545,11 +4570,13 @@ function applyMobFilters() {
   MOB_FILTERS.year     = document.getElementById('mob-filter-year')?.value     || 'all';
   MOB_FILTERS.designer = document.getElementById('mob-filter-designer')?.value || 'all';
   MOB_FILTERS.area     = document.getElementById('mob-filter-area')?.value     || 'all';
+  MOB_FILTERS.month    = document.getElementById('mob-filter-month')?.value    || 'all';
   // Also sync to desktop selects (for pages that read them directly)
   const sync = (val, deskId) => { const el = document.getElementById(deskId); if (el) el.value = val; };
   sync(MOB_FILTERS.year,     'filter-year');
   sync(MOB_FILTERS.designer, 'filter-designer');
   sync(MOB_FILTERS.area,     'filter-area');
+  sync(MOB_FILTERS.month,    'filter-month');
   _updateMobFilterSummary();
   applyFilters();
   // Force rebuild active page (in case it was already in builtPages cache)
@@ -4562,12 +4589,12 @@ function applyMobFilters() {
 }
 
 function resetMobFilters() {
-  MOB_FILTERS = { year:'all', designer:'all', area:'all' };
-  ['mob-filter-year','mob-filter-designer','mob-filter-area'].forEach(id => {
+  MOB_FILTERS = { year:'all', designer:'all', area:'all', month:'all' };
+  ['mob-filter-year','mob-filter-designer','mob-filter-area','mob-filter-month'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = 'all';
   });
-  ['filter-year','filter-designer','filter-area'].forEach(id => {
+  ['filter-year','filter-designer','filter-area','filter-month'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = 'all';
   });
@@ -4579,10 +4606,12 @@ function _updateMobFilterSummary() {
   const y = document.getElementById('mob-filter-year')?.value     || 'all';
   const d = document.getElementById('mob-filter-designer')?.value || 'all';
   const a = document.getElementById('mob-filter-area')?.value     || 'all';
+  const m = document.getElementById('mob-filter-month')?.value    || 'all';
   const parts = [];
   if (y !== 'all') parts.push(y);
   if (d !== 'all') parts.push(d);
   if (a !== 'all') parts.push(a);
+  if (m !== 'all') parts.push(m);
   const el = document.getElementById('mob-filter-summary');
   if (el) el.textContent = parts.length ? 'Active: ' + parts.join(' · ') : 'No filters applied';
 }
@@ -5686,23 +5715,14 @@ function presNav(dir) { _presShowSlide(_presCurrentSlide + dir); }
 
 function togglePresMode() {
   _presFullscreen = !_presFullscreen;
-  const pg  = document.getElementById('page-presentation');
-  const btn = document.getElementById('pres-mode-btn');
+  const pg      = document.getElementById('page-presentation');
+  const btn     = document.getElementById('pres-mode-btn');
+  const sidebar = document.querySelector('.sidebar');
+  const topbar  = document.querySelector('.topbar');
+  const wrap    = document.querySelector('.main');
   if (pg)  pg.classList.toggle('pres-fullscreen', _presFullscreen);
   if (btn) { btn.textContent = _presFullscreen ? '⊡ Exit Fullscreen' : '⛶ Fullscreen'; btn.classList.toggle('active', _presFullscreen); }
-}
-
-function presPrint() { window.print(); }
-
-document.addEventListener('keydown', function(e) {
-  var pg = document.getElementById('page-presentation');
-  if (!pg || !pg.classList.contains('active')) return;
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  presNav(1);
-  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    presNav(-1);
-  if (e.key === 'f' || e.key === 'F') togglePresMode();
-  if (e.key === 'Escape' && _presFullscreen) togglePresMode();
-});
-
-</script>
-</body>
-</html>
+  if (_presFullscreen) {
+    if (sidebar) { sidebar._pd = sidebar.style.display; sidebar.style.setProperty('display','none','important'); }
+    if (topbar)  { topbar._pd  = topbar.style.display;  topbar.style.setProperty('display','none','important'); }
+    if (wrap)    { wrap._ml = wrap.style.marginLeft; wrap._w = wrap.style.
