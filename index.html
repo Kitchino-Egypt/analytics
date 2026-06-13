@@ -1811,7 +1811,15 @@ if (_checkSession()) {
       <div style="font-size:12px;color:var(--text3)">Team avg: <strong id="pres-team-avg" style="color:var(--text1)">—</strong></div>
       <div style="font-size:12px;color:var(--text3)">Total: <strong id="pres-team-total" style="color:var(--text1)">—</strong> measures</div>
     </div>
-    <div id="pres-designers-list" style="overflow-y:auto;max-height:370px;padding-right:4px"></div>
+    <div style="display:flex;gap:18px;flex:1;min-height:0">
+      <!-- Mini ranking bar chart -->
+      <div style="flex:0 0 38%;min-width:0;display:flex;flex-direction:column">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">CVR% Ranking</div>
+        <div style="flex:1;position:relative"><canvas id="pres-ranking-chart"></canvas></div>
+      </div>
+      <!-- Clickable designer list -->
+      <div style="flex:1;min-width:0;overflow-y:auto;max-height:370px;padding-right:4px" id="pres-designers-list"></div>
+    </div>
   </div>
 
   <!-- SLIDE 4: Designer Groups -->
@@ -1887,13 +1895,13 @@ if (_checkSession()) {
     </div>
 
     <!-- Monthly breakdown table -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;cursor:pointer" title="Hover to view comparison chart" onmouseenter="showPresH1Chart()" onmouseleave="hidePresH1Chart()">
       <div>
-        <div class="pres-section-title">📅 Month-by-Month — Measures</div>
+        <div class="pres-section-title">📅 Month-by-Month — Measures <span style="font-size:10px;color:var(--text3)">(hover for chart)</span></div>
         <div id="pres-h1-monthly-measures"></div>
       </div>
       <div>
-        <div class="pres-section-title">🎯 Month-by-Month — CVR%</div>
+        <div class="pres-section-title">🎯 Month-by-Month — CVR% <span style="font-size:10px;color:var(--text3)">(hover for chart)</span></div>
         <div id="pres-h1-monthly-cvr"></div>
       </div>
     </div>
@@ -5373,6 +5381,10 @@ let _presCurrentSlide = 1;
 const _PRES_TOTAL = 7;
 let _presFullscreen = false;
 let _presDesignerData = {};  // populated in buildPresentationSlides, keyed by designer name
+let _presAreaData     = {};  // keyed by area name
+let _presSourceData   = {};  // keyed by source name
+let _presH1Data       = null; // H1 comparison data for hover chart
+let _presSelectedArea = null; // currently selected area (for source cross-filter)
 
 
 // ── Presentation: Designer Monthly Chart Modal ───────────────────────────
@@ -5494,6 +5506,190 @@ function closePresDesignerModal() {
   var ov = document.getElementById('pres-designer-modal');
   if (ov) ov.style.display = 'none';
   if (window._presChartInst) { window._presChartInst.destroy(); window._presChartInst = null; }
+}
+
+
+// ── Presentation: Area Detail Modal ──────────────────────────────────────
+function showPresAreaModal(areaName, rowEl) {
+  var d = _presAreaData[areaName];
+  if (!d) return;
+  _presSelectedArea = areaName;
+  // Highlight selected row
+  document.querySelectorAll('#pres-areas-list .pres-area-row').forEach(function(r){ r.style.background=''; r.style.border=''; });
+  if (rowEl) { rowEl.style.background='rgba(0,230,118,0.07)'; rowEl.style.border='1px solid rgba(0,230,118,0.2)'; rowEl.style.borderRadius='6px'; }
+
+  var ov = document.getElementById('pres-area-modal');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'pres-area-modal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px)';
+    ov.onclick = function(e){ if(e.target===ov) closePresentationModal('pres-area-modal'); };
+    document.body.appendChild(ov);
+  }
+
+  var cvr = d.total>0 ? (d.contracted/d.total*100).toFixed(1) : 0;
+  var rc  = cvr >= 30 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff5252';
+
+  // Top designers in this area
+  var topDes = Object.entries(d.designers)
+    .map(function(e){ var cv = e[1].total>0?(e[1].contracted/e[1].total*100).toFixed(1):0; return {name:e[0],total:e[1].total,contracted:e[1].contracted,cvr:+cv}; })
+    .sort(function(a,b){return b.total-a.total;}).slice(0,5);
+
+  // Monthly trend
+  var ordMon = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var monthArr = ordMon.filter(function(mn){return d.monthly[mn];}).map(function(mn){
+    var m = d.monthly[mn]; return {month:mn.substr(0,3),total:m.total,cvr:m.total>0?Math.round(m.contracted/m.total*100):0};
+  });
+
+  ov.innerHTML =
+    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(680px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
+      +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
+        +'<div><div style="font-size:21px;font-weight:900;color:#e8eaf6">📍 '+areaName+'</div>'
+        +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Area Performance — 2025</div></div>'
+        +'<button onclick="closePresentationModal('pres-area-modal')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.total+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.contracted+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div><div style="font-size:22px;font-weight:900;color:'+rc+'">'+cvr+'%</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 24px 22px">'
+        // Top designers
+        +'<div><div style="font-size:11px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Top Designers in Area</div>'
+        +topDes.map(function(d){ var bc=d.cvr>=30?'#00e676':d.cvr>=20?'#ffd740':'#ff5252'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:13px;color:#e8eaf6">'+d.name+'</span><span style="font-size:12px"><span style="color:#9e9ec8">'+d.total+'</span> &nbsp;<span style="color:'+bc+'">'+d.cvr+'%</span></span></div>'; }).join('')
+        +'</div>'
+        // Monthly mini table
+        +'<div><div style="font-size:11px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Monthly Breakdown</div>'
+        +monthArr.map(function(m){ var bc=m.cvr>=30?'#00e676':m.cvr>=20?'#ffd740':'#ff5252'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:13px;color:#9e9ec8">'+m.month+'</span><span style="font-size:12px"><span style="color:#e8eaf6">'+m.total+'</span> &nbsp;<span style="color:'+bc+'">'+m.cvr+'%</span></span></div>'; }).join('')
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  ov.style.display = 'flex';
+}
+
+// ── Presentation: Source Detail Modal ────────────────────────────────────
+function showPresSourceModal(sourceName, rowEl) {
+  var d = _presSourceData[sourceName];
+  if (!d) return;
+
+  var ov = document.getElementById('pres-source-modal');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'pres-source-modal';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px)';
+    ov.onclick = function(e){ if(e.target===ov) closePresentationModal('pres-source-modal'); };
+    document.body.appendChild(ov);
+  }
+
+  // If an area is selected, filter to that area
+  var filterArea = _presSelectedArea;
+  var baseTotal      = d.total;
+  var baseContracted = d.contracted;
+  if (filterArea && d.byArea[filterArea]) {
+    var fa = d.byArea[filterArea];
+    baseTotal      = fa.total;
+    baseContracted = fa.contracted;
+  }
+  var cvr = baseTotal > 0 ? (baseContracted/baseTotal*100).toFixed(1) : 0;
+  var rc  = cvr >= 30 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff5252';
+
+  // By area breakdown
+  var byArea = Object.entries(d.byArea)
+    .map(function(e){ var cv=e[1].total>0?(e[1].contracted/e[1].total*100).toFixed(1):0; return {area:e[0],total:e[1].total,contracted:e[1].contracted,cvr:+cv}; })
+    .sort(function(a,b){return b.total-a.total;}).slice(0,6);
+
+  var filterNote = filterArea ? '<span style="font-size:11px;color:#ffd740;margin-left:8px">· filtered: '+filterArea+'</span>' : '';
+  var clearBtn   = filterArea ? '<button onclick="_presSelectedArea=null;showPresSourceModal(''+sourceName.replace(/'/g,"\'")+'',null)" style="font-size:11px;color:#9e9ec8;background:rgba(255,255,255,0.06);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:8px">Clear filter</button>' : '';
+
+  ov.innerHTML =
+    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(620px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
+      +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
+        +'<div><div style="font-size:21px;font-weight:900;color:#e8eaf6">📡 '+sourceName+filterNote+clearBtn+'</div>'
+        +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Lead Source Performance — 2025</div></div>'
+        +'<button onclick="closePresentationModal('pres-source-modal')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+baseTotal+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+baseContracted+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div><div style="font-size:22px;font-weight:900;color:'+rc+'">'+cvr+'%</div></div>'
+      +'</div>'
+      +'<div style="padding:0 24px 22px"><div style="font-size:11px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Performance by Area</div>'
+      +byArea.map(function(a){ var bc=a.cvr>=30?'#00e676':a.cvr>=20?'#ffd740':'#ff5252'; var hi=filterArea===a.area?'background:rgba(0,230,118,0.06);border-radius:6px;padding:0 6px;margin:0 -6px;':''; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);'+hi+'"><span style="font-size:13px;color:#e8eaf6">'+a.area+'</span><span><span style="font-size:12px;color:#9e9ec8">'+a.total+' measures &nbsp;</span><span style="font-size:13px;font-weight:700;color:'+bc+'">'+a.cvr+'%</span></span></div>'; }).join('')
+      +'</div>'
+    +'</div>';
+  ov.style.display = 'flex';
+}
+
+// ── Presentation: H1 Hover Chart ─────────────────────────────────────────
+var _presH1ChartTimer = null;
+var _presH1ChartInst  = null;
+
+function showPresH1Chart() {
+  if (!_presH1Data) return;
+  clearTimeout(_presH1ChartTimer);
+  _presH1ChartTimer = setTimeout(function(){
+    var ov = document.getElementById('pres-h1-chart-modal');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.id = 'pres-h1-chart-modal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);backdrop-filter:blur(5px);pointer-events:none';
+      document.body.appendChild(ov);
+    }
+    ov.innerHTML =
+      '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(760px,95vw);padding:22px 24px;box-shadow:0 24px 80px rgba(0,0,0,0.7);pointer-events:auto">'
+        +'<div style="font-size:16px;font-weight:800;color:#e8eaf6;margin-bottom:4px">H1 2025 vs 2026 — Month by Month</div>'
+        +'<div style="font-size:11px;color:#9e9ec8;margin-bottom:16px">Move cursor away to close</div>'
+        +'<div style="display:flex;gap:16px;font-size:11px;color:#9e9ec8;margin-bottom:12px">'
+          +'<span><span style="display:inline-block;width:14px;height:10px;background:rgba(158,158,200,0.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>2025 Measures</span>'
+          +'<span><span style="display:inline-block;width:14px;height:10px;background:rgba(0,230,118,0.7);border-radius:2px;vertical-align:middle;margin-right:4px"></span>2026 Measures</span>'
+          +'<span><span style="display:inline-block;width:22px;height:2px;background:#ffd740;vertical-align:middle;margin-right:4px"></span>2025 CVR%</span>'
+          +'<span><span style="display:inline-block;width:22px;height:2px;background:#00e676;vertical-align:middle;margin-right:4px"></span>2026 CVR%</span>'
+        +'</div>'
+        +'<canvas id="pres-h1-inline-chart" height="220"></canvas>'
+      +'</div>';
+    ov.style.display = 'flex';
+
+    if (_presH1ChartInst) { _presH1ChartInst.destroy(); _presH1ChartInst = null; }
+    setTimeout(function(){
+      var ctx = document.getElementById('pres-h1-inline-chart');
+      if (!ctx || typeof Chart==='undefined') return;
+      var D = _presH1Data;
+      _presH1ChartInst = new Chart(ctx, {
+        data: {
+          labels: D.months,
+          datasets: [
+            { type:'bar', label:'2025 Measures', data:D.m25, backgroundColor:'rgba(158,158,200,0.35)', borderColor:'rgba(158,158,200,0.7)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:3 },
+            { type:'bar', label:'2026 Measures', data:D.m26, backgroundColor:'rgba(0,230,118,0.55)', borderColor:'rgba(0,230,118,0.9)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:2 },
+            { type:'line', label:'2025 CVR%', data:D.cvr25, borderColor:'#ffd740', borderDash:[5,4], borderWidth:2, pointRadius:4, pointBackgroundColor:'#ffd740', fill:false, tension:0.3, yAxisID:'yCVR', order:1, spanGaps:true },
+            { type:'line', label:'2026 CVR%', data:D.cvr26, borderColor:'#00e676', borderWidth:3, pointRadius:5, pointBackgroundColor:'#00e676', pointBorderColor:'#161625', pointBorderWidth:2, fill:false, tension:0.3, yAxisID:'yCVR', order:0, spanGaps:true }
+          ]
+        },
+        options: {
+          responsive:true, interaction:{mode:'index',intersect:false},
+          plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1c1c2e', borderColor:'#252545', borderWidth:1, titleColor:'#e8eaf6', bodyColor:'#9e9ec8',
+            callbacks:{label:function(c){ if(c.dataset.yAxisID==='yBar') return '  '+c.dataset.label+': '+c.parsed.y; return '  '+c.dataset.label+': '+c.parsed.y+'%'; }} } },
+          scales:{
+            yCVR:{type:'linear',position:'left',min:0,max:100,ticks:{color:'#9e9ec8',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,0.05)'},border:{color:'rgba(255,255,255,0.1)'}},
+            yBar:{type:'linear',position:'right',min:0,ticks:{color:'#9e9ec8'},grid:{drawOnChartArea:false},border:{color:'rgba(255,255,255,0.1)'}},
+            x:{ticks:{color:'#9e9ec8',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.1)'}}
+          }
+        }
+      });
+    }, 30);
+  }, 300);
+}
+
+function hidePresH1Chart() {
+  clearTimeout(_presH1ChartTimer);
+  _presH1ChartTimer = null;
+  var ov = document.getElementById('pres-h1-chart-modal');
+  if (ov) ov.style.display = 'none';
+  if (_presH1ChartInst) { _presH1ChartInst.destroy(); _presH1ChartInst = null; }
+}
+
+function closePresentationModal(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
 }
 
 function buildPresentationSlides() {
@@ -5622,6 +5818,58 @@ function buildPresentationSlides() {
   _set('pres-team-total',   total25.toLocaleString());
   _set('pres-des-subtitle', designers.length + ' designers · click any row to view monthly chart');
 
+  // ── Slide 3 mini ranking chart ────────────────────────────────
+  (function() {
+    var ctx = document.getElementById('pres-ranking-chart');
+    if (!ctx || typeof Chart === 'undefined') return;
+    if (window._presRankChart) { window._presRankChart.destroy(); window._presRankChart = null; }
+    var labels  = designers.map(function(d){return d.name.split(' ').pop();});
+    var cvrVals = designers.map(function(d){return d.rate;});
+    var colors  = designers.map(function(d){return d.rate >= teamAvg ? 'rgba(0,230,118,0.8)' : 'rgba(255,82,82,0.7)';});
+    window._presRankChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: cvrVals,
+          backgroundColor: colors,
+          borderColor: colors.map(function(c){return c.replace('0.8','1').replace('0.7','1');}),
+          borderWidth: 1,
+          borderRadius: 3
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1c1c2e', borderColor: '#252545', borderWidth: 1,
+            titleColor: '#e8eaf6', bodyColor: '#9e9ec8',
+            callbacks: { label: function(c){ return '  CVR: ' + c.parsed.x + '%'; } }
+          },
+          annotation: {}
+        },
+        scales: {
+          x: {
+            min: 0, max: 100,
+            ticks: { color: '#9e9ec8', font: {size:10}, callback: function(v){ return v+'%'; } },
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            border: { color: 'rgba(255,255,255,0.08)' }
+          },
+          y: {
+            ticks: { color: '#9e9ec8', font: {size:10} },
+            grid: { display: false },
+            border: { color: 'rgba(255,255,255,0.08)' }
+          }
+        }
+      }
+    });
+    // Draw team avg line manually after render
+    window._presRankChart._teamAvg = teamAvg;
+  })();
+
   // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
   var PRES_PATCHES = [
     { tag:'Pinnacle', icon:'🏆', color:'#ffd740', border:'rgba(255,215,64,0.35)',  bg:'rgba(255,215,64,0.08)',  tagline:'Masters of the craft',    designers:[] },
@@ -5674,15 +5922,38 @@ function buildPresentationSlides() {
     // ── Slide 4: Areas + Sources ────────────────────────────────
   const maxArea = areas[0]?.total || 1;
   const areaColors = ['var(--blue)','var(--teal)','var(--green)','var(--gold)','var(--purple)'];
+  // ── Slide 5: store data for modals ──────────────────────────
+  _presAreaData   = {};
+  _presSourceData = {};
+  rows25.forEach(function(r){
+    var a = r.area || 'Unknown';
+    if (!_presAreaData[a]) _presAreaData[a] = {area:a,total:0,contracted:0,monthly:{},designers:{}};
+    _presAreaData[a].total++;
+    if (r._contracted) _presAreaData[a].contracted++;
+    var mn = r._monthName||'';
+    if (mn) { if(!_presAreaData[a].monthly[mn]) _presAreaData[a].monthly[mn]={total:0,contracted:0}; _presAreaData[a].monthly[mn].total++; if(r._contracted) _presAreaData[a].monthly[mn].contracted++; }
+    var dg = r.designer||'Unknown';
+    if(!_presAreaData[a].designers[dg]) _presAreaData[a].designers[dg]={total:0,contracted:0};
+    _presAreaData[a].designers[dg].total++; if(r._contracted) _presAreaData[a].designers[dg].contracted++;
+    var s = r.source||r.leadSource||'Unknown';
+    if (!_presSourceData[s]) _presSourceData[s] = {source:s,total:0,contracted:0,byArea:{}};
+    _presSourceData[s].total++; if(r._contracted) _presSourceData[s].contracted++;
+    if(!_presSourceData[s].byArea[a]) _presSourceData[s].byArea[a]={total:0,contracted:0};
+    _presSourceData[s].byArea[a].total++; if(r._contracted) _presSourceData[s].byArea[a].contracted++;
+  });
+
   const areasEl = document.getElementById('pres-areas-list');
   if (areasEl) {
-    areasEl.innerHTML = areas.slice(0,5).map((a,i) => {
+    areasEl.innerHTML = areas.slice(0,10).map((a,i) => {
       const bw  = Math.round(a.total/maxArea*100);
       const cvr = a.total > 0 ? +(a.contracted/a.total*100).toFixed(1) : 0;
-      return '<div class="pres-area-row">'
+      var aSafe = a.area.replace(/'/g,"\'");
+      return '<div class="pres-area-row" onclick="showPresAreaModal(\''+aSafe+'\',this)" '
+        + 'style="cursor:pointer;border-radius:6px;transition:background 0.15s" '
+        + 'onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'\'"> '
         + '<div style="font-size:11px;font-weight:700;color:var(--text3);width:18px;text-align:center">'+(i+1)+'</div>'
         + '<div style="font-size:15px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+a.area+'</div>'
-        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+areaColors[i]+'"></div></div>'
+        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+areaColors[Math.min(i,areaColors.length-1)]+'"></div></div>'
         + '<div style="font-size:15px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+a.total+'</div>'
         + '<div style="font-size:11px;color:'+(cvr>=30?'#00e676':cvr>=20?'#ffd740':'#ff5252')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
@@ -5692,20 +5963,23 @@ function buildPresentationSlides() {
   const srcColors = ['var(--purple)','rgba(206,147,216,0.8)','var(--teal)','var(--blue)','var(--green)'];
   const srcEl   = document.getElementById('pres-sources-list');
   if (srcEl) {
-    srcEl.innerHTML = sources.slice(0,5).map((s,i) => {
+    srcEl.innerHTML = sources.slice(0,10).map((s,i) => {
       const bw  = Math.round(s.total/maxSrc*100);
       const cvr = s.total > 0 ? +(s.contracted/s.total*100).toFixed(1) : 0;
-      return '<div class="pres-area-row">'
+      var sSafe = (s.source||'Unknown').replace(/'/g,"\'");
+      return '<div class="pres-area-row" onclick="showPresSourceModal(\''+sSafe+'\',this)" '
+        + 'style="cursor:pointer;border-radius:6px;transition:background 0.15s" '
+        + 'onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'\'"> '
         + '<div style="font-size:11px;font-weight:700;color:var(--text3);width:18px;text-align:center">'+(i+1)+'</div>'
         + '<div style="font-size:15px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(s.source||'Unknown')+'</div>'
-        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+srcColors[i]+'"></div></div>'
+        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+srcColors[Math.min(i,srcColors.length-1)]+'"></div></div>'
         + '<div style="font-size:15px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+s.total+'</div>'
         + '<div style="font-size:11px;color:'+(cvr>=30?'#00e676':cvr>=20?'#ffd740':'#ff5252')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
   }
 
-  // ── Slide 5: Insights ───────────────────────────────────────
+// ── Slide 5: Insights ───────────────────────────────────────
   const topDes  = designers[0];
   const topArea = areas[0];
   const bestSrc = sources.filter(s=>s.total>=5).sort((a,b) => (b.contracted/b.total)-(a.contracted/a.total))[0];
@@ -5773,6 +6047,22 @@ function buildPresentationSlides() {
 
   // Monthly breakdown rows
   const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun'];
+  // Store H1 data globally for hover chart
+  _presH1Data = {
+    months: ['Jan','Feb','Mar','Apr','May','Jun'],
+    m25: [], m26: [], cvr25: [], cvr26: [],
+    hm25, hm26, hc25, hc26, hcvr25, hcvr26
+  };
+  ['Jan','Feb','Mar','Apr','May','Jun'].forEach(function(mn, i){
+    var mo = i + 1;
+    var a25 = h1_25.filter(r => r._monthOrder === mo);
+    var a26 = h1_26.filter(r => r._monthOrder === mo);
+    _presH1Data.m25.push(a25.length);
+    _presH1Data.m26.push(a26.length);
+    _presH1Data.cvr25.push(a25.length > 0 ? +(a25.filter(r=>r._contracted).length/a25.length*100).toFixed(1) : 0);
+    _presH1Data.cvr26.push(a26.length > 0 ? +(a26.filter(r=>r._contracted).length/a26.length*100).toFixed(1) : 0);
+  });
+
   const mmMeasEl = document.getElementById('pres-h1-monthly-measures');
   const mmCvrEl  = document.getElementById('pres-h1-monthly-cvr');
   if (mmMeasEl && mmCvrEl) {
