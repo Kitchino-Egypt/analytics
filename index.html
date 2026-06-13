@@ -664,6 +664,75 @@ tbody td.muted { color:var(--text2); }
 .exec-item-right { display:flex; flex-direction:column; align-items:flex-end; gap:2px; flex-shrink:0; }
 .exec-item-count { font-size:13px; font-weight:800; color:var(--text1); }
 .exec-item-rate  { font-size:10px; font-weight:600; }
+
+/* ── PRESENTATION VIEW ─────────────────────────────────────── */
+#pres-controls-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 0 14px; gap:12px; flex-wrap:wrap;
+}
+.pres-ctrl-btn {
+  background:var(--card); border:1px solid var(--border); color:var(--text2);
+  padding:7px 16px; border-radius:7px; font-size:12px; cursor:pointer;
+  transition:all .15s;
+}
+.pres-ctrl-btn:hover { border-color:var(--green); color:var(--green); }
+.pres-ctrl-btn.active { background:rgba(0,230,118,0.1); border-color:var(--green); color:var(--green); }
+#pres-counter { font-size:13px; font-weight:700; color:var(--text3); min-width:50px; text-align:center; }
+.pres-slide {
+  background:linear-gradient(135deg,var(--card),rgba(37,37,69,0.6));
+  border:1px solid var(--border); border-radius:16px;
+  padding:48px 56px; margin-bottom:20px;
+  display:none; flex-direction:column; justify-content:center;
+  min-height:520px; position:relative; overflow:hidden;
+}
+.pres-slide.pres-active { display:flex; }
+.pres-slide::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,var(--green),var(--teal));
+}
+/* Fullscreen mode */
+#page-presentation.pres-fullscreen .pres-slide.pres-active {
+  height:calc(100vh - 140px); min-height:unset;
+}
+.pres-tag {
+  font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  color:var(--text3); margin-bottom:18px;
+}
+.pres-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+.pres-kpi-box {
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px; padding:28px 20px; text-align:center;
+}
+.pres-kpi-val { font-size:52px; font-weight:900; line-height:1; margin-bottom:8px; }
+.pres-kpi-lbl { font-size:13px; color:var(--text3); text-transform:uppercase; letter-spacing:1px; }
+.pres-kpi-sub { font-size:12px; margin-top:8px; font-weight:600; }
+.pres-row { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.pres-section-title {
+  font-size:13px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  color:var(--text3); margin-bottom:16px; padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+}
+.pres-des-card {
+  display:flex; align-items:center; gap:16px; padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+.pres-des-name { font-size:16px; font-weight:700; color:var(--text1); }
+.pres-des-stats { font-size:12px; color:var(--text3); margin-top:3px; }
+.pres-des-rate { font-size:22px; font-weight:900; margin-left:auto; flex-shrink:0; }
+.pres-area-row { display:flex; align-items:center; gap:12px; padding:10px 0; }
+.pres-area-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,0.07); border-radius:4px; overflow:hidden; }
+.pres-area-bar { height:100%; border-radius:4px; }
+.pres-insight {
+  display:flex; align-items:flex-start; gap:14px; padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  font-size:15px; color:var(--text2); line-height:1.6;
+}
+@media(max-width:900px) {
+  .pres-kpi-grid { grid-template-columns:repeat(2,1fr); }
+  .pres-row { grid-template-columns:1fr; }
+  .pres-kpi-val { font-size:36px; }
+  .pres-slide { padding:24px 20px; min-height:auto; }
+}
 </style>
 </head><body>
 <!-- ═══════════════════════════════════════════════════════
@@ -850,6 +919,7 @@ if (_checkSession()) {
       <input type="text" class="search-box" id="global-search" placeholder="🔍 Search customer / ID…" oninput="applyFilters()">
       <div class="live-dot" title="Live"></div>
       <button class="refresh-btn" onclick="refreshData()">↻ Refresh</button>
+      <div id="auto-refresh-countdown" title="Auto-refresh countdown" style="font-size:10px;color:var(--text3);white-space:nowrap;min-width:52px;text-align:center">⏱ 3:00</div>
       <button class="refresh-btn" onclick="exportPDF()">⬇ Export</button>
       <button class="refresh-btn" onclick="showReconciliationPanel()" style="background:rgba(29,233,182,0.15);color:var(--teal);border-color:var(--teal)" title="Data Audit Report">⚙ Audit</button>
     </div>
@@ -874,7 +944,10 @@ if (_checkSession()) {
       </select>
       <button onclick="resetMobFilters()" style="background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.3);color:var(--red);padding:7px 12px;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap">✕ Reset</button>
     </div>
-    <div id="mob-filter-summary" style="font-size:10px;color:var(--text3);text-align:center"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="mob-filter-summary" style="font-size:10px;color:var(--text3)"></div>
+      <div id="mob-auto-refresh-countdown" style="font-size:10px;color:var(--text3);white-space:nowrap">⏱ 3:00</div>
+    </div>
   </div>
 
   <!-- PAGE CONTENT -->
@@ -1636,42 +1709,169 @@ if (_checkSession()) {
 
 <!-- PAGE 12: PRESENTATION VIEW -->
 <div class="page" id="page-presentation">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-    <div class="presentation-slide">
-      <div style="font-size:12px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">2025 PERFORMANCE</div>
-      <div class="slide-kpi" id="pres-kpi-total">—</div>
-      <div class="slide-label" id="pres-year-label">Total Measure Visits</div>
-      <div style="margin-top:16px;font-size:12px;color:var(--green)" id="pres-yoy-label">↑ 18% Year-over-Year Growth</div>
+
+  <!-- Controls bar -->
+  <div id="pres-controls-bar">
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="pres-ctrl-btn" id="pres-mode-btn" onclick="togglePresMode()">⛶ Fullscreen</button>
+      <button class="pres-ctrl-btn" onclick="presPrint()">🖨 Print</button>
     </div>
-    <div class="presentation-slide">
-      <div style="font-size:12px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">CONVERSION RATE</div>
-      <div class="slide-kpi" id="pres-kpi-rate">—</div>
-      <div class="slide-label">Measures to Contracts</div>
-      <div style="margin-top:16px;font-size:12px;color:var(--green)"><span id="pres-kpi-contracted">—</span> Contracts Closed</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="pres-ctrl-btn" onclick="presNav(-1)">← Prev</button>
+      <span id="pres-counter">1 / 6</span>
+      <button class="pres-ctrl-btn" onclick="presNav(1)">Next →</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3)">← → arrow keys to navigate · F = fullscreen</div>
+  </div>
+
+  <!-- SLIDE 1: Cover -->
+  <div class="pres-slide pres-active" id="pres-slide-1" style="align-items:center;text-align:center">
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:24px">KITCHINO — HIGH-END KITCHENS &amp; FURNITURE, EGYPT</div>
+    <div style="font-size:80px;font-weight:900;background:linear-gradient(135deg,var(--green),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:16px">2025</div>
+    <div style="font-size:32px;font-weight:700;color:var(--text1);margin-bottom:12px">Annual Performance Review</div>
+    <div style="font-size:16px;color:var(--text3);max-width:480px;line-height:1.7">A full-year analysis of measure visits, conversion performance, designer rankings, and geographic reach.</div>
+    <div style="margin-top:40px;display:flex;gap:32px;justify-content:center">
+      <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:var(--green)" id="pres-cover-total">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:1px;text-transform:uppercase">Total Measures</div></div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:var(--gold)" id="pres-cover-contracted">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:1px;text-transform:uppercase">Contracts Signed</div></div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div style="text-align:center"><div style="font-size:32px;font-weight:900;color:var(--teal)" id="pres-cover-cvr">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:1px;text-transform:uppercase">Conversion Rate</div></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
-    <div class="presentation-slide" style="min-height:180px">
-      <div class="slide-kpi" style="font-size:40px;color:var(--teal)">التجمع</div>
-      <div class="slide-label" style="font-size:12px">Top Area — 840 Measures</div>
+
+  <!-- SLIDE 2: Executive KPIs -->
+  <div class="pres-slide" id="pres-slide-2">
+    <div class="pres-tag">SLIDE 2 OF 6 — EXECUTIVE PERFORMANCE</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:32px">2025 at a Glance</div>
+    <div class="pres-kpi-grid">
+      <div class="pres-kpi-box">
+        <div class="pres-kpi-val" style="color:var(--green)" id="pres-kpi-total">—</div>
+        <div class="pres-kpi-lbl">Total Measures</div>
+        <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-total-sub">—</div>
+      </div>
+      <div class="pres-kpi-box">
+        <div class="pres-kpi-val" style="color:var(--gold)" id="pres-kpi-contracted">—</div>
+        <div class="pres-kpi-lbl">Contracts Signed</div>
+        <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-contracted-sub">—</div>
+      </div>
+      <div class="pres-kpi-box">
+        <div class="pres-kpi-val" style="color:var(--teal)" id="pres-kpi-cvr">—</div>
+        <div class="pres-kpi-lbl">Conversion Rate</div>
+        <div class="pres-kpi-sub" style="color:var(--text3)">Measures → Contracts</div>
+      </div>
+      <div class="pres-kpi-box">
+        <div class="pres-kpi-val" id="pres-kpi-yoy" style="color:var(--green)">—</div>
+        <div class="pres-kpi-lbl">YOY Growth</div>
+        <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-yoy-sub">vs. 2024</div>
+      </div>
     </div>
-    <div class="presentation-slide" style="min-height:180px">
-      <div class="slide-kpi" style="font-size:36px;color:var(--gold)">Mohamed Atef</div>
-      <div class="slide-label" style="font-size:12px">Top Designer — 33% Rate</div>
-    </div>
-    <div class="presentation-slide" style="min-height:180px">
-      <div class="slide-kpi" style="font-size:40px;color:var(--green)">May</div>
-      <div class="slide-label" style="font-size:12px">Best Month — 32% Rate</div>
-    </div>
-    <div class="presentation-slide" style="min-height:180px">
-      <div class="slide-kpi" style="font-size:40px;color:var(--purple)">Agent</div>
-      <div class="slide-label" style="font-size:12px">Best Source — 39.5%</div>
+    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Active Designers</div>
+        <div style="font-size:28px;font-weight:900;color:var(--green)" id="pres-stat-designers">—</div>
+      </div>
+      <div style="background:rgba(64,196,255,0.06);border:1px solid rgba(64,196,255,0.15);border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Areas Covered</div>
+        <div style="font-size:28px;font-weight:900;color:var(--blue)" id="pres-stat-areas">—</div>
+      </div>
+      <div style="background:rgba(206,147,216,0.06);border:1px solid rgba(206,147,216,0.15);border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Lead Sources</div>
+        <div style="font-size:28px;font-weight:900;color:var(--purple)" id="pres-stat-sources">—</div>
+      </div>
     </div>
   </div>
-  <div class="chart-card">
-    <div class="chart-title" style="font-size:16px;margin-bottom:16px">2025 Monthly Performance — At a Glance</div>
-    <div class="chart-wrap"><canvas id="chart-pres-trend" height="180"></canvas></div>
+
+  <!-- SLIDE 3: Designer Performance -->
+  <div class="pres-slide" id="pres-slide-3">
+    <div class="pres-tag">SLIDE 3 OF 6 — TEAM PERFORMANCE</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:8px">Designer Rankings — 2025</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:28px" id="pres-des-subtitle">Ranked by conversion rate</div>
+    <div id="pres-designers-list"></div>
+    <div style="margin-top:20px;display:flex;gap:24px;align-items:center">
+      <div style="font-size:12px;color:var(--text3)">Team avg CVR: <strong id="pres-team-avg" style="color:var(--text1)">—</strong></div>
+      <div style="font-size:12px;color:var(--text3)">Total: <strong id="pres-team-total" style="color:var(--text1)">—</strong> measures</div>
+    </div>
   </div>
+
+  <!-- SLIDE 4: Geographic + Lead Sources -->
+  <div class="pres-slide" id="pres-slide-4">
+    <div class="pres-tag">SLIDE 4 OF 6 — REACH &amp; CHANNELS</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">Geographic Reach &amp; Lead Sources</div>
+    <div class="pres-row">
+      <div>
+        <div class="pres-section-title">📍 Top Areas by Volume</div>
+        <div id="pres-areas-list"></div>
+      </div>
+      <div>
+        <div class="pres-section-title">📡 Lead Sources Performance</div>
+        <div id="pres-sources-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Key Takeaways -->
+  <div class="pres-slide" id="pres-slide-5">
+    <div class="pres-tag">SLIDE 5 OF 6 — KEY TAKEAWAYS</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">2025 Highlights &amp; 2026 Outlook</div>
+    <div id="pres-insights-list" style="flex:1"></div>
+    <div style="margin-top:24px;background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:12px;padding:20px 24px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:10px">2026 Focus Areas</div>
+      <div id="pres-outlook-list" style="font-size:14px;color:var(--text2);line-height:2"></div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
+  <div class="pres-slide" id="pres-slide-6">
+    <div class="pres-tag">SLIDE 6 OF 6 — PARTIAL YEAR COMPARISON</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:28px">Q1 (Jan–Mar) + Q2 (Apr–Jun) · as of <span id="pres-h1-asof">June 2026</span></div>
+
+    <!-- Summary KPIs row -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px 16px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">H1 Measures</div>
+        <div style="display:flex;justify-content:space-evenly;align-items:flex-end">
+          <div><div style="font-size:32px;font-weight:900;color:var(--text3)" id="pres-h1-m25">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">2025</div></div>
+          <div style="font-size:20px;color:var(--text3);padding-bottom:8px">→</div>
+          <div><div style="font-size:32px;font-weight:900;color:var(--green)" id="pres-h1-m26">—</div><div style="font-size:11px;color:var(--green);margin-top:4px">2026</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:15px;font-weight:700" id="pres-h1-m-delta">—</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px 16px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">H1 Contracts</div>
+        <div style="display:flex;justify-content:space-evenly;align-items:flex-end">
+          <div><div style="font-size:32px;font-weight:900;color:var(--text3)" id="pres-h1-c25">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">2025</div></div>
+          <div style="font-size:20px;color:var(--text3);padding-bottom:8px">→</div>
+          <div><div style="font-size:32px;font-weight:900;color:var(--gold)" id="pres-h1-c26">—</div><div style="font-size:11px;color:var(--gold);margin-top:4px">2026</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:15px;font-weight:700" id="pres-h1-c-delta">—</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px 16px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">H1 Conversion</div>
+        <div style="display:flex;justify-content:space-evenly;align-items:flex-end">
+          <div><div style="font-size:32px;font-weight:900;color:var(--text3)" id="pres-h1-cvr25">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px">2025</div></div>
+          <div style="font-size:20px;color:var(--text3);padding-bottom:8px">→</div>
+          <div><div style="font-size:32px;font-weight:900;color:var(--teal)" id="pres-h1-cvr26">—</div><div style="font-size:11px;color:var(--teal);margin-top:4px">2026</div></div>
+        </div>
+        <div style="margin-top:10px;font-size:15px;font-weight:700" id="pres-h1-cvr-delta">—</div>
+      </div>
+    </div>
+
+    <!-- Monthly breakdown table -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div class="pres-section-title">📅 Month-by-Month — Measures</div>
+        <div id="pres-h1-monthly-measures"></div>
+      </div>
+      <div>
+        <div class="pres-section-title">🎯 Month-by-Month — CVR%</div>
+        <div id="pres-h1-monthly-cvr"></div>
+      </div>
+    </div>
+  </div>
+
+
+
 </div>
 
   </div><!-- end page-content -->
@@ -1756,6 +1956,7 @@ let CONTRACTS_DATA   = [];   // populated by _fetchContracts() from ContractsCon
 let ENGINE_RAW_ROWS   = [];    // Raw rows received from getMeasures connector
 let ENGINE_CLEAN_ROWS = [];    // Validated & normalized operational rows
 let ENGINE_READY      = false; // true once raw rows are loaded and cleaned
+let MOB_FILTERS = { year:'all', designer:'all', area:'all' }; // mobile filter state
 // ── Enterprise Data Quality Report — populated by engine_cleanRows() ──────────
 let ENGINE_QUALITY_REPORT = {
   timestamp:    null,
@@ -2070,9 +2271,14 @@ function engine_payments(rows) {
 
 // ── Main compute — called by computeFilteredState() when ENGINE_READY ─────────
 function engine_compute() {
-  const yearF     = document.getElementById('filter-year')?.value     || 'all';
-  const designerF = document.getElementById('filter-designer')?.value || 'all';
-  const areaF     = document.getElementById('filter-area')?.value     || 'all';
+  // Use MOB_FILTERS if on mobile (any non-'all' value), else desktop selects
+  const _fv = (mobKey, deskId) => {
+    if (MOB_FILTERS[mobKey] && MOB_FILTERS[mobKey] !== 'all') return MOB_FILTERS[mobKey];
+    return document.getElementById(deskId)?.value || 'all';
+  };
+  const yearF     = _fv('year',     'filter-year');
+  const designerF = _fv('designer', 'filter-designer');
+  const areaF     = _fv('area',     'filter-area');
   const filtered  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, designer:designerF, area:areaF});
   const yearOnly  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF});
   const total      = filtered.length;
@@ -2351,9 +2557,9 @@ function computeFilteredState() {
   // ── ENGINE-ONLY: all computation from live Google Sheets rows ────────────
   if (ENGINE_READY) return engine_compute();
   // ── NOT CONNECTED: reset to empty state — show "connect" prompts ─────────
-  const yearF     = document.getElementById('filter-year')?.value     || 'all';
-  const designerF = document.getElementById('filter-designer')?.value || 'all';
-  const areaF     = document.getElementById('filter-area')?.value     || 'all';
+  const yearF     = (MOB_FILTERS.year     !== 'all') ? MOB_FILTERS.year     : (document.getElementById('filter-year')?.value     || 'all');
+  const designerF = (MOB_FILTERS.designer !== 'all') ? MOB_FILTERS.designer : (document.getElementById('filter-designer')?.value || 'all');
+  const areaF     = (MOB_FILTERS.area     !== 'all') ? MOB_FILTERS.area     : (document.getElementById('filter-area')?.value     || 'all');
   KITCHINO_STATE.year            = yearF;
   KITCHINO_STATE.designer        = designerF;
   KITCHINO_STATE.area            = areaF;
@@ -4257,26 +4463,38 @@ function toggleMobFilters() {
 }
 
 function applyMobFilters() {
-  // Sync mobile → desktop selects
-  const sync = (mobId, deskId) => {
-    const mob  = document.getElementById(mobId);
-    const desk = document.getElementById(deskId);
-    if (mob && desk) desk.value = mob.value;
-  };
-  sync('mob-filter-year',     'filter-year');
-  sync('mob-filter-designer', 'filter-designer');
-  sync('mob-filter-area',     'filter-area');
-  // Update summary label
+  // Write directly to MOB_FILTERS — engine_compute() reads this first
+  MOB_FILTERS.year     = document.getElementById('mob-filter-year')?.value     || 'all';
+  MOB_FILTERS.designer = document.getElementById('mob-filter-designer')?.value || 'all';
+  MOB_FILTERS.area     = document.getElementById('mob-filter-area')?.value     || 'all';
+  // Also sync to desktop selects (for pages that read them directly)
+  const sync = (val, deskId) => { const el = document.getElementById(deskId); if (el) el.value = val; };
+  sync(MOB_FILTERS.year,     'filter-year');
+  sync(MOB_FILTERS.designer, 'filter-designer');
+  sync(MOB_FILTERS.area,     'filter-area');
   _updateMobFilterSummary();
   applyFilters();
+  // Force rebuild active page (in case it was already in builtPages cache)
+  const _ap = document.querySelector('.page.active')?.id.replace('page-','');
+  if (_ap && _ap !== 'home' && PAGE_BUILDERS[_ap]) {
+    builtPages.delete(_ap);
+    PAGE_BUILDERS[_ap]();
+    builtPages.add(_ap);
+  }
 }
 
 function resetMobFilters() {
+  MOB_FILTERS = { year:'all', designer:'all', area:'all' };
   ['mob-filter-year','mob-filter-designer','mob-filter-area'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = 'all';
   });
-  applyMobFilters();
+  ['filter-year','filter-designer','filter-area'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = 'all';
+  });
+  _updateMobFilterSummary();
+  applyFilters();
 }
 
 function _updateMobFilterSummary() {
@@ -4361,7 +4579,7 @@ const PAGE_BUILDERS = {
   kpi: buildKPICharts,
   forecast: buildForecastCharts,
   ceo: buildCEOCharts,
-  presentation: () => buildCEOCharts()
+  presentation: buildPresentationSlides
 };
 
 const builtPages = new Set();
@@ -4615,7 +4833,7 @@ function updateBadges() {
 // ── AUTO-REFRESH ARCHITECTURE ────────────────────────────────────────────────
 // Interval handle — kept so we can clear/restart it if the URL changes
 let _autoRefreshTimer = null;
-const AUTO_REFRESH_MS  = 5 * 60 * 1000;   // 5 minutes
+const AUTO_REFRESH_MS  = 3 * 60 * 1000;   // 3 minutes
 
 // Format a Date as "HH:MM" local time
 function _fmtTime(d) {
@@ -4729,9 +4947,30 @@ function runContractsDiagnostic() {
 }
 
 // Start (or restart) the 5-minute polling interval
+let _countdownTimer = null;
+let _nextRefreshAt  = 0;
+
+function _updateCountdown() {
+  const remaining = Math.max(0, _nextRefreshAt - Date.now());
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const txt  = '⏱ ' + mins + ':' + String(secs).padStart(2,'0');
+  const el1  = document.getElementById('auto-refresh-countdown');
+  const el2  = document.getElementById('mob-auto-refresh-countdown');
+  if (el1) el1.textContent = txt;
+  if (el2) el2.textContent = txt;
+}
+
 function _startPolling() {
   if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
-  _autoRefreshTimer = setInterval(() => _silentFetch(true), AUTO_REFRESH_MS);
+  if (_countdownTimer)   clearInterval(_countdownTimer);
+  _nextRefreshAt = Date.now() + AUTO_REFRESH_MS;
+  _autoRefreshTimer = setInterval(() => {
+    _nextRefreshAt = Date.now() + AUTO_REFRESH_MS;
+    _silentFetch(true);
+  }, AUTO_REFRESH_MS);
+  _countdownTimer = setInterval(_updateCountdown, 1000);
+  _updateCountdown();
 }
 
 // Override the existing connectGoogleSheets to use the new silent-fetch path
@@ -5019,6 +5258,291 @@ function closePaymentBreakdown() {
   const modal = document.getElementById('payment-breakdown-modal');
   if (modal) modal.style.display = 'none';
 }
+
+// ============================================================
+// PRESENTATION VIEW
+// ============================================================
+let _presCurrentSlide = 1;
+const _PRES_TOTAL = 6;
+let _presFullscreen = false;
+
+function buildPresentationSlides() {
+  if (!ENGINE_READY) return;
+
+  // ── 2025 data ───────────────────────────────────────────────
+  const rows25  = ENGINE_CLEAN_ROWS.filter(r => r._year === '2025');
+  const rows24  = ENGINE_CLEAN_ROWS.filter(r => r._year === '2024');
+  const total25 = rows25.length;
+  const total24 = rows24.length;
+  const contr25 = rows25.filter(r => r._contracted).length;
+  const cvr25   = total25 > 0 ? +(contr25 / total25 * 100).toFixed(1) : 0;
+  const yoy     = total24 > 0 ? +((total25 - total24) / total24 * 100).toFixed(1) : null;
+
+  // Designers
+  const desMap = {};
+  rows25.forEach(r => {
+    const d = r.designer || 'Unknown';
+    if (!desMap[d]) desMap[d] = { total:0, contracted:0 };
+    desMap[d].total++;
+    if (r._contracted) desMap[d].contracted++;
+  });
+  const SKIP = ['unknown','n/a','','—','-'];
+  const designers = Object.entries(desMap)
+    .filter(([n,d]) => d.total >= 5 && !SKIP.includes((n||'').toLowerCase()))
+    .map(([name,d]) => ({ name, total:d.total, contracted:d.contracted, rate: +(d.contracted/d.total*100).toFixed(1) }))
+    .sort((a,b) => b.rate - a.rate);
+
+  // Areas
+  const areaMap = {};
+  rows25.forEach(r => {
+    const a = r.area || '—';
+    if (!areaMap[a]) areaMap[a] = { area:a, total:0, contracted:0 };
+    areaMap[a].total++;
+    if (r._contracted) areaMap[a].contracted++;
+  });
+  const areas = Object.values(areaMap).sort((a,b) => b.total - a.total);
+
+  // Sources
+  const srcMap = {};
+  rows25.forEach(r => {
+    const s = r.source || 'Unknown';
+    if (!srcMap[s]) srcMap[s] = { source:s, total:0, contracted:0 };
+    srcMap[s].total++;
+    if (r._contracted) srcMap[s].contracted++;
+  });
+  const sources = Object.values(srcMap).filter(s => s.total > 0).sort((a,b) => b.total - a.total);
+
+  const _set = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+
+  // ── Slide 1: Cover ──────────────────────────────────────────
+  _set('pres-cover-total',      total25.toLocaleString());
+  _set('pres-cover-contracted', contr25.toLocaleString());
+  _set('pres-cover-cvr',        cvr25 + '%');
+
+  // ── Slide 2: KPIs ───────────────────────────────────────────
+  _set('pres-kpi-total',           total25.toLocaleString());
+  _set('pres-kpi-total-sub',       total24 > 0 ? total24.toLocaleString() + ' in 2024' : 'Baseline year');
+  _set('pres-kpi-contracted',      contr25.toLocaleString());
+  _set('pres-kpi-contracted-sub',  'out of ' + total25.toLocaleString() + ' measures');
+  _set('pres-kpi-cvr',             cvr25 + '%');
+  const yoyEl = document.getElementById('pres-kpi-yoy');
+  if (yoyEl) {
+    if (yoy !== null) {
+      yoyEl.textContent = (yoy >= 0 ? '↑ +' : '↓ ') + Math.abs(yoy) + '%';
+      yoyEl.style.color = yoy >= 0 ? 'var(--green)' : 'var(--red)';
+    } else {
+      yoyEl.textContent = 'N/A'; yoyEl.style.color = 'var(--text3)';
+    }
+  }
+  _set('pres-kpi-yoy-sub',    yoy !== null ? total24.toLocaleString() + ' measures in 2024' : 'No 2024 data');
+  _set('pres-stat-designers', [...new Set(rows25.map(r=>r.designer).filter(d=>d&&!SKIP.includes((d||'').toLowerCase())))].length);
+  _set('pres-stat-areas',     [...new Set(rows25.map(r=>r.area).filter(Boolean))].length);
+  _set('pres-stat-sources',   [...new Set(rows25.map(r=>r.source).filter(s=>s&&!SKIP.includes((s||'').toLowerCase())))].length);
+
+  // ── Slide 3: Designers ──────────────────────────────────────
+  const rankEmoji  = ['🥇','🥈','🥉','#4','#5'];
+  const rankColors = ['#ffd740','#b0bec5','#ff7043','rgba(0,230,118,0.7)','rgba(64,196,255,0.7)'];
+  const teamAvg    = designers.length > 0 ? +(designers.reduce((s,d)=>s+d.rate,0)/designers.length).toFixed(1) : 0;
+  const listEl = document.getElementById('pres-designers-list');
+  if (listEl) {
+    listEl.innerHTML = designers.slice(0,5).map((d,i) => {
+      const rc = d.rate >= 30 ? '#00e676' : d.rate >= 20 ? '#ffd740' : '#ff5252';
+      const ab = d.rate >= teamAvg;
+      return '<div class="pres-des-card">'
+        + '<div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;background:rgba(255,255,255,0.05);color:'+rankColors[i]+'">' + rankEmoji[i] + '</div>'
+        + '<div style="flex:1"><div class="pres-des-name">'+d.name+'</div>'
+        + '<div class="pres-des-stats">'+d.total+' measures · '+d.contracted+' contracts '
+        + (ab ? '<span style="color:var(--green);font-size:11px">↑ above avg</span>' : '<span style="color:var(--red);font-size:11px">↓ below avg</span>')
+        + '</div></div>'
+        + '<div class="pres-des-rate" style="color:'+rc+'">'+d.rate+'%</div>'
+        + '</div>';
+    }).join('');
+  }
+  _set('pres-team-avg',      teamAvg + '%');
+  _set('pres-team-total',    total25.toLocaleString());
+  _set('pres-des-subtitle',  'Ranked by conversion rate · ' + designers.length + ' designers with ≥5 measures');
+
+  // ── Slide 4: Areas + Sources ────────────────────────────────
+  const maxArea = areas[0]?.total || 1;
+  const areaColors = ['var(--blue)','var(--teal)','var(--green)','var(--gold)','var(--purple)'];
+  const areasEl = document.getElementById('pres-areas-list');
+  if (areasEl) {
+    areasEl.innerHTML = areas.slice(0,5).map((a,i) => {
+      const bw  = Math.round(a.total/maxArea*100);
+      const cvr = a.total > 0 ? +(a.contracted/a.total*100).toFixed(1) : 0;
+      return '<div class="pres-area-row">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text3);width:18px;text-align:center">'+(i+1)+'</div>'
+        + '<div style="font-size:15px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+a.area+'</div>'
+        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+areaColors[i]+'"></div></div>'
+        + '<div style="font-size:15px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+a.total+'</div>'
+        + '<div style="font-size:11px;color:'+(cvr>=30?'#00e676':cvr>=20?'#ffd740':'#ff5252')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
+        + '</div>';
+    }).join('');
+  }
+  const maxSrc  = sources[0]?.total || 1;
+  const srcColors = ['var(--purple)','rgba(206,147,216,0.8)','var(--teal)','var(--blue)','var(--green)'];
+  const srcEl   = document.getElementById('pres-sources-list');
+  if (srcEl) {
+    srcEl.innerHTML = sources.slice(0,5).map((s,i) => {
+      const bw  = Math.round(s.total/maxSrc*100);
+      const cvr = s.total > 0 ? +(s.contracted/s.total*100).toFixed(1) : 0;
+      return '<div class="pres-area-row">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--text3);width:18px;text-align:center">'+(i+1)+'</div>'
+        + '<div style="font-size:15px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(s.source||'Unknown')+'</div>'
+        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+srcColors[i]+'"></div></div>'
+        + '<div style="font-size:15px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+s.total+'</div>'
+        + '<div style="font-size:11px;color:'+(cvr>=30?'#00e676':cvr>=20?'#ffd740':'#ff5252')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ── Slide 5: Insights ───────────────────────────────────────
+  const topDes  = designers[0];
+  const topArea = areas[0];
+  const bestSrc = sources.filter(s=>s.total>=5).sort((a,b) => (b.contracted/b.total)-(a.contracted/a.total))[0];
+  const discuss = rows25.filter(r => r._discussion).length;
+  const insights = [
+    { icon:'📈', text: '<strong>' + total25.toLocaleString() + ' measure visits</strong> recorded in 2025'
+        + (yoy !== null ? ' — ' + (yoy>=0?'↑':'↓') + ' ' + Math.abs(yoy) + '% ' + (yoy>=0?'growth':'decline') + ' vs. 2024' : '') },
+    { icon:'🎯', text: 'Conversion rate of <strong>' + cvr25 + '%</strong> — ' + contr25.toLocaleString() + ' contracts signed out of ' + total25.toLocaleString() + ' visits' },
+    topDes ? { icon:'🏆', text: '<strong>' + topDes.name + '</strong> leads the team with <strong>' + topDes.rate + '% CVR</strong> — ' + topDes.contracted + ' contracts from ' + topDes.total + ' measures' } : null,
+    topArea ? { icon:'📍', text: '<strong>' + topArea.area + '</strong> is the top performing area with ' + topArea.total.toLocaleString() + ' measures' } : null,
+    bestSrc ? { icon:'📡', text: '<strong>' + bestSrc.source + '</strong> is the highest-converting source at ' + +(bestSrc.contracted/bestSrc.total*100).toFixed(1) + '% CVR' } : null,
+    discuss > 0 ? { icon:'⏳', text: '<strong>' + discuss.toLocaleString() + ' measures</strong> remain in discussion — active follow-up opportunity' } : null,
+  ].filter(Boolean);
+
+  const insEl = document.getElementById('pres-insights-list');
+  if (insEl) insEl.innerHTML = insights.map(i =>
+    '<div class="pres-insight"><span style="font-size:22px;flex-shrink:0">' + i.icon + '</span><span>' + i.text + '</span></div>'
+  ).join('');
+
+  const outlookItems = [];
+  if (yoy !== null && yoy < 0) outlookItems.push('↑ Recover measure volume — target ' + Math.round(total25 * 1.15).toLocaleString() + ' measures');
+  else outlookItems.push('↑ Target ' + Math.round(total25 * 1.15).toLocaleString() + ' measures (+15% growth goal)');
+  outlookItems.push('↑ Push team conversion rate above ' + Math.min(cvr25 + 5, 50) + '%');
+  if (topArea) outlookItems.push('↑ Deepen penetration in ' + topArea.area + ' and expand to new areas');
+  if (discuss > 0) outlookItems.push('↑ Structured follow-up protocol for ' + discuss.toLocaleString() + ' active discussions');
+
+  const outEl = document.getElementById('pres-outlook-list');
+  if (outEl) outEl.innerHTML = outlookItems.map(o => '<div>• ' + o + '</div>').join('');
+
+
+  // ── Slide 6: H1 2025 vs 2026 ────────────────────────────────────
+  const H1_MONTHS = [1,2,3,4,5,6];
+  const h1_25 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2025' && H1_MONTHS.includes(r._monthOrder));
+  const h1_26 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2026' && H1_MONTHS.includes(r._monthOrder));
+  const hm25  = h1_25.length;
+  const hm26  = h1_26.length;
+  const hc25  = h1_25.filter(r => r._contracted).length;
+  const hc26  = h1_26.filter(r => r._contracted).length;
+  const hcvr25 = hm25 > 0 ? +(hc25/hm25*100).toFixed(1) : 0;
+  const hcvr26 = hm26 > 0 ? +(hc26/hm26*100).toFixed(1) : 0;
+
+  const _delta = (a, b, suffix) => {
+    if (!a) return '—';
+    const d = b - a; const pct = +(d/a*100).toFixed(1);
+    const col = d >= 0 ? '#00e676' : '#ff5252';
+    return '<span style="color:'+col+'">' + (d>=0?'↑ +':'↓ ') + Math.abs(d) + suffix + ' (' + (pct>=0?'+':'') + pct + '% YOY)</span>';
+  };
+
+  _set('pres-h1-m25',   hm25.toLocaleString());
+  _set('pres-h1-m26',   hm26.toLocaleString());
+  _set('pres-h1-c25',   hc25.toLocaleString());
+  _set('pres-h1-c26',   hc26.toLocaleString());
+  _set('pres-h1-cvr25', hcvr25 + '%');
+  _set('pres-h1-cvr26', hcvr26 + '%');
+
+  const mdEl   = document.getElementById('pres-h1-m-delta');
+  const cdEl   = document.getElementById('pres-h1-c-delta');
+  const cvrDEl = document.getElementById('pres-h1-cvr-delta');
+  if (mdEl)   mdEl.innerHTML   = _delta(hm25, hm26, '');
+  if (cdEl)   cdEl.innerHTML   = _delta(hc25, hc26, '');
+  if (cvrDEl) cvrDEl.innerHTML = hm25 > 0
+    ? '<span style="color:' + (hcvr26>=hcvr25?'#00e676':'#ff5252') + '">'
+      + (hcvr26>=hcvr25?'↑':'↓') + ' ' + Math.abs(+(hcvr26-hcvr25).toFixed(1)) + 'pp shift</span>'
+    : '—';
+
+  // Monthly breakdown rows
+  const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun'];
+  const mmMeasEl = document.getElementById('pres-h1-monthly-measures');
+  const mmCvrEl  = document.getElementById('pres-h1-monthly-cvr');
+  if (mmMeasEl && mmCvrEl) {
+    const maxM = Math.max(1, ...H1_MONTHS.map(mo => {
+      const c25m = h1_25.filter(r => r._monthOrder === mo).length;
+      const c26m = h1_26.filter(r => r._monthOrder === mo).length;
+      return Math.max(c25m, c26m);
+    }));
+    let rowsM = '', rowsCVR = '';
+    H1_MONTHS.forEach((mo, idx) => {
+      const m25 = h1_25.filter(r => r._monthOrder === mo).length;
+      const m26 = h1_26.filter(r => r._monthOrder === mo).length;
+      const c25 = h1_25.filter(r => r._monthOrder === mo && r._contracted).length;
+      const c26 = h1_26.filter(r => r._monthOrder === mo && r._contracted).length;
+      const v25 = m25 > 0 ? +(c25/m25*100).toFixed(1) : 0;
+      const v26 = m26 > 0 ? +(c26/m26*100).toFixed(1) : 0;
+      const mn  = MONTH_NAMES_SHORT[idx];
+      const isPartial = (mo === 6 && m26 > 0 && m26 < m25 * 0.8); // likely incomplete
+      const partialTag = isPartial ? ' <span style="font-size:10px;color:var(--text3)">(partial)</span>' : '';
+
+      rowsM += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+        + '<div style="font-size:12px;color:var(--text3);width:28px">' + mn + '</div>'
+        + '<div style="flex:1;display:flex;flex-direction:column;gap:3px">'
+        + '<div style="height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + Math.round(m25/maxM*100) + '%;background:rgba(180,180,180,0.4);border-radius:3px"></div></div>'
+        + '<div style="height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + Math.round(m26/maxM*100) + '%;background:var(--green);border-radius:3px"></div></div>'
+        + '</div>'
+        + '<div style="font-size:12px;color:var(--text3);min-width:28px;text-align:right">' + m25 + '</div>'
+        + '<div style="font-size:12px;color:var(--green);min-width:28px;text-align:right">' + m26 + partialTag + '</div>'
+        + '</div>';
+
+      const cvrColor = v26 > v25 ? '#00e676' : v26 < v25 ? '#ff5252' : 'var(--text2)';
+      rowsCVR += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+        + '<div style="font-size:12px;color:var(--text3);width:28px">' + mn + '</div>'
+        + '<div style="font-size:14px;font-weight:700;color:rgba(180,180,180,0.6);min-width:44px">' + v25 + '%</div>'
+        + '<div style="font-size:12px;color:var(--text3)">→</div>'
+        + '<div style="font-size:14px;font-weight:700;color:' + cvrColor + ';min-width:44px">' + v26 + '%' + partialTag + '</div>'
+        + '<div style="font-size:11px;color:' + cvrColor + '">' + (v26 > v25 ? '↑' : v26 < v25 ? '↓' : '=') + ' ' + Math.abs(+(v26-v25).toFixed(1)) + 'pp</div>'
+        + '</div>';
+    });
+    mmMeasEl.innerHTML = '<div style="display:flex;gap:12px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)"><div style="width:12px;height:4px;background:rgba(180,180,180,0.4);border-radius:2px"></div>2025</div><div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green)"><div style="width:12px;height:4px;background:var(--green);border-radius:2px"></div>2026</div></div>' + rowsM;
+    mmCvrEl.innerHTML  = '<div style="display:flex;gap:12px;margin-bottom:6px"><div style="font-size:11px;color:var(--text3)">2025 CVR</div><div style="font-size:11px;color:var(--green)">2026 CVR</div><div style="font-size:11px;color:var(--text3)">shift</div></div>' + rowsCVR;
+  }
+
+
+  // Reset to slide 1
+  _presCurrentSlide = 1;
+  _presShowSlide(1);
+}
+
+function _presShowSlide(n) {
+  _presCurrentSlide = Math.max(1, Math.min(n, _PRES_TOTAL));
+  document.querySelectorAll('.pres-slide').forEach((s,i) => {
+    s.classList.toggle('pres-active', i + 1 === _presCurrentSlide);
+  });
+  const ctr = document.getElementById('pres-counter');
+  if (ctr) ctr.textContent = _presCurrentSlide + ' / ' + _PRES_TOTAL;
+}
+
+function presNav(dir) { _presShowSlide(_presCurrentSlide + dir); }
+
+function togglePresMode() {
+  _presFullscreen = !_presFullscreen;
+  const pg  = document.getElementById('page-presentation');
+  const btn = document.getElementById('pres-mode-btn');
+  if (pg)  pg.classList.toggle('pres-fullscreen', _presFullscreen);
+  if (btn) { btn.textContent = _presFullscreen ? '⊡ Exit Fullscreen' : '⛶ Fullscreen'; btn.classList.toggle('active', _presFullscreen); }
+}
+
+function presPrint() { window.print(); }
+
+document.addEventListener('keydown', function(e) {
+  var pg = document.getElementById('page-presentation');
+  if (!pg || !pg.classList.contains('active')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  presNav(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    presNav(-1);
+  if (e.key === 'f' || e.key === 'F') togglePresMode();
+  if (e.key === 'Escape' && _presFullscreen) togglePresMode();
+});
+
 </script>
 </body>
 </html>
