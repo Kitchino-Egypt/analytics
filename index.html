@@ -1141,6 +1141,19 @@ if (_checkSession()) {
       <div id="ai-insights-list"></div>
     </div>
   </div>
+
+
+  <!-- DESIGNER PERFORMANCE TIERS — Executive Summary -->
+  <div style="margin-top:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--text1)">Designer Performance Tiers</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Composite score: 50% volume · 50% conversion rate</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3)" id="exec-tiers-meta"></div>
+    </div>
+    <div class="patches-grid" id="exec-tiers-grid"></div>
+  </div>
 </div>
 
 <!-- PAGE 2: DAILY OPERATIONS -->
@@ -1718,7 +1731,7 @@ if (_checkSession()) {
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button class="pres-ctrl-btn" onclick="presNav(-1)">← Prev</button>
-      <span id="pres-counter">1 / 6</span>
+      <span id="pres-counter">1 / 7</span>
       <button class="pres-ctrl-btn" onclick="presNav(1)">Next →</button>
     </div>
     <div style="font-size:11px;color:var(--text3)">← → arrow keys to navigate · F = fullscreen</div>
@@ -1741,7 +1754,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 2: Executive KPIs -->
   <div class="pres-slide" id="pres-slide-2">
-    <div class="pres-tag">SLIDE 2 OF 6 — EXECUTIVE PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 2 OF 7 — EXECUTIVE PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:32px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
       <div class="pres-kpi-box">
@@ -1760,9 +1773,9 @@ if (_checkSession()) {
         <div class="pres-kpi-sub" style="color:var(--text3)">Measures → Contracts</div>
       </div>
       <div class="pres-kpi-box">
-        <div class="pres-kpi-val" id="pres-kpi-yoy" style="color:var(--green)">—</div>
-        <div class="pres-kpi-lbl">YOY Growth</div>
-        <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-yoy-sub">vs. 2024</div>
+        <div class="pres-kpi-val" style="color:var(--purple)" id="pres-kpi-customers">—</div>
+        <div class="pres-kpi-lbl">Unique Customers</div>
+        <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-customers-sub">—</div>
       </div>
     </div>
     <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
@@ -1781,21 +1794,29 @@ if (_checkSession()) {
     </div>
   </div>
 
-  <!-- SLIDE 3: Designer Performance -->
+  <!-- SLIDE 3: Designer Performance (all, clickable) -->
   <div class="pres-slide" id="pres-slide-3">
-    <div class="pres-tag">SLIDE 3 OF 6 — TEAM PERFORMANCE</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:8px">Designer Rankings — 2025</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:28px" id="pres-des-subtitle">Ranked by conversion rate</div>
-    <div id="pres-designers-list"></div>
-    <div style="margin-top:20px;display:flex;gap:24px;align-items:center">
-      <div style="font-size:12px;color:var(--text3)">Team avg CVR: <strong id="pres-team-avg" style="color:var(--text1)">—</strong></div>
+    <div class="pres-tag">SLIDE 3 OF 7 — TEAM PERFORMANCE</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Rankings — 2025</div>
+    <div style="display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--text3)" id="pres-des-subtitle">All designers · ranked by CVR</div>
+      <div style="font-size:12px;color:var(--text3)">Team avg: <strong id="pres-team-avg" style="color:var(--text1)">—</strong></div>
       <div style="font-size:12px;color:var(--text3)">Total: <strong id="pres-team-total" style="color:var(--text1)">—</strong> measures</div>
     </div>
+    <div id="pres-designers-list" style="overflow-y:auto;max-height:370px;padding-right:4px"></div>
   </div>
 
-  <!-- SLIDE 4: Geographic + Lead Sources -->
+  <!-- SLIDE 4: Designer Groups -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 4 OF 6 — REACH &amp; CHANNELS</div>
+    <div class="pres-tag">SLIDE 4 OF 7 — PERFORMANCE TIERS</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
+    <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px"></div>
+  </div>
+
+  <!-- SLIDE 5: Geographic + Lead Sources -->
+  <div class="pres-slide" id="pres-slide-4">
+    <div class="pres-tag">SLIDE 5 OF 7 — REACH &amp; CHANNELS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">Geographic Reach &amp; Lead Sources</div>
     <div class="pres-row">
       <div>
@@ -1811,7 +1832,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 5: Key Takeaways -->
   <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 5 OF 6 — KEY TAKEAWAYS</div>
+    <div class="pres-tag">SLIDE 6 OF 7 — KEY TAKEAWAYS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">2025 Highlights &amp; 2026 Outlook</div>
     <div id="pres-insights-list" style="flex:1"></div>
     <div style="margin-top:24px;background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:12px;padding:20px 24px">
@@ -1822,7 +1843,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
-    <div class="pres-tag">SLIDE 6 OF 6 — PARTIAL YEAR COMPARISON</div>
+    <div class="pres-tag">SLIDE 7 OF 7 — PARTIAL YEAR COMPARISON</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:28px">Q1 (Jan–Mar) + Q2 (Apr–Jun) · as of <span id="pres-h1-asof">June 2026</span></div>
 
@@ -2682,6 +2703,62 @@ function refreshYearDropdown() {
   if (!years.includes(current) && current !== 'all') sel.value = 'all';
 }
 
+
+function renderExecTiers() {
+  var grid = document.getElementById('exec-tiers-grid');
+  var meta = document.getElementById('exec-tiers-meta');
+  if (!grid) return;
+  var fullData = (KITCHINO_STATE.allDesignerData || []).filter(function(d){return d.total >= 3;});
+  if (!ENGINE_READY || fullData.length < 3) {
+    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);grid-column:1/-1">Connect Google Sheets to generate performance tiers</div>';
+    return;
+  }
+  var PATCHES = [
+    { tag:'Pinnacle', icon:'🏆', color:'#ffd740', border:'rgba(255,215,64,0.35)',  bg:'linear-gradient(145deg,rgba(255,215,64,0.10),rgba(255,215,64,0.04))',  tagline:'Masters of the craft',  designers:[] },
+    { tag:'Valor',    icon:'⚔️',  color:'#ff7043', border:'rgba(255,112,67,0.35)',  bg:'linear-gradient(145deg,rgba(255,112,67,0.10),rgba(255,112,67,0.04))',  tagline:'Driven by excellence',  designers:[] },
+    { tag:'Stride',   icon:'💎', color:'#1de9b6', border:'rgba(29,233,182,0.35)', bg:'linear-gradient(145deg,rgba(29,233,182,0.10),rgba(29,233,182,0.04))', tagline:'Consistent momentum',   designers:[] },
+    { tag:'Spark',    icon:'⚡', color:'#40c4ff', border:'rgba(64,196,255,0.35)', bg:'linear-gradient(145deg,rgba(64,196,255,0.10),rgba(64,196,255,0.04))', tagline:'Rising energy',          designers:[] },
+    { tag:'Dawn',     icon:'🌅', color:'#b0bec5', border:'rgba(176,190,197,0.22)',bg:'linear-gradient(145deg,rgba(176,190,197,0.07),rgba(176,190,197,0.02))',tagline:'Building foundations',  designers:[] },
+  ];
+  var maxM = Math.max.apply(null, fullData.map(function(d){return d.total;}));
+  var maxR = Math.max.apply(null, fullData.map(function(d){return d.total>0?d.contracted/d.total*100:0;}));
+  var scored = fullData.map(function(d){
+    var rate = d.total>0 ? +(d.contracted/d.total*100).toFixed(1) : 0;
+    return Object.assign({},d,{rate:rate, score:+(maxM>0&&maxR>0 ? d.total/maxM*50+rate/maxR*50 : 0).toFixed(1)});
+  }).sort(function(a,b){return b.score-a.score;});
+  var n=scored.length, ts=n/5;
+  PATCHES.forEach(function(p){p.designers=[];});
+  scored.forEach(function(d,i){PATCHES[Math.min(Math.floor(i/ts),4)].designers.push(d);});
+  if (meta) meta.textContent = n+' designers ranked · top 4 shown per tier';
+  grid.innerHTML = PATCHES.map(function(p){
+    var shown=p.designers.slice(0,4), extra=p.designers.length-shown.length;
+    var avgM=p.designers.length?Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length):0;
+    var avgR=p.designers.length?+(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1):0;
+    var topScore=p.designers.length?p.designers[0].score:'—';
+    var dRows=shown.map(function(d){
+      var ini=d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+      var rc=d.rate>=30?'#00e676':d.rate>=20?'#ffd740':'#ff5252';
+      return '<div class="patch-designer">'
+        +'<div class="patch-avatar" style="background:rgba(255,255,255,0.06);color:'+p.color+';border:1px solid '+p.border+'">'+ini+'</div>'
+        +'<div class="patch-d-info"><div class="patch-d-name" title="'+d.name+'">'+d.name.split(' ').slice(0,2).join(' ')+'</div>'
+        +'<div class="patch-d-meas">'+d.total+' measures</div></div>'
+        +'<div class="patch-d-rate" style="color:'+rc+'">'+d.rate+'%</div>'
+        +'</div>';
+    }).join('')+(extra>0?'<div class="patch-more">+'+extra+' more</div>':'');
+    return '<div class="perf-patch" style="background:'+p.bg+';border-color:'+p.border+'">'
+      +'<div class="patch-tier-tag" style="color:'+p.color+'">'+p.tag+' &nbsp;·&nbsp; '+p.designers.length+' designer'+(p.designers.length!==1?'s':'')+'</div>'
+      +'<div class="patch-name-row"><span class="patch-big-icon">'+p.icon+'</span>'
+      +'<div><div class="patch-name" style="color:'+p.color+'">'+p.tag+'</div>'
+      +'<div class="patch-tagline">'+p.tagline+'</div></div></div>'
+      +'<div class="patch-stats-bar">'
+      +'<div class="patch-stat"><div class="patch-stat-val" style="color:'+p.color+'">'+avgM+'</div><div class="patch-stat-label">Avg Meas</div></div>'
+      +'<div class="patch-stat"><div class="patch-stat-val" style="color:'+p.color+'">'+avgR+'%</div><div class="patch-stat-label">Avg Conv</div></div>'
+      +'<div class="patch-stat"><div class="patch-stat-val" style="color:'+p.color+'">'+topScore+'</div><div class="patch-stat-label">Top Score</div></div>'
+      +'</div><hr class="patch-divider"><div class="patch-designers">'+dRows+'</div>'
+      +'</div>';
+  }).join('');
+}
+
 function buildExecutiveCharts() {
   updateKPICards();
   if (!ENGINE_READY) {
@@ -2745,6 +2822,7 @@ function buildExecutiveCharts() {
 
   // Refresh list-based cards after data loads
   renderTopPerformers();
+  renderExecTiers();
   renderExecAreaCard();
   renderExecSourceCard();
 }
@@ -5263,7 +5341,7 @@ function closePaymentBreakdown() {
 // PRESENTATION VIEW
 // ============================================================
 let _presCurrentSlide = 1;
-const _PRES_TOTAL = 6;
+const _PRES_TOTAL = 7;
 let _presFullscreen = false;
 
 function buildPresentationSlides() {
@@ -5325,44 +5403,126 @@ function buildPresentationSlides() {
   _set('pres-kpi-contracted',      contr25.toLocaleString());
   _set('pres-kpi-contracted-sub',  'out of ' + total25.toLocaleString() + ' measures');
   _set('pres-kpi-cvr',             cvr25 + '%');
-  const yoyEl = document.getElementById('pres-kpi-yoy');
-  if (yoyEl) {
-    if (yoy !== null) {
-      yoyEl.textContent = (yoy >= 0 ? '↑ +' : '↓ ') + Math.abs(yoy) + '%';
-      yoyEl.style.color = yoy >= 0 ? 'var(--green)' : 'var(--red)';
-    } else {
-      yoyEl.textContent = 'N/A'; yoyEl.style.color = 'var(--text3)';
-    }
-  }
-  _set('pres-kpi-yoy-sub',    yoy !== null ? total24.toLocaleString() + ' measures in 2024' : 'No 2024 data');
+  // Unique customers (deduplicated by name)
+  var uniqueCusts25 = new Set(rows25.map(function(r){return (r.customer||'').trim().toLowerCase();}).filter(Boolean)).size;
+  _set('pres-kpi-customers',     uniqueCusts25.toLocaleString());
+  _set('pres-kpi-customers-sub', 'unique in 2025');
   _set('pres-stat-designers', [...new Set(rows25.map(r=>r.designer).filter(d=>d&&!SKIP.includes((d||'').toLowerCase())))].length);
   _set('pres-stat-areas',     [...new Set(rows25.map(r=>r.area).filter(Boolean))].length);
   _set('pres-stat-sources',   [...new Set(rows25.map(r=>r.source).filter(s=>s&&!SKIP.includes((s||'').toLowerCase())))].length);
 
-  // ── Slide 3: Designers ──────────────────────────────────────
-  const rankEmoji  = ['🥇','🥈','🥉','#4','#5'];
-  const rankColors = ['#ffd740','#b0bec5','#ff7043','rgba(0,230,118,0.7)','rgba(64,196,255,0.7)'];
-  const teamAvg    = designers.length > 0 ? +(designers.reduce((s,d)=>s+d.rate,0)/designers.length).toFixed(1) : 0;
+  // ── Slide 3: All Designers + clickable breakdown ────────────
+  const teamAvg     = designers.length > 0 ? +(designers.reduce((s,d)=>s+d.rate,0)/designers.length).toFixed(1) : 0;
+  const maxMeasures = designers.length > 0 ? Math.max(...designers.map(d=>d.total)) : 1;
+  const rankMedals  = ['🥇','🥈','🥉'];
   const listEl = document.getElementById('pres-designers-list');
   if (listEl) {
-    listEl.innerHTML = designers.slice(0,5).map((d,i) => {
-      const rc = d.rate >= 30 ? '#00e676' : d.rate >= 20 ? '#ffd740' : '#ff5252';
-      const ab = d.rate >= teamAvg;
-      return '<div class="pres-des-card">'
-        + '<div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;background:rgba(255,255,255,0.05);color:'+rankColors[i]+'">' + rankEmoji[i] + '</div>'
-        + '<div style="flex:1"><div class="pres-des-name">'+d.name+'</div>'
-        + '<div class="pres-des-stats">'+d.total+' measures · '+d.contracted+' contracts '
-        + (ab ? '<span style="color:var(--green);font-size:11px">↑ above avg</span>' : '<span style="color:var(--red);font-size:11px">↓ below avg</span>')
-        + '</div></div>'
-        + '<div class="pres-des-rate" style="color:'+rc+'">'+d.rate+'%</div>'
-        + '</div>';
+    listEl.innerHTML = designers.map(function(d,i) {
+      var rc   = d.rate >= 30 ? '#00e676' : d.rate >= 20 ? '#ffd740' : '#ff5252';
+      var ab   = d.rate >= teamAvg;
+      var barW = Math.round(d.total / maxMeasures * 100);
+      var rank = i < 3 ? rankMedals[i] : ('#'+(i+1));
+      var rankCol = i < 3 ? ['#ffd740','#b0bec5','#ff7043'][i] : 'var(--text3)';
+      // Monthly breakdown for this designer
+      var monthlyMap = {};
+      rows25.filter(function(r){return r.designer===d.name;}).forEach(function(r){
+        var m = r._monthName || ('M'+r._monthOrder);
+        if (!monthlyMap[m]) monthlyMap[m]={total:0,contracted:0};
+        monthlyMap[m].total++;
+        if (r._contracted) monthlyMap[m].contracted++;
+      });
+      var monthlyHtml = Object.entries(monthlyMap).map(function(e){
+        var mv = e[1]; var mn = e[0];
+        var mc = mv.total>0 ? Math.round(mv.contracted/mv.total*100) : 0;
+        return '<span style="background:rgba(255,255,255,0.05);border-radius:5px;padding:3px 7px;font-size:11px;white-space:nowrap">'
+          +mn+': '+mv.total+' <span style="color:var(--green)">'+mc+'%</span></span>';
+      }).join(' ');
+      return '<div style="border-bottom:1px solid rgba(255,255,255,0.05)">'
+        +'<div onclick="var nx=this.nextSibling;nx.style.display=nx.style.display===\'\'?\'none\':\'\'" '
+        +'style="display:flex;align-items:center;gap:10px;padding:10px 4px;cursor:pointer;border-radius:6px" '
+        +'onmouseover="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseout="this.style.background=\'\'">'
+          +'<div style="width:28px;font-size:13px;font-weight:700;text-align:center;color:'+rankCol+';flex-shrink:0">'+rank+'</div>'
+          +'<div style="flex:1;min-width:0">'
+            +'<div style="font-size:14px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name+'</div>'
+            +'<div style="display:flex;align-items:center;gap:6px;margin-top:4px">'
+              +'<div style="flex:1;height:4px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden">'
+                +'<div style="height:100%;width:'+barW+'%;background:'+rc+';border-radius:3px"></div>'
+              +'</div>'
+              +'<span style="font-size:11px;color:var(--text3);white-space:nowrap">'+d.total+' measures</span>'
+            +'</div>'
+          +'</div>'
+          +'<div style="text-align:right;flex-shrink:0">'
+            +'<div style="font-size:18px;font-weight:900;color:'+rc+'">'+d.rate+'%</div>'
+            +'<div style="font-size:10px;color:'+(ab?'var(--green)':'var(--red)')+';">'+(ab?'↑ above':'↓ below')+' avg</div>'
+          +'</div>'
+          +'<div style="color:var(--text3);font-size:11px;padding-left:4px">▼</div>'
+        +'</div>'
+        +'<div style="display:none;padding:8px 12px 12px;background:rgba(255,255,255,0.02);border-radius:8px;margin-bottom:4px">'
+          +'<div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Monthly Breakdown</div>'
+          +'<div style="display:flex;flex-wrap:wrap;gap:5px">'+monthlyHtml+'</div>'
+          +'<div style="margin-top:8px;font-size:12px;color:var(--text3)">'
+            +d.contracted+' contracts · '+d.total+' measures · CVR: '+d.rate+'% · '
+            +(ab ? '<span style="color:var(--green)">+'+(+(d.rate-teamAvg).toFixed(1))+'pp above team avg</span>'
+                 : '<span style="color:var(--red)">-'+(+(teamAvg-d.rate).toFixed(1))+'pp below team avg</span>')
+          +'</div>'
+        +'</div>'
+      +'</div>';
     }).join('');
   }
-  _set('pres-team-avg',      teamAvg + '%');
-  _set('pres-team-total',    total25.toLocaleString());
-  _set('pres-des-subtitle',  'Ranked by conversion rate · ' + designers.length + ' designers with ≥5 measures');
+  _set('pres-team-avg',     teamAvg + '%');
+  _set('pres-team-total',   total25.toLocaleString());
+  _set('pres-des-subtitle', designers.length + ' designers · click any row to expand monthly detail');
 
-  // ── Slide 4: Areas + Sources ────────────────────────────────
+  // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
+  var PRES_PATCHES = [
+    { tag:'Pinnacle', icon:'🏆', color:'#ffd740', border:'rgba(255,215,64,0.35)',  bg:'rgba(255,215,64,0.08)',  tagline:'Masters of the craft',    designers:[] },
+    { tag:'Valor',    icon:'⚔️',  color:'#ff7043', border:'rgba(255,112,67,0.35)',  bg:'rgba(255,112,67,0.08)',  tagline:'Driven by excellence',     designers:[] },
+    { tag:'Stride',   icon:'💎', color:'#1de9b6', border:'rgba(29,233,182,0.35)', bg:'rgba(29,233,182,0.08)', tagline:'Consistent momentum',      designers:[] },
+    { tag:'Spark',    icon:'⚡', color:'#40c4ff', border:'rgba(64,196,255,0.35)', bg:'rgba(64,196,255,0.08)', tagline:'Rising energy',             designers:[] },
+    { tag:'Dawn',     icon:'🌅', color:'#b0bec5', border:'rgba(176,190,197,0.25)',bg:'rgba(176,190,197,0.05)',tagline:'Building foundations',      designers:[] },
+  ];
+  var tiersGrid = document.getElementById('pres-tiers-grid');
+  if (tiersGrid && designers.length >= 3) {
+    var maxM2 = Math.max.apply(null, designers.map(function(d){return d.total;}));
+    var maxR2 = Math.max.apply(null, designers.map(function(d){return d.rate;}));
+    var scored2 = designers.map(function(d){
+      return Object.assign({},d,{score: maxM2>0&&maxR2>0 ? d.total/maxM2*50+d.rate/maxR2*50 : 0});
+    }).sort(function(a,b){return b.score-a.score;});
+    var tierSize2 = scored2.length/5;
+    PRES_PATCHES.forEach(function(p){p.designers=[];});
+    scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),4)].designers.push(d);});
+    tiersGrid.innerHTML = PRES_PATCHES.map(function(p){
+      var avgC = p.designers.length ? +(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1) : 0;
+      var avgM3= p.designers.length ? Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length) : 0;
+      var shown3=p.designers.slice(0,4), extra3=p.designers.length-shown3.length;
+      var desRows3=shown3.map(function(d){
+        var rc2=d.rate>=30?'#00e676':d.rate>=20?'#ffd740':'#ff5252';
+        var ini=d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+        return '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'
+          +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:'+p.color+';flex-shrink:0">'+ini+'</div>'
+          +'<div style="flex:1;font-size:12px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name.split(' ').slice(0,2).join(' ')+'</div>'
+          +'<div style="font-size:12px;font-weight:700;color:'+rc2+'">'+d.rate+'%</div>'
+          +'</div>';
+      }).join('')+(extra3>0?'<div style="font-size:10px;color:var(--text3);padding-top:4px">+'+extra3+' more</div>':'');
+      return '<div style="background:'+p.bg+';border:1px solid '+p.border+';border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:20px">'+p.icon+'</span>'
+          +'<div><div style="font-size:14px;font-weight:900;color:'+p.color+'">'+p.tag+'</div>'
+          +'<div style="font-size:10px;color:var(--text3)">'+p.tagline+'</div></div>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px">'
+          +'<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center"><div style="font-size:16px;font-weight:900;color:'+p.color+'">'+avgM3+'</div><div style="font-size:9px;color:var(--text3)">Avg Meas</div></div>'
+          +'<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center"><div style="font-size:16px;font-weight:900;color:'+p.color+'">'+avgC+'%</div><div style="font-size:9px;color:var(--text3)">Avg CVR</div></div>'
+        +'</div>'
+        +'<div>'+desRows3+'</div>'
+        +'</div>';
+    }).join('');
+    _set('pres-tiers-subtitle','Composite score: 50% volume · 50% conversion rate · '+designers.length+' designers ranked');
+  } else if (tiersGrid) {
+    tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
+  }
+
+    // ── Slide 4: Areas + Sources ────────────────────────────────
   const maxArea = areas[0]?.total || 1;
   const areaColors = ['var(--blue)','var(--teal)','var(--green)','var(--gold)','var(--purple)'];
   const areasEl = document.getElementById('pres-areas-list');
@@ -5508,9 +5668,9 @@ function buildPresentationSlides() {
   }
 
 
-  // Reset to slide 1
-  _presCurrentSlide = 1;
-  _presShowSlide(1);
+  // Preserve slide position on rebuild
+  if (_presCurrentSlide < 1 || _presCurrentSlide > _PRES_TOTAL) _presCurrentSlide = 1;
+  _presShowSlide(_presCurrentSlide);
 }
 
 function _presShowSlide(n) {
