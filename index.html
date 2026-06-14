@@ -3873,18 +3873,47 @@ function buildKPICharts() {
     if (color) el.style.color = color;
   };
 
-  // YOY Growth — 2025 vs 2026 actual data
-  const rows25 = ENGINE_CLEAN_ROWS.filter(r=>r._year==='2025');
-  const rows26 = ENGINE_CLEAN_ROWS.filter(r=>r._year==='2026');
-  if (rows25.length > 0 && rows26.length > 0) {
-    const yoyPct = +((rows26.length - rows25.length) / rows25.length * 100).toFixed(1);
-    const arrow  = yoyPct >= 0 ? '↑' : '↓';
-    _kset('kpi-yoy-value', arrow + ' ' + Math.abs(yoyPct) + '%', yoyPct>=0?'var(--green)':'var(--red)');
-    _kset('kpi-yoy-sub', '2025: ' + rows25.length.toLocaleString() + ' → 2026: ' + rows26.length.toLocaleString());
-  } else if (rows26.length === 0 && rows25.length > 0) {
-    _kset('kpi-yoy-value', rows25.length.toLocaleString());
-    _kset('kpi-yoy-sub', '2025 data · 2026 not started');
-  }
+  // YOY Growth — PERIOD-TO-PERIOD only (cap 2025 at same date as latest 2026 data)
+  // Never compare partial 2026 against full 2025 — that gives a false decline.
+  (function(){
+    var rows25all = ENGINE_CLEAN_ROWS.filter(function(r){return r._year==='2025';});
+    var rows26all = ENGINE_CLEAN_ROWS.filter(function(r){return r._year==='2026';});
+    var MNS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    if (rows26all.length > 0) {
+      // Step 1: find latest date present in 2026
+      var maxD26 = null;
+      rows26all.forEach(function(r){if(r._date&&(!maxD26||r._date>maxD26))maxD26=r._date;});
+      var cutM = maxD26 ? maxD26.getMonth() : 11;
+      var cutD = maxD26 ? maxD26.getDate()  : 31;
+      var periodLabel = maxD26 ? 'Jan–'+MNS[cutM]+' '+cutD : 'YTD';
+
+      // Step 2: restrict 2025 to the SAME calendar window
+      var rows25period = rows25all.filter(function(r){
+        if(!r._date) return false;
+        var m=r._date.getMonth(), d=r._date.getDate();
+        return m<cutM||(m===cutM&&d<=cutD);
+      });
+      var n25=rows25period.length, n26=rows26all.length;
+
+      if(n25>0){
+        var yoyPct=+((n26-n25)/n25*100).toFixed(1);
+        var arrow=yoyPct>=0?'↑':'↓';
+        _kset('kpi-yoy-value', arrow+' '+Math.abs(yoyPct)+'%', yoyPct>=0?'var(--green)':'var(--red)');
+        _kset('kpi-yoy-sub',
+          '2026 ('+periodLabel+'): '+n26.toLocaleString()+
+          ' → 2025 same period: '+n25.toLocaleString());
+      } else {
+        _kset('kpi-yoy-value', n26.toLocaleString());
+        _kset('kpi-yoy-sub', '2026 YTD · No 2025 data for same window');
+      }
+
+    } else if(rows25all.length>0){
+      // Only 2025 exists — no YOY possible
+      _kset('kpi-yoy-value', rows25all.length.toLocaleString(), 'var(--text1)');
+      _kset('kpi-yoy-sub', '2025 full year · 2026 data not yet available');
+    }
+  })();
 
   // Cross-sell Rate — customers with >1 visit / total unique customers
   if (filteredMeasures && filteredMeasures.length > 0) {
