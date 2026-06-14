@@ -1747,7 +1747,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 1: Cover -->
   <div class="pres-slide pres-active" id="pres-slide-1" style="align-items:center;text-align:center">
-    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:24px">KITCHINO — HIGH-END KITCHENS &amp; FURNITURE, EGYPT</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text3);margin-bottom:24px">KITCHINO — ANNUAL SALES MEETING &nbsp;·&nbsp; Every Effort Counts. Every Success Matters.</div>
     <div style="font-size:80px;font-weight:900;background:linear-gradient(135deg,var(--green),var(--teal));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:16px">2025</div>
     <div style="font-size:32px;font-weight:700;color:var(--text1);margin-bottom:12px">Annual Performance Review</div>
     <div style="font-size:16px;color:var(--text3);max-width:480px;line-height:1.7">A full-year analysis of measure visits, conversion performance, designer rankings, and geographic reach.</div>
@@ -1762,7 +1762,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 2: Executive KPIs -->
   <div class="pres-slide" id="pres-slide-2">
-    <div class="pres-tag">SLIDE 2 OF 7 — EXECUTIVE PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 2 OF 8 — EXECUTIVE PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:32px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
       <div class="pres-kpi-box">
@@ -1802,9 +1802,25 @@ if (_checkSession()) {
     </div>
   </div>
 
+
+  <!-- SLIDE 3: 2025 Monthly Measures Bar Chart -->
+  <div class="pres-slide" id="pres-slide-new3">
+    <div class="pres-tag">SLIDE 3 OF 8 — MONTHLY VOLUME</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 — Month by Month</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Total measure visits per month · full year 2025</div>
+    <div style="flex:1;position:relative;min-height:0">
+      <canvas id="pres-monthly-bar-chart"></canvas>
+    </div>
+    <div style="display:flex;gap:24px;margin-top:14px;flex-wrap:wrap">
+      <div style="font-size:12px;color:var(--text3)">Peak month: <strong id="pres-peak-month" style="color:var(--green)">—</strong></div>
+      <div style="font-size:12px;color:var(--text3)">Slowest: <strong id="pres-slow-month" style="color:var(--text2)">—</strong></div>
+      <div style="font-size:12px;color:var(--text3)">Monthly avg: <strong id="pres-month-avg" style="color:var(--text1)">—</strong></div>
+    </div>
+  </div>
+
   <!-- SLIDE 3: Designer Performance (all, clickable) -->
   <div class="pres-slide" id="pres-slide-3">
-    <div class="pres-tag">SLIDE 3 OF 7 — TEAM PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 4 OF 8 — TEAM PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Rankings — 2025</div>
     <div style="display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
       <div style="font-size:13px;color:var(--text3)" id="pres-des-subtitle">All designers · ranked by CVR</div>
@@ -1824,7 +1840,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 4: Designer Groups -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 4 OF 7 — PERFORMANCE TIERS</div>
+    <div class="pres-tag">SLIDE 5 OF 8 — PERFORMANCE TIERS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
     <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px"></div>
@@ -1832,7 +1848,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 5 OF 7 — REACH &amp; CHANNELS</div>
+    <div class="pres-tag">SLIDE 6 OF 8 — REACH &amp; CHANNELS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">Geographic Reach &amp; Lead Sources</div>
     <div class="pres-row">
       <div>
@@ -1848,18 +1864,24 @@ if (_checkSession()) {
 
   <!-- SLIDE 5: Key Takeaways -->
   <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 6 OF 7 — KEY TAKEAWAYS</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">2025 Highlights &amp; 2026 Outlook</div>
-    <div id="pres-insights-list" style="flex:1"></div>
-    <div style="margin-top:24px;background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:12px;padding:20px 24px">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:10px">2026 Focus Areas</div>
-      <div id="pres-outlook-list" style="font-size:14px;color:var(--text2);line-height:2"></div>
+    <div class="pres-tag">SLIDE 7 OF 8 — KEY TAKEAWAYS</div>
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
+      <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
+      <div style="font-size:13px;color:var(--text3)">What we achieved</div>
+    </div>
+    <div id="pres-insights-list" style="margin-bottom:18px"></div>
+    <div style="background:linear-gradient(135deg,rgba(0,230,118,0.08),rgba(29,233,182,0.04));border:1px solid rgba(0,230,118,0.2);border-radius:14px;padding:18px 22px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:3px;height:20px;background:linear-gradient(to bottom,var(--green),var(--teal));border-radius:2px"></div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">2026 Focus Areas</div>
+      </div>
+      <div id="pres-outlook-list"></div>
     </div>
   </div>
 
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
-    <div class="pres-tag">SLIDE 7 OF 7 — PARTIAL YEAR COMPARISON</div>
+    <div class="pres-tag">SLIDE 8 OF 8 — PARTIAL YEAR COMPARISON</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:28px">Q1 (Jan–Mar) + Q2 (Apr–Jun) · as of <span id="pres-h1-asof">June 2026</span></div>
 
@@ -5378,7 +5400,7 @@ function closePaymentBreakdown() {
 // PRESENTATION VIEW
 // ============================================================
 let _presCurrentSlide = 1;
-const _PRES_TOTAL = 7;
+const _PRES_TOTAL = 8;
 let _presFullscreen = false;
 let _presDesignerData = {};  // populated in buildPresentationSlides, keyed by designer name
 let _presAreaData     = {};  // keyed by area name
@@ -5759,6 +5781,74 @@ function buildPresentationSlides() {
   _set('pres-stat-areas',     [...new Set(rows25.map(r=>r.area).filter(Boolean))].length);
   _set('pres-stat-sources',   [...new Set(rows25.map(r=>r.source).filter(s=>s&&!SKIP.includes((s||'').toLowerCase())))].length);
 
+  // ── Slide 3 (NEW): 2025 Monthly Measures Bar Chart ──────────────────────
+  (function(){
+    var ordMon = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var shortMon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var counts = ordMon.map(function(mn){ return rows25.filter(function(r){return r._monthName===mn;}).length; });
+    var maxC = Math.max.apply(null, counts) || 1;
+    var minC = Math.min.apply(null, counts.filter(function(c){return c>0;})) || 0;
+    var avg  = Math.round(counts.reduce(function(a,b){return a+b;},0) / counts.filter(function(c){return c>0;}).length) || 0;
+    var peakIdx = counts.indexOf(maxC);
+    var slowIdx = counts.reduce(function(bi,c,i){return (c>0&&c<counts[bi])?i:bi;}, counts.findIndex(function(c){return c>0;}));
+    _set('pres-peak-month', shortMon[peakIdx] + ' (' + maxC + ')');
+    _set('pres-slow-month', shortMon[slowIdx] + ' (' + minC + ')');
+    _set('pres-month-avg',  avg + ' measures');
+
+    var ctx = document.getElementById('pres-monthly-bar-chart');
+    if (!ctx || typeof Chart==='undefined') return;
+    if (window._presMonthlyBarChart) { window._presMonthlyBarChart.destroy(); window._presMonthlyBarChart=null; }
+    var colors = counts.map(function(c,i){
+      if (i===peakIdx) return 'rgba(0,230,118,0.95)';
+      if (c>=avg) return 'rgba(0,230,118,0.65)';
+      return 'rgba(0,230,118,0.3)';
+    });
+    window._presMonthlyBarChart = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: shortMon,
+        datasets:[{
+          data: counts,
+          backgroundColor: colors,
+          borderColor: colors.map(function(c){return c.replace(/[\d.]+\)$/,'1)');}),
+          borderWidth:1, borderRadius:6,
+          borderSkipped:false
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'#1c1c2e', borderColor:'#252545', borderWidth:1,
+            titleColor:'#e8eaf6', bodyColor:'#9e9ec8',
+            callbacks:{label:function(c){return '  Measures: '+c.parsed.y;}}
+          }
+        },
+        scales:{
+          x:{ ticks:{color:'#9e9ec8',font:{size:12}}, grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'} },
+          y:{ ticks:{color:'#9e9ec8',font:{size:11}}, grid:{color:'rgba(255,255,255,0.05)'}, border:{color:'rgba(255,255,255,0.08)'}, beginAtZero:true }
+        }
+      }
+    });
+    // Draw avg line via annotation plugin fallback using afterDraw
+    Chart.register({ id:'avgLine', afterDraw:function(chart){
+      if (chart.canvas.id!=='pres-monthly-bar-chart') return;
+      var yScale=chart.scales.y; var xScale=chart.scales.x;
+      var y=yScale.getPixelForValue(avg);
+      var ctx2=chart.ctx;
+      ctx2.save();
+      ctx2.setLineDash([6,4]);
+      ctx2.strokeStyle='rgba(255,215,64,0.6)';
+      ctx2.lineWidth=1.5;
+      ctx2.beginPath(); ctx2.moveTo(xScale.left,y); ctx2.lineTo(xScale.right,y); ctx2.stroke();
+      ctx2.setLineDash([]);
+      ctx2.font='11px Segoe UI'; ctx2.fillStyle='rgba(255,215,64,0.8)';
+      ctx2.fillText('avg '+avg, xScale.right+4, y+4);
+      ctx2.restore();
+    }});
+  })();
+
   // ── Slide 3: All Designers + clickable breakdown ────────────
   const teamAvg     = designers.length > 0 ? +(designers.reduce((s,d)=>s+d.rate,0)/designers.length).toFixed(1) : 0;
   const maxMeasures = designers.length > 0 ? Math.max(...designers.map(d=>d.total)) : 1;
@@ -5995,9 +6085,15 @@ function buildPresentationSlides() {
   ].filter(Boolean);
 
   const insEl = document.getElementById('pres-insights-list');
-  if (insEl) insEl.innerHTML = insights.map(i =>
-    '<div class="pres-insight"><span style="font-size:22px;flex-shrink:0">' + i.icon + '</span><span>' + i.text + '</span></div>'
-  ).join('');
+  if (insEl) insEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">'
+    + insights.map(function(i){
+        return '<div style="background:linear-gradient(135deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02));'
+          +'border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start">'
+          +'<div style="font-size:28px;flex-shrink:0;line-height:1;margin-top:2px">'+i.icon+'</div>'
+          +'<div style="font-size:13px;color:var(--text2);line-height:1.6">'+i.text+'</div>'
+          +'</div>';
+      }).join('')
+    + '</div>';
 
   const outlookItems = [];
   if (yoy !== null && yoy < 0) outlookItems.push('↑ Recover measure volume — target ' + Math.round(total25 * 1.15).toLocaleString() + ' measures');
@@ -6007,7 +6103,13 @@ function buildPresentationSlides() {
   if (discuss > 0) outlookItems.push('↑ Structured follow-up protocol for ' + discuss.toLocaleString() + ' active discussions');
 
   const outEl = document.getElementById('pres-outlook-list');
-  if (outEl) outEl.innerHTML = outlookItems.map(o => '<div>• ' + o + '</div>').join('');
+  if (outEl) outEl.innerHTML = outlookItems.map(function(o,i){
+    var icons = ['🎯','📈','🤝','⚡','🏆','💡'];
+    return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+      +'<span style="font-size:18px;flex-shrink:0">'+(icons[i%icons.length])+'</span>'
+      +'<span style="font-size:13px;color:var(--text2);line-height:1.5">'+o+'</span>'
+      +'</div>';
+  }).join('');
 
 
   // ── Slide 6: H1 2025 vs 2026 ────────────────────────────────────
