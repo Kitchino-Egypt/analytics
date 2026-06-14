@@ -2508,6 +2508,7 @@ async function _fetchAllRows() {
       AREAS     = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.area||'').filter(Boolean))].sort();
       MONTHS    = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r._monthName||'').filter(Boolean))];
       _refreshFilterDropdowns();
+      refreshYearDropdown();   // populate year options from actual data years
       computeFilteredState();
       updateKPICards();
       builtPages.clear();
@@ -2992,6 +2993,19 @@ function buildDailyCharts() {
   var _html= function(id,v){var el=document.getElementById(id);if(el)el.innerHTML=v;};
   var now  = new Date();
   var rows = filteredMeasures || [];
+
+  // ── Today's Measures count ────────────────────────────────────────────
+  var todayY = now.getFullYear(), todayM = now.getMonth(), todayD = now.getDate();
+  // Count from ALL clean rows (not filtered) so it always shows regardless of year filter
+  var todayCount = ENGINE_CLEAN_ROWS.filter(function(r){
+    if (!r._date) return false;
+    return r._date.getFullYear()===todayY && r._date.getMonth()===todayM && r._date.getDate()===todayD;
+  }).length;
+  _set('kpi-today', todayCount.toLocaleString());
+  (function(){
+    var sub = document.getElementById('kpi-today') && document.getElementById('kpi-today').closest('.kpi-card').querySelector('.kpi-sub');
+    if(sub) sub.textContent = todayCount > 0 ? todayCount + ' visits recorded today' : 'No visits recorded yet today';
+  })();
 
   // ── Active Designers (have ≥1 measure in current filter) ─────────────
   var activeD = new Set(rows.map(function(r){return r.designer||'';}).filter(Boolean));
@@ -5456,7 +5470,7 @@ function refreshData() {
 
 window.addEventListener('DOMContentLoaded', () => {
   populateFilters();
-  refreshYearDropdown();       // auto-populate years from data
+  // Note: refreshYearDropdown() is called after engine loads data in _fetchAllRows()
   renderMeasuresTable();       // populate filteredMeasures first
   computeFilteredState();      // initialize centralized state
   updateKPICards();            // push state to KPI cards
