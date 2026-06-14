@@ -1071,12 +1071,12 @@ if (_checkSession()) {
     </div>
   </div>
   <div class="kpi-grid kpi-6" id="exec-kpis">
-    <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub"><span class="kpi-up">↑ 18%</span> vs last year</div></div>
-    <div class="kpi-card"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub"><span class="kpi-up">↑ 12%</span> growth</div></div>
-    <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub"><span class="kpi-up">↑ 23%</span> conversion</div></div>
-    <div class="kpi-card gold"><div class="kpi-icon">💬</div><div class="kpi-label">In Discussion</div><div class="kpi-value" id="kpi-discussion">—</div><div class="kpi-sub"><span class="kpi-up">34.5%</span> of pipeline</div></div>
-    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-label">Cancelled</div><div class="kpi-value" id="kpi-cancelled">—</div><div class="kpi-sub"><span class="kpi-down">42.1%</span> cancellation</div></div>
-    <div class="kpi-card blue"><div class="kpi-icon">📈</div><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub"><span class="kpi-up">↑ 2.4pp</span> this year</div></div>
+    <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-sub-total">—</div></div>
+    <div class="kpi-card"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub" id="kpi-sub-customers">—</div></div>
+    <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub" id="kpi-sub-contracted">—</div></div>
+    <div class="kpi-card gold"><div class="kpi-icon">💬</div><div class="kpi-label">In Discussion</div><div class="kpi-value" id="kpi-discussion">—</div><div class="kpi-sub" id="kpi-sub-discussion">—</div></div>
+    <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-label">Cancelled</div><div class="kpi-value" id="kpi-cancelled">—</div><div class="kpi-sub" id="kpi-sub-cancelled">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">📈</div><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub" id="kpi-sub-rate">—</div></div>
   </div>
 
   <div class="chart-grid chart-32">
@@ -2354,6 +2354,7 @@ function engine_compute() {
   KITCHINO_STATE.year                = yearF;
   KITCHINO_STATE.designer            = designerF;
   KITCHINO_STATE.area                = areaF;
+  KITCHINO_STATE.month               = monthF;
   KITCHINO_STATE.total               = total;
   KITCHINO_STATE.contracted          = contracted;
   KITCHINO_STATE.discussion          = discussion;
@@ -2586,6 +2587,7 @@ let KITCHINO_STATE = {
   year:     'all',
   designer: 'all',
   area:     'all',
+  month:    'all',
 
   // Pre-computed aggregated datasets (read-only after compute)
   designerData:    [],   // from engine_designers() — filtered rows
@@ -2724,6 +2726,102 @@ function updateKPICards() {
         vsEl.textContent=curCount===0?'No measures yet for '+MN[curMo-1]:('No '+MN[prevMo-1]+' data to compare');
         vsEl.style.color='var(--text3)';
       }
+    }
+  })();
+
+  // ── EXEC SUMMARY SUB-LABELS: smart YOY comparison ─────────────────────────────
+  (function(){
+    var yr  = s.year  || 'all';
+    var mo  = s.month || 'all';
+    var des = s.designer || 'all';
+    var ar  = s.area     || 'all';
+
+    function subHtml(id, html) {
+      var el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    }
+    function pct(v) { return +(v*100).toFixed(1); }
+    function arrow(diff, goodWhenUp) {
+      var up  = diff >= 0;
+      var col = (goodWhenUp ? up : !up) ? 'var(--green)' : 'var(--red)';
+      return '<span style="color:' + col + '">' + (up ? '↑ +' : '↓ ') + Math.abs(diff).toFixed(1) + '</span>';
+    }
+
+    if (yr !== '2026') {
+      // ── No comparison available ────────────────────────────────────────
+      var cvrN  = s.total > 0 ? (s.contracted / s.total * 100).toFixed(1) : '0.0';
+      var discN = s.total > 0 ? (s.discussion / s.total * 100).toFixed(1) : '0.0';
+      var canN  = s.total > 0 ? (s.cancelled  / s.total * 100).toFixed(1) : '0.0';
+      var baseNote = yr === '2025'
+        ? '<span style="color:var(--text3);font-size:10px">2025 data · no prior year in system</span>'
+        : '<span style="color:var(--text3);font-size:10px">All available data</span>';
+      subHtml('kpi-sub-total',      baseNote);
+      subHtml('kpi-sub-customers',  '<span style="color:var(--text3)">unique clients</span>');
+      subHtml('kpi-sub-contracted', '<span style="color:var(--teal)">' + cvrN + '% conv. rate</span>');
+      subHtml('kpi-sub-discussion', '<span style="color:var(--gold)">' + discN + '% of pipeline</span>');
+      subHtml('kpi-sub-cancelled',  '<span style="color:var(--red)">' + canN + '% cancellation</span>');
+      subHtml('kpi-sub-rate',       '<span style="color:var(--text3)">contracts ÷ measures</span>');
+      return;
+    }
+
+    // ── 2026 selected: calculate vs 2025 same scope ────────────────────
+    var comp25 = engine_filterRows(ENGINE_CLEAN_ROWS, {year:'2025', designer:des, area:ar, month:mo});
+    var t25 = comp25.length;
+    var c25 = comp25.filter(function(r){return r._contracted;}).length;
+    var d25 = comp25.filter(function(r){return r._discussion;}).length;
+    var x25 = comp25.filter(function(r){return r._cancelled;}).length;
+    var cvr25  = t25 > 0 ? pct(c25/t25) : 0;
+    var disc25 = t25 > 0 ? pct(d25/t25) : 0;
+    var can25  = t25 > 0 ? pct(x25/t25) : 0;
+    var ck = function(r){ return (r.customer||'').trim().toLowerCase(); };
+    var cu25 = new Set(comp25.map(ck).filter(Boolean)).size;
+
+    var t26 = s.total, c26 = s.contracted, d26 = s.discussion, x26 = s.cancelled, cu26 = s.uniqueCustomers;
+    var cvr26  = t26 > 0 ? pct(c26/t26) : 0;
+    var disc26 = t26 > 0 ? pct(d26/t26) : 0;
+    var can26  = t26 > 0 ? pct(x26/t26) : 0;
+    var scope  = mo !== 'all' ? mo + ' · 2026 vs 2025' : '2026 YTD vs 2025';
+    var noData = '<span style="color:var(--text3);font-size:10px">No 2025 data for this scope</span>';
+
+    // Total measures
+    if (t25 === 0) { subHtml('kpi-sub-total', noData); }
+    else {
+      var tdiff = +(((t26-t25)/t25)*100).toFixed(1);
+      subHtml('kpi-sub-total', arrow(tdiff,true) + '% vs 2025 (' + t25.toLocaleString() + ')');
+    }
+
+    // Unique customers
+    if (cu25 === 0) { subHtml('kpi-sub-customers', noData); }
+    else {
+      var cudiff = +(((cu26-cu25)/cu25)*100).toFixed(1);
+      subHtml('kpi-sub-customers', arrow(cudiff,true) + '% vs 2025 (' + cu25 + ' customers)');
+    }
+
+    // Contracted
+    if (c25 === 0) { subHtml('kpi-sub-contracted', noData); }
+    else {
+      var cdiff = +(((c26-c25)/c25)*100).toFixed(1);
+      subHtml('kpi-sub-contracted', arrow(cdiff,true) + '% vs 2025 (' + c25 + ' contracts)');
+    }
+
+    // In Discussion — show rate change
+    var dNote = '<span style="color:var(--gold)">' + disc26 + '% of total</span>';
+    if (t25 > 0) dNote += ' <span style="color:var(--text3)">(was ' + disc25 + '% in 2025)</span>';
+    subHtml('kpi-sub-discussion', dNote);
+
+    // Cancelled — lower is better
+    var xNote = '<span style="color:' + (can26 <= can25 ? 'var(--green)' : 'var(--red)') + '">' + can26 + '% rate</span>';
+    if (t25 > 0) xNote += ' <span style="color:var(--text3)">(was ' + can25 + '% in 2025)</span>';
+    subHtml('kpi-sub-cancelled', xNote);
+
+    // Conversion Rate — pp shift
+    if (t25 === 0) { subHtml('kpi-sub-rate', noData); }
+    else {
+      var pp = +(cvr26 - cvr25).toFixed(1);
+      var ppCol = pp >= 0 ? 'var(--green)' : 'var(--red)';
+      subHtml('kpi-sub-rate',
+        '<span style="color:' + ppCol + '">' + (pp>=0?'↑ +':'↓ ') + Math.abs(pp) + 'pp</span>'
+        + ' vs 2025 (' + cvr25 + '%)');
     }
   })();
 }
