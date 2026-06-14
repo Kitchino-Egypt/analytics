@@ -5546,7 +5546,7 @@ function showPresAreaModal(areaName, rowEl) {
       +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
         +'<div><div style="font-size:21px;font-weight:900;color:#e8eaf6">📍 '+areaName+'</div>'
         +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Area Performance — 2025</div></div>'
-        +'<button onclick="closePresentationModal('pres-area-modal')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
+        +'<button onclick="closePresentationModal(\'pres-area-modal\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       +'</div>'
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.total+'</div></div>'
@@ -5599,14 +5599,14 @@ function showPresSourceModal(sourceName, rowEl) {
     .sort(function(a,b){return b.total-a.total;}).slice(0,6);
 
   var filterNote = filterArea ? '<span style="font-size:11px;color:#ffd740;margin-left:8px">· filtered: '+filterArea+'</span>' : '';
-  var clearBtn   = filterArea ? '<button onclick="_presSelectedArea=null;showPresSourceModal(''+sourceName.replace(/'/g,"\'")+'',null)" style="font-size:11px;color:#9e9ec8;background:rgba(255,255,255,0.06);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:8px">Clear filter</button>' : '';
+    var clearBtn   = filterArea ? '<button onclick="_presSelectedArea=null;showPresSourceModal(\'' + sourceName.replace(/'/g, "\\'") + '\',null)" style="font-size:11px;color:#9e9ec8;background:rgba(255,255,255,0.06);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:8px">Clear filter</button>' : '';
 
   ov.innerHTML =
     '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(620px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
       +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
         +'<div><div style="font-size:21px;font-weight:900;color:#e8eaf6">📡 '+sourceName+filterNote+clearBtn+'</div>'
         +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Lead Source Performance — 2025</div></div>'
-        +'<button onclick="closePresentationModal('pres-source-modal')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
+        +'<button onclick="closePresentationModal(\'pres-source-modal\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       +'</div>'
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+baseTotal+'</div></div>'
