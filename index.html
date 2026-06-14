@@ -1170,13 +1170,13 @@ if (_checkSession()) {
     <div class="kpi-card green"><div class="kpi-icon">📅</div><div class="kpi-label">Today's Measures</div><div class="kpi-value" id="kpi-today">—</div><div class="kpi-sub">Live count</div></div>
     <div class="kpi-card gold"><div class="kpi-icon">⏳</div><div class="kpi-label">Pending Follow-up</div><div class="kpi-value" id="kpi-pending">47</div><div class="kpi-sub"><span class="kpi-down">↑ 5</span> since yesterday</div></div>
     <div class="kpi-card red"><div class="kpi-icon">🚨</div><div class="kpi-label">Overdue (>45 days)</div><div class="kpi-value" id="kpi-overdue">12</div><div class="kpi-sub">Require urgent action</div></div>
-    <div class="kpi-card blue"><div class="kpi-icon">🏃</div><div class="kpi-label">Active Designers</div><div class="kpi-value">16</div><div class="kpi-sub">Currently active</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">🏃</div><div class="kpi-label">Active Designers</div><div class="kpi-value" id="daily-active-designers">—</div><div class="kpi-sub" id="daily-active-designers-sub">Currently active</div></div>
   </div>
 
   <div class="alert-list">
-    <div class="alert-item"><div class="alert-dot red"></div><strong>URGENT:</strong>&nbsp;12 contracts overdue 45+ days — immediate follow-up required</div>
-    <div class="alert-item"><div class="alert-dot gold"></div><strong>ATTENTION:</strong>&nbsp;35 customers in discussion for 15+ days — conversion risk</div>
-    <div class="alert-item"><div class="alert-dot green"></div><strong>HIGHLIGHT:</strong>&nbsp;May 2025 highest conversion month — 32.0% rate achieved</div>
+    <div class="alert-item" id="alert-overdue"><div class="alert-dot red"></div><strong>URGENT:</strong>&nbsp;<span id="alert-overdue-text">Loading…</span></div>
+    <div class="alert-item" id="alert-discussion"><div class="alert-dot gold"></div><strong>ATTENTION:</strong>&nbsp;<span id="alert-discussion-text">Loading…</span></div>
+    <div class="alert-item" id="alert-highlight"><div class="alert-dot green"></div><strong>HIGHLIGHT:</strong>&nbsp;<span id="alert-highlight-text">Loading…</span></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -1340,9 +1340,9 @@ if (_checkSession()) {
 <div class="page" id="page-conversion">
   <div class="kpi-grid kpi-4">
     <div class="kpi-card green"><div class="kpi-label">Overall Conv. Rate</div><div class="kpi-value" id="kpi-rate">—</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Best Month Rate</div><div class="kpi-value">32.0%</div><div class="kpi-sub">May 2025</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Best Area Rate</div><div class="kpi-value">34.5%</div><div class="kpi-sub">الساحل الشمالي</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Best Source Rate</div><div class="kpi-value">39.5%</div><div class="kpi-sub">Agent</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Best Month Rate</div><div class="kpi-value" id="conv-best-month-rate">—</div><div class="kpi-sub" id="conv-best-month-name">—</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Best Area Rate</div><div class="kpi-value" id="conv-best-area-rate">—</div><div class="kpi-sub" id="conv-best-area-name">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Best Source Rate</div><div class="kpi-value" id="conv-best-source-rate">—</div><div class="kpi-sub" id="conv-best-source-name">—</div></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -1375,10 +1375,10 @@ if (_checkSession()) {
 <!-- PAGE 6: GEOGRAPHIC ANALYSIS -->
 <div class="page" id="page-geographic">
   <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">Top Area</div><div class="kpi-value" style="font-size:18px">التجمع</div><div class="kpi-sub">840 measures</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Areas Covered</div><div class="kpi-value">34</div><div class="kpi-sub">Across Egypt</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Best Conv. Area</div><div class="kpi-value" style="font-size:18px">الساحل الشمالي</div><div class="kpi-sub">34.5%</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Lowest Conv.</div><div class="kpi-value" style="font-size:18px">العبور</div><div class="kpi-sub">2.9%</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Top Area</div><div class="kpi-value" style="font-size:18px" id="geo-top-area-name">—</div><div class="kpi-sub" id="geo-top-area-count">—</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Areas Covered</div><div class="kpi-value" id="geo-areas-count">—</div><div class="kpi-sub">Across Egypt</div></div>
+    <div class="kpi-card gold"><div class="kpi-label">Best Conv. Area</div><div class="kpi-value" style="font-size:18px" id="geo-best-conv-name">—</div><div class="kpi-sub" id="geo-best-conv-rate">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-label">Lowest Conv.</div><div class="kpi-value" style="font-size:18px" id="geo-low-conv-name">—</div><div class="kpi-sub" id="geo-low-conv-rate">—</div></div>
   </div>
 
   <div class="chart-card" style="margin-bottom:16px">
@@ -1883,7 +1883,7 @@ if (_checkSession()) {
   <div class="pres-slide" id="pres-slide-6">
     <div class="pres-tag">SLIDE 8 OF 8 — PARTIAL YEAR COMPARISON</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:28px">Q1 (Jan–Mar) + Q2 (Apr–Jun) · as of <span id="pres-h1-asof">June 2026</span></div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:28px">Same-period comparison · Jan 1 → <span id="pres-h1-asof">Jun 14, 2026</span> vs same window in 2025</div>
 
     <!-- Summary KPIs row -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
@@ -2987,22 +2987,79 @@ function buildExecutiveCharts() {
 }
 
 function buildDailyCharts() {
+  if (!ENGINE_READY) return;
+  var _set = function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+  var _html= function(id,v){var el=document.getElementById(id);if(el)el.innerHTML=v;};
+  var now  = new Date();
+  var rows = filteredMeasures || [];
+
+  // ── Active Designers (have ≥1 measure in current filter) ─────────────
+  var activeD = new Set(rows.map(function(r){return r.designer||'';}).filter(Boolean));
+  _set('daily-active-designers', activeD.size);
+  _set('daily-active-designers-sub', activeD.size + ' designers with visits');
+
+  // ── Pending follow-up = مناقشة (discussion) rows ─────────────────────
+  var discussion = rows.filter(function(r){return r._discussion;});
+  _set('kpi-pending', discussion.length.toLocaleString());
+
+  // ── Overdue = مناقشة rows whose visit date is >45 days ago ───────────
+  var overdue45 = discussion.filter(function(r){
+    if(!r._date) return false;
+    return (now - r._date) / 86400000 > 45;
+  });
+  var overdue30 = discussion.filter(function(r){
+    if(!r._date) return false;
+    var days=(now-r._date)/86400000; return days>30 && days<=45;
+  });
+  var fresh = discussion.filter(function(r){
+    if(!r._date) return false;
+    return (now-r._date)/86400000 <= 30;
+  });
+  _set('kpi-overdue', overdue45.length.toLocaleString());
+
+  // ── Alert messages ────────────────────────────────────────────────────
+  _html('alert-overdue-text',
+    overdue45.length > 0
+      ? overdue45.length + ' customers in discussion overdue 45+ days — immediate follow-up required'
+      : 'No overdue follow-ups beyond 45 days ✅');
+  _html('alert-discussion-text',
+    overdue30.length > 0
+      ? overdue30.length + ' customers in discussion for 30–45 days — conversion risk'
+      : 'All discussion customers followed up within 30 days ✅');
+
+  // ── Highlight: best conversion month from live data ───────────────────
+  var md = KITCHINO_STATE.monthlyData || [];
+  var best = md.filter(function(m){return m.total>=5;}).reduce(function(bst,m){
+    var r=m.total>0?m.contracted/m.total*100:0;
+    return (!bst||r>bst.rate)?{month:m.month,year:m.year,rate:+r.toFixed(1)}:bst;
+  }, null);
+  _html('alert-highlight-text', best
+    ? best.month+' '+best.year+' — highest conversion month at '+best.rate+'% CVR'
+    : 'Filter the data to see conversion highlights');
+
+  // ── Pipeline doughnut: Discussion / Contracted / Cancelled ─────────────
+  var contr = rows.filter(function(r){return r._contracted;}).length;
+  var canc  = rows.filter(function(r){return r._cancelled;}).length;
+  var disc  = discussion.length;
   makeChart('chart-pipeline', {
     type:'doughnut',
     data:{
-      labels:['Contract Pending','Contract Signed','Under Review'],
-      datasets:[{data:[9,4,2],backgroundColor:[GOLD,GREEN,BLUE],borderColor:'#161625',borderWidth:2}]
+      labels:['In Discussion','Contracted','Cancelled'],
+      datasets:[{data:[disc,contr,canc],backgroundColor:[GOLD,GREEN,RED],borderColor:'#161625',borderWidth:2}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'60%'}
   });
 
+  // ── Aging bar: discussion buckets ─────────────────────────────────────
   makeChart('chart-aging', {
     type:'bar',
     data:{
       labels:['0–30 Days','30–45 Days','45+ Days'],
-      datasets:[{label:'Contracts',data:[6,4,5],backgroundColor:[GREEN,GOLD,RED],borderRadius:5}]
+      datasets:[{label:'In Discussion',data:[fresh.length, overdue30.length, overdue45.length],
+        backgroundColor:[GREEN,GOLD,RED],borderRadius:5}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(37,37,69,0.5)'},ticks:{stepSize:1,precision:0}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(37,37,69,0.5)'},ticks:{stepSize:1,precision:0}}}}
   });
 }
 
@@ -3406,16 +3463,51 @@ function buildConversionCharts() {
     options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(37,37,69,0.5)'}}}}
   });
 
-  // Conv by order type (estimated)
-  const typeRates = [{t:'مطبخ',r:26},{t:'غرفة نوم',r:22},{t:'دريسينج',r:20},{t:'دولاب',r:18},{t:'غرفة ضيوف',r:25},{t:'وحدة تليفزيون',r:19}];
-  makeChart('chart-conv-type', {
-    type:'polarArea',
-    data:{
-      labels:typeRates.map(t=>t.t),
-      datasets:[{data:typeRates.map(t=>t.r),backgroundColor:['rgba(0,230,118,.5)','rgba(29,233,182,.5)','rgba(64,196,255,.4)','rgba(206,147,216,.4)','rgba(255,215,64,.4)','rgba(255,82,82,.3)'],borderWidth:1}]
-    },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}}}
-  });
+  // ── Best Month Rate / Best Area Rate / Best Source Rate cards ──────────
+  (function(){
+    var _s = function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+    // Best month by conversion rate (min 5 measures for reliability)
+    var md = KITCHINO_STATE.monthlyData || [];
+    var bestM = md.filter(function(m){return m.total>=5;}).reduce(function(b,m){
+      var r=+(m.contracted/m.total*100).toFixed(1); return (!b||r>b.r)?{r,month:m.month,year:m.year}:b;
+    }, null);
+    _s('conv-best-month-rate', bestM ? bestM.r+'%' : '—');
+    _s('conv-best-month-name', bestM ? bestM.month+' '+bestM.year : '—');
+
+    // Best area by conversion rate (min 5 measures)
+    var ad = (KITCHINO_STATE.areaData||[]).filter(function(a){return a.total>=5&&a.area&&a.area!=='Unknown';});
+    var bestA = ad.reduce(function(b,a){var r=+(a.contracted/a.total*100).toFixed(1);return(!b||r>b.r)?{r,name:a.area}:b;},null);
+    _s('conv-best-area-rate', bestA ? bestA.r+'%' : '—');
+    _s('conv-best-area-name', bestA ? bestA.name : '—');
+
+    // Best source by conversion rate (min 5 measures)
+    var sd = (KITCHINO_STATE.sourceData||[]).filter(function(s){return s.total>=5&&s.source&&s.source!=='Unknown';});
+    var bestS = sd.reduce(function(b,s){var r=+(s.contracted/s.total*100).toFixed(1);return(!b||r>b.r)?{r,name:s.source}:b;},null);
+    _s('conv-best-source-rate', bestS ? bestS.r+'%' : '—');
+    _s('conv-best-source-name', bestS ? bestS.name : '—');
+  })();
+
+  // Conv by order type — from live orderTypeData
+  const otData = (KITCHINO_STATE.orderTypeData||[]).filter(function(o){return o.total>=3&&o.type&&o.type!=='Unknown';}).slice(0,8);
+  if (otData.length >= 2) {
+    makeChart('chart-conv-type', {
+      type:'polarArea',
+      data:{
+        labels:otData.map(function(o){return o.type;}),
+        datasets:[{data:otData.map(function(o){return o.total>0?+(o.contracted/o.total*100).toFixed(1):0;}),
+          backgroundColor:['rgba(0,230,118,.55)','rgba(29,233,182,.5)','rgba(64,196,255,.45)','rgba(206,147,216,.4)','rgba(255,215,64,.4)','rgba(255,82,82,.35)','rgba(105,240,174,.4)','rgba(255,171,64,.4)'],
+          borderWidth:1}]
+      },
+      options:{responsive:true,plugins:{legend:{position:'bottom'}}}
+    });
+  } else {
+    // Fallback: show overall rate as single segment
+    makeChart('chart-conv-type', {
+      type:'doughnut',
+      data:{labels:['Contracted','Other'],datasets:[{data:[KITCHINO_STATE.contracted,KITCHINO_STATE.total-KITCHINO_STATE.contracted],backgroundColor:[GREEN,'rgba(37,37,69,0.6)'],borderWidth:1}]},
+      options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'50%'}
+    });
+  }
 }
 
 function buildGeographicCharts() {
@@ -3445,6 +3537,27 @@ function buildGeographicCharts() {
       }
     }
   });
+
+  // ── Geo KPI cards — live from areaData ───────────────────────────────
+  (function(){
+    var _s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
+    var ad=(KITCHINO_STATE.areaData||[]).filter(function(a){return a.area&&a.area!=='Unknown';});
+    // Total areas covered
+    _s('geo-areas-count', ad.length);
+    // Top area by volume
+    var topV=ad.reduce(function(b,a){return(!b||a.total>b.total)?a:b;},null);
+    _s('geo-top-area-name', topV?topV.area:'—');
+    _s('geo-top-area-count', topV?topV.total.toLocaleString()+' measures':'—');
+    // Best conversion area (min 5 measures)
+    var qual=ad.filter(function(a){return a.total>=5;});
+    var bestC=qual.reduce(function(b,a){var r=a.total>0?a.contracted/a.total*100:0;return(!b||r>b.r)?{r:+(r).toFixed(1),name:a.area}:b;},null);
+    _s('geo-best-conv-name', bestC?bestC.name:'—');
+    _s('geo-best-conv-rate', bestC?bestC.r+'%':'—');
+    // Lowest conversion area (min 5 measures)
+    var lowC=qual.reduce(function(b,a){var r=a.total>0?a.contracted/a.total*100:100;return(!b||r<b.r)?{r:+(r).toFixed(1),name:a.area}:b;},null);
+    _s('geo-low-conv-name', lowC?lowC.name:'—');
+    _s('geo-low-conv-rate', lowC?lowC.r+'%':'—');
+  })();
 }
 
 function buildMonthlyCharts() {
@@ -3792,6 +3905,28 @@ function buildKPICharts() {
     _kset('kpi-noshow', nsArrow + ' ' + nsRate + '%', nsRate<=10?'var(--green)':'var(--red)');
     _kset('kpi-noshow-sub', KITCHINO_STATE.cancelled + ' cancelled of ' + KITCHINO_STATE.total);
   }
+
+  // Avg Time to Contract — use discussion rows age as a pipeline proxy
+  // (contracted rows lack a separate "contract date" field; we use days in discussion as proxy)
+  (function(){
+    var now = new Date();
+    var disRows = (filteredMeasures||[]).filter(function(r){return r._discussion && r._date;});
+    var avgEl = document.getElementById('kpi-avg-contract');
+    var subEl = document.getElementById('kpi-avg-contract') && document.getElementById('kpi-avg-contract').parentElement.querySelector('.kpi-sub');
+    if (disRows.length > 0) {
+      var totalDays = disRows.reduce(function(s,r){return s+(now-r._date)/86400000;},0);
+      var avgDays = Math.round(totalDays / disRows.length);
+      if(avgEl) avgEl.textContent = avgDays + ' days';
+      // Also update the sub-label via direct DOM query
+      var card = avgEl ? avgEl.closest('.kpi-card') : null;
+      if (card) {
+        var sub = card.querySelector('.kpi-sub');
+        if(sub) sub.textContent = 'avg. age of ' + disRows.length + ' open discussions';
+      }
+    } else {
+      if(avgEl) avgEl.textContent = '—';
+    }
+  })();
 }
 
 function engine_linReg(y) {
@@ -4575,42 +4710,79 @@ function clearCEOSearch(){var i=document.getElementById('ceo-portal-search');if(
 
 function renderScorecard() {
   if (!ENGINE_READY) return;
-  const items = [
-    {label:'Conversion Rate',value:'23.0%',target:'25%',ok:false},
-    {label:'Pipeline Health',value:'Good',target:'Active',ok:true},
-    {label:'Top Designer Rate',value:'33.3%',target:'>30%',ok:true},
-    {label:'Monthly Growth',value:'+18%',target:'+15%',ok:true},
-    {label:'Contract Age Control',value:'Mixed',target:'<30d avg',ok:false},
-    {label:'Area Coverage',value:'34 areas',target:'Egypt-wide',ok:true}
-  ];
-  const el = document.getElementById('scorecard-list');
-  if(!el) return;
-  el.innerHTML = items.map(item => `
-    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:14px">${item.ok?'✅':'⚠️'}</span>
-      <div style="flex:1">
-        <div style="font-size:12px">${item.label}</div>
-        <div style="font-size:10px;color:var(--text3)">Target: ${item.target}</div>
-      </div>
-      <div style="font-size:13px;font-weight:700;color:${item.ok?'var(--green)':'var(--gold)'}">${item.value}</div>
-    </div>`).join('');
+  var S = KITCHINO_STATE;
+  var cvr  = S.conversionRate;
+  var cvrOk = cvr >= 25;
 
-  const findings = [
-    {icon:'📊',title:'Market Concentration',text:'التجمع alone generates 47.5% of volume. Diversification to other areas needed for resilience.'},
-    {icon:'🎯',title:'Conversion Opportunity',text:'610 customers in discussion. A structured follow-up protocol could convert additional ~30%.'},
-    {icon:'🌐',title:'Digital Channels Underperform',text:'Facebook only 12.5% vs Agent 39.5%. Shift digital budget to proven high-intent channels.'},
-    {icon:'📅',title:'Seasonal Pattern',text:'Q2 (Apr-Jun) is peak season. Pre-position inventory, staffing, and promotions by March.'}
+  // Top designer CVR
+  var desData = (S.allDesignerData||[]).filter(function(d){return d.total>=5;});
+  var topDes  = desData.reduce(function(b,d){var r=d.total>0?+(d.contracted/d.total*100).toFixed(1):0;return(!b||r>b.r)?{r,name:d.name}:b;},null);
+  var topDesOk = topDes ? topDes.r >= 30 : false;
+
+  // Monthly growth (last month vs prev month)
+  var md = (S.monthlyData||[]);
+  var momGrowth = null, momOk = false;
+  if (md.length >= 2) {
+    var last = md[md.length-1], prev = md[md.length-2];
+    if (prev.total > 0) {
+      momGrowth = +(((last.total - prev.total) / prev.total) * 100).toFixed(1);
+      momOk = momGrowth >= 15;
+    }
+  }
+
+  // Area coverage
+  var areaCnt = (S.areaData||[]).filter(function(a){return a.area&&a.area!=='Unknown';}).length;
+
+  // Pending follow-up
+  var pending = (filteredMeasures||[]).filter(function(r){return r._discussion;}).length;
+  var pipelineOk = pending < S.total * 0.4;
+
+  var items = [
+    {label:'Conversion Rate',    value:cvr+'%',   target:'≥25%',         ok:cvrOk},
+    {label:'Pipeline (Discussion)', value:pending.toLocaleString()+' pending', target:'<40% of total', ok:pipelineOk},
+    {label:'Top Designer Rate',  value:topDes?topDes.r+'%':'—',  target:'>30%', ok:topDesOk},
+    {label:'MoM Growth',         value:momGrowth!==null?(momGrowth>=0?'+':'')+momGrowth+'%':'—', target:'+15%', ok:momOk},
+    {label:'Area Coverage',      value:areaCnt+' areas', target:'Egypt-wide', ok:areaCnt>=20}
   ];
-  const fe = document.getElementById('exec-findings');
-  if(!fe) return;
-  fe.innerHTML = findings.map(f => `
-    <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span style="font-size:16px">${f.icon}</span>
-        <strong style="font-size:12px">${f.title}</strong>
-      </div>
-      <div style="font-size:11px;color:var(--text2);line-height:1.6">${f.text}</div>
-    </div>`).join('');
+  var el = document.getElementById('scorecard-list');
+  if(el) el.innerHTML = items.map(function(item){return (
+    '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
+    +'<span style="font-size:14px">'+(item.ok?'✅':'⚠️')+'</span>'
+    +'<div style="flex:1"><div style="font-size:12px">'+item.label+'</div>'
+    +'<div style="font-size:10px;color:var(--text3)">Target: '+item.target+'</div></div>'
+    +'<div style="font-size:13px;font-weight:700;color:'+(item.ok?'var(--green)':'var(--gold)')+'">'+item.value+'</div>'
+    +'</div>'
+  );}).join('');
+
+  // ── Executive Findings — computed from live data ───────────────────────
+  var topAreaObj = (S.areaData||[]).filter(function(a){return a.area&&a.area!=='Unknown';}).reduce(function(b,a){return(!b||a.total>b.total)?a:b;},null);
+  var topAreaPct = topAreaObj&&S.total>0 ? +(topAreaObj.total/S.total*100).toFixed(1) : 0;
+  var topSrcObj  = (S.sourceData||[]).filter(function(s){return s.source&&s.source!=='Unknown'&&s.total>=5;}).reduce(function(b,s){var r=s.total>0?s.contracted/s.total*100:0;return(!b||r>b.r)?{r:+(r).toFixed(1),source:s.source}:b;},null);
+  var bestMD     = md.filter(function(m){return m.total>=5;}).reduce(function(b,m){return(!b||m.total>b.total)?m:b;},null);
+  var findings = [
+    {icon:'📊', title:'Market Concentration',
+      text: topAreaObj
+        ? '<strong>'+topAreaObj.area+'</strong> generates '+topAreaPct+'% of total volume ('+topAreaObj.total.toLocaleString()+' measures). Diversification to other areas needed for resilience.'
+        : 'Run with data connected to see area concentration.'},
+    {icon:'🎯', title:'Conversion Opportunity',
+      text: pending+' customers currently in discussion. A structured follow-up protocol could convert an additional 20–30%.'},
+    {icon:'🌐', title:'Top Conversion Source',
+      text: topSrcObj
+        ? '<strong>'+topSrcObj.source+'</strong> has the highest conversion at '+topSrcObj.r+'%. Focus budget on this channel for best ROI.'
+        : 'Connect data to see source performance.'},
+    {icon:'📅', title:'Peak Season',
+      text: bestMD
+        ? '<strong>'+bestMD.month+'</strong> is the highest volume month ('+bestMD.total+' measures). Pre-position inventory, staffing, and promotions ahead of this window.'
+        : 'Connect data to identify peak season.'}
+  ];
+  var fe = document.getElementById('exec-findings');
+  if(fe) fe.innerHTML = findings.map(function(f){return (
+    '<div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+    +'<span style="font-size:16px">'+f.icon+'</span><strong style="font-size:12px">'+f.title+'</strong></div>'
+    +'<div style="font-size:11px;color:var(--text2);line-height:1.6">'+f.text+'</div>'
+    +'</div>'
+  );}).join('');
 }
 
 function buildFollowupCharts() {
@@ -4796,17 +4968,18 @@ function applyFilters() {
     if (activePage === 'monthly')    renderMonthlyTable();
     if (activePage === 'measures')   renderMeasuresTable();
     if (activePage === 'followup')   renderFollowupTable();
+    if (activePage === 'daily')      renderFollowupTable();
   }
 
   // ── 6. Mark all other built pages as stale — they will rebuild on next visit
-  ['executive','monthly','ceo','presentation','conversion','designers',
+  ['executive','daily','monthly','ceo','presentation','conversion','designers',
    'geographic','sources','kpi','followup'].forEach(p => {
     if (p !== activePage) builtPages.delete(p);
   });
 }
 
 function _rebuildFilteredPages() {
-  ['executive','monthly','ceo','presentation','conversion','designers','geographic','sources','kpi','followup'].forEach(p => {
+  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','kpi','followup'].forEach(p => {
     if (builtPages.has(p)) {
       builtPages.delete(p);
       const activePage = document.querySelector('.page.active')?.id.replace('page-','');
@@ -6229,10 +6402,27 @@ function buildPresentationSlides() {
   }).join('');
 
 
-  // ── Slide 6: H1 2025 vs 2026 ────────────────────────────────────
+  // ── Slide 6: H1 2025 vs 2026 — PERIOD-TO-PERIOD (same date cutoff) ─────────
   const H1_MONTHS = [1,2,3,4,5,6];
-  const h1_25 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2025' && H1_MONTHS.includes(r._monthOrder));
   const h1_26 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2026' && H1_MONTHS.includes(r._monthOrder));
+
+  // Find the latest date present in 2026 H1 data → cutoff for a fair comparison
+  let _maxD26 = null;
+  h1_26.forEach(function(r){ if (r._date && (!_maxD26 || r._date > _maxD26)) _maxD26 = r._date; });
+  const _cutM26 = _maxD26 ? _maxD26.getMonth() : 5;   // 0-based month index
+  const _cutD26 = _maxD26 ? _maxD26.getDate()  : 30;
+  const _MNS3   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const _asOf26 = _maxD26 ? _MNS3[_cutM26] + '. ' + _cutD26 : 'Jun 30';
+  // Update the "as of" label in the slide
+  _set('pres-h1-asof', _asOf26 + ', 2026');
+
+  // Cap 2025 H1 data at the SAME calendar day → apples-to-apples comparison
+  const h1_25 = ENGINE_CLEAN_ROWS.filter(function(r) {
+    if (r._year !== '2025' || !H1_MONTHS.includes(r._monthOrder)) return false;
+    if (!r._date) return false;
+    const m = r._date.getMonth(), d = r._date.getDate();
+    return m < _cutM26 || (m === _cutM26 && d <= _cutD26);
+  });
   const hm25  = h1_25.length;
   const hm26  = h1_26.length;
   const hc25  = h1_25.filter(r => r._contracted).length;
