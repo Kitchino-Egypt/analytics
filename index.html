@@ -6381,6 +6381,20 @@ function buildPresentationSlides() {
         + '<div style="font-size:11px;color:'+(cvr>=30?'#00e676':cvr>=20?'#ffd740':'#ff5252')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
+    // "Others" row — remaining areas outside top 10
+    const othersAreaCount = areas.slice(10).length;
+    const othersAreaTotal = areas.slice(10).reduce((s,a) => s+a.total, 0);
+    const othersAreaCont  = areas.slice(10).reduce((s,a) => s+a.contracted, 0);
+    if (othersAreaCount > 0) {
+      const oCVR = othersAreaTotal > 0 ? +(othersAreaCont/othersAreaTotal*100).toFixed(1) : 0;
+      areasEl.innerHTML += '<div class="pres-area-row" style="border-top:1px solid rgba(255,255,255,0.08);margin-top:4px;padding-top:4px;opacity:0.65">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--text3);width:18px;text-align:center">…</div>'
+        + '<div style="font-size:16px;font-weight:600;color:var(--text3);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Others ('+othersAreaCount+' areas)</div>'
+        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+Math.round(othersAreaTotal/maxArea*100)+'%;background:rgba(255,255,255,0.15)"></div></div>'
+        + '<div style="font-size:16px;font-weight:800;color:var(--text3);min-width:40px;text-align:right">'+othersAreaTotal+'</div>'
+        + '<div style="font-size:11px;color:var(--text3);min-width:52px;text-align:right">'+oCVR+'% CVR</div>'
+        + '</div>';
+    }
   }
   const maxSrc  = sources[0]?.total || 1;
   const srcColors = ['var(--purple)','rgba(206,147,216,0.8)','var(--teal)','var(--blue)','var(--green)'];
@@ -6400,6 +6414,20 @@ function buildPresentationSlides() {
         + '<div style="font-size:11px;color:'+(cvr>=30?'#00e676':cvr>=20?'#ffd740':'#ff5252')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
+    // "Others" row — remaining sources outside top 10
+    const othersSrcCount = sources.slice(10).length;
+    const othersSrcTotal = sources.slice(10).reduce((s,x) => s+x.total, 0);
+    const othersSrcCont  = sources.slice(10).reduce((s,x) => s+x.contracted, 0);
+    if (othersSrcCount > 0) {
+      const oCVR2 = othersSrcTotal > 0 ? +(othersSrcCont/othersSrcTotal*100).toFixed(1) : 0;
+      srcEl.innerHTML += '<div class="pres-area-row" style="border-top:1px solid rgba(255,255,255,0.08);margin-top:4px;padding-top:4px;opacity:0.65">'
+        + '<div style="font-size:14px;font-weight:700;color:var(--text3);width:18px;text-align:center">…</div>'
+        + '<div style="font-size:16px;font-weight:600;color:var(--text3);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Others ('+othersSrcCount+' sources)</div>'
+        + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+Math.round(othersSrcTotal/maxSrc*100)+'%;background:rgba(255,255,255,0.15)"></div></div>'
+        + '<div style="font-size:16px;font-weight:800;color:var(--text3);min-width:40px;text-align:right">'+othersSrcTotal+'</div>'
+        + '<div style="font-size:11px;color:var(--text3);min-width:52px;text-align:right">'+oCVR2+'% CVR</div>'
+        + '</div>';
+    }
   }
 
 // ── Slide 5: Insights ───────────────────────────────────────
