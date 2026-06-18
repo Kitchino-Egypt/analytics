@@ -4442,6 +4442,7 @@ function renderMeasuresTable() {
   const areaF = document.getElementById('filter-area')?.value || 'all';
 
   const yearF = document.getElementById('filter-year')?.value || 'all';
+  const mainMonthF = document.getElementById('filter-month')?.value || 'all';
   // Engine-only: all rows from ENGINE_CLEAN_ROWS
   if (!ENGINE_READY) {
     const tbl = document.getElementById('measures-tbody');
@@ -4451,6 +4452,7 @@ function renderMeasuresTable() {
   filteredMeasures = ENGINE_CLEAN_ROWS.filter(r => {
     if(search && !(r.customer||'').toLowerCase().includes(search) && !String(r.code||r.orderCode||'').includes(search)) return false;
     if(yearF !== 'all' && (r._year||(r.visitDate||'').substr(0,4)) !== yearF) return false;
+    if(mainMonthF !== 'all' && (r.month||r._monthName) !== mainMonthF) return false;
     if(statusF !== 'all' && r.status !== statusF) return false;
     if(monthF  !== 'all' && (r.month||r._monthName) !== monthF) return false;
     if(designerF !== 'all' && r.designer !== designerF) return false;
