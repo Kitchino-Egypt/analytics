@@ -2964,86 +2964,6 @@ function updateKPICards() {
     });
     set('mt-payment', _pt > 0 ? _pt.toLocaleString() + ' EGP' : '—');
   })();
-
-  // ── Slide 7: Order Types Analysis ────────────────────────────────
-  (function(){
-    var otData = engine_orderTypes(rows25).filter(function(d){
-      return d.type && d.type !== 'Not Specified' && d.type !== 'Unknown';
-    });
-    var _kset = function(id,v,col){
-      var e=document.getElementById(id);
-      if(!e) return;
-      e.textContent=v;
-      if(col) e.style.color=col;
-    };
-    if (!otData.length) return;
-
-    // KPI cards
-    _kset('pres-ot-top', otData[0].type);
-    _kset('pres-ot-count', otData.length);
-    var qual = otData.filter(function(d){return d.total>=5;});
-    if (qual.length) {
-      var best = qual.slice().sort(function(a,b){return b.conversionRate-a.conversionRate;})[0];
-      _kset('pres-ot-best-cvr', best.type + ' · ' + best.conversionRate + '%');
-    }
-
-    // Bar chart: Volume + CVR
-    var top10 = otData.slice(0,10);
-    var ctxOT = document.getElementById('pres-ot-chart');
-    if (ctxOT && typeof Chart !== 'undefined') {
-      if (window._presOTChart) { window._presOTChart.destroy(); window._presOTChart = null; }
-      var COLORS9 = ['rgba(0,230,118,0.7)','rgba(0,184,255,0.7)','rgba(255,215,64,0.7)',
-        'rgba(206,147,216,0.7)','rgba(255,138,101,0.7)','rgba(77,208,225,0.7)',
-        'rgba(255,82,82,0.7)','rgba(129,199,132,0.7)','rgba(121,134,203,0.7)','rgba(255,183,77,0.7)'];
-      window._presOTChart = new Chart(ctxOT, {
-        type:'bar',
-        data:{
-          labels: top10.map(function(d){return d.type;}),
-          datasets:[
-            { type:'bar', label:'Measures', data:top10.map(function(d){return d.total;}),
-              backgroundColor:COLORS9.slice(0,top10.length),
-              borderColor:COLORS9.slice(0,top10.length).map(function(c){return c.replace('0.7','1');}),
-              borderWidth:1.5, borderRadius:4, yAxisID:'y', order:1 },
-            { type:'line', label:'CVR %', data:top10.map(function(d){return d.conversionRate;}),
-              borderColor:'#ffffff', borderWidth:2, pointRadius:4,
-              pointBackgroundColor:'#ffffff', fill:false, tension:0.3, yAxisID:'y1', order:0 }
-          ]
-        },
-        options:{
-          responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{position:'bottom',labels:{color:'#9e9ec8',font:{size:10},boxWidth:12}} },
-          scales:{
-            x:{ grid:{display:false}, ticks:{color:'#9e9ec8',font:{size:9},maxRotation:30} },
-            y:{ position:'left', grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#9e9ec8',font:{size:10}} },
-            y1:{ position:'right', grid:{display:false}, ticks:{callback:function(v){return v+'%';},color:'#9e9ec8',font:{size:10}}, max:80 }
-          }
-        }
-      });
-    }
-
-    // Type list (right panel)
-    var listEl = document.getElementById('pres-ot-list');
-    if (listEl) {
-      listEl.innerHTML = otData.map(function(d){
-        var rc = d.conversionRate>=30?'#00e676':d.conversionRate>=20?'#ffd740':'#ff5252';
-        var barW = Math.round(d.total/otData[0].total*100);
-        return '<div style="border-bottom:1px solid rgba(255,255,255,0.05);padding:10px 4px">'
-          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
-            +'<div style="font-size:14px;font-weight:700;color:var(--text1)">'+d.type+'</div>'
-            +'<div style="font-size:18px;font-weight:900;color:'+rc+'">'+d.conversionRate+'%</div>'
-          +'</div>'
-          +'<div style="display:flex;align-items:center;gap:8px">'
-            +'<div style="flex:1;height:4px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden">'
-              +'<div style="height:100%;width:'+barW+'%;background:'+rc+';border-radius:3px"></div>'
-            +'</div>'
-            +'<span style="font-size:11px;color:var(--text3);white-space:nowrap">'+d.total+' measures · '+d.contracted+' contracts</span>'
-          +'</div>'
-        +'</div>';
-      }).join('');
-    }
-  })();
-
-
 }
 
 // Rebuild year dropdown from available data years
@@ -7234,6 +7154,84 @@ function buildPresentationSlides() {
 
   // Preserve slide position on rebuild
   if (_presCurrentSlide < 1 || _presCurrentSlide > _PRES_TOTAL) _presCurrentSlide = 1;
+
+  // ── Slide 7: Order Types Analysis ────────────────────────────────
+  (function(){
+    var otData = engine_orderTypes(rows25).filter(function(d){ return d.total > 0; }).slice(0, 6);
+    var totalOT = otData.reduce(function(s,d){ return s + d.total; }, 0);
+    var topType = otData.length > 0 ? otData[0] : null;
+    var bestCVR = otData.length > 0 ? otData.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; })[0] : null;
+
+    // KPI cards
+    var s7kpi = document.getElementById('pres-ot-kpis');
+    if (s7kpi) {
+      s7kpi.innerHTML =
+        '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:16px 20px;flex:1;min-width:140px;">'
+          +'<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Order Types</div>'
+          +'<div style="font-size:28px;font-weight:900;color:var(--green)">'+otData.length+'</div>'
+          +'<div style="font-size:11px;color:var(--text3)">active types</div>'
+        +'</div>'
+        +'<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:16px 20px;flex:1;min-width:140px;">'
+          +'<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Top Type</div>'
+          +'<div style="font-size:18px;font-weight:900;color:#fff;line-height:1.2">'+(topType ? topType.type : '—')+'</div>'
+          +'<div style="font-size:11px;color:var(--text3)">'+(topType ? topType.total+' measures' : '')+'</div>'
+        +'</div>'
+        +'<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,64,0.2);border-radius:12px;padding:16px 20px;flex:1;min-width:140px;">'
+          +'<div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Best CVR Type</div>'
+          +'<div style="font-size:22px;font-weight:900;color:#ffd740">'+(bestCVR ? bestCVR.conversionRate+'%' : '—')+'</div>'
+          +'<div style="font-size:11px;color:var(--text3)">'+(bestCVR ? bestCVR.type : '')+'</div>'
+        +'</div>';
+    }
+
+    // Ranking list
+    var listEl = document.getElementById('pres-ot-list');
+    if (listEl) {
+      listEl.innerHTML = otData.map(function(d,i){
+        var barW = totalOT > 0 ? Math.round((d.total/totalOT)*100) : 0;
+        var cvrCol = d.conversionRate >= 40 ? '#00e676' : d.conversionRate >= 20 ? '#ffd740' : '#ff6b6b';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+          +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(0,230,118,0.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--green);flex-shrink:0">'+(i+1)+'</div>'
+          +'<div style="flex:1;min-width:0">'
+            +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+              +'<span style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.type+'</span>'
+              +'<span style="font-size:12px;color:var(--text2);flex-shrink:0;margin-left:8px">'+d.total+' ('+barW+'%)</span>'
+            +'</div>'
+            +'<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px">'
+              +'<div style="height:100%;width:'+barW+'%;background:var(--green);border-radius:2px"></div>'
+            +'</div>'
+          +'</div>'
+          +'<div style="width:52px;text-align:right;flex-shrink:0">'
+            +'<div style="font-size:14px;font-weight:800;color:'+cvrCol+'">'+d.conversionRate+'%</div>'
+            +'<div style="font-size:9px;color:var(--text3)">CVR</div>'
+          +'</div>'
+        +'</div>';
+      }).join('');
+    }
+
+    // Chart
+    var canvasEl = document.getElementById('pres-ot-chart');
+    if (canvasEl && otData.length > 0) {
+      makeChart('pres-ot-chart', {
+        type: 'bar',
+        data: {
+          labels: otData.map(function(d){ return d.type; }),
+          datasets: [
+            { label: 'Measures', data: otData.map(function(d){ return d.total; }), backgroundColor: 'rgba(0,230,118,0.7)', borderRadius: 6, yAxisID: 'y' },
+            { label: 'Contracted', data: otData.map(function(d){ return d.contracted; }), backgroundColor: 'rgba(255,215,64,0.7)', borderRadius: 6, yAxisID: 'y' }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: true, position: 'bottom', labels: { color: '#aaa', font: { size: 10 } } } },
+          scales: {
+            x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+  })();
+
   _presShowSlide(_presCurrentSlide);
 }
 
