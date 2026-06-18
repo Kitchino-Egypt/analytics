@@ -2404,17 +2404,7 @@ function engine_paymentMonthly(rows) {
   );
 }
 
-function engine_orderTypes(rows) {
-  const map = {};
-  rows.forEach(r => {
-    const t = (r.orderType || '').toString().trim() || 'Unknown';
-    map[t] = (map[t] || 0) + 1;
-  });
-  return Object.entries(map)
-    .map(([type, count]) => ({ type, count }))
-    .filter(x => x.count > 0)
-    .sort((a, b) => b.count - a.count);
-}
+// engine_orderTypes defined above (rich version with CVR)
 
 // ── Payment categorization ─────────────────────────────────────────────────────
 function engine_payments(rows) {
@@ -2625,6 +2615,14 @@ async function _fetchAllRows() {
       builtPages.clear();
       const pg = document.querySelector('.page.active')?.id.replace('page-','')||'executive';
       showPage(pg);
+      // Safety net: always rebuild executive charts after data loads
+      // (builtPages timing can miss the window if _silentFetch called showPage first)
+      setTimeout(function() {
+        if (ENGINE_READY) {
+          buildExecutiveCharts();
+          builtPages.add('executive');
+        }
+      }, 200);
     }
   } catch(err) {
     console.warn('[ENGINE] Row fetch failed — static fallback active:',err.message);
