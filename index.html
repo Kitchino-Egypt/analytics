@@ -3002,17 +3002,38 @@ function buildDailyCharts() {
   var now  = new Date();
   var rows = filteredMeasures || [];
 
-  // ── Today's Measures count ────────────────────────────────────────────
+  // ── Today's Measures count (or latest entry date if nothing entered today) ──
   var todayY = now.getFullYear(), todayM = now.getMonth(), todayD = now.getDate();
-  // Count from ALL clean rows (not filtered) so it always shows regardless of year filter
+  // First check for today's visit-date entries
   var todayCount = ENGINE_CLEAN_ROWS.filter(function(r){
     if (!r._date) return false;
     return r._date.getFullYear()===todayY && r._date.getMonth()===todayM && r._date.getDate()===todayD;
   }).length;
-  _set('kpi-today', todayCount.toLocaleString());
+  // If no entries with today's date, show the most recently entered date's count
+  // (field teams often enter the previous day's visits in the morning)
+  var _latestDate = null;
+  if (todayCount === 0) {
+    ENGINE_CLEAN_ROWS.forEach(function(r){ if(r._date && (!_latestDate || r._date > _latestDate)) _latestDate = r._date; });
+  }
+  var _latestCount = _latestDate ? ENGINE_CLEAN_ROWS.filter(function(r){
+    return r._date && r._date.getFullYear()===_latestDate.getFullYear()
+        && r._date.getMonth()===_latestDate.getMonth()
+        && r._date.getDate()===_latestDate.getDate();
+  }).length : 0;
+  var _displayCount = todayCount > 0 ? todayCount : _latestCount;
+  _set('kpi-today', _displayCount.toLocaleString());
   (function(){
     var sub = document.getElementById('kpi-today') && document.getElementById('kpi-today').closest('.kpi-card').querySelector('.kpi-sub');
-    if(sub) sub.textContent = todayCount > 0 ? todayCount + ' visits recorded today' : 'No visits recorded yet today';
+    if(!sub) return;
+    if(todayCount > 0){
+      sub.textContent = todayCount + ' visits recorded today';
+    } else if(_latestDate){
+      var _ld = _latestDate;
+      var _ds = ('0'+_ld.getDate()).slice(-2)+'/'+('0'+(_ld.getMonth()+1)).slice(-2)+'/'+_ld.getFullYear();
+      sub.textContent = 'Latest entry: ' + _ds;
+    } else {
+      sub.textContent = 'No data available';
+    }
   })();
 
   // ── Active Designers (have ≥1 measure in current filter) ─────────────
