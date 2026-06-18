@@ -2497,7 +2497,7 @@ function engine_log(yearF, filtered) {
 async function _fetchAllRows() {
   if (!sheetsUrl) return;
   try {
-    const data = await jsonpFetch(sheetsUrl+'?action=getMeasures&pageSize=9999','_kitchinoAllRows',30000);
+    const data = await jsonpFetch(sheetsUrl+'?action=getMeasures&pageSize=9999&_t='+Date.now(),'_kitchinoAllRows',30000);
     if (data && data.status==='ok' && Array.isArray(data.data) && data.data.length) {
       ENGINE_RAW_ROWS   = data.data;
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
@@ -5340,7 +5340,7 @@ async function _silentFetch(isAutoRefresh) {
     const yearF    = document.getElementById('filter-year')?.value || 'all';
     const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
     const data = await jsonpFetch(
-      sheetsUrl + '?action=getAll' + yearParam,
+      sheetsUrl + '?action=getAll' + yearParam + '&_t=' + Date.now(),
       '_kitchinoAutoRefresh',
       20000
     );
