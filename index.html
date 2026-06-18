@@ -5843,6 +5843,16 @@ function showPresDesignerModal(name) {
           +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">vs Team Avg</div>'
           +'<div style="font-size:22px;font-weight:900;color:'+rc+'">'+diffSign+diffStr+'pp</div>'
         +'</div>'
+        +(function(){
+          var cs=d.crossSales||0;
+          var csCol=cs>=15?'#00e676':cs>=8?'#ffd740':'#9e9ec8';
+          var uc=d.uniqueCustomers||0;
+          return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,64,0.18);border-radius:10px;padding:10px 16px;min-width:110px">'
+            +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Cross-Sales Rate</div>'
+            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+cs+'%</div>'
+            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+uc+' unique customers</div>'
+            +'</div>';
+        })()
       +'</div>'
       +'<div style="display:flex;gap:20px;padding:0 24px 10px;font-size:11px;color:#9e9ec8;align-items:center">'
         +'<span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:22px;height:3px;background:#00e676;border-radius:2px"></span>Designer CVR%</span>'
