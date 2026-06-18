@@ -2696,10 +2696,8 @@ function updateKPICards() {
   // Top Source
   (function(){var s2=(s.sourceData||[]).filter(function(x){return x.source&&x.source!=='Unknown';});if(s2.length){set('ceo-top-source-name',s2[0].source);set('ceo-top-source-count',s2[0].total.toLocaleString()+' measures · '+s2[0].conversionRate+'% CVR');}else{set('ceo-top-source-name','—');set('ceo-top-source-count','No data');}})();
   const el3 = document.getElementById('pres-year-label'); if(el3) el3.textContent = 'Total Measure Visits' + (s.year !== 'all' ? ' ' + s.year : '');
-  // Presentation View dynamic KPIs
-  set('pres-kpi-total',      s.total.toLocaleString());
-  set('pres-kpi-contracted', s.contracted.toLocaleString());
-  set('pres-kpi-rate',       Math.round(s.conversionRate) + '%');
+  // Presentation View KPIs are set exclusively by buildPresentationSlides() (2025 data only)
+  // Do NOT set pres-kpi-* here — updateKPICards() uses all-years s.total which would overwrite 2025-only values
   // Measures Tracking table header total
   set('mt-total', s.total.toLocaleString());
 
@@ -2844,6 +2842,16 @@ function updateKPICards() {
         '<span style="color:' + ppCol + '">' + (pp>=0?'↑ +':'↓ ') + Math.abs(pp) + 'pp</span>'
         + ' vs 2025 <span style="color:var(--text3);font-size:10px">(' + cvr25 + '% · ' + periodLabel + ')</span>');
     }
+  })();
+
+  // Payment total — Executive Summary card responds to all filters
+  (function(){
+    var _pt = 0;
+    filteredMeasures.forEach(function(r){
+      var n = parseFloat(String(r.payment || '').replace(/,/g,''));
+      if (!isNaN(n) && n > 0) _pt += n;
+    });
+    set('mt-payment', _pt > 0 ? _pt.toLocaleString() + ' EGP' : '—');
   })();
 }
 
