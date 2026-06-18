@@ -4435,36 +4435,32 @@ function renderSourceTable() {
 }
 
 function renderMeasuresTable() {
+  // ── ARCHITECTURAL RULE: Never reassign filteredMeasures here.
+  // filteredMeasures is the single source of truth, owned exclusively by engine_compute().
+  // This function only applies its own LOCAL secondary filters on top.
   const search = (document.getElementById('global-search')?.value||'').toLowerCase();
   const statusF = document.getElementById('mt-status-filter')?.value || 'all';
-  const monthF = document.getElementById('mt-month-filter')?.value || 'all';
-  const designerF = document.getElementById('filter-designer')?.value || 'all';
-  const areaF = document.getElementById('filter-area')?.value || 'all';
+  const monthF  = document.getElementById('mt-month-filter')?.value  || 'all';
 
-  const yearF = document.getElementById('filter-year')?.value || 'all';
-  const mainMonthF = document.getElementById('filter-month')?.value || 'all';
-  // Engine-only: all rows from ENGINE_CLEAN_ROWS
   if (!ENGINE_READY) {
     const tbl = document.getElementById('measures-tbody');
     if (tbl) tbl.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Connect Google Sheets to load measures data</td></tr>';
     return;
   }
-  filteredMeasures = ENGINE_CLEAN_ROWS.filter(r => {
-    if(search && !(r.customer||'').toLowerCase().includes(search) && !String(r.code||r.orderCode||'').includes(search)) return false;
-    if(yearF !== 'all' && (r._year||(r.visitDate||'').substr(0,4)) !== yearF) return false;
-    if(mainMonthF !== 'all' && (r.month||r._monthName) !== mainMonthF) return false;
+
+  // displayRows = filteredMeasures (main filters already applied) + local secondary filters
+  const displayRows = filteredMeasures.filter(r => {
+    if(search  && !(r.customer||'').toLowerCase().includes(search) && !String(r.code||r.orderCode||'').includes(search)) return false;
     if(statusF !== 'all' && r.status !== statusF) return false;
     if(monthF  !== 'all' && (r.month||r._monthName) !== monthF) return false;
-    if(designerF !== 'all' && r.designer !== designerF) return false;
-    if(areaF     !== 'all' && r.area     !== areaF)     return false;
     return true;
   });
 
-  document.getElementById('mt-filtered').textContent = filteredMeasures.length.toLocaleString();
+  document.getElementById('mt-filtered').textContent = displayRows.length.toLocaleString();
 
   // ── Payment total from filtered rows ──────────────────────────────────────
   var _payTotal = 0;
-  filteredMeasures.forEach(function(r) {
+  displayRows.forEach(function(r) {
     var n = parseFloat(String(r.payment || '').replace(/,/g,''));
     if (!isNaN(n) && n > 0) _payTotal += n;
   });
@@ -4474,7 +4470,7 @@ function renderMeasuresTable() {
   // ── Repeated customers: rows where Source (col G) = "Repeated" ──────────
   // Source is set by the data entry team when a customer is a returning visit.
   var _repeatCusts = new Set();
-  filteredMeasures.forEach(function(r) {
+  displayRows.forEach(function(r) {
     var _src = (r.source || '').trim().toLowerCase();
     if ((_src === 'repeated' || _src === 'repeted' || _src.startsWith('repeat') || _src.startsWith('repet')) && r.customer) {
       _repeatCusts.add(r.customer.trim());
@@ -4484,9 +4480,9 @@ function renderMeasuresTable() {
   if (repEl) repEl.textContent = _repeatCusts.size.toLocaleString();
 
   const start = (currentPage-1)*PAGE_SIZE;
-  const pageRows = filteredMeasures.slice(start, start+PAGE_SIZE);
-  document.getElementById('show-range').textContent = `${start+1}–${Math.min(start+PAGE_SIZE,filteredMeasures.length)} of ${filteredMeasures.length}`;
-  document.getElementById('page-info').textContent = `Page ${currentPage} of ${Math.ceil(filteredMeasures.length/PAGE_SIZE)}`;
+  const pageRows = displayRows.slice(start, start+PAGE_SIZE);
+  document.getElementById('show-range').textContent = `${start+1}–${Math.min(start+PAGE_SIZE,displayRows.length)} of ${displayRows.length}`;
+  document.getElementById('page-info').textContent = `Page ${currentPage} of ${Math.ceil(displayRows.length/PAGE_SIZE)}`;
 
   document.getElementById('measures-tbody').innerHTML = pageRows.map(r => {
     const statusBadge = r.status==='تعاقد'?'badge-green':r.status==='مناقشة'?'badge-gold':'badge-red';
