@@ -2030,31 +2030,65 @@ if (_checkSession()) {
       <div id="pres-outlook-list"></div>
     </div>
   </div>
-  <div class="pres-slide" id="pres-slide-8" style="justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#0d1117,#161b22,#1a2332);">
+  <div class="pres-slide" id="pres-slide-8" style="background:linear-gradient(135deg,#0a0e1a,#0d1117,#111827);justify-content:flex-start;padding:36px 48px;">
     <div class="pres-tag">SLIDE 9 OF 9 — CLOSING</div>
-    <div style="font-size:64px;margin-bottom:20px;animation:presSlideIn .4s ease">🏆</div>
-    <div style="font-size:36px;font-weight:900;color:var(--text1);margin-bottom:8px;letter-spacing:-0.5px">شكراً للفريق المتميز</div>
-    <div style="font-size:22px;font-weight:700;color:var(--green);margin-bottom:20px;letter-spacing:1px">THANK YOU — KITCHINO TEAM 2025</div>
-    <div style="max-width:600px;margin:0 auto 32px;font-size:15px;color:var(--text2);line-height:1.8">
-      Every measure visit, every customer conversation, every contract signed<br>
-      is a step toward building something greater.<br>
-      <span style="color:var(--gold);font-weight:700">Your dedication is the foundation of Kitchino's success.</span>
+
+    <!-- Top row: year stats + title -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:24px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:30px;font-weight:900;color:var(--text1);letter-spacing:-0.5px;margin-bottom:4px">شكراً للفريق المتميز 🏆</div>
+        <div style="font-size:14px;color:var(--green);font-weight:600;letter-spacing:2px;text-transform:uppercase">Thank You — Kitchino Team 2025</div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:10px;padding:10px 20px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--green)" id="pres-ty-total">—</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Measures</div>
+        </div>
+        <div style="background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.2);border-radius:10px;padding:10px 20px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--gold)" id="pres-ty-contracts">—</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Contracts</div>
+        </div>
+        <div style="background:rgba(64,196,255,0.08);border:1px solid rgba(64,196,255,0.2);border-radius:10px;padding:10px 20px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:var(--blue)" id="pres-ty-cvr">—</div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">CVR%</div>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:32px;justify-content:center;margin-bottom:32px;flex-wrap:wrap">
-      <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:16px 28px;min-width:140px">
-        <div style="font-size:28px;font-weight:900;color:var(--green)" id="pres-ty-total">—</div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Measures 2025</div>
+
+    <!-- Best performer spotlight -->
+    <div style="background:linear-gradient(135deg,rgba(255,215,64,0.08),rgba(255,215,64,0.03));border:1px solid rgba(255,215,64,0.3);border-radius:14px;padding:20px 28px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <div style="font-size:40px">🥇</div>
+      <div style="flex:1;min-width:180px">
+        <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Star of the Year — Top Performer 2025</div>
+        <div style="font-size:24px;font-weight:900;color:var(--text1);margin-bottom:4px" id="pres-ty-best-name">—</div>
+        <div style="font-size:13px;color:var(--text2)" id="pres-ty-best-stats">—</div>
       </div>
-      <div style="background:rgba(255,215,64,0.08);border:1px solid rgba(255,215,64,0.2);border-radius:12px;padding:16px 28px;min-width:140px">
-        <div style="font-size:28px;font-weight:900;color:var(--gold)" id="pres-ty-contracts">—</div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Contracts Signed</div>
-      </div>
-      <div style="background:rgba(64,196,255,0.08);border:1px solid rgba(64,196,255,0.2);border-radius:12px;padding:16px 28px;min-width:140px">
-        <div style="font-size:28px;font-weight:900;color:var(--blue)" id="pres-ty-cvr">—</div>
-        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Conversion Rate</div>
+      <div style="background:rgba(255,215,64,0.12);border:1px solid rgba(255,215,64,0.25);border-radius:10px;padding:14px 22px;text-align:center;flex-shrink:0">
+        <div style="font-size:32px;font-weight:900;color:var(--gold)" id="pres-ty-best-cvr">—</div>
+        <div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:2px;opacity:0.8">Conversion Rate</div>
       </div>
     </div>
-    <div style="font-size:13px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;opacity:0.6">
+
+    <!-- All team message -->
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 24px;margin-bottom:18px">
+      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px">To the Entire Kitchino Team</div>
+      <div style="font-size:14px;color:var(--text2);line-height:1.9">
+        Every visit, every conversation, every follow-up matters.<br>
+        <span style="color:var(--text1);font-weight:600">Your commitment transforms leads into lifelong clients — and that's what Kitchino is built on.</span><br>
+        The numbers you achieved in 2025 are not just data — they are proof of your excellence.
+      </div>
+    </div>
+
+    <!-- Call to action -->
+    <div style="background:linear-gradient(90deg,rgba(0,230,118,0.08),rgba(64,196,255,0.06));border:1px solid rgba(0,230,118,0.2);border-radius:12px;padding:14px 24px;display:flex;align-items:center;gap:16px">
+      <div style="font-size:28px">🚀</div>
+      <div>
+        <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;letter-spacing:0.5px">The Best is Yet to Come</div>
+        <div style="font-size:12px;color:var(--text2)">Let 2026 be the year we break every record — together. Every effort counts. Every success matters.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;font-size:10px;color:var(--text3);letter-spacing:3px;text-transform:uppercase;opacity:0.4;text-align:center">
       KITCHINO — HIGH-END KITCHENS &amp; FURNITURE · EGYPT · 2025
     </div>
   </div>
@@ -6716,10 +6750,31 @@ function buildPresentationSlides() {
     var multi = Object.values(custOC).filter(function(n){return n>1;}).length;
     _set('pres-stat-crosssales', allC>0 ? (+(multi/allC*100).toFixed(1))+'%' : '0%');
   })();
-  // ── Slide 9: Thank You closing KPIs ──
+  // ── Slide 9: Thank You closing KPIs + best performer ──
   _set('pres-ty-total',     total25.toLocaleString());
   _set('pres-ty-contracts', contr25.toLocaleString());
   _set('pres-ty-cvr',       cvr25 + '%');
+  // Best performer: highest CVR among designers with >= 5 measures
+  var SKIP_TY = ['unknown','n/a','','—','-'];
+  var desMap25 = {};
+  rows25.forEach(function(r){
+    var d = (r.designer||'').trim();
+    if (!d || SKIP_TY.includes(d.toLowerCase())) return;
+    if (!desMap25[d]) desMap25[d] = { total:0, contracted:0 };
+    desMap25[d].total++;
+    if (r._contracted) desMap25[d].contracted++;
+  });
+  var desArr25 = Object.entries(desMap25)
+    .filter(function(e){ return e[1].total >= 5; })
+    .map(function(e){ return { name:e[0], total:e[1].total, contracted:e[1].contracted,
+      cvr: +(e[1].contracted/e[1].total*100).toFixed(1) }; })
+    .sort(function(a,b){ return b.cvr - a.cvr; });
+  var best = desArr25.length > 0 ? desArr25[0] : null;
+  if (best) {
+    _set('pres-ty-best-name',  best.name);
+    _set('pres-ty-best-cvr',   best.cvr + '%');
+    _set('pres-ty-best-stats', best.contracted + ' contracts signed out of ' + best.total + ' measures in 2025');
+  }
 
   
 
