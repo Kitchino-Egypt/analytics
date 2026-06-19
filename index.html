@@ -7223,10 +7223,11 @@ function buildPresentationSlides() {
       ? allOT_qual.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; })[0]
       : null;
 
-    // Sort ALL types by CVR descending so chart + list are visually consistent with bestCVR card
-    var allOT = allOT_raw.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; });
+    // Exclude اضافة add-on types from chart + list (they inflate CVR to 100% and distort visuals)
+    // They remain in allOT_raw only for topType (volume leader) and totalOT count
+    var allOT = allOT_raw.filter(function(d){ return d.type.indexOf('اضافة') === -1; });
 
-    // Top 6 by CVR + Others aggregate
+    // Top 6 by volume + Others aggregate
     var top6 = allOT.slice(0, 6);
     var rest = allOT.slice(6);
     var otData = top6.slice(); // display list
@@ -7247,7 +7248,7 @@ function buildPresentationSlides() {
 
     // KPI cards
     _set('pres-ot-top',      topType ? topType.type : '—');
-    _set('pres-ot-count',    allOT.length + ' types');
+    _set('pres-ot-count',    allOT_raw.length + ' types'); // total including اضافة types
     // Show grand total = rows25.length as sub-label on count card
     (function(){
       var subEl = document.querySelector('#pres-ot-count')
