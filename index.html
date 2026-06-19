@@ -677,7 +677,21 @@ tbody td.muted { color:var(--text2); }
 }
 .pres-ctrl-btn:hover { border-color:var(--green); color:var(--green); }
 .pres-ctrl-btn.active { background:rgba(0,230,118,0.1); border-color:var(--green); color:var(--green); }
-#pres-counter { font-size:13px; font-weight:700; color:var(--text3); min-width:50px; text-align:center; }
+#pres-counter { font-size:14px; font-weight:800; color:var(--text1); min-width:60px; text-align:center;
+  background:rgba(0,230,118,0.08); border:1px solid rgba(0,230,118,0.2); border-radius:7px; padding:5px 12px; }
+/* Dot navigation */
+.pres-dots { display:flex; justify-content:center; gap:8px; padding:14px 0 4px; }
+.pres-dot { width:8px; height:8px; border-radius:50%; background:var(--border); cursor:pointer;
+  transition:all .25s; border:none; flex-shrink:0; }
+.pres-dot.pres-dot-active { background:var(--green); width:22px; border-radius:4px; }
+.pres-dot:hover { background:var(--text3); }
+/* Slide fade-in animation */
+.pres-slide.pres-active { animation:presSlideIn .25s ease; }
+@keyframes presSlideIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+/* Fullscreen: hide dots and hints */
+#page-presentation.pres-fullscreen .pres-dots { display:none; }
+#page-presentation.pres-fullscreen #pres-controls-bar { padding:12px 28px 12px; border-radius:0;
+  background:rgba(23,23,46,0.95); margin-bottom:0; }
 .pres-slide {
   background:linear-gradient(135deg,var(--card),rgba(37,37,69,0.6));
   border:1px solid var(--border); border-radius:16px;
@@ -1805,10 +1819,10 @@ if (_checkSession()) {
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button class="pres-ctrl-btn" onclick="presNav(-1)">← Prev</button>
-      <span id="pres-counter">1 / 9</span>
+      <span id="pres-counter">1 / 8</span>
       <button class="pres-ctrl-btn" onclick="presNav(1)">Next →</button>
     </div>
-    <div style="font-size:11px;color:var(--text3)">← → arrow keys to navigate · F = fullscreen</div>
+    <div style="font-size:11px;color:var(--text3);opacity:0.6">← → keys · F = fullscreen</div>
   </div>
 
   <!-- SLIDE 1: Cover -->
@@ -1828,7 +1842,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 2: Executive KPIs -->
   <div class="pres-slide" id="pres-slide-2">
-    <div class="pres-tag">SLIDE 2 OF 9 — EXECUTIVE PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 2 OF 8 — EXECUTIVE PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:32px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
       <div class="pres-kpi-box">
@@ -1852,7 +1866,7 @@ if (_checkSession()) {
         <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-customers-sub">—</div>
       </div>
     </div>
-    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
       <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:10px;padding:16px;text-align:center">
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Active Designers</div>
         <div style="font-size:28px;font-weight:900;color:var(--green)" id="pres-stat-designers">—</div>
@@ -1865,28 +1879,20 @@ if (_checkSession()) {
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Lead Sources</div>
         <div style="font-size:28px;font-weight:900;color:var(--purple)" id="pres-stat-sources">—</div>
       </div>
+      <div style="background:rgba(255,149,0,0.06);border:1px solid rgba(255,149,0,0.2);border-radius:10px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Cross-Sales Rate</div>
+        <div style="font-size:28px;font-weight:900;color:#ff9500" id="pres-stat-crosssales">—</div>
+      </div>
     </div>
   </div>
 
 
   <!-- SLIDE 3: 2025 Monthly Measures Bar Chart -->
-  <div class="pres-slide" id="pres-slide-new3">
-    <div class="pres-tag">SLIDE 3 OF 9 — MONTHLY VOLUME</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 — Month by Month</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:24px">Total measure visits per month · full year 2025</div>
-    <div style="flex:1;position:relative;min-height:0">
-      <canvas id="pres-monthly-bar-chart"></canvas>
-    </div>
-    <div style="display:flex;gap:24px;margin-top:14px;flex-wrap:wrap">
-      <div style="font-size:12px;color:var(--text3)">Peak month: <strong id="pres-peak-month" style="color:var(--green)">—</strong></div>
-      <div style="font-size:12px;color:var(--text3)">Slowest: <strong id="pres-slow-month" style="color:var(--text2)">—</strong></div>
-      <div style="font-size:12px;color:var(--text3)">Monthly avg: <strong id="pres-month-avg" style="color:var(--text1)">—</strong></div>
-    </div>
-  </div>
+  
 
   <!-- SLIDE 3: Designer Performance (all, clickable) -->
   <div class="pres-slide" id="pres-slide-3">
-    <div class="pres-tag">SLIDE 4 OF 9 — TEAM PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 3 OF 8 — TEAM PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Rankings — 2025</div>
     <div style="display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
       <div style="font-size:13px;color:var(--text3)" id="pres-des-subtitle">All designers · ranked by CVR</div>
@@ -1906,7 +1912,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 4: Designer Groups -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 5 OF 9 — PERFORMANCE TIERS</div>
+    <div class="pres-tag">SLIDE 4 OF 8 — PERFORMANCE TIERS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
     <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px"></div>
@@ -1914,7 +1920,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
   <div class="pres-slide" id="pres-slide-4b"
-    <div class="pres-tag">SLIDE 6 OF 9 — REACH &amp; CHANNELS</div>
+    <div class="pres-tag">SLIDE 5 OF 8 — REACH &amp; CHANNELS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">Geographic Reach &amp; Lead Sources</div>
     <div class="pres-row">
       <div>
@@ -1930,7 +1936,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 5: Key Takeaways -->
   <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 7 OF 9 — KEY TAKEAWAYS</div>
+    <div class="pres-tag">SLIDE 6 OF 8 — KEY TAKEAWAYS</div>
     <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
       <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
       <div style="font-size:13px;color:var(--text3)">What we achieved</div>
@@ -1948,7 +1954,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 7: Order Types Analysis -->
   <div class="pres-slide" id="pres-slide-7">
-    <div class="pres-tag">SLIDE 8 OF 9 — ORDER TYPES</div>
+    <div class="pres-tag">SLIDE 7 OF 8 — ORDER TYPES</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Order Types — 2025</div>
     <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
       <div style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:10px;padding:10px 18px;min-width:130px">
@@ -1976,7 +1982,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
-    <div class="pres-tag">SLIDE 9 OF 9 — PARTIAL YEAR COMPARISON</div>
+    <div class="pres-tag">SLIDE 8 OF 8 — PARTIAL YEAR COMPARISON</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
     <div style="font-size:16px;color:var(--text3);margin-bottom:28px">Same-period comparison · Jan 1 → <span id="pres-h1-asof">Jun 14, 2026</span> vs same window in 2025</div>
 
@@ -2023,6 +2029,8 @@ if (_checkSession()) {
       </div>
     </div>
   </div>
+  <!-- Slide dot navigation -->
+  <div class="pres-dots" id="pres-dots"></div>
 
 
 
@@ -6157,7 +6165,7 @@ function closePaymentBreakdown() {
 // PRESENTATION VIEW
 // ============================================================
 let _presCurrentSlide = 1;
-const _PRES_TOTAL = 9;
+const _PRES_TOTAL = 8;
 let _presFullscreen = false;
 let _presDesignerData = {};  // populated in buildPresentationSlides, keyed by designer name
 let _presAreaData     = {};  // keyed by area name
@@ -6651,74 +6659,16 @@ function buildPresentationSlides() {
   _set('pres-stat-designers', [...new Set(rows25.map(r=>r.designer).filter(d=>d&&!SKIP.includes((d||'').toLowerCase())))].length);
   _set('pres-stat-areas',     [...new Set(rows25.map(r=>r.area).filter(Boolean))].length);
   _set('pres-stat-sources',   [...new Set(rows25.map(r=>r.source).filter(s=>s&&!SKIP.includes((s||'').toLowerCase())))].length);
-
-  // ── Slide 3 (NEW): 2025 Monthly Measures Bar Chart ──────────────────────
+  // Cross-Sales Rate for 2025 rows
   (function(){
-    var ordMon = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    var shortMon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var counts = ordMon.map(function(mn){ return rows25.filter(function(r){return r._monthName===mn;}).length; });
-    var maxC = Math.max.apply(null, counts) || 1;
-    var minC = Math.min.apply(null, counts.filter(function(c){return c>0;})) || 0;
-    var avg  = Math.round(counts.reduce(function(a,b){return a+b;},0) / counts.filter(function(c){return c>0;}).length) || 0;
-    var peakIdx = counts.indexOf(maxC);
-    var slowIdx = counts.reduce(function(bi,c,i){return (c>0&&c<counts[bi])?i:bi;}, counts.findIndex(function(c){return c>0;}));
-    _set('pres-peak-month', shortMon[peakIdx] + ' (' + maxC + ')');
-    _set('pres-slow-month', shortMon[slowIdx] + ' (' + minC + ')');
-    _set('pres-month-avg',  avg + ' measures');
-
-    var ctx = document.getElementById('pres-monthly-bar-chart');
-    if (!ctx || typeof Chart==='undefined') return;
-    if (window._presMonthlyBarChart) { window._presMonthlyBarChart.destroy(); window._presMonthlyBarChart=null; }
-    var colors = counts.map(function(c,i){
-      if (i===peakIdx) return 'rgba(0,230,118,0.95)';
-      if (c>=avg) return 'rgba(0,230,118,0.65)';
-      return 'rgba(0,230,118,0.3)';
-    });
-    window._presMonthlyBarChart = new Chart(ctx, {
-      type:'bar',
-      data:{
-        labels: shortMon,
-        datasets:[{
-          data: counts,
-          backgroundColor: colors,
-          borderColor: colors.map(function(c){return c.replace(/[\d.]+\)$/,'1)');}),
-          borderWidth:1, borderRadius:6,
-          borderSkipped:false
-        }]
-      },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{
-          legend:{display:false},
-          tooltip:{
-            backgroundColor:'#1c1c2e', borderColor:'#252545', borderWidth:1,
-            titleColor:'#e8eaf6', bodyColor:'#9e9ec8',
-            callbacks:{label:function(c){return '  Measures: '+c.parsed.y;}}
-          }
-        },
-        scales:{
-          x:{ ticks:{color:'#9e9ec8',font:{size:12}}, grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.08)'} },
-          y:{ ticks:{color:'#9e9ec8',font:{size:11}}, grid:{color:'rgba(255,255,255,0.05)'}, border:{color:'rgba(255,255,255,0.08)'}, beginAtZero:true }
-        }
-      }
-    });
-    // Draw avg line via annotation plugin fallback using afterDraw
-    Chart.register({ id:'avgLine', afterDraw:function(chart){
-      if (chart.canvas.id!=='pres-monthly-bar-chart') return;
-      var yScale=chart.scales.y; var xScale=chart.scales.x;
-      var y=yScale.getPixelForValue(avg);
-      var ctx2=chart.ctx;
-      ctx2.save();
-      ctx2.setLineDash([6,4]);
-      ctx2.strokeStyle='rgba(255,215,64,0.6)';
-      ctx2.lineWidth=1.5;
-      ctx2.beginPath(); ctx2.moveTo(xScale.left,y); ctx2.lineTo(xScale.right,y); ctx2.stroke();
-      ctx2.setLineDash([]);
-      ctx2.font='11px Segoe UI'; ctx2.fillStyle='rgba(255,215,64,0.8)';
-      ctx2.fillText('avg '+avg, xScale.right+4, y+4);
-      ctx2.restore();
-    }});
+    var custOC = {};
+    rows25.forEach(function(r){ var k=(r.customer||'').trim().toLowerCase(); if(k) custOC[k]=(custOC[k]||0)+1; });
+    var allC  = Object.keys(custOC).length;
+    var multi = Object.values(custOC).filter(function(n){return n>1;}).length;
+    _set('pres-stat-crosssales', allC>0 ? (+(multi/allC*100).toFixed(1))+'%' : '0%');
   })();
+
+  
 
   // ── Slide 3: All Designers + clickable breakdown ────────────
   const teamAvg     = designers.length > 0 ? +(designers.reduce((s,d)=>s+d.rate,0)/designers.length).toFixed(1) : 0;
@@ -7233,11 +7183,28 @@ function buildPresentationSlides() {
 
 function _presShowSlide(n) {
   _presCurrentSlide = Math.max(1, Math.min(n, _PRES_TOTAL));
-  document.querySelectorAll('.pres-slide').forEach((s,i) => {
-    s.classList.toggle('pres-active', i + 1 === _presCurrentSlide);
-  });
+  const slides = document.querySelectorAll('.pres-slide');
+  slides.forEach((s,i) => { s.classList.toggle('pres-active', i + 1 === _presCurrentSlide); });
   const ctr = document.getElementById('pres-counter');
   if (ctr) ctr.textContent = _presCurrentSlide + ' / ' + _PRES_TOTAL;
+  // Build / update dots
+  const dotsEl = document.getElementById('pres-dots');
+  if (dotsEl) {
+    if (dotsEl.children.length !== slides.length) {
+      dotsEl.innerHTML = '';
+      slides.forEach((_, i) => {
+        const d = document.createElement('button');
+        d.className = 'pres-dot' + (i + 1 === _presCurrentSlide ? ' pres-dot-active' : '');
+        d.title = 'Slide ' + (i + 1);
+        d.onclick = (function(idx){ return function(){ _presShowSlide(idx+1); }; })(i);
+        dotsEl.appendChild(d);
+      });
+    } else {
+      dotsEl.querySelectorAll('.pres-dot').forEach((d,i) => {
+        d.classList.toggle('pres-dot-active', i + 1 === _presCurrentSlide);
+      });
+    }
+  }
 }
 
 function presNav(dir) { _presShowSlide(_presCurrentSlide + dir); }
