@@ -1843,7 +1843,7 @@ if (_checkSession()) {
   <!-- SLIDE 2: Executive KPIs -->
   <div class="pres-slide" id="pres-slide-2">
     <div class="pres-tag">SLIDE 2 OF 9 — EXECUTIVE PERFORMANCE</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:32px">2025 at a Glance</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:24px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
       <div class="pres-kpi-box">
         <div class="pres-kpi-val" style="color:var(--green)" id="pres-kpi-total">—</div>
@@ -1866,7 +1866,7 @@ if (_checkSession()) {
         <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-customers-sub">—</div>
       </div>
     </div>
-    <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
+    <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
       <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:10px;padding:16px;text-align:center">
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Active Designers</div>
         <div style="font-size:28px;font-weight:900;color:var(--green)" id="pres-stat-designers">—</div>
@@ -1880,7 +1880,7 @@ if (_checkSession()) {
         <div style="font-size:28px;font-weight:900;color:var(--purple)" id="pres-stat-sources">—</div>
       </div>
       <div style="background:rgba(255,149,0,0.06);border:1px solid rgba(255,149,0,0.2);border-radius:10px;padding:16px;text-align:center">
-        <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Cross-Sales Rate</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Cross-Sales Ratio</div>
         <div style="font-size:28px;font-weight:900;color:#ff9500" id="pres-stat-crosssales">—</div>
       </div>
     </div>
@@ -6742,13 +6742,19 @@ function buildPresentationSlides() {
   _set('pres-stat-designers', [...new Set(rows25.map(r=>r.designer).filter(d=>d&&!SKIP.includes((d||'').toLowerCase())))].length);
   _set('pres-stat-areas',     [...new Set(rows25.map(r=>r.area).filter(Boolean))].length);
   _set('pres-stat-sources',   [...new Set(rows25.map(r=>r.source).filter(s=>s&&!SKIP.includes((s||'').toLowerCase())))].length);
-  // Cross-Sales Rate for 2025 rows
+  // Cross-Sales Ratio for 2025 — Contracted Orders ÷ Unique Contracted Customers (matches CEO page)
   (function(){
-    var custOC = {};
-    rows25.forEach(function(r){ var k=(r.customer||'').trim().toLowerCase(); if(k) custOC[k]=(custOC[k]||0)+1; });
-    var allC  = Object.keys(custOC).length;
-    var multi = Object.values(custOC).filter(function(n){return n>1;}).length;
-    _set('pres-stat-crosssales', allC>0 ? (+(multi/allC*100).toFixed(1))+'%' : '0%');
+    var contrMap = {};
+    rows25.forEach(function(r){
+      if (r._contracted) {
+        var k = (r.customer||'').trim().toLowerCase();
+        if (k) contrMap[k] = (contrMap[k]||0) + 1;
+      }
+    });
+    var totalContr   = rows25.filter(function(r){ return r._contracted; }).length;
+    var uniqueContrC = Object.keys(contrMap).length;
+    var ratio = uniqueContrC > 0 ? +(totalContr / uniqueContrC).toFixed(2) : 0;
+    _set('pres-stat-crosssales', ratio + '×');
   })();
   // ── Slide 9: Thank You closing KPIs + best performer ──
   _set('pres-ty-total',     total25.toLocaleString());
