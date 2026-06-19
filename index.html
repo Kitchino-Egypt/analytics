@@ -7208,20 +7208,34 @@ function buildPresentationSlides() {
 
   // ── Slide 7: Order Types Analysis ────────────────────────────────
   (function(){
-    // All order types (not sliced) — guarantees total = 1419
-    var allOT = engine_orderTypes(rows25).filter(function(d){ return d.total > 0; });
-    var totalOT = rows25.length; // authoritative total = full year
+    // All order types — engine returns sorted by volume; keep raw for topType
+    var allOT_raw = engine_orderTypes(rows25).filter(function(d){ return d.total > 0; });
+    var totalOT   = rows25.length; // authoritative total = full year
 
-    // Top 6 + Others aggregate
-    var top6   = allOT.slice(0, 6);
-    var rest   = allOT.slice(6);
+    // TOP TYPE = highest volume (unchanged metric for KPI card)
+    var topType = allOT_raw.length > 0 ? allOT_raw[0] : null;
+
+    // BEST CVR = highest CVR excluding اضافة add-on types AND requiring >= 20 measures
+    var allOT_qual = allOT_raw.filter(function(d){
+      return d.type.indexOf('اضافة') === -1 && d.total >= 20;
+    });
+    var bestCVR = allOT_qual.length > 0
+      ? allOT_qual.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; })[0]
+      : null;
+
+    // Sort ALL types by CVR descending so chart + list are visually consistent with bestCVR card
+    var allOT = allOT_raw.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; });
+
+    // Top 6 by CVR + Others aggregate
+    var top6 = allOT.slice(0, 6);
+    var rest = allOT.slice(6);
     var otData = top6.slice(); // display list
     window._presOTRest = rest; // store for Others drill-down
     if (rest.length > 0) {
-      var othTotal  = rest.reduce(function(s,d){ return s + d.total; }, 0);
-      var othContr  = rest.reduce(function(s,d){ return s + d.contracted; }, 0);
-      var othDisc   = rest.reduce(function(s,d){ return s + d.discussion; }, 0);
-      var othCanc   = rest.reduce(function(s,d){ return s + d.cancelled; }, 0);
+      var othTotal = rest.reduce(function(s,d){ return s + d.total; }, 0);
+      var othContr = rest.reduce(function(s,d){ return s + d.contracted; }, 0);
+      var othDisc  = rest.reduce(function(s,d){ return s + d.discussion; }, 0);
+      var othCanc  = rest.reduce(function(s,d){ return s + d.cancelled; }, 0);
       otData.push({
         type: 'Others (' + rest.length + ' types)',
         total: othTotal, contracted: othContr,
@@ -7230,13 +7244,6 @@ function buildPresentationSlides() {
         isOthers: true
       });
     }
-
-    var topType = allOT.length > 0 ? allOT[0] : null;
-    // Exclude "اضافة" (addition/upsell) types from CVR ranking — they inflate CVR artificially
-    var allOT_noAdd = allOT.filter(function(d){ return d.type.indexOf('اضافة') === -1; });
-    var bestCVR = allOT_noAdd.length > 0
-      ? allOT_noAdd.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; })[0]
-      : null;
 
     // KPI cards
     _set('pres-ot-top',      topType ? topType.type : '—');
@@ -7358,6 +7365,7 @@ window._presOTOthersDetail = function() {
   }).join('');
 
   var sorted = rest.slice().sort(function(a,b){ return b.total - a.total; });
+  window._presOTSorted = sorted; // ← enables _presOTByIdx drill-down from Others popup
   var maxT = sorted.length ? sorted[0].total : 1;
   el('pres-ot-modal-list').innerHTML = sorted.map(function(d, i){
     var pct  = totalAll > 0 ? Math.round(d.total/totalAll*100) : 0;
