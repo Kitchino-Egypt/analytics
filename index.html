@@ -7227,9 +7227,11 @@ function buildPresentationSlides() {
     // They remain in allOT_raw only for topType (volume leader) and totalOT count
     var allOT = allOT_raw.filter(function(d){ return d.type.indexOf('اضافة') === -1; });
 
-    // Top 6 by volume + Others aggregate
+    // Top 6 by volume (non-اضافة) + Others aggregate
+    // Others = remaining non-اضافة types PLUS all اضافة types (counted but not shown individually)
     var top6 = allOT.slice(0, 6);
-    var rest = allOT.slice(6);
+    var addaTypes = allOT_raw.filter(function(d){ return d.type.indexOf('اضافة') !== -1; });
+    var rest = allOT.slice(6).concat(addaTypes);
     var otData = top6.slice(); // display list
     window._presOTRest = rest; // store for Others drill-down
     if (rest.length > 0) {
