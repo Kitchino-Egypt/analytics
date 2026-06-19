@@ -2067,6 +2067,26 @@ if (_checkSession()) {
   </div><!-- end page-content -->
 </div><!-- end main -->
 
+<!-- Order Type Location Breakdown Modal -->
+<div class="modal-overlay" id="pres-ot-modal" onclick="if(event.target===this)document.getElementById('pres-ot-modal').classList.remove('open')">
+  <div class="modal" style="max-width:620px;max-height:85vh;display:flex;flex-direction:column;width:100%">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:12px">
+      <div>
+        <h3 style="font-size:18px;font-weight:900;color:var(--text1);margin-bottom:4px" id="pres-ot-modal-title">Order Type</h3>
+        <p style="color:var(--text3);font-size:12px;margin-bottom:0" id="pres-ot-modal-sub">Location breakdown</p>
+      </div>
+      <button onclick="document.getElementById('pres-ot-modal').classList.remove('open')"
+        style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">✕</button>
+    </div>
+    <!-- Summary KPI strip -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap" id="pres-ot-modal-kpis"></div>
+    <!-- Location table -->
+    <div style="overflow-y:auto;flex:1">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Breakdown by Location</div>
+      <div id="pres-ot-modal-list"></div>
+    </div>
+  </div>
+</div>
 <!-- RECONCILIATION PANEL -->
 <div id="reconciliation-panel" style="display:none;position:fixed;top:60px;right:16px;width:420px;max-height:80vh;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
 </div>
@@ -7152,11 +7172,12 @@ function buildPresentationSlides() {
       listEl.innerHTML = otData.map(function(d,i){
         var barW = totalOT > 0 ? Math.round((d.total/totalOT)*100) : 0;
         var cvrCol = d.conversionRate >= 40 ? '#00e676' : d.conversionRate >= 20 ? '#ffd740' : '#ff6b6b';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
+        var safeType = d.type.replace(/'/g,"\\'");
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background .15s" onclick="window._presOTDetail(\''+safeType+'\');" onmouseover="this.style.background=\'rgba(0,230,118,0.05)\'" onmouseout="this.style.background=\'\'"">'
           +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(0,230,118,0.15);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--green);flex-shrink:0">'+(i+1)+'</div>'
           +'<div style="flex:1;min-width:0">'
             +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
-              +'<span style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.type+'</span>'
+              +'<span style="font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.type+' <span style="font-size:9px;color:var(--green);opacity:0.6">▼ click</span></span>'
               +'<span style="font-size:12px;color:var(--text2);flex-shrink:0;margin-left:8px">'+d.total+' ('+barW+'%)</span>'
             +'</div>'
             +'<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px">'
@@ -7197,6 +7218,83 @@ function buildPresentationSlides() {
 
   _presShowSlide(_presCurrentSlide);
 }
+
+
+// ── Order Type Location Breakdown ─────────────────────────────────────────────
+window._presOTDetail = function(typeName) {
+  var rows25 = ENGINE_CLEAN_ROWS.filter(function(r){ return r._year === '2025'; });
+  var typeRows = rows25.filter(function(r){ return (r.orderType||'').trim() === typeName; });
+  var total = typeRows.length;
+  var contracted = typeRows.filter(function(r){ return r._contracted; }).length;
+  var discussion = typeRows.filter(function(r){ return r._discussion; }).length;
+  var cancelled  = typeRows.filter(function(r){ return r._cancelled;  }).length;
+  var cvr = total > 0 ? +(contracted/total*100).toFixed(1) : 0;
+
+  // Group by area
+  var areaMap = {};
+  typeRows.forEach(function(r) {
+    var area = (r.area||'').trim() || 'غير محدد';
+    if (!areaMap[area]) areaMap[area] = { area:area, total:0, contracted:0, discussion:0, cancelled:0 };
+    areaMap[area].total++;
+    if (r._contracted) areaMap[area].contracted++;
+    else if (r._discussion) areaMap[area].discussion++;
+    else if (r._cancelled)  areaMap[area].cancelled++;
+  });
+  var areas = Object.values(areaMap).sort(function(a,b){ return b.total - a.total; });
+
+  // Populate modal
+  var el = function(id){ return document.getElementById(id); };
+  el('pres-ot-modal-title').textContent = typeName;
+  el('pres-ot-modal-sub').textContent = total + ' measures · ' + areas.length + ' locations';
+
+  // KPI strip
+  var kpiHtml = [
+    { label:'Total Measures', val:total,      color:'var(--green)' },
+    { label:'Contracted',     val:contracted,  color:'var(--gold)'  },
+    { label:'In Discussion',  val:discussion,  color:'var(--teal)'  },
+    { label:'CVR',            val:cvr+'%',     color:'var(--green)' },
+  ].map(function(k){
+    return '<div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px 16px;flex:1;min-width:110px;text-align:center">'
+      +'<div style="font-size:18px;font-weight:900;color:'+k.color+'">'+k.val+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px">'+k.label+'</div>'
+    +'</div>';
+  }).join('');
+  el('pres-ot-modal-kpis').innerHTML = kpiHtml;
+
+  // Location list
+  var maxT = areas.length ? areas[0].total : 1;
+  var listHtml = areas.map(function(a, i) {
+    var pct   = total > 0 ? Math.round(a.total/total*100) : 0;
+    var barW  = maxT > 0 ? Math.round(a.total/maxT*100) : 0;
+    var aCvr  = a.total > 0 ? +(a.contracted/a.total*100).toFixed(1) : 0;
+    var cCol  = aCvr >= 40 ? '#00e676' : aCvr >= 20 ? '#ffd740' : '#ff6b6b';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'
+      +'<div style="width:20px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;flex-shrink:0">'+(i+1)+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<span style="font-size:13px;font-weight:600;color:var(--text1)">'+a.area+'</span>'
+          +'<span style="font-size:12px;color:var(--text2);flex-shrink:0;margin-left:8px">'+a.total+' ('+pct+'%)</span>'
+        +'</div>'
+        +'<div style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px">'
+          +'<div style="height:100%;width:'+barW+'%;background:var(--green);border-radius:2px;transition:width .4s"></div>'
+        +'</div>'
+        +'<div style="display:flex;gap:12px;margin-top:4px;font-size:10px;color:var(--text3)">'
+          +'<span>✓ '+a.contracted+' contracted</span>'
+          +(a.discussion ? '<span>💬 '+a.discussion+' discussion</span>' : '')
+          +(a.cancelled  ? '<span>✕ '+a.cancelled+' cancelled</span>' : '')
+        +'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;width:48px">'
+        +'<div style="font-size:14px;font-weight:800;color:'+cCol+'">'+aCvr+'%</div>'
+        +'<div style="font-size:9px;color:var(--text3)">CVR</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+  el('pres-ot-modal-list').innerHTML = listHtml || '<div style="padding:20px;text-align:center;color:var(--text3)">No location data</div>';
+
+  // Open modal
+  document.getElementById('pres-ot-modal').classList.add('open');
+};
 
 function _presShowSlide(n) {
   _presCurrentSlide = Math.max(1, Math.min(n, _PRES_TOTAL));
