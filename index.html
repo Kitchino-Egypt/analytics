@@ -6922,11 +6922,8 @@ function buildPresentationSlides() {
   ];
   var tiersGrid = document.getElementById('pres-tiers-grid');
   if (tiersGrid && designers.length >= 3) {
-    var maxM2 = Math.max.apply(null, designers.map(function(d){return d.total;}));
-    var maxR2 = Math.max.apply(null, designers.map(function(d){return d.rate;}));
-    var scored2 = designers.map(function(d){
-      return Object.assign({},d,{score: maxM2>0&&maxR2>0 ? d.total/maxM2*50+d.rate/maxR2*50 : 0});
-    }).sort(function(a,b){return b.score-a.score;});
+    // Sort by CVR only — same ranking as Slide 3 (Designer Rankings)
+    var scored2 = designers.slice().sort(function(a,b){ return b.rate - a.rate; });
     var tierSize2 = scored2.length/5;
     PRES_PATCHES.forEach(function(p){p.designers=[];});
     scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),4)].designers.push(d);});
@@ -7219,6 +7216,7 @@ function buildPresentationSlides() {
     var top6   = allOT.slice(0, 6);
     var rest   = allOT.slice(6);
     var otData = top6.slice(); // display list
+    window._presOTRest = rest; // store for Others drill-down
     if (rest.length > 0) {
       var othTotal  = rest.reduce(function(s,d){ return s + d.total; }, 0);
       var othContr  = rest.reduce(function(s,d){ return s + d.contracted; }, 0);
@@ -7234,8 +7232,10 @@ function buildPresentationSlides() {
     }
 
     var topType = allOT.length > 0 ? allOT[0] : null;
-    var bestCVR = allOT.length > 0
-      ? allOT.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; })[0]
+    // Exclude "اضافة" (addition/upsell) types from CVR ranking — they inflate CVR artificially
+    var allOT_noAdd = allOT.filter(function(d){ return d.type.indexOf('اضافة') === -1; });
+    var bestCVR = allOT_noAdd.length > 0
+      ? allOT_noAdd.slice().sort(function(a,b){ return b.conversionRate - a.conversionRate; })[0]
       : null;
 
     // KPI cards
@@ -7273,8 +7273,10 @@ function buildPresentationSlides() {
         var numBg  = isOth ? 'rgba(255,255,255,0.1)' : 'rgba(0,230,118,0.15)';
         var numCol = isOth ? 'var(--text3)' : 'var(--green)';
         var numTxt = isOth ? '…' : (i+1);
-        var clickAttr = isOth ? '' : 'onclick="window._presOTDetail(\''+safeType+'\')" onmouseover="this.style.background=\'rgba(0,230,118,0.05)\'" onmouseout="this.style.background=\'\'';
-        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:'+(isOth?'default':'pointer')+';transition:background .15s;background:'+rowBg+'" '+clickAttr+'>'
+        var clickAttr = isOth
+          ? 'onclick="window._presOTOthersDetail()"'
+          : 'onclick="window._presOTDetail(\''+safeType+'\');" onmouseover="this.style.background=\'rgba(0,230,118,0.05)\'" onmouseout="this.style.background=\'\'';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background .15s;background:'+rowBg+'" '+clickAttr+'>'
           +'<div style="width:24px;height:24px;border-radius:50%;background:'+numBg+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:'+numCol+';flex-shrink:0">'+numTxt+'</div>'
           +'<div style="flex:1;min-width:0">'
             +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
@@ -7324,6 +7326,64 @@ function buildPresentationSlides() {
   _presShowSlide(_presCurrentSlide);
 }
 
+
+
+// ── Order Types: Others drill-down ────────────────────────────────────────────
+
+window._presOTByIdx = function(idx) {
+  var sorted = window._presOTSorted || [];
+  if (sorted[idx]) window._presOTDetail(sorted[idx].type);
+};
+window._presOTOthersDetail = function() {
+  var rest = window._presOTRest || [];
+  if (!rest.length) return;
+  var totalAll = rest.reduce(function(s,d){ return s+d.total; }, 0);
+  var contrAll = rest.reduce(function(s,d){ return s+d.contracted; }, 0);
+  var cvrAll   = totalAll > 0 ? +(contrAll/totalAll*100).toFixed(1) : 0;
+
+  var el = function(id){ return document.getElementById(id); };
+  el('pres-ot-modal-title').textContent = 'Others — All Remaining Types';
+  el('pres-ot-modal-sub').textContent   = rest.length + ' order types · ' + totalAll + ' total measures';
+
+  el('pres-ot-modal-kpis').innerHTML = [
+    { label:'Types',       val:rest.length,               color:'var(--text1)' },
+    { label:'Total',       val:totalAll,                   color:'var(--green)' },
+    { label:'Contracted',  val:contrAll,                   color:'var(--gold)'  },
+    { label:'CVR',         val:cvrAll+'%',                 color:'var(--teal)'  },
+  ].map(function(k){
+    return '<div style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:10px 16px;flex:1;min-width:110px;text-align:center">'
+      +'<div style="font-size:18px;font-weight:900;color:'+k.color+'">'+k.val+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px">'+k.label+'</div>'
+    +'</div>';
+  }).join('');
+
+  var sorted = rest.slice().sort(function(a,b){ return b.total - a.total; });
+  var maxT = sorted.length ? sorted[0].total : 1;
+  el('pres-ot-modal-list').innerHTML = sorted.map(function(d, i){
+    var pct  = totalAll > 0 ? Math.round(d.total/totalAll*100) : 0;
+    var barW = maxT > 0 ? Math.round(d.total/maxT*100) : 0;
+    var cvr  = d.total > 0 ? +(d.contracted/d.total*100).toFixed(1) : 0;
+    var cCol = cvr >= 40 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff6b6b';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="window._presOTByIdx('+i+')">'
+      +'<div style="width:20px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;flex-shrink:0">'+(i+1)+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+          +'<span style="font-size:13px;font-weight:600;color:var(--text1)">'+d.type+' <span style="font-size:9px;color:var(--green);opacity:0.6">▼</span></span>'
+          +'<span style="font-size:11px;color:var(--text2);flex-shrink:0;margin-left:8px">'+d.total+' ('+pct+'%)</span>'
+        +'</div>'
+        +'<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px">'
+          +'<div style="height:100%;width:'+barW+'%;background:var(--green);border-radius:2px"></div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;width:42px">'
+        +'<div style="font-size:13px;font-weight:800;color:'+cCol+'">'+cvr+'%</div>'
+        +'<div style="font-size:9px;color:var(--text3)">CVR</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+
+  document.getElementById('pres-ot-modal').classList.add('open');
+};
 
 // ── Order Type Location Breakdown ─────────────────────────────────────────────
 window._presOTDetail = function(typeName) {
