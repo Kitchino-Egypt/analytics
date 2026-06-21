@@ -2390,7 +2390,7 @@ function engine_filterRows(rows, filters) {
   return rows.filter(r => {
     if (year     && year     !== 'all' && r._year      !== year)     return false;
     if (designer && designer !== 'all' && r.designer   !== designer) return false;
-    if (area     && area     !== 'all' && r.area       !== area)     return false;
+    if (area     && area     !== 'all' && r.area !== area && r.location !== area) return false;
     if (month    && month    !== 'all' && r._monthName !== month)    return false;
     return true;
   });
@@ -2695,7 +2695,7 @@ async function _fetchAllRows() {
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
       // Populate filter dropdowns dynamically from live data
       DESIGNERS = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.designer||'').filter(Boolean))].sort();
-      AREAS     = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.area||'').filter(Boolean))].sort();
+      AREAS     = [...new Set(ENGINE_CLEAN_ROWS.flatMap(r=>[r.area||'', r.location||'']).filter(Boolean))].sort();
       MONTHS    = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r._monthName||'').filter(Boolean))];
       _refreshFilterDropdowns();
       refreshYearDropdown();   // populate year options from actual data years
