@@ -935,7 +935,7 @@ if (_checkSession()) {
       <select class="filter-select" id="filter-month" onchange="applyFilters()" style="min-width:120px">
         <option value="all">All Months</option>
       </select>
-      <input type="text" class="search-box" id="global-search" placeholder="🔍 Search customer / ID…" oninput="applyFilters()">
+      <input type="text" class="search-box" id="global-search" placeholder="🔍 Search customer, location, designer, source…" oninput="applyFilters()">
       <div class="live-dot" title="Live"></div>
       <button class="refresh-btn" onclick="refreshData()">↻ Refresh</button>
       <div id="auto-refresh-countdown" title="Auto-refresh countdown" style="font-size:10px;color:var(--text3);white-space:nowrap;min-width:52px;text-align:center">⏱ 3:00</div>
@@ -4820,7 +4820,10 @@ function renderFollowupTable() {
     if (!search) return true;
     return (c.name||'').toLowerCase().includes(search) ||
            String(c.orderId||'').toLowerCase().includes(search) ||
-           (c.designer||'').toLowerCase().includes(search);
+           (c.designer||'').toLowerCase().includes(search) ||
+           (c.location||'').toLowerCase().includes(search) ||
+           (c.source||'').toLowerCase().includes(search) ||
+           (c.orderType||c.type||'').toLowerCase().includes(search);
   });
 
   let rowsHtml;
@@ -4954,7 +4957,7 @@ function renderMeasuresTable() {
 
   // displayRows = filteredMeasures (main filters already applied) + local secondary filters
   const displayRows = filteredMeasures.filter(r => {
-    if(search  && !(r.customer||'').toLowerCase().includes(search) && !String(r.code||r.orderCode||'').includes(search)) return false;
+    if(search  && !(r.customer||'').toLowerCase().includes(search) && !String(r.code||r.orderCode||'').includes(search) && !(r.location||'').toLowerCase().includes(search) && !(r.source||'').toLowerCase().includes(search) && !(r.orderType||r.type||'').toLowerCase().includes(search)) return false;
     if(statusF !== 'all' && r.status !== statusF) return false;
     if(monthF  !== 'all' && (r.month||r._monthName) !== monthF) return false;
     return true;
@@ -5148,12 +5151,19 @@ function renderExecSourceCard() {
   const totEl    = document.getElementById('sources-card-total');
   const srcData  = [...(KITCHINO_STATE.sourceData || [])].sort((a,b) => b.total - a.total);
   if (!ENGINE_READY || !srcData.length) { _execNoData(listEl); return; }
-  const maxCount = srcData[0].total;
+  const top8     = srcData.slice(0, 8);
+  const rest     = srcData.slice(8);
   const totalAll = srcData.reduce((s,x) => s+x.total, 0);
+  const maxCount = top8[0]?.total || 1;
   if (totEl) totEl.textContent = srcData.length + ' sources · ' + totalAll.toLocaleString() + ' measures';
-  if (listEl) listEl.innerHTML = srcData.slice(0,8).map((s,i) =>
+  let rows = top8.map((s,i) =>
     _execRow(i+1, s.source, s.source, s.total, maxCount, null, 'rgba(206,147,216,0.65)', 'drillSource')
-  ).join('');
+  );
+  if (rest.length > 0) {
+    const othTotal = rest.reduce((s,x) => s+x.total, 0);
+    rows.push(_execRow(top8.length+1, 'Others (' + rest.length + ' sources)', 'Others', othTotal, maxCount, null, 'rgba(120,120,160,0.5)', 'drillSourceOthers'));
+  }
+  if (listEl) listEl.innerHTML = rows.join('');
   if (detailEl) detailEl.innerHTML = '';
 }
 
@@ -5190,6 +5200,34 @@ function drillSource(sourceName, rowEl) {
   if (detailEl) detailEl.innerHTML = '<div class="exec-expand-table">' +
     '<div class="exec-expand-header">📡 ' + sourceName + ' — Areas Covered <span>' + rows.length + ' measures</span></div>' +
     '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;gap:8px;padding:5px 10px;background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)"><div>#</div><div>Area</div><div style="text-align:right">Measures</div><div style="text-align:right">Conv%</div></div>' +
+    '<div class="exec-expand-tbody">' + rowsHtml + '</div></div>';
+}
+
+function drillSourceOthers(label, rowEl) {
+  const detailEl = document.getElementById('exec-source-detail');
+  const wasActive = rowEl.classList.contains('active');
+  document.querySelectorAll('#exec-sources-list .exec-list-row').forEach(r => r.classList.remove('active'));
+  if (wasActive) { if (detailEl) detailEl.innerHTML = ''; return; }
+  rowEl.classList.add('active');
+  // All sources beyond top 8
+  const srcData = [...(KITCHINO_STATE.sourceData || [])].sort((a,b) => b.total - a.total).slice(8);
+  if (!srcData.length) { if (detailEl) detailEl.innerHTML = ''; return; }
+  const maxS = srcData[0].total;
+  const rowsHtml = srcData.map((s,i) => {
+    const barW = Math.round(s.total/maxS*100);
+    const rateColor = s.conversionRate>=30?'#00e676':s.conversionRate>=20?'#ffd740':'#ff5252';
+    return '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.04)">' +
+      '<div style="font-size:10px;color:var(--text3);text-align:center">' + (i+1) + '</div>' +
+      '<div><div style="font-size:12px;font-weight:600;color:var(--text1)">' + s.source + '</div>' +
+      '<div style="height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:4px;overflow:hidden">' +
+      '<div style="height:100%;width:' + barW + '%;background:rgba(120,120,160,0.6);border-radius:2px"></div></div></div>' +
+      '<div style="font-size:13px;font-weight:800;color:var(--text1);text-align:right">' + s.total.toLocaleString() + '</div>' +
+      '<div style="font-size:10px;font-weight:700;color:' + rateColor + ';text-align:right">' + s.conversionRate + '% conv</div></div>';
+  }).join('');
+  const othTotal = srcData.reduce((s,x) => s+x.total, 0);
+  if (detailEl) detailEl.innerHTML = '<div class="exec-expand-table">' +
+    '<div class="exec-expand-header">📡 Other Sources <span>' + othTotal.toLocaleString() + ' measures · ' + srcData.length + ' sources</span></div>' +
+    '<div style="display:grid;grid-template-columns:24px 1fr 60px 55px;gap:8px;padding:5px 10px;background:rgba(0,0,0,0.2);font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)"><div>#</div><div>Source</div><div style="text-align:right">Measures</div><div style="text-align:right">Conv%</div></div>' +
     '<div class="exec-expand-tbody">' + rowsHtml + '</div></div>';
 }
 
