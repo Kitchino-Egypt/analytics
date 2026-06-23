@@ -5679,11 +5679,10 @@ function showPage(name) {
       if(name==='followup') { buildFollowupCharts(); renderFollowupTable(); }
       if(name==='daily') renderFollowupTable();
       if(name==='ceo') renderScorecard();
-      if(name==='yearcompare') renderYearCompare();
     }, 50);
-  } else {
-    if(name==='yearcompare') setTimeout(renderYearCompare, 50);
   }
+  // Year comparison page: always re-render (data-driven, no caching needed)
+  if(name==='yearcompare') setTimeout(renderYearCompare, 150);
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
@@ -7650,7 +7649,7 @@ document.addEventListener('fullscreenchange', function() {
 // YEAR COMPARISON PAGE (2025 vs 2026)
 // ============================================================
 function renderYearCompare() {
-  if (!ENGINE_READY || !ENGINE_CLEAN_ROWS) return;
+  if (!ENGINE_READY || !ENGINE_CLEAN_ROWS || !ENGINE_CLEAN_ROWS.length) { setTimeout(renderYearCompare, 500); return; }
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const H1 = ['January','February','March','April','May','June'];
 
