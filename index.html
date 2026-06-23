@@ -4002,7 +4002,7 @@ function buildCrossSalesCharts() {
   // KPI cards
   _s('cs-total', returning.length.toLocaleString());
   _s('cs-total-sub', returning.length + ' of ' + totalUnique + ' unique customers');
-  _s('cs-rate', returning.length + ' : ' + totalUnique);
+  _s('cs-rate', csRate);
 
   // Cross-sales by designer
   const desMap = {};
@@ -4028,7 +4028,7 @@ function buildCrossSalesCharts() {
   // Top designer
   if (desArr.length > 0) {
     _s('cs-top-designer', desArr[0].name);
-    _s('cs-top-designer-rate', desArr[0].multi + ' : ' + desArr[0].total + ' cross-sales rate');
+    _s('cs-top-designer-rate', desArr[0].rate + ' cross-sales rate');
   }
 
   // Cross-sales by area
@@ -4460,7 +4460,7 @@ function buildKPICharts() {
     const repeated  = Object.values(custCount).filter(n=>n>1).length;
     const csRate    = totalCust>0 ? +(repeated/totalCust*100).toFixed(1) : 0;
     const csArrow   = csRate >= 15 ? '↑' : '↓';
-    _kset('kpi-crosssell', csArrow + ' ' + repeated + ':' + totalCust, csRate>=15?'var(--green)':'var(--gold)');
+    _kset('kpi-crosssell', csArrow + ' ' + csRate, csRate>=15?'var(--green)':'var(--gold)');
     _kset('kpi-crosssell-sub', repeated + ' repeat of ' + totalCust + ' unique customers');
   }
 
@@ -6412,8 +6412,8 @@ function showPresDesignerModal(name) {
           var uc=d.uniqueCustomers||0;
           return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,64,0.18);border-radius:10px;padding:10px 16px;min-width:110px">'
             +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Cross-Sales Rate</div>'
-            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+Math.round(cs/100*uc)+' : '+uc+'</div>'
-            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">repeat of '+uc+' unique customers</div>'
+            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+cs+'</div>'
+            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+uc+' unique customers</div>'
             +'</div>';
         })()
       +'</div>'
