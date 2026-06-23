@@ -6273,17 +6273,20 @@ function showPaymentBreakdown() {
       + sorted.map(([k,v], i) => {
           const custs = [...custSets[k]].sort();
           const rowId = 'pbr_'+i;
-          const custRows = custs.map(c=>'<tr style="background:rgba(255,255,255,0.02)"><td colspan="5" style="padding:3px 6px 3px 28px;font-size:11px;color:var(--text2)">• '+c+'</td></tr>').join('');
-          return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="var e=document.getElementById(\''+rowId+'\');e.style.display=e.style.display===\'none\'?\'table-row-group\':\'none\'">'
+          const custRows = custs.length ? custs.map(c=>'<div style="padding:3px 0;font-size:11px;color:var(--text2)">\u2022 '+c+'</div>').join('') : '<div style="font-size:11px;color:var(--text3);padding:3px 0">No customers</div>';
+          const isOpen = {open:false};
+          return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="var r=document.getElementById(\''+rowId+'\');var a=document.getElementById(\'arr_'+rowId+'\');var open=r.style.display!==\'none\';r.style.display=open?\'none\':\'table-row\';a.textContent=open?\'\u25bc\':\'\u25b2\';">'
           +'<td style="padding:9px 6px;color:var(--text1);font-weight:600">'
           +'<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+colors[i]+';margin-right:8px"></span>'+k
-          +' <span style="font-size:9px;color:var(--text3);opacity:0.7">▼</span></td>'
+          +' <span id="arr_'+rowId+'" style="font-size:9px;color:var(--text3);opacity:0.7">\u25bc</span></td>'
           +'<td style="padding:9px 6px;text-align:center;color:'+colors[i]+';font-weight:700">'+v+'</td>'
           +'<td style="padding:9px 6px;text-align:center;color:var(--text2)">'+custSets[k].size+'</td>'
           +'<td style="padding:9px 6px;text-align:right;color:var(--green);font-weight:600">'+fmtEGP(egpVals[i])+'</td>'
           +'<td style="padding:9px 6px;text-align:center;color:var(--text3)">'+(v/total*100).toFixed(1)+'%</td>'
           +'</tr>'
-          +'<tbody id="'+rowId+'" style="display:none">'+custRows+'</tbody>';
+          +'<tr id="'+rowId+'" style="display:none;background:rgba(255,255,255,0.015)">'
+          +'<td colspan="5" style="padding:8px 6px 8px 28px">'+custRows+'</td>'
+          +'</tr>';
         }).join('')
       +'</tbody></table>'
       +'<div style="text-align:right;padding:10px 6px 0;font-size:11px;color:var(--text3)">'
