@@ -111,6 +111,7 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .kpi-4 { grid-template-columns:repeat(4,1fr); }
 .kpi-3 { grid-template-columns:repeat(3,1fr); }
 .kpi-6 { grid-template-columns:repeat(6,1fr); }
+.kpi-7 { grid-template-columns:repeat(7,1fr); }
 .kpi-card {
   background:var(--card); border:1px solid var(--border); border-radius:12px;
   padding:16px 18px; position:relative; overflow:hidden; transition:.2s;
@@ -319,7 +320,7 @@ tbody td.muted { color:var(--text2); }
 ::-webkit-scrollbar-thumb:hover { background:var(--text3); }
 
 /* RESPONSIVE */
-@media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } .kpi-7 { grid-template-columns:repeat(4,1fr); } }
 @media(max-width:900px) {
   /* Hide sidebar completely — shown only when JS adds .open class */
   .sidebar { display:none !important; }
@@ -896,6 +897,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="kpi"><span class="nav-icon">🔬</span>KPI Deep Dive</div>
     <div class="nav-item" data-page="forecast"><span class="nav-icon">🔮</span>Forecast &amp; Pipeline</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
+    <div class="nav-item" data-page="yearcompare"><span class="nav-icon">📊</span>2025 vs 2026</div>
   </div>
   <div class="sidebar-footer" style="display:none">
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Data Source</div>
@@ -1086,13 +1088,14 @@ if (_checkSession()) {
       <div style="font-size:42px;font-weight:900;color:var(--green);line-height:1" id="kpi-current-month">—</div>
     </div>
   </div>
-  <div class="kpi-grid kpi-6" id="exec-kpis">
+  <div class="kpi-grid kpi-7" id="exec-kpis">
     <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-sub-total">—</div></div>
     <div class="kpi-card"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub" id="kpi-sub-customers">—</div></div>
     <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub" id="kpi-sub-contracted">—</div></div>
     <div class="kpi-card gold"><div class="kpi-icon">💬</div><div class="kpi-label">In Discussion</div><div class="kpi-value" id="kpi-discussion">—</div><div class="kpi-sub" id="kpi-sub-discussion">—</div></div>
     <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-label">Cancelled</div><div class="kpi-value" id="kpi-cancelled">—</div><div class="kpi-sub" id="kpi-sub-cancelled">—</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">📈</div><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub" id="kpi-sub-rate">—</div></div>
+    <div class="kpi-card gold"><div class="kpi-icon">🔄</div><div class="kpi-label">Cross-Sales Rate</div><div class="kpi-value" id="kpi-exec-crosssales">—</div><div class="kpi-sub" id="kpi-exec-crosssales-sub">orders ÷ contracted customers</div></div>
   </div>
 
   <div class="chart-grid chart-32">
@@ -2878,6 +2881,8 @@ function updateKPICards() {
   set('kpi-discussion', s.discussion.toLocaleString());
   set('kpi-cancelled',  s.cancelled.toLocaleString());
   set('kpi-rate',       s.conversionRate + '%');
+  set('kpi-exec-crosssales',     s.crossSalesRatio > 0 ? s.crossSalesRatio + '×' : '—');
+  set('kpi-exec-crosssales-sub', s.contracted + ' orders ÷ ' + s.contractedCustomers + ' contracted customers');
   // CEO View dynamic KPIs
   set('ceo-kpi-total',             s.total.toLocaleString());
   set('ceo-kpi-unique',            s.uniqueCustomers.toLocaleString());
@@ -5625,7 +5630,7 @@ const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
   monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',
-  kpi:'KPI Deep Dive',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',ordertypes:'Order Types Analysis',crosssales:'Cross-Sales Analysis'
+  kpi:'KPI Deep Dive',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',crosssales:'Cross-Sales Analysis'
 };
 
 const PAGE_BUILDERS = {
@@ -5674,7 +5679,10 @@ function showPage(name) {
       if(name==='followup') { buildFollowupCharts(); renderFollowupTable(); }
       if(name==='daily') renderFollowupTable();
       if(name==='ceo') renderScorecard();
+      if(name==='yearcompare') renderYearCompare();
     }, 50);
+  } else {
+    if(name==='yearcompare') setTimeout(renderYearCompare, 50);
   }
 }
 
@@ -6262,16 +6270,21 @@ function showPaymentBreakdown() {
       +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:right">EGP Amount</th>'
       +'<th style="padding:8px 6px;color:var(--text3);font-weight:600;text-align:center">%</th>'
       +'</tr></thead><tbody>'
-      + sorted.map(([k,v], i) =>
-          '<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'
+      + sorted.map(([k,v], i) => {
+          const custs = [...custSets[k]].sort();
+          const rowId = 'pbr_'+i;
+          const custRows = custs.map(c=>'<tr style="background:rgba(255,255,255,0.02)"><td colspan="5" style="padding:3px 6px 3px 28px;font-size:11px;color:var(--text2)">• '+c+'</td></tr>').join('');
+          return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="var e=document.getElementById(\''+rowId+'\');e.style.display=e.style.display===\'none\'?\'table-row-group\':\'none\'">'
           +'<td style="padding:9px 6px;color:var(--text1);font-weight:600">'
-          +'<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+colors[i]+';margin-right:8px;flex-shrink:0"></span>'+k+'</td>'
+          +'<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+colors[i]+';margin-right:8px"></span>'+k
+          +' <span style="font-size:9px;color:var(--text3);opacity:0.7">▼</span></td>'
           +'<td style="padding:9px 6px;text-align:center;color:'+colors[i]+';font-weight:700">'+v+'</td>'
           +'<td style="padding:9px 6px;text-align:center;color:var(--text2)">'+custSets[k].size+'</td>'
           +'<td style="padding:9px 6px;text-align:right;color:var(--green);font-weight:600">'+fmtEGP(egpVals[i])+'</td>'
           +'<td style="padding:9px 6px;text-align:center;color:var(--text3)">'+(v/total*100).toFixed(1)+'%</td>'
           +'</tr>'
-        ).join('')
+          +'<tbody id="'+rowId+'" style="display:none">'+custRows+'</tbody>';
+        }).join('')
       +'</tbody></table>'
       +'<div style="text-align:right;padding:10px 6px 0;font-size:11px;color:var(--text3)">'
       +'Total collected: <strong style="color:var(--green)">'
@@ -7630,10 +7643,203 @@ document.addEventListener('fullscreenchange', function() {
     if (btn) { btn.textContent = '⛶ Fullscreen'; btn.classList.remove('active'); }
     if (sidebar) { sidebar.style.removeProperty('display'); if (sidebar._pd) sidebar.style.display = sidebar._pd; }
     if (topbar)  { topbar.style.removeProperty('display');  if (topbar._pd)  topbar.style.display  = topbar._pd; }
+// ============================================================
+// YEAR COMPARISON PAGE (2025 vs 2026)
+// ============================================================
+function renderYearCompare() {
+  if (!ENGINE_READY || !ENGINE_CLEAN_ROWS) return;
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const H1 = ['January','February','March','April','May','June'];
+
+  const rows25 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2025');
+  const rows26 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2026');
+
+  function kpis(rows) {
+    const total = rows.length;
+    const contracted = rows.filter(r => r._contracted).length;
+    const custs = new Set(rows.map(r=>(r.customer||'').trim().toLowerCase()).filter(Boolean));
+    const cancelled = rows.filter(r => r._cancelled).length;
+    const contrCusts = new Set(rows.filter(r=>r._contracted).map(r=>(r.customer||'').trim().toLowerCase()).filter(Boolean));
+    const cvr = total > 0 ? +(contracted/total*100).toFixed(1) : 0;
+    const crossSales = contrCusts.size > 0 ? +(contracted/contrCusts.size).toFixed(2) : 0;
+    return { total, contracted, custs: custs.size, cancelled, cvr, crossSales, contrCusts: contrCusts.size };
+  }
+
+  const k25 = kpis(rows25);
+  const k26 = kpis(rows26.filter(r => H1.includes(r._monthName))); // H1 only for fair compare
+  const k25h1 = kpis(rows25.filter(r => H1.includes(r._monthName))); // H1 2025 for fair compare
+
+  function delta(a, b, pct) {
+    const d = b - a;
+    const sign = d >= 0 ? '+' : '';
+    if (pct) return sign + d.toFixed(1) + 'pp';
+    return sign + (typeof b === 'number' && !Number.isInteger(b) ? d.toFixed(2) : Math.round(d));
+  }
+  function deltaColor(a, b, inverse) {
+    const better = inverse ? b < a : b > a;
+    return better ? 'var(--green)' : (b === a ? 'var(--text3)' : 'var(--red)');
+  }
+
+  const metrics = [
+    { label:'Total Measures',     v25: k25h1.total,       v26: k26.total,       fmt: v=>v.toLocaleString(), inverse:false },
+    { label:'Unique Customers',   v25: k25h1.custs,        v26: k26.custs,        fmt: v=>v.toLocaleString(), inverse:false },
+    { label:'Contracted Orders',  v25: k25h1.contracted,   v26: k26.contracted,   fmt: v=>v.toLocaleString(), inverse:false },
+    { label:'Conversion Rate',    v25: k25h1.cvr,          v26: k26.cvr,          fmt: v=>v+'%', inverse:false, pct:true },
+    { label:'Contracted Customers',v25: k25h1.contrCusts,  v26: k26.contrCusts,  fmt: v=>v.toLocaleString(), inverse:false },
+    { label:'Cancellation Rate',  v25: +(k25h1.cancelled/Math.max(k25h1.total,1)*100).toFixed(1), v26: +(k26.cancelled/Math.max(k26.total,1)*100).toFixed(1), fmt: v=>v+'%', inverse:true, pct:true },
+    { label:'Cross-Sales Rate',   v25: k25h1.crossSales,   v26: k26.crossSales,   fmt: v=>v+'×', inverse:false },
+    { label:'Full Year 2025 Total', v25: k25.total,        v26: null,             fmt: v=>v.toLocaleString(), inverse:false, note:true }
+  ];
+
+  // KPI cards
+  const grid = document.getElementById('yc-kpi-grid');
+  if (grid) {
+    grid.innerHTML = metrics.filter(m=>!m.note).map(m => {
+      const d = delta(m.v25, m.v26, m.pct);
+      const dc = deltaColor(m.v25, m.v26, m.inverse);
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">'
+        +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">'+m.label+'</div>'
+        +'<div style="display:flex;gap:10px;align-items:flex-end">'
+          +'<div style="flex:1">'
+            +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2025 H1</div>'
+            +'<div style="font-size:22px;font-weight:800;color:var(--text1)">'+m.fmt(m.v25)+'</div>'
+          +'</div>'
+          +'<div style="font-size:18px;color:var(--text3)">→</div>'
+          +'<div style="flex:1;text-align:right">'
+            +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2026 H1</div>'
+            +'<div style="font-size:22px;font-weight:800;color:var(--green)">'+m.fmt(m.v26)+'</div>'
+          +'</div>'
+        +'</div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+d+' vs 2025 H1</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  // Monthly measures chart
+  const monthlyData = (rows, yr) => MONTHS.map(mn => {
+    const found = rows.filter(r => r._monthName === mn);
+    return { total: found.length, contracted: found.filter(r=>r._contracted).length };
+  });
+  const m25 = monthlyData(rows25);
+  const m26 = monthlyData(rows26);
+
+  makeChart('yc-chart-measures', {
+    type: 'bar',
+    data: {
+      labels: MONTHS.map(m=>m.substr(0,3)),
+      datasets: [
+        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(0,230,118,0.35)', borderColor:'#00e676', borderWidth:1, borderRadius:3 },
+        { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(64,196,255,0.35)', borderColor:'#40c4ff', borderWidth:1, borderRadius:3 }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#9e9ec8',font:{size:10}}}, tooltip:{backgroundColor:'#1c1c2e',borderColor:'#252545',borderWidth:1,titleColor:'#e8eaf6',bodyColor:'#9e9ec8'} },
+      scales:{
+        x:{ticks:{color:'#9e9ec8',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},
+        y:{ticks:{color:'#9e9ec8',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+
+  // Monthly CVR chart
+  makeChart('yc-chart-cvr', {
+    type: 'line',
+    data: {
+      labels: MONTHS.map(m=>m.substr(0,3)),
+      datasets: [
+        { label:'2025 CVR%', data: m25.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#00e676', backgroundColor:'rgba(0,230,118,0.08)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00e676', tension:0.3, fill:true, spanGaps:true },
+        { label:'2026 CVR%', data: m26.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#40c4ff', backgroundColor:'rgba(64,196,255,0.08)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#40c4ff', tension:0.3, fill:true, spanGaps:true }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{labels:{color:'#9e9ec8',font:{size:10}}}, tooltip:{backgroundColor:'#1c1c2e',borderColor:'#252545',borderWidth:1,titleColor:'#e8eaf6',bodyColor:'#9e9ec8',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+'%'}} },
+      scales:{
+        x:{ticks:{color:'#9e9ec8',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},
+        y:{min:0,max:100,ticks:{color:'#9e9ec8',font:{size:9},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}
+      }
+    }
+  });
+
+  // Designer comparison table
+  const desMap = {};
+  [...rows25,...rows26].forEach(r => {
+    const d = r.designer||'Unknown'; if(!d||d==='Unknown') return;
+    if(!desMap[d]) desMap[d]={name:d,t25:0,c25:0,t26:0,c26:0};
+    if(r._year==='2025'){desMap[d].t25++;if(r._contracted)desMap[d].c25++;}
+    else{desMap[d].t26++;if(r._contracted)desMap[d].c26++;}
+  });
+  const desArr = Object.values(desMap)
+    .filter(d=>d.t25>0||d.t26>0)
+    .sort((a,b)=>(b.t25+b.t26)-(a.t25+a.t26));
+
+  const tbl = document.getElementById('yc-designer-table');
+  if (tbl) {
+    tbl.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr style="border-bottom:1px solid var(--border)">'
+      +'<th style="padding:8px 6px;color:var(--text3);text-align:left">Designer</th>'
+      +'<th style="padding:8px 6px;color:#00e676;text-align:center">2025 Measures</th>'
+      +'<th style="padding:8px 6px;color:#00e676;text-align:center">2025 CVR</th>'
+      +'<th style="padding:8px 6px;color:#40c4ff;text-align:center">2026 Measures</th>'
+      +'<th style="padding:8px 6px;color:#40c4ff;text-align:center">2026 CVR</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);text-align:center">Δ Measures</th>'
+      +'<th style="padding:8px 6px;color:var(--text3);text-align:center">Δ CVR</th>'
+      +'</tr></thead><tbody>'
+      + desArr.map(d => {
+          const cvr25 = d.t25>0?+(d.c25/d.t25*100).toFixed(1):0;
+          const cvr26 = d.t26>0?+(d.c26/d.t26*100).toFixed(1):0;
+          const dm = d.t26 - d.t25;
+          const dc = +(cvr26 - cvr25).toFixed(1);
+          const dmClr = dm>=0?'var(--green)':'var(--red)';
+          const dcClr = dc>=0?'var(--green)':'var(--red)';
+          return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04)">'
+            +'<td style="padding:8px 6px;color:var(--text1);font-weight:600">'+d.name+'</td>'
+            +'<td style="padding:8px 6px;text-align:center;color:#00e676">'+d.t25+'</td>'
+            +'<td style="padding:8px 6px;text-align:center;color:#00e676">'+cvr25+'%</td>'
+            +'<td style="padding:8px 6px;text-align:center;color:#40c4ff">'+d.t26+'</td>'
+            +'<td style="padding:8px 6px;text-align:center;color:#40c4ff">'+cvr26+'%</td>'
+            +'<td style="padding:8px 6px;text-align:center;color:'+dmClr+';font-weight:700">'+(dm>=0?'+':'')+dm+'</td>'
+            +'<td style="padding:8px 6px;text-align:center;color:'+dcClr+';font-weight:700">'+(dc>=0?'+':'')+dc+'pp</td>'
+            +'</tr>';
+        }).join('')
+      +'</tbody></table>';
+  }
+}
+
+
     if (wrap)    { wrap.style.marginLeft = wrap._ml||''; wrap.style.width = wrap._w||''; }
     document.body.style.overflow = '';
   }
 });
 </script>
+
+<div class="page" id="page-yearcompare">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:var(--text1)">2025 vs 2026 — Year Comparison</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:2px">Side-by-side KPI comparison · January–June H1 for 2026</div>
+    </div>
+  </div>
+
+  <!-- KPI Comparison Cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="yc-kpi-grid"></div>
+
+  <!-- Monthly trend comparison chart -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly Measures — 2025 vs 2026</div>
+      <canvas id="yc-chart-measures" height="220"></canvas>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly CVR % — 2025 vs 2026</div>
+      <canvas id="yc-chart-cvr" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Designer comparison table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
+    <div id="yc-designer-table" style="overflow-x:auto"></div>
+  </div>
+</div>
 </body>
 </html>
