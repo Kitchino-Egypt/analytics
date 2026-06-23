@@ -7625,3 +7625,10 @@ document.addEventListener('fullscreenchange', function() {
     if (btn) { btn.textContent = '⛶ Fullscreen'; btn.classList.remove('active'); }
     if (sidebar) { sidebar.style.removeProperty('display'); if (sidebar._pd) sidebar.style.display = sidebar._pd; }
     if (topbar)  { topbar.style.removeProperty('display');  if (topbar._pd)  topbar.style.display  = topbar._pd; }
+    if (wrap)    { wrap.style.marginLeft = wrap._ml||''; wrap.style.width = wrap._w||''; }
+    document.body.style.overflow = '';
+  }
+});
+</script>
+</body>
+</html>
