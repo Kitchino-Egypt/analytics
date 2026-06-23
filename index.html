@@ -3998,11 +3998,15 @@ function buildCrossSalesCharts() {
   const returning = Object.values(custData).filter(c => c.orders.length > 1);
   const totalUnique = Object.keys(custData).length;
   const csRate = totalUnique > 0 ? (returning.length / totalUnique * 100).toFixed(1) : 0;
+  // Cross-sales ratio: contracted orders / contracted unique customers
+  const csContrOrders = rows.filter(r => r._contracted).length;
+  const csContrCusts  = new Set(rows.filter(r => r._contracted).map(r => (r.customer||'').trim().toLowerCase()).filter(Boolean)).size;
+  const csRatio = csContrCusts > 0 ? (csContrOrders / csContrCusts).toFixed(2) : '0.00';
 
   // KPI cards
   _s('cs-total', returning.length.toLocaleString());
   _s('cs-total-sub', returning.length + ' of ' + totalUnique + ' unique customers');
-  _s('cs-rate', csRate);
+  _s('cs-rate', csRatio + '×');
 
   // Cross-sales by designer
   const desMap = {};
@@ -4460,7 +4464,7 @@ function buildKPICharts() {
     const repeated  = Object.values(custCount).filter(n=>n>1).length;
     const csRate    = totalCust>0 ? +(repeated/totalCust*100).toFixed(1) : 0;
     const csArrow   = csRate >= 15 ? '↑' : '↓';
-    _kset('kpi-crosssell', csArrow + ' ' + csRate, csRate>=15?'var(--green)':'var(--gold)');
+    _kset('kpi-crosssell', KITCHINO_STATE.crossSalesRatio + '×', KITCHINO_STATE.crossSalesRatio >= 1.5 ? 'var(--green)' : 'var(--gold)');
     _kset('kpi-crosssell-sub', repeated + ' repeat of ' + totalCust + ' unique customers');
   }
 
@@ -6412,8 +6416,8 @@ function showPresDesignerModal(name) {
           var uc=d.uniqueCustomers||0;
           return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,64,0.18);border-radius:10px;padding:10px 16px;min-width:110px">'
             +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Cross-Sales Rate</div>'
-            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+cs+'</div>'
-            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+uc+' unique customers</div>'
+            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+(d.contractedCustomers>0?(d.contracted/d.contractedCustomers).toFixed(2)+'×':'N/A')+'</div>'
+            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+d.contracted+' orders ÷ '+d.contractedCustomers+' contracted customers</div>'
             +'</div>';
         })()
       +'</div>'
@@ -6912,7 +6916,8 @@ function buildPresentationSlides() {
         var tc = tf.filter(function(r){return r._contracted;}).length;
         teamMonthly.push({month:mn.substr(0,3),cvr:Math.round(tc/tf.length*100)});
       });
-      _presDesignerData[d.name] = {name:d.name,total:d.total,contracted:d.contracted,rate:d.rate,ab:ab,monthly:monthlyArr,teamMonthly:teamMonthly,teamAvg:teamAvg,crossSales:_desCrossRate[d.name]||0,uniqueCustomers:(_desCustMap[d.name]?_desCustMap[d.name].size:0)};
+      var _cCusts=new Set();rows25.filter(function(r){return r.designer===d.name&&r._contracted;}).forEach(function(r){var k=(r.customer||'').trim().toLowerCase();if(k)_cCusts.add(k);});
+      _presDesignerData[d.name] = {name:d.name,total:d.total,contracted:d.contracted,rate:d.rate,ab:ab,monthly:monthlyArr,teamMonthly:teamMonthly,teamAvg:teamAvg,crossSales:_desCrossRate[d.name]||0,uniqueCustomers:(_desCustMap[d.name]?_desCustMap[d.name].size:0),contractedCustomers:_cCusts.size};
       var dSafe = d.name.replace(/'/g,"\\'");
       return '<div style="border-bottom:1px solid rgba(255,255,255,0.05)">'
         +'<div onclick="showPresDesignerModal(\''+dSafe+'\')" '
