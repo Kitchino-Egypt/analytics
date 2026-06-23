@@ -2264,6 +2264,14 @@ function engine_parseDate(val) {
 // ─────────────────────────────────────────────────────────────────────────────
 const _VALID_STATUSES = new Set(['تعاقد', 'مناقشة', 'الغاء', '']);
 
+// Designers excluded from ranking/rating/tier comparisons.
+// They are still counted in all KPIs, CVR totals, areas, and measure counts.
+const RANKING_EXCLUDED = ['Mohamed Hatem', 'Ahmed Alfy', 'Sameh Salem', 'C.S'];
+function isRankingExcluded(name) {
+  const n = (name || '').trim().toLowerCase();
+  return RANKING_EXCLUDED.some(e => e.trim().toLowerCase() === n);
+}
+
 function engine_cleanRows(rawRows) {
   // Reset quality report
   ENGINE_QUALITY_REPORT = {
@@ -3074,7 +3082,9 @@ function renderExecTiers() {
   var grid = document.getElementById('exec-tiers-grid');
   var meta = document.getElementById('exec-tiers-meta');
   if (!grid) return;
-  var fullData = (KITCHINO_STATE.allDesignerData || []).filter(function(d){return d.total >= 3;});
+  var fullData = (KITCHINO_STATE.allDesignerData || []).filter(function(d){
+    return d.total >= 3 && !isRankingExcluded(d.name);
+  });
   if (!ENGINE_READY || fullData.length < 3) {
     grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);grid-column:1/-1">Connect Google Sheets to generate performance tiers</div>';
     return;
@@ -3350,7 +3360,7 @@ function buildDesignerTiers() {
   const grid = document.getElementById('designer-tiers-grid');
   if (!grid) return;
 
-  const fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total >= 3);
+  const fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total >= 3 && !isRankingExcluded(d.name));
   if (!ENGINE_READY || fullData.length < 3) {
     grid.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);grid-column:1/-1">Connect Google Sheets to generate performance tiers</div>';
     return;
@@ -3484,8 +3494,9 @@ function buildDesignerCharts() {
   }
 
   // Full designer dataset for ranking — exclusively from engine
+  // RANKING_EXCLUDED designers are excluded from all ranking/comparison charts
   const yearF = KITCHINO_STATE.year;
-  let fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
+  let fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0 && !isRankingExcluded(d.name));
 
   const totalAll = fullData.reduce((s,d)=>s+d.total,0);
   const contrAll = fullData.reduce((s,d)=>s+d.contracted,0);
@@ -3991,7 +4002,7 @@ function buildCrossSalesCharts() {
   // KPI cards
   _s('cs-total', returning.length.toLocaleString());
   _s('cs-total-sub', returning.length + ' of ' + totalUnique + ' unique customers');
-  _s('cs-rate', csRate + '%');
+  _s('cs-rate', returning.length + ' : ' + totalUnique);
 
   // Cross-sales by designer
   const desMap = {};
@@ -4017,7 +4028,7 @@ function buildCrossSalesCharts() {
   // Top designer
   if (desArr.length > 0) {
     _s('cs-top-designer', desArr[0].name);
-    _s('cs-top-designer-rate', desArr[0].rate + '% cross-sales rate');
+    _s('cs-top-designer-rate', desArr[0].multi + ' : ' + desArr[0].total + ' cross-sales rate');
   }
 
   // Cross-sales by area
@@ -4449,7 +4460,7 @@ function buildKPICharts() {
     const repeated  = Object.values(custCount).filter(n=>n>1).length;
     const csRate    = totalCust>0 ? +(repeated/totalCust*100).toFixed(1) : 0;
     const csArrow   = csRate >= 15 ? '↑' : '↓';
-    _kset('kpi-crosssell', csArrow + ' ' + csRate + '%', csRate>=15?'var(--green)':'var(--gold)');
+    _kset('kpi-crosssell', csArrow + ' ' + repeated + ':' + totalCust, csRate>=15?'var(--green)':'var(--gold)');
     _kset('kpi-crosssell-sub', repeated + ' repeat of ' + totalCust + ' unique customers');
   }
 
@@ -5072,12 +5083,18 @@ function renderExecAreaCard(overrideRows) {
   const subtitle = overrideRows ? ' (this designer)' : '';
   const totalContracted = areaData.reduce((s,a) => s+(a.contracted||0), 0);
   if (totEl) totEl.textContent = areaData.length + ' areas · ' + totalAll.toLocaleString() + ' measures · ' + totalContracted.toLocaleString() + ' contracted' + subtitle;
-  if (listEl) listEl.innerHTML = areaData.slice(0,8).map((a,i) => {
+
+  const topAreas  = areaData.slice(0, 5);
+  const restAreas = areaData.slice(5);
+  const otherTotal      = restAreas.reduce((s,a) => s + a.total, 0);
+  const otherContracted = restAreas.reduce((s,a) => s + (a.contracted||0), 0);
+
+  const topRows = topAreas.map((a,i) => {
     const barPct    = maxCount > 0 ? Math.round(a.total / maxCount * 100) : 0;
     const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const cvr       = a.total > 0 ? +(a.contracted/a.total*100).toFixed(1) : 0;
     const cvrColor  = cvr >= 30 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff5252';
-    const safeArea  = (a.area||'').replace(/'/g, "\'");
+    const safeArea  = (a.area||'').replace(/'/g, "\\'");
     return `<div class="exec-list-row" onclick="drillArea('${safeArea}', this)">
       <div class="exec-rank ${rankClass}">${i+1}</div>
       <div class="exec-item-info">
@@ -5090,7 +5107,28 @@ function renderExecAreaCard(overrideRows) {
         <div class="exec-item-rate" style="color:${cvrColor}">${cvr}% conv</div>
       </div>
     </div>`;
-  }).join('');
+  });
+
+  // "Other" row — all remaining areas beyond top 8
+  const otherRow = restAreas.length > 0 ? (() => {
+    const barPct   = maxCount > 0 ? Math.round(otherTotal / maxCount * 100) : 0;
+    const cvr      = otherTotal > 0 ? +(otherContracted/otherTotal*100).toFixed(1) : 0;
+    const cvrColor = cvr >= 30 ? '#00e676' : cvr >= 20 ? '#ffd740' : '#ff5252';
+    return `<div class="exec-list-row" style="opacity:.8;border-top:1px dashed var(--border);margin-top:4px;padding-top:6px">
+      <div class="exec-rank" style="background:rgba(255,255,255,0.04);color:var(--text3);font-size:9px">…</div>
+      <div class="exec-item-info">
+        <div class="exec-item-name" style="color:var(--text3)">Other <span style="font-size:10px;font-weight:400">(${restAreas.length} areas)</span></div>
+        <div class="exec-item-bar"><div class="exec-item-fill" style="width:${barPct}%;background:rgba(255,255,255,0.15)"></div></div>
+      </div>
+      <div class="exec-item-right">
+        <div class="exec-item-count">${otherTotal.toLocaleString()} <span style="font-size:10px;font-weight:400;color:var(--text3)">visits</span></div>
+        <div style="font-size:10px;font-weight:700;color:#00e676">${otherContracted.toLocaleString()} <span style="font-weight:400;color:var(--text3)">contracted</span></div>
+        <div class="exec-item-rate" style="color:${cvrColor}">${cvr}% conv</div>
+      </div>
+    </div>`;
+  })() : '';
+
+  if (listEl) listEl.innerHTML = topRows.join('') + otherRow;
   if (detailEl) detailEl.innerHTML = '';
 }
 
@@ -5232,7 +5270,7 @@ function drillSourceOthers(label, rowEl) {
 }
 
 function renderTopPerformers() {
-  const allD = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
+  const allD = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0 && !isRankingExcluded(d.name));
 
   const placeholder = '<div style="font-size:12px;color:var(--text3);padding:12px 0">Connect Google Sheets to load designer data</div>';
 
@@ -6374,8 +6412,8 @@ function showPresDesignerModal(name) {
           var uc=d.uniqueCustomers||0;
           return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,215,64,0.18);border-radius:10px;padding:10px 16px;min-width:110px">'
             +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Cross-Sales Rate</div>'
-            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+cs+'%</div>'
-            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+uc+' unique customers</div>'
+            +'<div style="font-size:22px;font-weight:900;color:'+csCol+'">'+Math.round(cs/100*uc)+' : '+uc+'</div>'
+            +'<div style="font-size:10px;color:var(--text3);margin-top:2px">repeat of '+uc+' unique customers</div>'
             +'</div>';
         })()
       +'</div>'
@@ -7587,10 +7625,3 @@ document.addEventListener('fullscreenchange', function() {
     if (btn) { btn.textContent = '⛶ Fullscreen'; btn.classList.remove('active'); }
     if (sidebar) { sidebar.style.removeProperty('display'); if (sidebar._pd) sidebar.style.display = sidebar._pd; }
     if (topbar)  { topbar.style.removeProperty('display');  if (topbar._pd)  topbar.style.display  = topbar._pd; }
-    if (wrap)    { wrap.style.marginLeft = wrap._ml||''; wrap.style.width = wrap._w||''; }
-    document.body.style.overflow = '';
-  }
-});
-</script>
-</body>
-</html>
