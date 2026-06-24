@@ -2210,15 +2210,21 @@ if (_checkSession()) {
 <script>
 (function() {
   function _tryRenderYC() {
+    // renderYearCompare is a global function declaration -- accessible once main script runs
     if (typeof renderYearCompare !== 'function') { setTimeout(_tryRenderYC, 300); return; }
-    if (!window.ENGINE_READY || !window.ENGINE_CLEAN_ROWS || !window.ENGINE_CLEAN_ROWS.length) { setTimeout(_tryRenderYC, 300); return; }
+    // ENGINE_READY is a 'let' var -- NOT on window, but renderYearCompare handles it internally
     renderYearCompare();
   }
   document.addEventListener('click', function(e) {
-    var nav = e.target.closest ? e.target.closest('[data-page="yearcompare"]') : null;
-    if (nav) setTimeout(_tryRenderYC, 200);
+    var t = e.target, nav = null;
+    while (t && t !== document) {
+      if (t.dataset && t.dataset.page === 'yearcompare') { nav = t; break; }
+      t = t.parentElement;
+    }
+    if (nav) setTimeout(_tryRenderYC, 250);
   });
-  setTimeout(_tryRenderYC, 800);
+  // Auto-render if yearcompare is the active page on load
+  setTimeout(_tryRenderYC, 1200);
 })();
 </script>
 iv>
@@ -7692,6 +7698,11 @@ document.addEventListener('fullscreenchange', function() {
     if (btn) { btn.textContent = '⛶ Fullscreen'; btn.classList.remove('active'); }
     if (sidebar) { sidebar.style.removeProperty('display'); if (sidebar._pd) sidebar.style.display = sidebar._pd; }
     if (topbar)  { topbar.style.removeProperty('display');  if (topbar._pd)  topbar.style.display  = topbar._pd; }
+    if (wrap)    { wrap.style.marginLeft = wrap._ml||''; wrap.style.width = wrap._w||''; }
+    document.body.style.overflow = '';
+  }
+});
+
 // ============================================================
 // YEAR COMPARISON PAGE (2025 vs 2026)
 // ============================================================
@@ -7863,11 +7874,5 @@ function renderYearCompare() {
     if(_eg) _eg.innerHTML='<div style="color:red;padding:10px">Error: '+e.message+'</div>';
   }
 }
-
-
-    if (wrap)    { wrap.style.marginLeft = wrap._ml||''; wrap.style.width = wrap._w||''; }
-    document.body.style.overflow = '';
-  }
-});
 </script></body>
 </html>
