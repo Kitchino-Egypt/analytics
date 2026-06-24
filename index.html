@@ -7681,7 +7681,13 @@ document.addEventListener('fullscreenchange', function() {
 // YEAR COMPARISON PAGE (2025 vs 2026)
 // ============================================================
 function renderYearCompare() {
-  if (!ENGINE_READY || !ENGINE_CLEAN_ROWS || !ENGINE_CLEAN_ROWS.length) { setTimeout(renderYearCompare, 500); return; }
+  var _dbg = document.getElementById("yc-kpi-grid");
+  if (_dbg) _dbg.innerHTML = "<div style='color:#40c4ff;padding:10px'>Loading...</div>";
+  if (!ENGINE_READY || !ENGINE_CLEAN_ROWS || !ENGINE_CLEAN_ROWS.length) {
+    if (_dbg) _dbg.innerHTML = "<div style='color:orange;padding:10px'>Engine not ready, retrying...</div>";
+    setTimeout(renderYearCompare, 500); return;
+  }
+  try {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const H1 = ['January','February','March','April','May','June'];
 
@@ -7836,6 +7842,10 @@ function renderYearCompare() {
             +'</tr>';
         }).join('')
       +'</tbody></table>';
+  }
+  } catch(e) {
+    var _eg=document.getElementById('yc-kpi-grid');
+    if(_eg) _eg.innerHTML='<div style="color:red;padding:10px">Error: '+e.message+'</div>';
   }
 }
 
