@@ -7,25 +7,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #f5f5fb;
-  --bg2: #eeeef5;
+  --bg: #f5f6fa;
+  --bg2: #ececf2;
   --card: #ffffff;
-  --card2: #f2f2fa;
-  --border: #d0d0e8;
-  --green: #00c853;
-  --green2: #00a047;
-  --green3: #008040;
+  --card2: #f8f9fc;
+  --border: #e2e4ef;
+  --green: #1e8e3e;
+  --green2: #2da44e;
+  --green3: #137333;
   --teal: #00897b;
-  --text: #1a1a3c;
-  --text2: #4a4a88;
-  --text3: #9090b8;
-  --gold: #ffd740;
-  --red: #ff5252;
-  --blue: #40c4ff;
+  --text: #202124;
+  --text2: #5f6368;
+  --text3: #9aa0a6;
+  --gold: #f9ab00;
+  --red: #d93025;
+  --blue: #1a73e8;
   --purple: #ce93d8;
   --sidebar-w: 240px;
 }
 * { margin:0; padding:0; 
+
+/* Card elevation - Contracts Dashboard style */
+.page-content div[style*="border-radius:12px"] { box-shadow: 0 1px 8px rgba(0,0,60,0.07); }
+.page-content div[style*="border-radius:16px"] { box-shadow: 0 1px 8px rgba(0,0,60,0.07); }
 /* === DAYLIGHT MODE: dark sidebar + light content === */
 .sidebar {
   background: #1e1e30 !important;
@@ -36,7 +40,7 @@
 .sidebar .nav-label { color: #5c5c8a !important; }
 .sidebar .nav-item  { color: #a0a0c0 !important; }
 .sidebar .nav-item:hover { background: rgba(0,200,83,.09) !important; color: #e0e0f0 !important; }
-.sidebar .nav-item.active { color: #00c853 !important; border-left-color: #00c853 !important; background: rgba(0,200,83,.13) !important; }
+.sidebar .nav-item.active { color: #2da44e !important; border-left-color: #2da44e !important; background: rgba(46,164,78,.15) !important; }
 .sidebar .nav-badge { background: var(--red) !important; color: #fff !important; }
 box-sizing:border-box; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
@@ -87,7 +91,7 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 
 /* TOP BAR */
 .topbar {
-  background:var(--card); border-bottom:1px solid var(--border);
+  background:var(--card); border-bottom:1px solid var(--border); box-shadow:0 1px 6px rgba(0,0,60,0.06);
   padding:0 24px; height:58px; display:flex; align-items:center; gap:16px;
   position:sticky; top:0; z-index:50;
 }
@@ -4869,7 +4873,7 @@ function buildCEOCharts() {
     data:{
       labels,
       datasets:[
-        {label:'Measures',data:_md.map(m=>m.total),borderColor:GREEN,backgroundColor:'rgba(0,168,84,0.12)',fill:true,tension:.4,pointRadius:3},
+        {label:'Measures',data:_md.map(m=>m.total),borderColor:GREEN,backgroundColor:'rgba(30,142,62,0.1)',fill:true,tension:.4,pointRadius:3},
         {label:'Contracted',data:_md.map(m=>m.contracted),borderColor:TEAL,backgroundColor:'rgba(29,233,182,0.05)',fill:true,tension:.4,pointRadius:3}
       ]
     },
@@ -7806,7 +7810,7 @@ function renderYearCompare() {
     data: {
       labels: MONTHS.map(m=>m.substr(0,3)),
       datasets: [
-        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(0,168,84,0.55)', borderColor:'#00a854', borderWidth:1, borderRadius:3 },
+        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(30,142,62,0.6)', borderColor:'#1e8e3e', borderWidth:1, borderRadius:3 },
         { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(0,140,220,0.45)', borderColor:'#008cdc', borderWidth:1, borderRadius:3 }
       ]
     },
@@ -7825,8 +7829,8 @@ function renderYearCompare() {
     data: {
       labels: MONTHS.map(m=>m.substr(0,3)),
       datasets: [
-        { label:'2025 CVR%', data: m25.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#00e676', backgroundColor:'rgba(0,168,84,0.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00e676', tension:0.3, fill:true, spanGaps:true },
-        { label:'2026 CVR%', data: m26.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#40c4ff', backgroundColor:'rgba(0,140,220,0.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#40c4ff', tension:0.3, fill:true, spanGaps:true }
+        { label:'2025 CVR%', data: m25.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#00e676', backgroundColor:'rgba(30,142,62,0.1)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00e676', tension:0.3, fill:true, spanGaps:true },
+        { label:'2026 CVR%', data: m26.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#40c4ff', backgroundColor:'rgba(26,115,232,0.1)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#40c4ff', tension:0.3, fill:true, spanGaps:true }
       ]
     },
     options: { responsive:true, maintainAspectRatio:false,
