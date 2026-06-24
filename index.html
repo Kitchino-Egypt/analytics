@@ -2206,7 +2206,22 @@ if (_checkSession()) {
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
     <div id="yc-designer-table" style="overflow-x:auto"></div>
   </div>
-</div>
+</d
+<script>
+(function() {
+  function _tryRenderYC() {
+    if (typeof renderYearCompare !== 'function') { setTimeout(_tryRenderYC, 300); return; }
+    if (!window.ENGINE_READY || !window.ENGINE_CLEAN_ROWS || !window.ENGINE_CLEAN_ROWS.length) { setTimeout(_tryRenderYC, 300); return; }
+    renderYearCompare();
+  }
+  document.addEventListener('click', function(e) {
+    var nav = e.target.closest ? e.target.closest('[data-page="yearcompare"]') : null;
+    if (nav) setTimeout(_tryRenderYC, 200);
+  });
+  setTimeout(_tryRenderYC, 800);
+})();
+</script>
+iv>
 
 
 <script>
