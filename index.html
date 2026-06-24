@@ -132,24 +132,28 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .kpi-card {
   background:var(--card); border:1px solid var(--border); border-radius:12px;
   padding:16px 18px; position:relative; overflow:hidden; transition:.2s;
+  border-left:4px solid var(--border);
 }
-.kpi-card:hover { border-color:var(--green); transform:translateY(-2px); }
-.kpi-card::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:linear-gradient(90deg,var(--green),var(--teal));
-}
+.kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,60,0.10); }
+.kpi-card::before { display:none; }
 .kpi-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
 .kpi-value { font-size:26px; font-weight:800; color:var(--text); line-height:1; }
 .kpi-sub { font-size:11px; color:var(--text2); margin-top:6px; display:flex; align-items:center; gap:4px; }
 .kpi-up { color:var(--green); }
 .kpi-down { color:var(--red); }
-.kpi-icon { position:absolute; top:14px; right:16px; font-size:22px; opacity:.15; }
-.kpi-card.green::before { background:linear-gradient(90deg,var(--green),var(--green2)); }
-.kpi-card.gold::before { background:linear-gradient(90deg,var(--gold),#ffab40); }
-.kpi-card.red::before { background:linear-gradient(90deg,var(--red),#ff8a80); }
-.kpi-card.blue::before { background:linear-gradient(90deg,var(--blue),#80d8ff); }
-.kpi-card.purple::before { background:linear-gradient(90deg,var(--purple),#f48fb1); }
-.kpi-card.teal::before { background:linear-gradient(90deg,var(--teal),var(--green2)); }
+.kpi-icon { position:absolute; top:14px; right:16px; font-size:22px; opacity:.18; }
+.kpi-card.green  { background:linear-gradient(135deg,rgba(52,168,83,0.09) 0%,rgba(52,168,83,0.03) 100%);  border-left-color:#34a853; }
+.kpi-card.teal   { background:linear-gradient(135deg,rgba(0,172,193,0.09) 0%,rgba(0,172,193,0.03) 100%);  border-left-color:#00acc1; }
+.kpi-card.gold   { background:linear-gradient(135deg,rgba(249,171,0,0.10) 0%,rgba(249,171,0,0.03) 100%);  border-left-color:#f9ab00; }
+.kpi-card.red    { background:linear-gradient(135deg,rgba(234,67,53,0.09) 0%,rgba(234,67,53,0.03) 100%);  border-left-color:#ea4335; }
+.kpi-card.blue   { background:linear-gradient(135deg,rgba(66,133,244,0.09) 0%,rgba(66,133,244,0.03) 100%);border-left-color:#4285f4; }
+.kpi-card.purple { background:linear-gradient(135deg,rgba(156,39,176,0.09) 0%,rgba(156,39,176,0.03) 100%);border-left-color:#9c27b0; }
+.kpi-card.green:hover  { border-left-color:#34a853; }
+.kpi-card.teal:hover   { border-left-color:#00acc1; }
+.kpi-card.gold:hover   { border-left-color:#f9ab00; }
+.kpi-card.red:hover    { border-left-color:#ea4335; }
+.kpi-card.blue:hover   { border-left-color:#4285f4; }
+.kpi-card.purple:hover { border-left-color:#9c27b0; }
 
 /* DESIGNER HERO SCORECARD */
 #des-hero {
@@ -206,7 +210,8 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .chart-32 { grid-template-columns:3fr 2fr; }
 .chart-card {
   background:var(--card); border:1px solid var(--border); border-radius:12px;
-  padding:18px; position:relative;
+  padding:18px; position:relative; box-shadow:0 1px 8px rgba(0,0,60,0.07);
+  border-top:3px solid #4285f4;
 }
 .chart-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
 .chart-subtitle { font-size:10px; color:var(--text2); margin-bottom:16px; }
@@ -999,7 +1004,7 @@ if (_checkSession()) {
 <!-- MOBILE HOME PAGE -->
 <div class="page" id="page-home" style="display:none">
   <div style="padding:4px 0 20px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px;background:linear-gradient(135deg,rgba(30,142,62,0.22),rgba(52,168,83,0.12));border:1px solid rgba(66,133,244,0.22);border-radius:12px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:16px;background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,168,83,0.06));border:1px solid rgba(66,133,244,0.25);border-radius:12px">
       <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--green),var(--teal));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#000;flex-shrink:0">K</div>
       <div>
         <div style="font-size:15px;font-weight:700;color:var(--text)">Kitchino Analytics</div>
@@ -1093,7 +1098,7 @@ if (_checkSession()) {
 <!-- PAGE 1: EXECUTIVE SUMMARY -->
 <div class="page active" id="page-executive">
   <!-- Current Month Hero Card -->
-  <div style="background:linear-gradient(135deg,rgba(30,142,62,0.22),rgba(52,168,83,0.12));border:1px solid rgba(66,133,244,0.22);border-radius:12px;padding:18px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+  <div style="background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,168,83,0.06));border:1px solid rgba(66,133,244,0.25);border-radius:12px;padding:18px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div style="display:flex;align-items:center;gap:14px">
       <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),var(--teal));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📅</div>
       <div>
@@ -2043,7 +2048,7 @@ if (_checkSession()) {
       <div style="font-size:13px;color:var(--text3)">What we achieved</div>
     </div>
     <div id="pres-insights-list" style="margin-bottom:18px"></div>
-    <div style="background:linear-gradient(135deg,rgba(30,142,62,0.22),rgba(52,168,83,0.12));border:1px solid rgba(66,133,244,0.22);border-radius:14px;padding:18px 22px">
+    <div style="background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,168,83,0.06));border:1px solid rgba(66,133,244,0.25);border-radius:14px;padding:18px 22px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <div style="width:3px;height:20px;background:linear-gradient(to bottom,var(--green),var(--teal));border-radius:2px"></div>
         <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">2026 Focus Areas</div>
@@ -3235,9 +3240,9 @@ function buildExecutiveCharts() {
     data:{
       labels,
       datasets:[
-        {label:'Total Measures',data:totals,    backgroundColor:'rgba(66,133,244,0.2)', borderColor:'#4285f4',borderWidth:1.5,borderRadius:3},
-        {label:'Contracted',    data:contracted, backgroundColor:'rgba(52,168,83,0.65)', borderColor:'#34a853',borderWidth:1.5,borderRadius:3},
-        {label:'Discussion',    data:discussion, backgroundColor:'rgba(249,171,0,0.55)',  borderColor:'#f9ab00',borderWidth:1,  borderRadius:3}
+        {label:'Total Measures',data:totals,    backgroundColor:'rgba(66,133,244,0.78)', borderColor:'#3a7bd5',borderWidth:1.5,borderRadius:3},
+        {label:'Contracted',    data:contracted, backgroundColor:'rgba(52,168,83,0.82)', borderColor:'#2e9748',borderWidth:1.5,borderRadius:3},
+        {label:'Discussion',    data:discussion, backgroundColor:'rgba(249,171,0,0.75)',  borderColor:'#e09600',borderWidth:1,  borderRadius:3}
       ]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
@@ -4370,7 +4375,7 @@ function buildPaymentChart() {
         {
           label: 'Payment Amount (EGP)',
           data: amounts,
-          backgroundColor: amounts.map(v => v > 0 ? 'rgba(66,133,244,0.22)' : 'rgba(30,142,62,0.22)'),
+          backgroundColor: amounts.map(v => v > 0 ? 'rgba(66,133,244,0.78)' : 'rgba(52,168,83,0.72)'),
           borderColor:     amounts.map(v => v > 0 ? '#34a853' : 'rgba(66,133,244,0.22)'),
           borderWidth: 1.5, borderRadius: 4, yAxisID: 'y'
         },
@@ -6728,7 +6733,7 @@ function showPresH1Chart() {
           labels: D.months,
           datasets: [
             { type:'bar', label:'2025 Measures', data:D.m25, backgroundColor:'rgba(158,158,200,0.35)', borderColor:'rgba(158,158,200,0.7)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:3 },
-            { type:'bar', label:'2026 Measures', data:D.m26, backgroundColor:'rgba(66,133,244,0.22)', borderColor:'rgba(66,133,244,0.22)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:2 },
+            { type:'bar', label:'2026 Measures', data:D.m26, backgroundColor:'rgba(66,133,244,0.78)', borderColor:'rgba(66,133,244,0.22)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:2 },
             { type:'line', label:'2025 CVR%', data:D.cvr25, borderColor:'#f9ab00', borderDash:[5,4], borderWidth:2, pointRadius:4, pointBackgroundColor:'#f9ab00', fill:false, tension:0.3, yAxisID:'yCVR', order:1, spanGaps:true },
             { type:'line', label:'2026 CVR%', data:D.cvr26, borderColor:'#34a853', borderWidth:3, pointRadius:5, pointBackgroundColor:'#34a853', pointBorderColor:'#f2f2f8', pointBorderWidth:2, fill:false, tension:0.3, yAxisID:'yCVR', order:0, spanGaps:true }
           ]
@@ -7810,8 +7815,8 @@ function renderYearCompare() {
     data: {
       labels: MONTHS.map(m=>m.substr(0,3)),
       datasets: [
-        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(158,158,200,0.28)', borderColor:'#34a853', borderWidth:1, borderRadius:3 },
-        { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(0,140,220,0.45)', borderColor:'#008cdc', borderWidth:1, borderRadius:3 }
+        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(158,158,200,0.55)', borderColor:'#34a853', borderWidth:1, borderRadius:3 },
+        { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(66,133,244,0.82)', borderColor:'#008cdc', borderWidth:1, borderRadius:3 }
       ]
     },
     options: { responsive:true, maintainAspectRatio:false,
