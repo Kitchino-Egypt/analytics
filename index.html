@@ -770,6 +770,69 @@ tbody td.muted { color:var(--text2); }
   .pres-kpi-val { font-size:36px; }
   .pres-slide { padding:24px 20px; min-height:auto; }
 }
+
+/* ══ PRESENTATION VIEW — DARK THEME ══════════════════════════════════════ */
+#page-presentation {
+  --bg:   #0f0f1e;
+  --bg2:  #161628;
+  --card: #1a1a2e;
+  --card2:#1e1e38;
+  --border: rgba(255,255,255,0.10);
+  --text:  #f0f0f8;
+  --text1: #ffffff;
+  --text2: #b0b0d0;
+  --text3: #6a6a9a;
+}
+#page-presentation .page-content {
+  background: #0f0f1e;
+}
+/* Controls bar */
+#page-presentation #pres-controls-bar {
+  background: transparent;
+}
+#page-presentation .pres-ctrl-btn {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  color: #b0b0d0;
+}
+#page-presentation .pres-ctrl-btn:hover { background: rgba(66,133,244,0.20); border-color:#4285f4; color:#fff; }
+#page-presentation .pres-ctrl-btn.active { background: rgba(66,133,244,0.25); border-color:#4285f4; color:#fff; }
+#page-presentation #pres-counter {
+  background: rgba(66,133,244,0.20);
+  border-color: rgba(66,133,244,0.35);
+  color: #e0e0f8;
+}
+#page-presentation .pres-dot { background: rgba(255,255,255,0.20); }
+#page-presentation .pres-dot.pres-dot-active { background: #4285f4; }
+/* Slides */
+#page-presentation .pres-slide {
+  background: linear-gradient(135deg, #1a1a2e 0%, #161628 100%);
+  border-color: rgba(255,255,255,0.08);
+}
+#page-presentation .pres-slide::before {
+  background: linear-gradient(90deg, #4285f4, #34a853);
+}
+/* KPI boxes inside slides */
+#page-presentation .pres-kpi-box {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.10);
+}
+#page-presentation .pres-tag { color: #6a6a9a; }
+#page-presentation .pres-section-title { color: #6a6a9a; border-color: rgba(255,255,255,0.08); }
+#page-presentation .pres-des-card { border-color: rgba(255,255,255,0.06); }
+#page-presentation .pres-des-name { color: #ffffff; }
+#page-presentation .pres-des-stats { color: #7070a0; }
+#page-presentation .pres-area-bar-wrap { background: rgba(255,255,255,0.07); }
+#page-presentation .pres-insight { border-color: rgba(255,255,255,0.06); color: #b0b0d0; }
+/* Text colors in slides */
+#page-presentation .pres-slide h1,
+#page-presentation .pres-slide h2,
+#page-presentation .pres-slide h3 { color: #ffffff; }
+/* Fullscreen overlay bar */
+#page-presentation.pres-fullscreen #pres-controls-bar {
+  background: rgba(15,15,30,0.95);
+}
+/* ══════════════════════════════════════════════════════════════════════ */
 </style>
 </head><body>
 <!-- ═══════════════════════════════════════════════════════
