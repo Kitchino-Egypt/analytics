@@ -2101,6 +2101,36 @@ if (_checkSession()) {
 
 
 
+
+<div class="page" id="page-yearcompare">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:var(--text1)">2025 vs 2026 — Year Comparison</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:2px">Side-by-side KPI comparison · January–June H1 for 2026</div>
+    </div>
+  </div>
+
+  <!-- KPI Comparison Cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="yc-kpi-grid"></div>
+
+  <!-- Monthly trend comparison chart -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly Measures — 2025 vs 2026</div>
+      <canvas id="yc-chart-measures" height="220"></canvas>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly CVR % — 2025 vs 2026</div>
+      <canvas id="yc-chart-cvr" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Designer comparison table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
+    <div id="yc-designer-table" style="overflow-x:auto"></div>
+  </div>
+</div>
 </div>
   </div><!-- end page-content -->
 </div><!-- end main -->
@@ -2177,36 +2207,6 @@ if (_checkSession()) {
     <div id="payment-breakdown-table" style="margin-top:8px"></div>
   </div>
 </div>
-
-<div class="page" id="page-yearcompare">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
-    <div>
-      <div style="font-size:20px;font-weight:800;color:var(--text1)">2025 vs 2026 — Year Comparison</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:2px">Side-by-side KPI comparison · January–June H1 for 2026</div>
-    </div>
-  </div>
-
-  <!-- KPI Comparison Cards -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="yc-kpi-grid"></div>
-
-  <!-- Monthly trend comparison chart -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly Measures — 2025 vs 2026</div>
-      <canvas id="yc-chart-measures" height="220"></canvas>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly CVR % — 2025 vs 2026</div>
-      <canvas id="yc-chart-cvr" height="220"></canvas>
-    </div>
-  </div>
-
-  <!-- Designer comparison table -->
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
-    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
-    <div id="yc-designer-table" style="overflow-x:auto"></div>
-  </div>
-</d
 <script>
 (function() {
   function _tryRenderYC() {
@@ -2227,7 +2227,6 @@ if (_checkSession()) {
   setTimeout(_tryRenderYC, 1200);
 })();
 </script>
-iv>
 
 
 <script>
