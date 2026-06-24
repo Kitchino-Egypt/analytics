@@ -7,11 +7,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #f2f2f8;
-  --bg2: #e6e6f0;
+  --bg: #f5f5fb;
+  --bg2: #eeeef5;
   --card: #ffffff;
-  --card2: #f0f0f8;
-  --border: #c8c8e0;
+  --card2: #f2f2fa;
+  --border: #d0d0e8;
   --green: #00c853;
   --green2: #00a047;
   --green3: #008040;
@@ -25,7 +25,20 @@
   --purple: #ce93d8;
   --sidebar-w: 240px;
 }
-* { margin:0; padding:0; box-sizing:border-box; }
+* { margin:0; padding:0; 
+/* === DAYLIGHT MODE: dark sidebar + light content === */
+.sidebar {
+  background: #1e1e30 !important;
+  border-right-color: #2d2d4a !important;
+}
+.sidebar .logo-text { color: #e8e8f6 !important; }
+.sidebar .logo-sub  { color: #9090b8 !important; }
+.sidebar .nav-label { color: #5c5c8a !important; }
+.sidebar .nav-item  { color: #a0a0c0 !important; }
+.sidebar .nav-item:hover { background: rgba(0,200,83,.09) !important; color: #e0e0f0 !important; }
+.sidebar .nav-item.active { color: #00c853 !important; border-left-color: #00c853 !important; background: rgba(0,200,83,.13) !important; }
+.sidebar .nav-badge { background: var(--red) !important; color: #fff !important; }
+box-sizing:border-box; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
 
 /* SIDEBAR */
@@ -74,7 +87,7 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 
 /* TOP BAR */
 .topbar {
-  background:var(--bg2); border-bottom:1px solid var(--border);
+  background:var(--card); border-bottom:1px solid var(--border);
   padding:0 24px; height:58px; display:flex; align-items:center; gap:16px;
   position:sticky; top:0; z-index:50;
 }
@@ -2118,11 +2131,11 @@ if (_checkSession()) {
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
       <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly Measures — 2025 vs 2026</div>
-      <canvas id="yc-chart-measures" height="220"></canvas>
+      <div style="position:relative;height:220px"><canvas id="yc-chart-measures"></canvas></div>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
       <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly CVR % — 2025 vs 2026</div>
-      <canvas id="yc-chart-cvr" height="220"></canvas>
+      <div style="position:relative;height:220px"><canvas id="yc-chart-cvr"></canvas></div>
     </div>
   </div>
 
@@ -4856,7 +4869,7 @@ function buildCEOCharts() {
     data:{
       labels,
       datasets:[
-        {label:'Measures',data:_md.map(m=>m.total),borderColor:GREEN,backgroundColor:'rgba(0,230,118,0.08)',fill:true,tension:.4,pointRadius:3},
+        {label:'Measures',data:_md.map(m=>m.total),borderColor:GREEN,backgroundColor:'rgba(0,168,84,0.12)',fill:true,tension:.4,pointRadius:3},
         {label:'Contracted',data:_md.map(m=>m.contracted),borderColor:TEAL,backgroundColor:'rgba(29,233,182,0.05)',fill:true,tension:.4,pointRadius:3}
       ]
     },
@@ -7793,8 +7806,8 @@ function renderYearCompare() {
     data: {
       labels: MONTHS.map(m=>m.substr(0,3)),
       datasets: [
-        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(0,230,118,0.35)', borderColor:'#00e676', borderWidth:1, borderRadius:3 },
-        { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(64,196,255,0.35)', borderColor:'#40c4ff', borderWidth:1, borderRadius:3 }
+        { label:'2025', data: m25.map(m=>m.total), backgroundColor:'rgba(0,168,84,0.55)', borderColor:'#00a854', borderWidth:1, borderRadius:3 },
+        { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(0,140,220,0.45)', borderColor:'#008cdc', borderWidth:1, borderRadius:3 }
       ]
     },
     options: { responsive:true, maintainAspectRatio:false,
@@ -7812,8 +7825,8 @@ function renderYearCompare() {
     data: {
       labels: MONTHS.map(m=>m.substr(0,3)),
       datasets: [
-        { label:'2025 CVR%', data: m25.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#00e676', backgroundColor:'rgba(0,230,118,0.08)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00e676', tension:0.3, fill:true, spanGaps:true },
-        { label:'2026 CVR%', data: m26.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#40c4ff', backgroundColor:'rgba(64,196,255,0.08)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#40c4ff', tension:0.3, fill:true, spanGaps:true }
+        { label:'2025 CVR%', data: m25.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#00e676', backgroundColor:'rgba(0,168,84,0.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#00e676', tension:0.3, fill:true, spanGaps:true },
+        { label:'2026 CVR%', data: m26.map(m=>m.total>0?+(m.contracted/m.total*100).toFixed(1):null), borderColor:'#40c4ff', backgroundColor:'rgba(0,140,220,0.12)', borderWidth:2, pointRadius:3, pointBackgroundColor:'#40c4ff', tension:0.3, fill:true, spanGaps:true }
       ]
     },
     options: { responsive:true, maintainAspectRatio:false,
