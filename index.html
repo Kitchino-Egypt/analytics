@@ -7,18 +7,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
-  --bg: #0d0d1a;
-  --bg2: #12121f;
-  --card: #161625;
-  --card2: #1c1c2e;
-  --border: #252545;
-  --green: #00e676;
-  --green2: #69f0ae;
-  --green3: #00c853;
-  --teal: #1de9b6;
-  --text: #e8eaf6;
-  --text2: #9e9ec8;
-  --text3: #5c5c8a;
+  --bg: #f2f2f8;
+  --bg2: #e6e6f0;
+  --card: #ffffff;
+  --card2: #f0f0f8;
+  --border: #c8c8e0;
+  --green: #00c853;
+  --green2: #00a047;
+  --green3: #008040;
+  --teal: #00897b;
+  --text: #1a1a3c;
+  --text2: #4a4a88;
+  --text3: #9090b8;
   --gold: #ffd740;
   --red: #ff5252;
   --blue: #40c4ff;
@@ -375,7 +375,7 @@ tbody td.muted { color:var(--text2); }
 ═══════════════════════════════════════════════════════ */
 #kitchino-login-overlay {
   position:fixed; inset:0; z-index:99999;
-  background:#0d0d1a;
+  background:#eaeaf4;
   display:flex; align-items:center; justify-content:center;
   font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
 }
@@ -397,12 +397,12 @@ tbody td.muted { color:var(--text2); }
 }
 .login-card {
   position:relative; z-index:1;
-  background:#12121f;
-  border:1px solid #252545;
+  background:#ffffff;
+  border:1px solid #c8c8e0;
   border-radius:20px;
   padding:48px 44px 40px;
   width:100%; max-width:400px;
-  box-shadow:0 24px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(0,230,118,.05);
+  box-shadow:0 20px 60px rgba(80,80,160,.12), 0 0 0 1px rgba(0,200,83,.08);
 }
 .login-logo {
   display:flex; align-items:center; gap:14px;
@@ -417,13 +417,13 @@ tbody td.muted { color:var(--text2); }
 }
 .login-logo-text { line-height:1; }
 .login-logo-name {
-  font-size:20px; font-weight:700; color:#e8eaf6; letter-spacing:.3px;
+  font-size:20px; font-weight:700; color:var(--text); letter-spacing:.3px;
 }
 .login-logo-sub {
   font-size:11px; color:#9e9ec8; margin-top:3px; letter-spacing:.5px; text-transform:uppercase;
 }
 .login-title {
-  font-size:22px; font-weight:700; color:#e8eaf6; margin-bottom:6px;
+  font-size:22px; font-weight:700; color:var(--text); margin-bottom:6px;
 }
 .login-subtitle {
   font-size:13px; color:#9e9ec8; margin-bottom:28px; line-height:1.5;
@@ -436,8 +436,8 @@ tbody td.muted { color:var(--text2); }
 .login-input-wrap { position:relative; }
 .login-input-wrap input {
   width:100%; padding:13px 44px 13px 16px;
-  background:#161625; border:1px solid #252545; border-radius:10px;
-  color:#e8eaf6; font-size:14px; outline:none;
+  background:#f5f5fb; border:1px solid #c8c8e0; border-radius:10px;
+  color:#1a1a3c; font-size:14px; outline:none;
   transition:border-color .2s, box-shadow .2s;
   font-family:inherit;
 }
@@ -445,14 +445,14 @@ tbody td.muted { color:var(--text2); }
   border-color:#00e676;
   box-shadow:0 0 0 3px rgba(0,230,118,.1);
 }
-.login-input-wrap input::placeholder { color:#5c5c8a; }
+.login-input-wrap input::placeholder { color:#9090b8; }
 .login-eye {
   position:absolute; right:12px; top:50%; transform:translateY(-50%);
   background:none; border:none; cursor:pointer;
-  color:#5c5c8a; font-size:16px; padding:2px 4px;
+  color:#9090b8; font-size:16px; padding:2px 4px;
   transition:color .2s;
 }
-.login-eye:hover { color:#9e9ec8; }
+.login-eye:hover { color:#4a4a88; }
 .login-error {
   background:rgba(255,82,82,.1); border:1px solid rgba(255,82,82,.3);
   border-radius:8px; padding:10px 14px;
@@ -2101,6 +2101,7 @@ if (_checkSession()) {
 
 
 
+</div>
 
 <div class="page" id="page-yearcompare">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
@@ -2130,7 +2131,6 @@ if (_checkSession()) {
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
     <div id="yc-designer-table" style="overflow-x:auto"></div>
   </div>
-</div>
 </div>
   </div><!-- end page-content -->
 </div><!-- end main -->
@@ -3234,7 +3234,7 @@ function buildExecutiveCharts() {
     type:'doughnut',
     data:{
       labels:['Contracted','Discussion','Cancelled'],
-      datasets:[{data:[cont,disc,canc],backgroundColor:[GREEN,GOLD,RED],borderColor:'#161625',borderWidth:2,hoverOffset:6}]
+      datasets:[{data:[cont,disc,canc],backgroundColor:[GREEN,GOLD,RED],borderColor:'#f2f2f8',borderWidth:2,hoverOffset:6}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'65%'}
   });
@@ -3353,7 +3353,7 @@ function buildDailyCharts() {
     type:'doughnut',
     data:{
       labels:['In Discussion','Contracted','Cancelled'],
-      datasets:[{data:[disc,contr,canc],backgroundColor:[GOLD,GREEN,RED],borderColor:'#161625',borderWidth:2}]
+      datasets:[{data:[disc,contr,canc],backgroundColor:[GOLD,GREEN,RED],borderColor:'#f2f2f8',borderWidth:2}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'60%'}
   });
@@ -4012,7 +4012,7 @@ function buildSourceCharts() {
     type:'doughnut',
     data:{
       labels:sorted.map(s=>s.source),
-      datasets:[{data:sorted.map(s=>s.total),backgroundColor:sorted.map((_,i)=>`hsl(${140+i*22},60%,55%)`),borderColor:'#161625',borderWidth:2,hoverOffset:5}]
+      datasets:[{data:sorted.map(s=>s.total),backgroundColor:sorted.map((_,i)=>`hsl(${140+i*22},60%,55%)`),borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'50%'}
   });
@@ -4124,8 +4124,8 @@ function buildCrossSalesCharts() {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x+'% ('+desArr[c.dataIndex].multi+' of '+desArr[c.dataIndex].total+' customers)'}} },
       scales: {
-        x: { min:0, max:100, ticks:{callback:v=>v+'%',color:'#9e9ec8',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} },
-        y: { ticks:{color:'#9e9ec8',font:{size:10}}, grid:{display:false} }
+        x: { min:0, max:100, ticks:{callback:v=>v+'%',color:'#5050a0',font:{size:10}}, grid:{color:'rgba(0,0,0,0.07)'} },
+        y: { ticks:{color:'#5050a0',font:{size:10}}, grid:{display:false} }
       }
     }
   });
@@ -4147,8 +4147,8 @@ function buildCrossSalesCharts() {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend:{display:false} },
       scales: {
-        x: { ticks:{color:'#9e9ec8',font:{size:9},maxRotation:35}, grid:{display:false} },
-        y: { ticks:{color:'#9e9ec8',font:{size:10},precision:0}, grid:{color:'rgba(255,255,255,0.04)'} }
+        x: { ticks:{color:'#5050a0',font:{size:9},maxRotation:35}, grid:{display:false} },
+        y: { ticks:{color:'#5050a0',font:{size:10},precision:0}, grid:{color:'rgba(0,0,0,0.07)'} }
       }
     }
   });
@@ -4254,10 +4254,10 @@ function buildOrderTypeCharts() {
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{position:'bottom'}},
       scales:{
-        x:{grid:{display:false},ticks:{color:'#9e9ec8',font:{size:9},maxRotation:35}},
-        y:{position:'left',grid:{color:'rgba(37,37,69,0.5)'},ticks:{color:'#9e9ec8',font:{size:10}},
+        x:{grid:{display:false},ticks:{color:'#5050a0',font:{size:9},maxRotation:35}},
+        y:{position:'left',grid:{color:'rgba(37,37,69,0.5)'},ticks:{color:'#5050a0',font:{size:10}},
            title:{display:true,text:'Measures',color:'rgba(200,200,200,0.5)',font:{size:9}}},
-        y1:{position:'right',grid:{display:false},ticks:{callback:v=>v+'%',color:'#9e9ec8',font:{size:10}},max:80,
+        y1:{position:'right',grid:{display:false},ticks:{callback:v=>v+'%',color:'#5050a0',font:{size:10}},max:80,
             title:{display:true,text:'CVR%',color:'rgba(200,200,200,0.5)',font:{size:9}}}
       }
     }
@@ -4273,12 +4273,12 @@ function buildOrderTypeCharts() {
       labels: top12.map(d=>d.type),
       datasets:[{ data:top12.map(d=>d.total),
         backgroundColor:COLORS.slice(0,top12.length),
-        borderColor:'#161625', borderWidth:2 }]
+        borderColor:'#f2f2f8', borderWidth:2 }]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       cutout:'62%',
-      plugins:{ legend:{position:'bottom',labels:{color:'#9e9ec8',font:{size:10},boxWidth:12}} }
+      plugins:{ legend:{position:'bottom',labels:{color:'#5050a0',font:{size:10},boxWidth:12}} }
     }
   });
 }
@@ -4419,7 +4419,7 @@ function buildKPICharts() {
       labels: otLabels,
       datasets:[{data:otCounts,
         backgroundColor:otLabels.map((_,i)=>'hsl('+(140+i*20)+',55%,'+(55-i*2)+'%)'),
-        borderColor:'#161625',borderWidth:2,hoverOffset:5}]
+        borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'50%'}
   });
@@ -5484,7 +5484,7 @@ function buildFollowupCharts() {
         CONTRACTS_DATA.filter(c=>c.age<30).length,
         CONTRACTS_DATA.filter(c=>c.age>=30&&c.age<=45).length,
         CONTRACTS_DATA.filter(c=>c.age>45).length
-      ],backgroundColor:[GREEN,GOLD,RED],borderColor:'#161625',borderWidth:2,hoverOffset:5}]
+      ],backgroundColor:[GREEN,GOLD,RED],borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'60%'}
   });
@@ -6449,12 +6449,12 @@ function showPresDesignerModal(name) {
   var diffSign = d.rate>=d.teamAvg ? '+' : '';
 
   ov.innerHTML =
-    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(720px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(720px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
       +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
         +'<div style="display:flex;align-items:center;gap:14px">'
           +(DESIGNER_PHOTOS[d.name] ? '<img src="'+DESIGNER_PHOTOS[d.name]+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #00e676;flex-shrink:0">' : '<div style="width:56px;height:56px;border-radius:50%;background:rgba(0,230,118,0.15);border:2px solid #00e676;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#00e676;flex-shrink:0">'+(d.name.split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase())+'</div>')
           +'<div>'
-            +'<div style="font-size:21px;font-weight:900;color:#e8eaf6">'+d.name+'</div>'
+            +'<div style="font-size:21px;font-weight:900;color:var(--text)">'+d.name+'</div>'
             +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Monthly Performance — 2025</div>'
           +'</div>'
         +'</div>'
@@ -6463,11 +6463,11 @@ function showPresDesignerModal(name) {
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px">'
           +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div>'
-          +'<div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.total+'</div>'
+          +'<div style="font-size:22px;font-weight:900;color:var(--text)">'+d.total+'</div>'
         +'</div>'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px">'
           +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div>'
-          +'<div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.contracted+'</div>'
+          +'<div style="font-size:22px;font-weight:900;color:var(--text)">'+d.contracted+'</div>'
         +'</div>'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px">'
           +'<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div>'
@@ -6518,7 +6518,7 @@ function showPresDesignerModal(name) {
           { type:'line', label:'Designer CVR%', data:cvrData,
             borderColor:'#00e676', borderWidth:3,
             pointRadius:5, pointBackgroundColor:'#00e676',
-            pointBorderColor:'#161625', pointBorderWidth:2,
+            pointBorderColor:'#f2f2f8', pointBorderWidth:2,
             fill:{target:'origin',above:'rgba(0,230,118,0.07)'},
             tension:0.35, yAxisID:'yCVR', order:0 }
         ]
@@ -6529,8 +6529,8 @@ function showPresDesignerModal(name) {
         plugins:{
           legend:{display:false},
           tooltip:{
-            backgroundColor:'#1c1c2e', borderColor:'#252545', borderWidth:1,
-            titleColor:'#e8eaf6', bodyColor:'#9e9ec8',
+            backgroundColor:'#ffffff', borderColor:'#c8c8e0', borderWidth:1,
+            titleColor:'#1a1a3c', bodyColor:'#4a4a88',
             callbacks:{label:function(c){
               if(c.dataset.label==='Measures') return '  Measures: '+c.parsed.y;
               return '  '+c.dataset.label+': '+c.parsed.y+'%';
@@ -6539,13 +6539,13 @@ function showPresDesignerModal(name) {
         },
         scales:{
           yCVR:{ type:'linear', position:'left', min:0, max:100,
-            ticks:{color:'#9e9ec8',callback:function(v){return v+'%';}},
+            ticks:{color:'#5050a0',callback:function(v){return v+'%';}},
             grid:{color:'rgba(255,255,255,0.05)'}, border:{color:'rgba(255,255,255,0.1)'} },
           yBar:{ type:'linear', position:'right', min:0,
             ticks:{color:'rgba(64,196,255,0.55)'},
             grid:{drawOnChartArea:false}, border:{color:'rgba(255,255,255,0.1)'} },
-          x:{ ticks:{color:'#9e9ec8',font:{size:11}},
-            grid:{color:'rgba(255,255,255,0.04)'}, border:{color:'rgba(255,255,255,0.1)'} }
+          x:{ ticks:{color:'#5050a0',font:{size:11}},
+            grid:{color:'rgba(0,0,0,0.07)'}, border:{color:'rgba(255,255,255,0.1)'} }
         }
       }
     });
@@ -6592,25 +6592,25 @@ function showPresAreaModal(areaName, rowEl) {
   });
 
   ov.innerHTML =
-    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(680px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(680px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
       +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
-        +'<div><div style="font-size:21px;font-weight:900;color:#e8eaf6">📍 '+areaName+'</div>'
+        +'<div><div style="font-size:21px;font-weight:900;color:var(--text)">📍 '+areaName+'</div>'
         +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Area Performance — 2025</div></div>'
         +'<button onclick="closePresentationModal(\'pres-area-modal\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       +'</div>'
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
-        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.total+'</div></div>'
-        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+d.contracted+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+d.total+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+d.contracted+'</div></div>'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div><div style="font-size:22px;font-weight:900;color:'+rc+'">'+cvr+'%</div></div>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 24px 22px">'
         // Top designers
         +'<div><div style="font-size:11px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Top Designers in Area</div>'
-        +topDes.map(function(d){ var bc=d.cvr>=30?'#00e676':d.cvr>=20?'#ffd740':'#ff5252'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:13px;color:#e8eaf6">'+d.name+'</span><span style="font-size:12px"><span style="color:#9e9ec8">'+d.total+'</span> &nbsp;<span style="color:'+bc+'">'+d.cvr+'%</span></span></div>'; }).join('')
+        +topDes.map(function(d){ var bc=d.cvr>=30?'#00e676':d.cvr>=20?'#ffd740':'#ff5252'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:13px;color:var(--text)">'+d.name+'</span><span style="font-size:12px"><span style="color:#9e9ec8">'+d.total+'</span> &nbsp;<span style="color:'+bc+'">'+d.cvr+'%</span></span></div>'; }).join('')
         +'</div>'
         // Monthly mini table
         +'<div><div style="font-size:11px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Monthly Breakdown</div>'
-        +monthArr.map(function(m){ var bc=m.cvr>=30?'#00e676':m.cvr>=20?'#ffd740':'#ff5252'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:13px;color:#9e9ec8">'+m.month+'</span><span style="font-size:12px"><span style="color:#e8eaf6">'+m.total+'</span> &nbsp;<span style="color:'+bc+'">'+m.cvr+'%</span></span></div>'; }).join('')
+        +monthArr.map(function(m){ var bc=m.cvr>=30?'#00e676':m.cvr>=20?'#ffd740':'#ff5252'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)"><span style="font-size:13px;color:#9e9ec8">'+m.month+'</span><span style="font-size:12px"><span style="color:var(--text)">'+m.total+'</span> &nbsp;<span style="color:'+bc+'">'+m.cvr+'%</span></span></div>'; }).join('')
         +'</div>'
       +'</div>'
     +'</div>';
@@ -6652,19 +6652,19 @@ function showPresSourceModal(sourceName, rowEl) {
     var clearBtn   = filterArea ? '<button onclick="_presSelectedArea=null;showPresSourceModal(\'' + sourceName.replace(/'/g, "\\'") + '\',null)" style="font-size:11px;color:#9e9ec8;background:rgba(255,255,255,0.06);border:none;border-radius:6px;padding:3px 8px;cursor:pointer;margin-left:8px">Clear filter</button>' : '';
 
   ov.innerHTML =
-    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(620px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(620px,95vw);max-height:90vh;overflow:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
       +'<div style="padding:22px 24px 0;display:flex;align-items:flex-start;justify-content:space-between">'
-        +'<div><div style="font-size:21px;font-weight:900;color:#e8eaf6">📡 '+sourceName+filterNote+clearBtn+'</div>'
+        +'<div><div style="font-size:21px;font-weight:900;color:var(--text)">📡 '+sourceName+filterNote+clearBtn+'</div>'
         +'<div style="font-size:12px;color:#9e9ec8;margin-top:3px">Lead Source Performance — 2025</div></div>'
         +'<button onclick="closePresentationModal(\'pres-source-modal\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       +'</div>'
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
-        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+baseTotal+'</div></div>'
-        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:#e8eaf6">'+baseContracted+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+baseTotal+'</div></div>'
+        +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+baseContracted+'</div></div>'
         +'<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div><div style="font-size:22px;font-weight:900;color:'+rc+'">'+cvr+'%</div></div>'
       +'</div>'
       +'<div style="padding:0 24px 22px"><div style="font-size:11px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Performance by Area</div>'
-      +byArea.map(function(a){ var bc=a.cvr>=30?'#00e676':a.cvr>=20?'#ffd740':'#ff5252'; var hi=filterArea===a.area?'background:rgba(0,230,118,0.06);border-radius:6px;padding:0 6px;margin:0 -6px;':''; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);'+hi+'"><span style="font-size:13px;color:#e8eaf6">'+a.area+'</span><span><span style="font-size:12px;color:#9e9ec8">'+a.total+' measures &nbsp;</span><span style="font-size:13px;font-weight:700;color:'+bc+'">'+a.cvr+'%</span></span></div>'; }).join('')
+      +byArea.map(function(a){ var bc=a.cvr>=30?'#00e676':a.cvr>=20?'#ffd740':'#ff5252'; var hi=filterArea===a.area?'background:rgba(0,230,118,0.06);border-radius:6px;padding:0 6px;margin:0 -6px;':''; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);'+hi+'"><span style="font-size:13px;color:var(--text)">'+a.area+'</span><span><span style="font-size:12px;color:#9e9ec8">'+a.total+' measures &nbsp;</span><span style="font-size:13px;font-weight:700;color:'+bc+'">'+a.cvr+'%</span></span></div>'; }).join('')
       +'</div>'
     +'</div>';
   ov.style.display = 'flex';
@@ -6687,9 +6687,9 @@ function showPresH1Chart() {
     document.body.appendChild(ov);
   }
   ov.innerHTML =
-    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(760px,95vw);padding:22px 24px;box-shadow:0 24px 80px rgba(0,0,0,0.7);position:relative">'
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(760px,95vw);padding:22px 24px;box-shadow:0 24px 80px rgba(0,0,0,0.7);position:relative">'
       +'<button onclick="hidePresH1Chart()" style="position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.07);border:none;color:#9e9ec8;font-size:18px;cursor:pointer;border-radius:6px;padding:2px 8px;line-height:1">✕</button>'
-      +'<div style="font-size:16px;font-weight:800;color:#e8eaf6;margin-bottom:4px">H1 2025 vs 2026 — Month by Month</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">H1 2025 vs 2026 — Month by Month</div>'
       +'<div style="font-size:11px;color:#9e9ec8;margin-bottom:16px">Click ✕ or outside the chart to close</div>'
       +'<div style="display:flex;gap:16px;font-size:11px;color:#9e9ec8;margin-bottom:12px">'
         +'<span><span style="display:inline-block;width:14px;height:10px;background:rgba(158,158,200,0.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>2025 Measures</span>'
@@ -6713,17 +6713,17 @@ function showPresH1Chart() {
             { type:'bar', label:'2025 Measures', data:D.m25, backgroundColor:'rgba(158,158,200,0.35)', borderColor:'rgba(158,158,200,0.7)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:3 },
             { type:'bar', label:'2026 Measures', data:D.m26, backgroundColor:'rgba(0,230,118,0.55)', borderColor:'rgba(0,230,118,0.9)', borderWidth:1, borderRadius:4, yAxisID:'yBar', order:2 },
             { type:'line', label:'2025 CVR%', data:D.cvr25, borderColor:'#ffd740', borderDash:[5,4], borderWidth:2, pointRadius:4, pointBackgroundColor:'#ffd740', fill:false, tension:0.3, yAxisID:'yCVR', order:1, spanGaps:true },
-            { type:'line', label:'2026 CVR%', data:D.cvr26, borderColor:'#00e676', borderWidth:3, pointRadius:5, pointBackgroundColor:'#00e676', pointBorderColor:'#161625', pointBorderWidth:2, fill:false, tension:0.3, yAxisID:'yCVR', order:0, spanGaps:true }
+            { type:'line', label:'2026 CVR%', data:D.cvr26, borderColor:'#00e676', borderWidth:3, pointRadius:5, pointBackgroundColor:'#00e676', pointBorderColor:'#f2f2f8', pointBorderWidth:2, fill:false, tension:0.3, yAxisID:'yCVR', order:0, spanGaps:true }
           ]
         },
         options: {
           responsive:true, interaction:{mode:'index',intersect:false},
-          plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#1c1c2e', borderColor:'#252545', borderWidth:1, titleColor:'#e8eaf6', bodyColor:'#9e9ec8',
+          plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#ffffff', borderColor:'#c8c8e0', borderWidth:1, titleColor:'#1a1a3c', bodyColor:'#4a4a88',
             callbacks:{label:function(c){ if(c.dataset.yAxisID==='yBar') return '  '+c.dataset.label+': '+c.parsed.y; return '  '+c.dataset.label+': '+c.parsed.y+'%'; }} } },
           scales:{
-            yCVR:{type:'linear',position:'left',min:0,max:100,ticks:{color:'#9e9ec8',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,0.05)'},border:{color:'rgba(255,255,255,0.1)'}},
-            yBar:{type:'linear',position:'right',min:0,ticks:{color:'#9e9ec8'},grid:{drawOnChartArea:false},border:{color:'rgba(255,255,255,0.1)'}},
-            x:{ticks:{color:'#9e9ec8',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'},border:{color:'rgba(255,255,255,0.1)'}}
+            yCVR:{type:'linear',position:'left',min:0,max:100,ticks:{color:'#5050a0',callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,0.05)'},border:{color:'rgba(255,255,255,0.1)'}},
+            yBar:{type:'linear',position:'right',min:0,ticks:{color:'#5050a0'},grid:{drawOnChartArea:false},border:{color:'rgba(255,255,255,0.1)'}},
+            x:{ticks:{color:'#5050a0',font:{size:11}},grid:{color:'rgba(0,0,0,0.07)'},border:{color:'rgba(255,255,255,0.1)'}}
           }
         }
       });
@@ -6769,28 +6769,28 @@ function showPresOthersModal(type, rowEl) {
     const bw   = Math.round(item.total/maxVal*100);
     return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
       + '<div style="font-size:13px;color:#5c5c8a;width:24px;text-align:right;flex-shrink:0">#'+(i+11)+'</div>'
-      + '<div style="font-size:15px;font-weight:700;color:#e8eaf6;min-width:110px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name+'</div>'
+      + '<div style="font-size:15px;font-weight:700;color:var(--text);min-width:110px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+name+'</div>'
       + '<div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+bw+'%;background:rgba(255,255,255,0.25);border-radius:3px"></div></div>'
-      + '<div style="font-size:15px;font-weight:800;color:#e8eaf6;min-width:36px;text-align:right">'+item.total+'</div>'
+      + '<div style="font-size:15px;font-weight:800;color:var(--text);min-width:36px;text-align:right">'+item.total+'</div>'
       + '<div style="font-size:12px;font-weight:700;color:'+rc+';min-width:60px;text-align:right">'+cvr+'% CVR</div>'
       + '</div>';
   }).join('');
 
   ov.innerHTML =
-    '<div style="background:#161625;border:1px solid #252545;border-radius:16px;width:min(600px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(600px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.7)">'
       + '<div style="padding:20px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0">'
-        + '<div><div style="font-size:20px;font-weight:900;color:#e8eaf6">'+title+'</div>'
+        + '<div><div style="font-size:20px;font-weight:900;color:var(--text)">'+title+'</div>'
         + '<div style="font-size:12px;color:#9e9ec8;margin-top:3px">'+subline+'</div></div>'
         + '<button onclick="closePresentationModal(\''+modalId+'\')" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#9e9ec8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       + '</div>'
       + '<div style="display:flex;gap:10px;padding:14px 24px;flex-shrink:0">'
         + '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:80px">'
           + '<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Entries</div>'
-          + '<div style="font-size:20px;font-weight:900;color:#e8eaf6">'+rest.length+'</div>'
+          + '<div style="font-size:20px;font-weight:900;color:var(--text)">'+rest.length+'</div>'
         + '</div>'
         + '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:80px">'
           + '<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div>'
-          + '<div style="font-size:20px;font-weight:900;color:#e8eaf6">'+totalOthers+'</div>'
+          + '<div style="font-size:20px;font-weight:900;color:var(--text)">'+totalOthers+'</div>'
         + '</div>'
         + '<div style="background:rgba(255,255,255,0.04);border-radius:10px;padding:10px 16px;min-width:80px">'
           + '<div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div>'
@@ -7041,8 +7041,8 @@ function buildPresentationSlides() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#1c1c2e', borderColor: '#252545', borderWidth: 1,
-            titleColor: '#e8eaf6', bodyColor: '#9e9ec8',
+            backgroundColor: '#ffffff', borderColor: '#c8c8e0', borderWidth: 1,
+            titleColor: '#1a1a3c', bodyColor: '#4a4a88',
             callbacks: { label: function(c){ return '  CVR: ' + c.parsed.x + '%'; } }
           },
           annotation: {}
@@ -7050,12 +7050,12 @@ function buildPresentationSlides() {
         scales: {
           x: {
             min: 0, max: 100,
-            ticks: { color: '#9e9ec8', font: {size:10}, callback: function(v){ return v+'%'; } },
-            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#5050a0', font: {size:10}, callback: function(v){ return v+'%'; } },
+            grid: { color: 'rgba(0,0,0,0.07)' },
             border: { color: 'rgba(255,255,255,0.08)' }
           },
           y: {
-            ticks: { color: '#9e9ec8', font: {size:10} },
+            ticks: { color: '#5050a0', font: {size:10} },
             grid: { display: false },
             border: { color: 'rgba(255,255,255,0.08)' }
           }
@@ -7433,7 +7433,7 @@ function buildPresentationSlides() {
         var cvrCol = d.conversionRate >= 40 ? '#00e676' : d.conversionRate >= 20 ? '#ffd740' : '#ff6b6b';
         var safeType = d.type.replace(/'/g,"\\'");
         var isOth = d.isOthers === true;
-        var rowBg  = isOth ? 'rgba(255,255,255,0.03)' : '';
+        var rowBg  = isOth ? 'rgba(0,0,0,0.05)' : '';
         var numBg  = isOth ? 'rgba(255,255,255,0.1)' : 'rgba(0,230,118,0.15)';
         var numCol = isOth ? 'var(--text3)' : 'var(--green)';
         var numTxt = isOth ? '…' : (i+1);
@@ -7798,10 +7798,10 @@ function renderYearCompare() {
       ]
     },
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:'#9e9ec8',font:{size:10}}}, tooltip:{backgroundColor:'#1c1c2e',borderColor:'#252545',borderWidth:1,titleColor:'#e8eaf6',bodyColor:'#9e9ec8'} },
+      plugins:{ legend:{labels:{color:'#5050a0',font:{size:10}}}, tooltip:{backgroundColor:'#ffffff',borderColor:'#c8c8e0',borderWidth:1,titleColor:'#1a1a3c',bodyColor:'#4a4a88'} },
       scales:{
-        x:{ticks:{color:'#9e9ec8',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},
-        y:{ticks:{color:'#9e9ec8',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}
+        x:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.07)'}}
       }
     }
   });
@@ -7817,10 +7817,10 @@ function renderYearCompare() {
       ]
     },
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{labels:{color:'#9e9ec8',font:{size:10}}}, tooltip:{backgroundColor:'#1c1c2e',borderColor:'#252545',borderWidth:1,titleColor:'#e8eaf6',bodyColor:'#9e9ec8',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+'%'}} },
+      plugins:{ legend:{labels:{color:'#5050a0',font:{size:10}}}, tooltip:{backgroundColor:'#ffffff',borderColor:'#c8c8e0',borderWidth:1,titleColor:'#1a1a3c',bodyColor:'#4a4a88',callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y+'%'}} },
       scales:{
-        x:{ticks:{color:'#9e9ec8',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},
-        y:{min:0,max:100,ticks:{color:'#9e9ec8',font:{size:9},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}
+        x:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{min:0,max:100,ticks:{color:'#5050a0',font:{size:9},callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.07)'}}
       }
     }
   });
