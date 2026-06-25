@@ -7845,22 +7845,27 @@ function renderYearCompare() {
   const grid = document.getElementById('yc-kpi-grid');
   if (grid) {
     grid.innerHTML = metrics.filter(m=>!m.note).map(m => {
-      const d = delta(m.v25, m.v26, m.pct);
+      const d  = delta(m.v25, m.v26, m.pct);
       const dc = deltaColor(m.v25, m.v26, m.inverse);
-      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">'
+      const better = m.inverse ? m.v26 < m.v25 : m.v26 > m.v25;
+      const worse  = m.inverse ? m.v26 > m.v25 : m.v26 < m.v25;
+      const arrow  = better ? '↑' : worse ? '↓' : '→';
+      const arrowClr = better ? 'var(--green)' : worse ? 'var(--red)' : 'var(--text3)';
+      const val26Clr = better ? 'var(--green)' : worse ? 'var(--red)' : 'var(--text2)';
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;border-left:3px solid '+arrowClr+'">'
         +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">'+m.label+'</div>'
-        +'<div style="display:flex;gap:10px;align-items:flex-end">'
+        +'<div style="display:flex;gap:10px;align-items:center">'
           +'<div style="flex:1">'
             +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2025 H1</div>'
-            +'<div style="font-size:22px;font-weight:800;color:var(--text1)">'+m.fmt(m.v25)+'</div>'
+            +'<div style="font-size:22px;font-weight:800;color:var(--text2)">'+m.fmt(m.v25)+'</div>'
           +'</div>'
-          +'<div style="font-size:18px;color:var(--text3)">→</div>'
+          +'<div style="font-size:22px;font-weight:900;color:'+arrowClr+'">'+arrow+'</div>'
           +'<div style="flex:1;text-align:right">'
             +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2026 H1</div>'
-            +'<div style="font-size:22px;font-weight:800;color:var(--green)">'+m.fmt(m.v26)+'</div>'
+            +'<div style="font-size:22px;font-weight:800;color:'+val26Clr+'">'+m.fmt(m.v26)+'</div>'
           +'</div>'
         +'</div>'
-        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+d+' vs 2025 H1</div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+arrow+' '+d+' vs 2025 H1</div>'
         +'</div>';
     }).join('');
   }
