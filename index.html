@@ -6215,6 +6215,16 @@ function refreshData() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // ── Integrity check — catches truncated file uploads ─────────────────────
+  if (!window._KITCHINO_FILE_OK) {
+    document.body.insertAdjacentHTML('afterbegin',
+      '<div style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;'
+      +'padding:12px 20px;font-family:sans-serif;font-size:13px;text-align:center">'
+      +'⚠️ <strong>Portal file is corrupted or truncated.</strong> '
+      +'Please re-upload index.html to GitHub and hard-refresh (Ctrl+Shift+R).</div>'
+    );
+    return; // stop initialization — data would not load anyway
+  }
   populateFilters();
   // Note: refreshYearDropdown() is called after engine loads data in _fetchAllRows()
   renderMeasuresTable();       // populate filteredMeasures first
@@ -7972,6 +7982,12 @@ function renderYearCompare() {
     if (_eg) _eg.innerHTML = "<div style='color:var(--red);padding:12px'>&#x26A0; Could not render comparison. Please refresh.</div>";
   }
 }
+
+// ── FILE INTEGRITY SENTINEL ──────────────────────────────────────────────────
+// This must remain the LAST line of JavaScript before </script>.
+// If the file is ever truncated, this flag won't be set and the portal
+// will display a visible warning on load instead of silently breaking.
+window._KITCHINO_FILE_OK = true;
 </script>
 </body>
 </html>
