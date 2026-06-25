@@ -7979,14 +7979,12 @@ function renderYearCompare() {
   } catch(e) {
     console.warn('[YearCompare] render error:', e.message);
     var _eg = document.getElementById('yc-kpi-grid');
-    if (_eg) _eg.innerHTML = "<div style='color:var(--red);padding:12px'>&#x26A0; Could not render comparison. Please refresh.</div>";
+    if (_eg) _eg.innerHTML = "<div style='color:var(--red);padding:12px'>Could not render comparison. Please refresh.</div>";
   }
 }
 
-// ── FILE INTEGRITY SENTINEL ──────────────────────────────────────────────────
-// This must remain the LAST line of JavaScript before </script>.
-// If the file is ever truncated, this flag won't be set and the portal
-// will display a visible warning on load instead of silently breaking.
+// FILE INTEGRITY SENTINEL - must be the last JS line before </script>
+// If the file is ever truncated, this won't be set and a warning banner appears.
 window._KITCHINO_FILE_OK = true;
 </script>
 </body>
