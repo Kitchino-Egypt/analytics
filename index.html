@@ -984,7 +984,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="geographic"><span class="nav-icon">📍</span>Geographic Analysis</div>
     <div class="nav-item" data-page="sources"><span class="nav-icon">📡</span>Lead Sources</div>
     <div class="nav-item" data-page="ordertypes"><span class="nav-icon">🗂</span>Order Types</div>
-    <div class="nav-item" data-page="crosssales"><span class="nav-icon">🔄</span>Cross-Sales</div>
+    <div class="nav-item" data-page="instfollowup"><span class="nav-icon">🔧</span>Installation</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
@@ -1151,7 +1151,7 @@ if (_checkSession()) {
     </div>
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">INTELLIGENCE</div>
-    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
       <div onclick="showPage('kpi')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:10px;padding:14px;cursor:pointer">
         <div style="font-size:20px;margin-bottom:6px">🔬</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">KPI Deep Dive</div>
@@ -1162,6 +1162,26 @@ if (_checkSession()) {
         <div style="font-size:13px;font-weight:700;color:var(--text)">Forecast</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">Next month outlook</div>
       </div>
+    </div>
+
+    <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">ANALYSIS</div>
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+      <div onclick="showPage('yearcompare')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">📊</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">2025 vs 2026</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Year comparison</div>
+      </div>
+      <div onclick="showPage('ordertypes')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">📦</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Order Types</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Type breakdown</div>
+      </div>
+      <div onclick="showPage('instfollowup')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid #10b981;border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🔧</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Installation</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Follow-up tracker</div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1872,39 +1892,106 @@ if (_checkSession()) {
   </div>
 </div>
 
-<!-- PAGE: CROSS-SALES ANALYSIS -->
-<div class="page" id="page-crosssales">
-  <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">Returning Customers</div><div class="kpi-value" id="cs-total">—</div><div class="kpi-sub" id="cs-total-sub">Customers with 2+ orders</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Cross-Sales Rate</div><div class="kpi-value" id="cs-rate">—</div><div class="kpi-sub">Of all unique customers</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Top Designer</div><div class="kpi-value" style="font-size:16px" id="cs-top-designer">—</div><div class="kpi-sub" id="cs-top-designer-rate">—</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">Top Area</div><div class="kpi-value" style="font-size:16px" id="cs-top-area">—</div><div class="kpi-sub" id="cs-top-area-count">—</div></div>
+
+
+<!-- PAGE: INSTALLATION FOLLOW-UP -->
+<div class="page" id="page-instfollowup">
+  <div id="inst-loading" style="text-align:center;padding:60px;color:var(--text3)">
+    <div style="font-size:36px;margin-bottom:12px">🔧</div>
+    <div style="font-size:14px">Loading installation data…</div>
+    <div style="font-size:11px;margin-top:8px;color:var(--text3)">Fetching from Google Sheets</div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-    <div class="chart-card">
-      <div class="chart-title">Cross-Sales Rate by Designer</div>
-      <div class="chart-subtitle">% of each designer's customers who returned for additional orders</div>
-      <div class="chart-wrap"><canvas id="chart-cs-designer" height="260"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Returning Customers by Area</div>
-      <div class="chart-subtitle">Number of cross-sale customers per area</div>
-      <div class="chart-wrap"><canvas id="chart-cs-area" height="260"></canvas></div>
-    </div>
+  <div id="inst-error" style="display:none;text-align:center;padding:60px">
+    <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+    <div style="color:var(--red);font-size:14px;font-weight:600">Failed to load installation data</div>
+    <div id="inst-error-msg" style="color:var(--text3);font-size:12px;margin-top:8px"></div>
+    <button onclick="_instLoad()" style="margin-top:16px;padding:8px 20px;background:var(--teal);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Retry</button>
   </div>
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">Returning Customer Details</div>
-      <div style="font-size:11px;color:var(--text3)">Customers with 2 or more measures</div>
+  <div id="inst-content" style="display:none">
+    <div class="kpi-grid kpi-4" style="margin-bottom:16px">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Total Installations</div>
+        <div class="kpi-value" id="inst-total">—</div>
+        <div class="kpi-sub" id="inst-total-sub">records</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">✅ Completed</div>
+        <div class="kpi-value" id="inst-completed">—</div>
+        <div class="kpi-sub" id="inst-completed-pct">تم الاسلام</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">⚠️ Issues</div>
+        <div class="kpi-value" id="inst-issues">—</div>
+        <div class="kpi-sub" id="inst-issues-pct">needs attention</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-label">📅 Scheduled</div>
+        <div class="kpi-value" id="inst-scheduled">—</div>
+        <div class="kpi-sub" id="inst-scheduled-pct">موعد تركيب</div>
+      </div>
     </div>
-    <div style="overflow-x:auto">
-      <table>
-        <thead><tr><th>Customer Name</th><th>Orders</th><th>Order Types</th><th>Designer(s)</th><th>Area</th><th>Last Visit</th><th>Status</th></tr></thead>
-        <tbody id="cs-tbody"></tbody>
-      </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title">By Product Type</div>
+        <div class="chart-subtitle">Installation count per product category</div>
+        <div id="inst-chart-product" style="padding:8px 0"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">By Area</div>
+        <div class="chart-subtitle">Installation count per geographic area</div>
+        <div id="inst-chart-area" style="padding:8px 0"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title">By Technician</div>
+        <div class="chart-subtitle">Installations assigned per technician</div>
+        <div id="inst-chart-tech" style="padding:8px 0"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Status Distribution</div>
+        <div class="chart-subtitle">Overall installation status breakdown</div>
+        <div id="inst-chart-status" style="padding:8px 0"></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Installation Records</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="inst-search" type="text" placeholder="Search customer or project…"
+            style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px;width:190px"
+            oninput="filterInstTable()">
+          <select id="inst-filter-status" onchange="filterInstTable()"
+            style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
+            <option value="">All Status</option>
+            <option value="completed">✅ Completed</option>
+            <option value="issue">⚠️ Issues</option>
+            <option value="scheduled">📅 Scheduled</option>
+            <option value="other">Other</option>
+          </select>
+          <select id="inst-filter-product" onchange="filterInstTable()"
+            style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
+            <option value="">All Products</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Customer</th><th>Product</th><th>Project #</th>
+              <th>Area</th><th>Status</th><th>Supply Date</th><th>Install Start</th>
+              <th>Technician</th><th>Visits</th><th>Days</th>
+            </tr>
+          </thead>
+          <tbody id="inst-tbody"></tbody>
+        </table>
+      </div>
+      <div id="inst-table-footer" style="padding:8px 16px;font-size:11px;color:var(--text3)"></div>
     </div>
   </div>
 </div>
+
 
 <div class="page" id="page-presentation">
 
@@ -4124,178 +4211,6 @@ function buildSourceCharts() {
 // ═══════════════════════════════════════════════════════════════════
 // CROSS-SALES ANALYSIS PAGE
 // ═══════════════════════════════════════════════════════════════════
-function buildCrossSalesCharts() {
-  if (!ENGINE_READY) return;
-
-  const rows = filteredMeasures;
-  const _s = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
-
-  // ── Build returning-customer data ─────────────────────────────────
-  const custData = {};  // key → {name, area, orders:[{designer,orderType,date,status}]}
-  rows.forEach(r => {
-    const k = (r.customer||'').trim().toLowerCase();
-    if (!k) return;
-    if (!custData[k]) custData[k] = { name:(r.customer||'').trim(), area:r.area||'—', orders:[] };
-    custData[k].orders.push({
-      designer: r.designer||'—',
-      orderType: (r.orderType||'').trim()||'N/A',
-      date: r._date,
-      status: r.status||'—',
-      code: r.orderCode||''
-    });
-  });
-
-  const returning = Object.values(custData).filter(c => c.orders.length > 1);
-  const totalUnique = Object.keys(custData).length;
-  const csRate = totalUnique > 0 ? (returning.length / totalUnique * 100).toFixed(1) : 0;
-  // Cross-sales ratio: contracted orders / contracted unique customers
-  const csContrOrders = rows.filter(r => r._contracted).length;
-  const csContrCusts  = new Set(rows.filter(r => r._contracted).map(r => (r.customer||'').trim().toLowerCase()).filter(Boolean)).size;
-  const csRatio = csContrCusts > 0 ? (csContrOrders / csContrCusts).toFixed(2) : '0.00';
-
-  // KPI cards
-  _s('cs-total', returning.length.toLocaleString());
-  _s('cs-total-sub', returning.length + ' of ' + totalUnique + ' unique customers');
-  _s('cs-rate', csRatio + '×');
-
-  // Cross-sales by designer
-  const desMap = {};
-  rows.forEach(r => {
-    const des = r.designer||'Unknown';
-    const k = (r.customer||'').trim().toLowerCase();
-    if (!k) return;
-    if (!desMap[des]) desMap[des] = { name:des, custs:new Set(), multi:0 };
-    desMap[des].custs.add(k);
-  });
-  // Mark multi-order customers per designer
-  Object.values(desMap).forEach(d => {
-    d.custs.forEach(k => {
-      if (custData[k] && custData[k].orders.length > 1) d.multi++;
-    });
-    d.rate = d.custs.size > 0 ? +(d.multi / d.custs.size * 100).toFixed(1) : 0;
-    d.total = d.custs.size;
-  });
-  const desArr = Object.values(desMap)
-    .filter(d => d.name !== 'Unknown' && d.total >= 3)
-    .sort((a,b) => b.rate - a.rate);
-
-  // Top designer
-  if (desArr.length > 0) {
-    _s('cs-top-designer', desArr[0].name);
-    _s('cs-top-designer-rate', desArr[0].rate + ' cross-sales rate');
-  }
-
-  // Cross-sales by area
-  const areaMap = {};
-  returning.forEach(c => {
-    const a = c.area || 'Unknown';
-    areaMap[a] = (areaMap[a]||0) + 1;
-  });
-  const areaArr = Object.entries(areaMap)
-    .filter(([a]) => a !== 'Unknown')
-    .sort((a,b) => b[1]-a[1]);
-
-  if (areaArr.length > 0) {
-    _s('cs-top-area', areaArr[0][0]);
-    _s('cs-top-area-count', areaArr[0][1] + ' returning customers');
-  }
-
-  // ── Chart 1: Cross-sales rate by designer (horizontal bar) ────────
-  makeChart('chart-cs-designer', {
-    type: 'bar',
-    data: {
-      labels: desArr.map(d=>d.name),
-      datasets: [{
-        label: 'Cross-Sales Rate %',
-        data: desArr.map(d=>d.rate),
-        backgroundColor: desArr.map(d => d.rate>=20?'rgba(66,133,244,0.22)':d.rate>=10?'rgba(200,135,0,0.82)':'rgba(26,115,232,0.82)'),
-        borderColor: desArr.map(d => d.rate>=20?GREEN:d.rate>=10?GOLD:TEAL),
-        borderWidth: 1.5, borderRadius: 4
-      }]
-    },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.x+'% ('+desArr[c.dataIndex].multi+' of '+desArr[c.dataIndex].total+' customers)'}} },
-      scales: {
-        x: { min:0, max:100, ticks:{callback:v=>v+'%',color:'#5050a0',font:{size:10}}, grid:{color:'rgba(0,0,0,0.07)'} },
-        y: { ticks:{color:'#5050a0',font:{size:10}}, grid:{display:false} }
-      }
-    }
-  });
-
-  // ── Chart 2: Returning customers by area (bar) ─────────────────────
-  const topAreas = areaArr.slice(0, 12);
-  makeChart('chart-cs-area', {
-    type: 'bar',
-    data: {
-      labels: topAreas.map(a=>a[0]),
-      datasets: [{
-        label: 'Returning Customers',
-        data: topAreas.map(a=>a[1]),
-        backgroundColor: 'rgba(200,135,0,0.22)', borderColor: GOLD,
-        borderWidth: 1.5, borderRadius: 4
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend:{display:false} },
-      scales: {
-        x: { ticks:{color:'#5050a0',font:{size:9},maxRotation:35}, grid:{display:false} },
-        y: { ticks:{color:'#5050a0',font:{size:10},precision:0}, grid:{color:'rgba(0,0,0,0.07)'} }
-      }
-    }
-  });
-}
-
-function renderCrossSalesTable() {
-  if (!ENGINE_READY) return;
-  const tbody = document.getElementById('cs-tbody');
-  if (!tbody) return;
-
-  const rows = filteredMeasures;
-  const custData = {};
-  rows.forEach(r => {
-    const k = (r.customer||'').trim().toLowerCase();
-    if (!k) return;
-    if (!custData[k]) custData[k] = { name:(r.customer||'').trim(), area:r.area||'—', orders:[] };
-    custData[k].orders.push({
-      designer: r.designer||'—',
-      orderType: (r.orderType||'').trim()||'N/A',
-      date: r._date,
-      status: r.status||'—'
-    });
-  });
-
-  const returning = Object.values(custData)
-    .filter(c => c.orders.length > 1)
-    .sort((a,b) => b.orders.length - a.orders.length);
-
-  if (!returning.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No returning customers found in current filter</td></tr>';
-    return;
-  }
-
-  const fmtDate = d => d ? d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
-  const statusColor = s => s==='تعاقد'?'var(--green)':s==='مناقشة'?'var(--gold)':s==='الغاء'?'var(--red)':'var(--text3)';
-  const statusLabel = s => s==='تعاقد'?'Contracted':s==='مناقشة'?'Discussion':s==='الغاء'?'Cancelled':'Pending';
-
-  tbody.innerHTML = returning.map(c => {
-    const lastOrder = c.orders.sort((a,b)=>(b.date||0)-(a.date||0))[0];
-    const types = [...new Set(c.orders.map(o=>o.orderType).filter(t=>t&&t!=='N/A'))].join(', ') || 'N/A';
-    const designers = [...new Set(c.orders.map(o=>o.designer).filter(d=>d&&d!=='—'))].join(', ');
-    const badge = c.orders.length >= 4 ? 'var(--green)' : c.orders.length >= 3 ? 'var(--gold)' : 'var(--teal)';
-    return `<tr>
-      <td style="font-weight:600;color:var(--text1)">${c.name}</td>
-      <td><span style="background:rgba(30,142,62,0.22);color:${badge};padding:2px 8px;border-radius:10px;font-weight:700">${c.orders.length}</span></td>
-      <td style="color:var(--text2);font-size:11px">${types}</td>
-      <td style="color:var(--text2);font-size:11px">${designers}</td>
-      <td>${c.area}</td>
-      <td style="color:var(--text3);font-size:11px">${fmtDate(lastOrder.date)}</td>
-      <td><span style="color:${statusColor(lastOrder.status)};font-weight:600">${statusLabel(lastOrder.status)}</span></td>
-    </tr>`;
-  }).join('');
-}
-
 
 // ═══════════════════════════════════════════════════════════════════
 // ORDER TYPES ANALYSIS PAGE
@@ -5775,7 +5690,7 @@ const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
   monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',
-  kpi:'KPI Deep Dive',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',crosssales:'Cross-Sales Analysis'
+  kpi:'KPI Deep Dive',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up'
 };
 
 const PAGE_BUILDERS = {
@@ -5792,7 +5707,7 @@ const PAGE_BUILDERS = {
   ceo: buildCEOCharts,
   presentation: buildPresentationSlides,
   ordertypes: buildOrderTypeCharts,
-  crosssales: buildCrossSalesCharts
+  instfollowup: buildInstFollowupPage,
 };
 
 const builtPages = new Set();
@@ -5818,7 +5733,6 @@ function showPage(name) {
       if(name==='designers') renderDesignerTable();
       if(name==='geographic') renderAreaTable();
       if(name==='ordertypes') renderOrderTypeTable();
-      if(name==='crosssales') renderCrossSalesTable();
       if(name==='monthly') renderMonthlyTable();
       if(name==='sources') renderSourceTable();
       if(name==='followup') { buildFollowupCharts(); renderFollowupTable(); }
@@ -7972,6 +7886,168 @@ function renderYearCompare() {
     if (_eg) _eg.innerHTML = "<div style='color:var(--red);padding:12px'>Could not render comparison. Please refresh.</div>";
   }
 }
+
+// ════════════════════════════════════════════════════════════════════
+// INSTALLATION FOLLOW-UP PAGE
+// ════════════════════════════════════════════════════════════════════
+const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOp6_hBvcLnUifOQkBdr5Ip4xKsW06iqWrzIMEu4-l4zJ2ENuGGyYs5SW1QV0pKRALdQ/exec';
+let _INST_DATA = null;
+
+function instStatus(row) {
+  const s = (row['الحالة'] || '').trim();
+  if (s.includes('تم الاسلام') || s.includes('تم التسليم')) return 'completed';
+  if (s.includes('خاط')) return 'issue';
+  if (s.includes('موعد') || s.includes('تركيب')) return 'scheduled';
+  return 'other';
+}
+
+async function _instLoad() {
+  const loading = document.getElementById('inst-loading');
+  const error   = document.getElementById('inst-error');
+  const cont    = document.getElementById('inst-content');
+  if (!loading) return;
+  loading.style.display = 'block';
+  error.style.display   = 'none';
+  cont.style.display    = 'none';
+  try {
+    const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 30000);
+    if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data returned');
+    const rows = Array.isArray(data) ? data : (data.data || []);
+    _INST_DATA = rows;
+    loading.style.display = 'none';
+    cont.style.display    = 'block';
+    _instRender(rows);
+  } catch(e) {
+    loading.style.display = 'none';
+    error.style.display   = 'block';
+    const em = document.getElementById('inst-error-msg');
+    if (em) em.textContent = e.message;
+  }
+}
+
+function buildInstFollowupPage() {
+  if (_INST_DATA) { _instRender(_INST_DATA); return; }
+  _instLoad();
+}
+
+function _instBar(id, entries, colorFn) {
+  const el = document.getElementById(id);
+  if (!el || !entries.length) return;
+  const max = Math.max(...entries.map(e => e[1]), 1);
+  el.innerHTML = entries.slice(0, 15).map(([label, count]) => {
+    const pct   = (count / max * 100).toFixed(0);
+    const color = colorFn ? colorFn(label) : 'var(--teal)';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
+      + '<div style="width:120px;font-size:10px;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + label + '">' + label + '</div>'
+      + '<div style="flex:1;background:var(--bg2);border-radius:3px;height:14px">'
+      + '<div style="width:' + pct + '%;background:' + color + ';height:100%;border-radius:3px"></div>'
+      + '</div>'
+      + '<div style="width:30px;font-size:10px;color:var(--text1);font-weight:700">' + count + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function _instRender(rows) {
+  const _s = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+
+  const total     = rows.length;
+  const completed = rows.filter(r => instStatus(r) === 'completed').length;
+  const issues    = rows.filter(r => instStatus(r) === 'issue').length;
+  const scheduled = rows.filter(r => instStatus(r) === 'scheduled').length;
+  const pct = n => total > 0 ? (n / total * 100).toFixed(0) + '%' : '0%';
+
+  _s('inst-total',         total.toLocaleString());
+  _s('inst-total-sub',     total + ' installation records');
+  _s('inst-completed',     completed.toLocaleString());
+  _s('inst-completed-pct', pct(completed) + ' of total');
+  _s('inst-issues',        issues.toLocaleString());
+  _s('inst-issues-pct',    pct(issues) + ' of total');
+  _s('inst-scheduled',     scheduled.toLocaleString());
+  _s('inst-scheduled-pct', pct(scheduled) + ' of total');
+
+  const prodMap = {};
+  rows.forEach(r => { const p = r['المنتج'] || 'Unknown'; prodMap[p] = (prodMap[p] || 0) + 1; });
+  const prodColors = { 'Kitchen':'#10b981', 'Dressing Room':'#6366f1', 'Kitchenette':'#f59e0b', 'Closet':'#3b82f6', 'مطبخ':'#10b981' };
+  _instBar('inst-chart-product', Object.entries(prodMap).sort((a,b)=>b[1]-a[1]), l => prodColors[l] || 'var(--teal)');
+
+  const areaMap = {};
+  rows.forEach(r => { const a = r['العنوان'] || ''; if (a) areaMap[a] = (areaMap[a] || 0) + 1; });
+  _instBar('inst-chart-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
+
+  const techMap = {};
+  rows.forEach(r => { const t = r['فني التركيب'] || ''; if (t) techMap[t] = (techMap[t] || 0) + 1; });
+  _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
+
+  const statMap = { completed, issue: issues, scheduled, other: total - completed - issues - scheduled };
+  const statColors = { completed:'#10b981', issue:'#ef4444', scheduled:'#f59e0b', other:'#94a3b8' };
+  const statLabels = { completed:'✅ Completed', issue:'⚠️ Issues', scheduled:'📅 Scheduled', other:'Other' };
+  _instBar('inst-chart-status',
+    Object.entries(statMap).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[statLabels[k],v]),
+    l => Object.entries(statLabels).reduce((c,[k,v])=>v===l?statColors[k]:c, '#94a3b8')
+  );
+
+  // Populate product filter
+  const pSel = document.getElementById('inst-filter-product');
+  if (pSel && pSel.options.length <= 1) {
+    Object.keys(prodMap).sort().forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      pSel.appendChild(opt);
+    });
+  }
+
+  filterInstTable();
+}
+
+function filterInstTable() {
+  if (!_INST_DATA) return;
+  const search   = (document.getElementById('inst-search')?.value || '').toLowerCase().trim();
+  const stFilter = document.getElementById('inst-filter-status')?.value  || '';
+  const prFilter = document.getElementById('inst-filter-product')?.value || '';
+
+  let rows = _INST_DATA;
+  if (search)   rows = rows.filter(r => (r['العميل']||'').toLowerCase().includes(search) || String(r['رقم المشروع']||'').includes(search));
+  if (stFilter) rows = rows.filter(r => instStatus(r) === stFilter);
+  if (prFilter) rows = rows.filter(r => (r['المنتج']||'') === prFilter);
+
+  const fmtDate = d => (d && /\d{4}-\d{2}-\d{2}/.test(d)) ? d.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1') : (d && d !== '0' ? d : '—');
+
+  const stBadge = row => {
+    const st = instStatus(row);
+    const cfg = { completed:['#10b981','✅ Done'], issue:['#ef4444','⚠️ Issue'], scheduled:['#f59e0b','📅 Sched.'], other:['#94a3b8','—'] };
+    const [c, l] = cfg[st] || cfg.other;
+    return '<span style="background:' + c + '22;color:' + c + ';padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700">' + l + '</span>';
+  };
+
+  const tbody  = document.getElementById('inst-tbody');
+  const footer = document.getElementById('inst-table-footer');
+  if (!tbody) return;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">No records found</td></tr>';
+    if (footer) footer.textContent = '0 records';
+    return;
+  }
+
+  tbody.innerHTML = rows.slice(0, 250).map(r =>
+    '<tr>'
+    + '<td style="color:var(--text3);font-size:10px">' + (r['ح']||'') + '</td>'
+    + '<td style="font-weight:600;color:var(--text1)">' + (r['العميل']||'—') + '</td>'
+    + '<td style="color:var(--text2);font-size:11px">' + (r['المنتج']||'—') + '</td>'
+    + '<td style="color:var(--text3);font-size:11px">' + (r['رقم المشروع']||'—') + '</td>'
+    + '<td>' + (r['العنوان']||'—') + '</td>'
+    + '<td>' + stBadge(r) + '</td>'
+    + '<td style="color:var(--text3);font-size:11px">' + fmtDate(r['تاريخ التوريد']) + '</td>'
+    + '<td style="color:var(--text3);font-size:11px">' + fmtDate(r['تاريخ بداية التركيب']) + '</td>'
+    + '<td style="color:var(--text2);font-size:11px">' + (r['فني التركيب']||'—') + '</td>'
+    + '<td style="text-align:center;color:var(--text2)">' + (r['إجمالي عدد الزيارات']||'—') + '</td>'
+    + '<td style="text-align:center;color:var(--text2)">' + (r['إجمالي ايام التركيب']||'—') + '</td>'
+    + '</tr>'
+  ).join('');
+
+  if (footer) footer.textContent = 'Showing ' + Math.min(rows.length, 250) + ' of ' + rows.length + ' records';
+}
+
 
 </script>
 </body>
