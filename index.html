@@ -1957,22 +1957,27 @@ if (_checkSession()) {
     <div class="table-card">
       <div class="table-header">
         <div class="table-title">Installation Records</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <input id="inst-search" type="text" placeholder="Search customer or project…"
-            style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px;width:190px"
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input id="inst-search" type="text" placeholder="Search customer / project…"
+            style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px;width:180px"
             oninput="filterInstTable()">
           <select id="inst-filter-status" onchange="filterInstTable()"
             style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
-            <option value="">All Status</option>
-            <option value="completed">✅ Completed</option>
-            <option value="issue">⚠️ Issues</option>
-            <option value="scheduled">📅 Scheduled</option>
-            <option value="other">Other</option>
+            <option value="">الحالة — All</option>
           </select>
           <select id="inst-filter-product" onchange="filterInstTable()"
             style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
-            <option value="">All Products</option>
+            <option value="">المنتج — All</option>
           </select>
+          <select id="inst-filter-area" onchange="filterInstTable()"
+            style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
+            <option value="">العنوان — All</option>
+          </select>
+          <select id="inst-filter-tech" onchange="filterInstTable()"
+            style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
+            <option value="">الفني — All</option>
+          </select>
+          <button onclick="_instClearFilters()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text3);font-size:11px;cursor:pointer">Clear</button>
         </div>
       </div>
       <div style="overflow-x:auto">
@@ -7893,11 +7898,12 @@ function renderYearCompare() {
 const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOp6_hBvcLnUifOQkBdr5Ip4xKsW06iqWrzIMEu4-l4zJ2ENuGGyYs5SW1QV0pKRALdQ/exec';
 let _INST_DATA = null;
 
+// Classify row into a category for colour-coding only
 function instStatus(row) {
   const s = (row['الحالة'] || '').trim();
   if (s.includes('تم الاسلام') || s.includes('تم التسليم')) return 'completed';
-  if (s.includes('خاط')) return 'issue';
-  if (s.includes('موعد') || s.includes('تركيب')) return 'scheduled';
+  if (s.includes('خاط'))                             return 'issue';
+  if (s.includes('موعد'))                             return 'scheduled';
   return 'other';
 }
 
@@ -7916,6 +7922,7 @@ async function _instLoad() {
     _INST_DATA = rows;
     loading.style.display = 'none';
     cont.style.display    = 'block';
+    _instPopulateFilters(rows);
     _instRender(rows);
   } catch(e) {
     loading.style.display = 'none';
@@ -7926,8 +7933,33 @@ async function _instLoad() {
 }
 
 function buildInstFollowupPage() {
-  if (_INST_DATA) { _instRender(_INST_DATA); return; }
+  if (_INST_DATA) { _instPopulateFilters(_INST_DATA); _instRender(_INST_DATA); return; }
   _instLoad();
+}
+
+// Populate all filter dropdowns from actual data values
+function _instPopulateFilters(rows) {
+  const fill = (selId, values) => {
+    const sel = document.getElementById(selId);
+    if (!sel || sel.options.length > 1) return;
+    [...values].sort().forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  };
+  fill('inst-filter-status',  new Set(rows.map(r => r['الحالة']).filter(Boolean)));
+  fill('inst-filter-product', new Set(rows.map(r => r['المنتج']).filter(Boolean)));
+  fill('inst-filter-area',    new Set(rows.map(r => r['العنوان']).filter(Boolean)));
+  fill('inst-filter-tech',    new Set(rows.map(r => r['فني التركيب']).filter(Boolean)));
+}
+
+function _instClearFilters() {
+  ['inst-search','inst-filter-status','inst-filter-product','inst-filter-area','inst-filter-tech'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.nodeType === 1 && (el.value = '');
+  });
+  filterInstTable();
 }
 
 function _instBar(id, entries, colorFn) {
@@ -7938,7 +7970,7 @@ function _instBar(id, entries, colorFn) {
     const pct   = (count / max * 100).toFixed(0);
     const color = colorFn ? colorFn(label) : 'var(--teal)';
     return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">'
-      + '<div style="width:120px;font-size:10px;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + label + '">' + label + '</div>'
+      + '<div style="width:130px;font-size:10px;color:var(--text2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + label + '">' + label + '</div>'
       + '<div style="flex:1;background:var(--bg2);border-radius:3px;height:14px">'
       + '<div style="width:' + pct + '%;background:' + color + ';height:100%;border-radius:3px"></div>'
       + '</div>'
@@ -7965,10 +7997,13 @@ function _instRender(rows) {
   _s('inst-scheduled',     scheduled.toLocaleString());
   _s('inst-scheduled-pct', pct(scheduled) + ' of total');
 
+  // Product chart (actual Arabic values)
   const prodMap = {};
   rows.forEach(r => { const p = r['المنتج'] || 'Unknown'; prodMap[p] = (prodMap[p] || 0) + 1; });
-  const prodColors = { 'Kitchen':'#10b981', 'Dressing Room':'#6366f1', 'Kitchenette':'#f59e0b', 'Closet':'#3b82f6', 'مطبخ':'#10b981' };
-  _instBar('inst-chart-product', Object.entries(prodMap).sort((a,b)=>b[1]-a[1]), l => prodColors[l] || 'var(--teal)');
+  const PROD_COLORS = ['#10b981','#6366f1','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+  const prodKeys = Object.keys(prodMap).sort();
+  _instBar('inst-chart-product', Object.entries(prodMap).sort((a,b)=>b[1]-a[1]),
+    l => PROD_COLORS[prodKeys.indexOf(l) % PROD_COLORS.length]);
 
   const areaMap = {};
   rows.forEach(r => { const a = r['العنوان'] || ''; if (a) areaMap[a] = (areaMap[a] || 0) + 1; });
@@ -7978,23 +8013,21 @@ function _instRender(rows) {
   rows.forEach(r => { const t = r['فني التركيب'] || ''; if (t) techMap[t] = (techMap[t] || 0) + 1; });
   _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
 
-  const statMap = { completed, issue: issues, scheduled, other: total - completed - issues - scheduled };
-  const statColors = { completed:'#10b981', issue:'#ef4444', scheduled:'#f59e0b', other:'#94a3b8' };
-  const statLabels = { completed:'✅ Completed', issue:'⚠️ Issues', scheduled:'📅 Scheduled', other:'Other' };
-  _instBar('inst-chart-status',
-    Object.entries(statMap).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[statLabels[k],v]),
-    l => Object.entries(statLabels).reduce((c,[k,v])=>v===l?statColors[k]:c, '#94a3b8')
-  );
-
-  // Populate product filter
-  const pSel = document.getElementById('inst-filter-product');
-  if (pSel && pSel.options.length <= 1) {
-    Object.keys(prodMap).sort().forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p; opt.textContent = p;
-      pSel.appendChild(opt);
-    });
-  }
+  // Status distribution — group by actual status text
+  const statMap = {};
+  rows.forEach(r => {
+    const cat = instStatus(r);
+    const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'Completed')
+                : cat === 'issue'     ? '⚠️ ' + (r['الحالة']||'Issue')
+                : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'Scheduled')
+                :                       (r['الحالة']||'Other');
+    statMap[label] = (statMap[label] || 0) + 1;
+  });
+  const statColors = {};
+  Object.keys(statMap).forEach(k => {
+    statColors[k] = k.startsWith('✅') ? '#10b981' : k.startsWith('⚠️') ? '#ef4444' : k.startsWith('📅') ? '#f59e0b' : '#94a3b8';
+  });
+  _instBar('inst-chart-status', Object.entries(statMap).sort((a,b)=>b[1]-a[1]), l => statColors[l] || '#94a3b8');
 
   filterInstTable();
 }
@@ -8004,19 +8037,26 @@ function filterInstTable() {
   const search   = (document.getElementById('inst-search')?.value || '').toLowerCase().trim();
   const stFilter = document.getElementById('inst-filter-status')?.value  || '';
   const prFilter = document.getElementById('inst-filter-product')?.value || '';
+  const arFilter = document.getElementById('inst-filter-area')?.value    || '';
+  const tcFilter = document.getElementById('inst-filter-tech')?.value    || '';
 
   let rows = _INST_DATA;
   if (search)   rows = rows.filter(r => (r['العميل']||'').toLowerCase().includes(search) || String(r['رقم المشروع']||'').includes(search));
-  if (stFilter) rows = rows.filter(r => instStatus(r) === stFilter);
+  if (stFilter) rows = rows.filter(r => (r['الحالة']||'') === stFilter);
   if (prFilter) rows = rows.filter(r => (r['المنتج']||'') === prFilter);
+  if (arFilter) rows = rows.filter(r => (r['العنوان']||'') === arFilter);
+  if (tcFilter) rows = rows.filter(r => (r['فني التركيب']||'') === tcFilter);
 
   const fmtDate = d => (d && /\d{4}-\d{2}-\d{2}/.test(d)) ? d.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1') : (d && d !== '0' ? d : '—');
 
+  // Status badge uses actual Arabic text + colour
   const stBadge = row => {
-    const st = instStatus(row);
-    const cfg = { completed:['#10b981','✅ Done'], issue:['#ef4444','⚠️ Issue'], scheduled:['#f59e0b','📅 Sched.'], other:['#94a3b8','—'] };
-    const [c, l] = cfg[st] || cfg.other;
-    return '<span style="background:' + c + '22;color:' + c + ';padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700">' + l + '</span>';
+    const cat = instStatus(row);
+    const txt = (row['الحالة'] || '').trim() || '—';
+    const color = cat === 'completed' ? '#10b981' : cat === 'issue' ? '#ef4444' : cat === 'scheduled' ? '#f59e0b' : '#94a3b8';
+    return '<span style="background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap" title="' + txt + '">'
+      + (cat==='completed'?'✅ ':cat==='issue'?'⚠️ ':cat==='scheduled'?'📅 ':'') + txt
+      + '</span>';
   };
 
   const tbody  = document.getElementById('inst-tbody');
