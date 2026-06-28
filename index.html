@@ -1979,7 +1979,14 @@ if (_checkSession()) {
           <tbody id="inst-tbody"></tbody>
         </table>
       </div>
-      <div id="inst-table-footer" style="padding:8px 16px;font-size:11px;color:var(--text3)"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px">
+        <div id="inst-table-footer" style="font-size:11px;color:var(--text3)"></div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button id="inst-prev" onclick="_instPageNav(-1)" style="padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px;cursor:pointer">← Prev</button>
+          <span id="inst-page-label" style="font-size:12px;color:var(--text2);min-width:80px;text-align:center"></span>
+          <button id="inst-next" onclick="_instPageNav(1)" style="padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px;cursor:pointer">Next →</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -3001,10 +3008,23 @@ function getFilteredMonthly() {
 
 // Get available years from live engine rows
 function getAvailableYears() {
+  const yrs = new Set();
+  // Years from main measures data
   if (ENGINE_READY && ENGINE_CLEAN_ROWS.length) {
-    return [...new Set(ENGINE_CLEAN_ROWS.map(r => r._year).filter(Boolean))].sort();
+    ENGINE_CLEAN_ROWS.forEach(r => { if (r._year) yrs.add(r._year); });
   }
-  return [];
+  // Years from installation follow-up data (separate dataset)
+  if (_INST_DATA && _INST_DATA.length) {
+    _INST_DATA.forEach(r => {
+      const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+      if (!d || d === '0') return;
+      let yr;
+      if (/^\d{4}/.test(d)) yr = d.substring(0, 4);
+      else { const p = new Date(d); if (!isNaN(p)) yr = String(p.getFullYear()); }
+      if (yr && yr.length === 4 && parseInt(yr) > 2000) yrs.add(yr);
+    });
+  }
+  return yrs.size ? [...yrs].sort() : [];
 }
 
 
@@ -8109,9 +8129,7 @@ function _instRender(allRows) {
 function filterInstTable() {
   if (!_INST_DATA) return;
 
-  // Start from main-filtered rows, then apply local filters
   let rows = _instMainFiltered(_INST_DATA);
-
   const search   = (document.getElementById('inst-search')?.value || '').toLowerCase().trim();
   const stFilter = document.getElementById('inst-filter-status')?.value  || '';
   const prFilter = document.getElementById('inst-filter-product')?.value || '';
@@ -8127,9 +8145,36 @@ function filterInstTable() {
     rows = rows.filter(r => (r[tk2] || r['فني التركيب'] || r['فنى التركيب'] || '').trim() === tcFilter);
   }
 
+  // Store filtered rows and reset to page 1 when filters change
+  _instFilteredRows = rows;
+  _instCurrentPage  = 1;
+  _instRenderPage();
+}
+
+// Pagination state
+let _instFilteredRows = [];
+let _instCurrentPage  = 1;
+const INST_PAGE_SIZE  = 100;
+
+function _instPageNav(dir) {
+  const total = _instFilteredRows.length;
+  const pages = Math.ceil(total / INST_PAGE_SIZE);
+  _instCurrentPage = Math.max(1, Math.min(pages, _instCurrentPage + dir));
+  _instRenderPage();
+}
+
+function _instRenderPage() {
+  const rows   = _instFilteredRows;
+  const total  = rows.length;
+  const pages  = Math.max(1, Math.ceil(total / INST_PAGE_SIZE));
+  const page   = Math.max(1, Math.min(_instCurrentPage, pages));
+  _instCurrentPage = page;
+  const start  = (page - 1) * INST_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + INST_PAGE_SIZE);
+
   const fmtDate = d => {
     if (!d || d === '0' || d === '') return '—';
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d.replace(/(\d{4})-(\d{2})-(\d{2})/, '//');
     const p = new Date(d);
     if (!isNaN(p.getTime())) {
       const dd = String(p.getDate()).padStart(2,'0');
@@ -8140,8 +8185,8 @@ function filterInstTable() {
   };
 
   const stBadge = row => {
-    const cat = instStatus(row);
-    const txt = (row['الحالة'] || '').trim() || '—';
+    const cat   = instStatus(row);
+    const txt   = (row['الحالة'] || '').trim() || '—';
     const color = cat === 'completed' ? '#10b981' : cat === 'issue' ? '#ef4444' : cat === 'scheduled' ? '#f59e0b' : '#94a3b8';
     return '<span style="background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap" title="' + txt + '">'
       + (cat==='completed'?'✅ ':cat==='issue'?'⚠️ ':cat==='scheduled'?'📅 ':'') + txt + '</span>';
@@ -8149,16 +8194,22 @@ function filterInstTable() {
 
   const tbody  = document.getElementById('inst-tbody');
   const footer = document.getElementById('inst-table-footer');
+  const label  = document.getElementById('inst-page-label');
+  const prev   = document.getElementById('inst-prev');
+  const next   = document.getElementById('inst-next');
   if (!tbody) return;
 
-  if (!rows.length) {
+  if (!pageRows.length) {
     tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--text3)">No records found</td></tr>';
     if (footer) footer.textContent = '0 records';
+    if (label)  label.textContent  = '';
+    if (prev)   prev.disabled      = true;
+    if (next)   next.disabled      = true;
     return;
   }
 
   const tk3 = _instTechKey(_INST_DATA || rows);
-  tbody.innerHTML = rows.slice(0, 250).map(r =>
+  tbody.innerHTML = pageRows.map(r =>
     '<tr>'
     + '<td style="color:var(--text3);font-size:10px">' + (r['ح']||'') + '</td>'
     + '<td style="font-weight:600;color:var(--text1)">' + (r['العميل']||'—') + '</td>'
@@ -8174,8 +8225,14 @@ function filterInstTable() {
     + '</tr>'
   ).join('');
 
-  if (footer) footer.textContent = 'Showing ' + Math.min(rows.length, 250) + ' of ' + rows.length + ' records';
+  const from = start + 1;
+  const to   = Math.min(start + INST_PAGE_SIZE, total);
+  if (footer) footer.textContent  = 'Showing ' + from + '–' + to + ' of ' + total + ' records';
+  if (label)  label.textContent   = 'Page ' + page + ' of ' + pages;
+  if (prev)   prev.disabled       = (page === 1);
+  if (next)   next.disabled       = (page === pages);
 }
+
 
 
 </script>
