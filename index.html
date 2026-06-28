@@ -8037,20 +8037,20 @@ function _instRender(rows) {
   _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
 
   // Status distribution — group by actual status text
-  const statMap = {};
+  const statDistMap = {};
   rows.forEach(r => {
     const cat = instStatus(r);
     const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'Completed')
                 : cat === 'issue'     ? '⚠️ ' + (r['الحالة']||'Issue')
                 : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'Scheduled')
                 :                       (r['الحالة']||'Other');
-    statMap[label] = (statMap[label] || 0) + 1;
+    statDistMap[label] = (statDistMap[label] || 0) + 1;
   });
-  const statColors = {};
-  Object.keys(statMap).forEach(k => {
-    statColors[k] = k.startsWith('✅') ? '#10b981' : k.startsWith('⚠️') ? '#ef4444' : k.startsWith('📅') ? '#f59e0b' : '#94a3b8';
+  const statDistColors = {};
+  Object.keys(statDistMap).forEach(k => {
+    statDistColors[k] = k.startsWith('✅') ? '#10b981' : k.startsWith('⚠️') ? '#ef4444' : k.startsWith('📅') ? '#f59e0b' : '#94a3b8';
   });
-  _instBar('inst-chart-status', Object.entries(statMap).sort((a,b)=>b[1]-a[1]), l => statColors[l] || '#94a3b8');
+  _instBar('inst-chart-status', Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]), l => statDistColors[l] || '#94a3b8');
 
   filterInstTable();
 }
