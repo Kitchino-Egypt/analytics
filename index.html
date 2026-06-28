@@ -5659,6 +5659,7 @@ function applyFilters() {
     if (activePage === 'measures')   renderMeasuresTable();
     if (activePage === 'followup')   renderFollowupTable();
     if (activePage === 'daily')      renderFollowupTable();
+    if (activePage === 'instfollowup' && _INST_DATA) { _instRender(_INST_DATA); }
   }
 
   // ── 6. Mark all other built pages as stale — they will rebuild on next visit
@@ -7885,13 +7886,60 @@ function renderYearCompare() {
 const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOp6_hBvcLnUifOQkBdr5Ip4xKsW06iqWrzIMEu4-l4zJ2ENuGGyYs5SW1QV0pKRALdQ/exec';
 let _INST_DATA = null;
 
-// Classify row into a category for colour-coding only
+// ── Classify row status category for colour-coding ───────────────────────────
 function instStatus(row) {
   const s = (row['الحالة'] || '').trim();
-  if (s.includes('تم الاسلام') || s.includes('تم التسليم')) return 'completed';
-  if (s.includes('خاط'))                             return 'issue';
-  if (s.includes('موعد'))                             return 'scheduled';
+  if (s.includes('تم الاسلام') || s.includes('تم الاستلام') || s.includes('تم التسليم')) return 'completed';
+  if (s.includes('خاط') || s.includes('متوقف'))                                           return 'issue';
+  if (s.includes('موعد'))                                                                  return 'scheduled';
   return 'other';
+}
+
+// ── Get tech value from row (handles both ي and ى spellings) ─────────────────
+function _instTech(r) { return (r['فني التركيب'] || r['فنى التركيب'] || '').trim(); }
+
+// ── Detect actual tech column name from data ─────────────────────────────────
+function _instTechKey(rows) {
+  if (!rows || !rows.length) return 'فني التركيب';
+  const keys = Object.keys(rows[0]);
+  return keys.find(k => k.includes('التركيب') && k.includes('فن')) || 'فني التركيب';
+}
+
+// ── Apply the portal's global main filters (Year / Month / Area) to inst rows ─
+function _instMainFiltered(rows) {
+  const yearF  = (document.getElementById('filter-year')?.value  || 'all').trim();
+  const monthF = (document.getElementById('filter-month')?.value || 'all').trim();
+  const areaF  = (document.getElementById('filter-area')?.value  || 'all').trim();
+
+  let out = rows;
+
+  if (yearF && yearF !== 'all') {
+    out = out.filter(r => {
+      const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+      if (!d || d === '0') return false;
+      // yyyy-MM-dd  or  full date string
+      if (/^\d{4}/.test(d)) return d.startsWith(yearF);
+      const p = new Date(d);
+      return !isNaN(p) && String(p.getFullYear()) === yearF;
+    });
+  }
+
+  if (monthF && monthF !== 'all') {
+    const mNum = parseInt(monthF, 10);
+    out = out.filter(r => {
+      const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+      if (!d || d === '0') return false;
+      const p = /^\d{4}-\d{2}/.test(d) ? new Date(d) : new Date(d);
+      return !isNaN(p) && p.getMonth() + 1 === mNum;
+    });
+  }
+
+  if (areaF && areaF !== 'all') {
+    const af = areaF.toLowerCase();
+    out = out.filter(r => (r['العنوان'] || '').toLowerCase().includes(af));
+  }
+
+  return out;
 }
 
 async function _instLoad() {
@@ -7920,15 +7968,18 @@ async function _instLoad() {
 }
 
 function buildInstFollowupPage() {
-  if (_INST_DATA) { _instPopulateFilters(_INST_DATA); _instRender(_INST_DATA); return; }
+  if (_INST_DATA) { _instRender(_INST_DATA); return; }
   _instLoad();
 }
 
-// Populate all filter dropdowns from actual data values
+// ── Populate local filter dropdowns from actual data (runs once after load) ──
 function _instPopulateFilters(rows) {
+  const techKey = _instTechKey(rows);
   const fill = (selId, values) => {
     const sel = document.getElementById(selId);
-    if (!sel || sel.options.length > 1) return;
+    if (!sel) return;
+    // Clear existing options except the first (the "All" placeholder)
+    while (sel.options.length > 1) sel.remove(1);
     [...values].sort().forEach(v => {
       const opt = document.createElement('option');
       opt.value = v; opt.textContent = v;
@@ -7938,20 +7989,20 @@ function _instPopulateFilters(rows) {
   fill('inst-filter-status',  new Set(rows.map(r => r['الحالة']).filter(Boolean)));
   fill('inst-filter-product', new Set(rows.map(r => r['المنتج']).filter(Boolean)));
   fill('inst-filter-area',    new Set(rows.map(r => r['العنوان']).filter(Boolean)));
-  fill('inst-filter-tech',    new Set(rows.map(r => (r['فني التركيب']||r['فنى التركيب'])).filter(Boolean)));
+  fill('inst-filter-tech',    new Set(rows.map(r => (r[techKey] || r['فني التركيب'] || r['فنى التركيب'] || '').trim()).filter(Boolean)));
 }
 
 function _instClearFilters() {
   ['inst-search','inst-filter-status','inst-filter-product','inst-filter-area','inst-filter-tech'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.nodeType === 1 && (el.value = '');
+    if (el) el.value = '';
   });
-  filterInstTable();
+  if (_INST_DATA) _instRender(_INST_DATA);
 }
 
 function _instBar(id, entries, colorFn) {
   const el = document.getElementById(id);
-  if (!el || !entries.length) return;
+  if (!el || !entries.length) { if(el) el.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:8px">No data</div>'; return; }
   const max = Math.max(...entries.map(e => e[1]), 1);
   el.innerHTML = entries.slice(0, 15).map(([label, count]) => {
     const pct   = (count / max * 100).toFixed(0);
@@ -7966,7 +8017,9 @@ function _instBar(id, entries, colorFn) {
   }).join('');
 }
 
-function _instRender(rows) {
+function _instRender(allRows) {
+  // Apply main portal filters first
+  const rows = _instMainFiltered(allRows);
   const _s = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
 
   const total     = rows.length;
@@ -7975,52 +8028,49 @@ function _instRender(rows) {
   const scheduled = rows.filter(r => instStatus(r) === 'scheduled').length;
   const pct = n => total > 0 ? (n / total * 100).toFixed(0) + '%' : '0%';
 
-  _s('inst-total',     total.toLocaleString());
-  _s('inst-total-sub', total + ' installation records');
+  _s('inst-total',         total.toLocaleString());
+  _s('inst-total-sub',     total + ' installation records');
 
-  // ── Dynamic status cards ────────────────────────────────────────────────
+  // ── Dynamic status cards ─────────────────────────────────────────────────
   const STATUS_COLORS = {
     'تم الاسلام بدون ملاحظات':  { bg:'#10b981', icon:'✅' },
     'تم الاستلام بدون ملاحظات': { bg:'#10b981', icon:'✅' },
     'موعد تركيب':               { bg:'#f59e0b', icon:'📅' },
     'رخام طرف العميل':          { bg:'#3b82f6', icon:'🪨' },
     'متوقف طرف عميل':           { bg:'#ef4444', icon:'⏸️' },
+    'متوقف طرف شركة':           { bg:'#dc2626', icon:'⛔' },
     'ملاحظات التسليم':           { bg:'#f97316', icon:'📋' },
     'تركيب رخام':               { bg:'#8b5cf6', icon:'🔨' },
     'فتش':                      { bg:'#6366f1', icon:'🔍' },
     'استلام العميل':             { bg:'#14b8a6', icon:'🤝' },
     'تفعيل ضمان إداري':          { bg:'#0ea5e9', icon:'📄' },
     'استكمال تركيب':             { bg:'#a855f7', icon:'🔧' },
-    'متوقف طرف شركة':           { bg:'#dc2626', icon:'⛔' },
   };
-  const FALLBACK_COLORS = ['#64748b','#0891b2','#059669','#d97706','#7c3aed','#db2777'];
+  const FALLBACK = ['#64748b','#0891b2','#059669','#d97706','#7c3aed','#db2777'];
 
   const statMap = {};
-  rows.forEach(r => {
-    const s = (r['الحالة'] || '').trim();
-    if (s) statMap[s] = (statMap[s] || 0) + 1;
-  });
+  rows.forEach(r => { const s = (r['الحالة'] || '').trim(); if (s) statMap[s] = (statMap[s] || 0) + 1; });
 
   const cardsEl = document.getElementById('inst-status-cards');
   if (cardsEl) {
     let fi = 0;
-    cardsEl.innerHTML = Object.entries(statMap)
-      .sort((a,b) => b[1] - a[1])
-      .map(([status, count]) => {
-        const cfg   = STATUS_COLORS[status];
-        const color = cfg ? cfg.bg : FALLBACK_COLORS[fi++ % FALLBACK_COLORS.length];
-        const icon  = cfg ? cfg.icon : '📌';
-        const pctVal = total > 0 ? (count / total * 100).toFixed(0) : 0;
-        return '<div style="background:' + color + '18;border:1px solid ' + color + '44;border-left:3px solid ' + color
-          + ';border-radius:10px;padding:12px 16px;min-width:140px;flex:0 0 auto">'
-          + '<div style="font-size:10px;color:' + color + ';font-weight:700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="' + status + '">' + icon + ' ' + status + '</div>'
-          + '<div style="font-size:26px;font-weight:900;color:' + color + ';line-height:1">' + count.toLocaleString() + '</div>'
-          + '<div style="font-size:10px;color:var(--text3);margin-top:4px">' + pctVal + '% of total</div>'
-          + '</div>';
-      }).join('');
+    cardsEl.innerHTML = total === 0
+      ? '<div style="color:var(--text3);font-size:12px;padding:12px">No records match current filters</div>'
+      : Object.entries(statMap).sort((a,b) => b[1]-a[1]).map(([status, count]) => {
+          const cfg   = STATUS_COLORS[status];
+          const color = cfg ? cfg.bg : FALLBACK[fi++ % FALLBACK.length];
+          const icon  = cfg ? cfg.icon : '📌';
+          const pctV  = total > 0 ? (count / total * 100).toFixed(0) : 0;
+          return '<div style="background:' + color + '18;border:1px solid ' + color + '44;border-left:3px solid ' + color
+            + ';border-radius:10px;padding:12px 16px;min-width:140px;flex:0 0 auto">'
+            + '<div style="font-size:10px;color:' + color + ';font-weight:700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="' + status + '">' + icon + ' ' + status + '</div>'
+            + '<div style="font-size:26px;font-weight:900;color:' + color + ';line-height:1">' + count.toLocaleString() + '</div>'
+            + '<div style="font-size:10px;color:var(--text3);margin-top:4px">' + pctV + '% of total</div>'
+            + '</div>';
+        }).join('');
   }
 
-  // Product chart (actual Arabic values)
+  // ── Charts ────────────────────────────────────────────────────────────────
   const prodMap = {};
   rows.forEach(r => { const p = r['المنتج'] || 'Unknown'; prodMap[p] = (prodMap[p] || 0) + 1; });
   const PROD_COLORS = ['#10b981','#6366f1','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
@@ -8033,17 +8083,15 @@ function _instRender(rows) {
   _instBar('inst-chart-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
 
   const techMap = {};
-  rows.forEach(r => { const t = (r['فني التركيب']||r['فنى التركيب']) || ''; if (t) techMap[t] = (techMap[t] || 0) + 1; });
+  const tk = _instTechKey(rows.length ? rows : (_INST_DATA||[]));
+  rows.forEach(r => { const t = (r[tk] || r['فني التركيب'] || r['فنى التركيب'] || '').trim(); if (t) techMap[t] = (techMap[t] || 0) + 1; });
   _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
 
-  // Status distribution — group by actual status text
+  // Status distribution chart
   const statDistMap = {};
   rows.forEach(r => {
-    const cat = instStatus(r);
-    const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'Completed')
-                : cat === 'issue'     ? '⚠️ ' + (r['الحالة']||'Issue')
-                : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'Scheduled')
-                :                       (r['الحالة']||'Other');
+    const cat   = instStatus(r);
+    const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'') : cat === 'issue' ? '⚠️ ' + (r['الحالة']||'') : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'') : (r['الحالة']||'Other');
     statDistMap[label] = (statDistMap[label] || 0) + 1;
   });
   const statDistColors = {};
@@ -8052,23 +8100,32 @@ function _instRender(rows) {
   });
   _instBar('inst-chart-status', Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]), l => statDistColors[l] || '#94a3b8');
 
+  // Also re-populate local tech filter with filtered data (so technician list stays accurate)
+  _instPopulateFilters(_INST_DATA || rows);
+
   filterInstTable();
 }
 
 function filterInstTable() {
   if (!_INST_DATA) return;
+
+  // Start from main-filtered rows, then apply local filters
+  let rows = _instMainFiltered(_INST_DATA);
+
   const search   = (document.getElementById('inst-search')?.value || '').toLowerCase().trim();
   const stFilter = document.getElementById('inst-filter-status')?.value  || '';
   const prFilter = document.getElementById('inst-filter-product')?.value || '';
   const arFilter = document.getElementById('inst-filter-area')?.value    || '';
   const tcFilter = document.getElementById('inst-filter-tech')?.value    || '';
 
-  let rows = _INST_DATA;
   if (search)   rows = rows.filter(r => (r['العميل']||'').toLowerCase().includes(search) || String(r['رقم المشروع']||'').includes(search));
   if (stFilter) rows = rows.filter(r => (r['الحالة']||'') === stFilter);
   if (prFilter) rows = rows.filter(r => (r['المنتج']||'') === prFilter);
   if (arFilter) rows = rows.filter(r => (r['العنوان']||'') === arFilter);
-  if (tcFilter) rows = rows.filter(r => ((r['فني التركيب']||r['فنى التركيب'])||'') === tcFilter);
+  if (tcFilter) {
+    const tk2 = _instTechKey(_INST_DATA);
+    rows = rows.filter(r => (r[tk2] || r['فني التركيب'] || r['فنى التركيب'] || '').trim() === tcFilter);
+  }
 
   const fmtDate = d => {
     if (!d || d === '0' || d === '') return '—';
@@ -8080,16 +8137,14 @@ function filterInstTable() {
       return dd + '/' + mm + '/' + p.getFullYear();
     }
     return d;
-  }
+  };
 
-  // Status badge uses actual Arabic text + colour
   const stBadge = row => {
     const cat = instStatus(row);
     const txt = (row['الحالة'] || '').trim() || '—';
     const color = cat === 'completed' ? '#10b981' : cat === 'issue' ? '#ef4444' : cat === 'scheduled' ? '#f59e0b' : '#94a3b8';
     return '<span style="background:' + color + '22;color:' + color + ';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap" title="' + txt + '">'
-      + (cat==='completed'?'✅ ':cat==='issue'?'⚠️ ':cat==='scheduled'?'📅 ':'') + txt
-      + '</span>';
+      + (cat==='completed'?'✅ ':cat==='issue'?'⚠️ ':cat==='scheduled'?'📅 ':'') + txt + '</span>';
   };
 
   const tbody  = document.getElementById('inst-tbody');
@@ -8102,6 +8157,7 @@ function filterInstTable() {
     return;
   }
 
+  const tk3 = _instTechKey(_INST_DATA || rows);
   tbody.innerHTML = rows.slice(0, 250).map(r =>
     '<tr>'
     + '<td style="color:var(--text3);font-size:10px">' + (r['ح']||'') + '</td>'
@@ -8112,7 +8168,7 @@ function filterInstTable() {
     + '<td>' + stBadge(r) + '</td>'
     + '<td style="color:var(--text3);font-size:11px">' + fmtDate(r['تاريخ التوريد']) + '</td>'
     + '<td style="color:var(--text3);font-size:11px">' + fmtDate(r['تاريخ بداية التركيب']) + '</td>'
-    + '<td style="color:var(--text2);font-size:11px">' + ((r['فني التركيب']||r['فنى التركيب'])||'—') + '</td>'
+    + '<td style="color:var(--text2);font-size:11px">' + ((r[tk3]||r['فني التركيب']||r['فنى التركيب']||'—')) + '</td>'
     + '<td style="text-align:center;color:var(--text2)">' + (r['إجمالي عدد الزيارات']||'—') + '</td>'
     + '<td style="text-align:center;color:var(--text2)">' + (r['إجمالي ايام التركيب']||'—') + '</td>'
     + '</tr>'
