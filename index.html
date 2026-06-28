@@ -1908,27 +1908,14 @@ if (_checkSession()) {
     <button onclick="_instLoad()" style="margin-top:16px;padding:8px 20px;background:var(--teal);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Retry</button>
   </div>
   <div id="inst-content" style="display:none">
-    <div class="kpi-grid kpi-4" style="margin-bottom:16px">
-      <div class="kpi-card blue">
-        <div class="kpi-label">Total Installations</div>
+    <!-- Total card + dynamic status cards -->
+    <div style="display:flex;align-items:stretch;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div class="kpi-card blue" style="min-width:150px;flex:0 0 auto">
+        <div class="kpi-label">Total</div>
         <div class="kpi-value" id="inst-total">—</div>
         <div class="kpi-sub" id="inst-total-sub">records</div>
       </div>
-      <div class="kpi-card green">
-        <div class="kpi-label">✅ Completed</div>
-        <div class="kpi-value" id="inst-completed">—</div>
-        <div class="kpi-sub" id="inst-completed-pct">تم الاسلام</div>
-      </div>
-      <div class="kpi-card red">
-        <div class="kpi-label">⚠️ Issues</div>
-        <div class="kpi-value" id="inst-issues">—</div>
-        <div class="kpi-sub" id="inst-issues-pct">needs attention</div>
-      </div>
-      <div class="kpi-card gold">
-        <div class="kpi-label">📅 Scheduled</div>
-        <div class="kpi-value" id="inst-scheduled">—</div>
-        <div class="kpi-sub" id="inst-scheduled-pct">موعد تركيب</div>
-      </div>
+      <div id="inst-status-cards" style="display:flex;gap:10px;flex-wrap:wrap;flex:1"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card">
@@ -1963,19 +1950,19 @@ if (_checkSession()) {
             oninput="filterInstTable()">
           <select id="inst-filter-status" onchange="filterInstTable()"
             style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
-            <option value="">الحالة — All</option>
+            <option value="">الحالة</option>
           </select>
           <select id="inst-filter-product" onchange="filterInstTable()"
             style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
-            <option value="">المنتج — All</option>
+            <option value="">المنتج</option>
           </select>
           <select id="inst-filter-area" onchange="filterInstTable()"
             style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
-            <option value="">العنوان — All</option>
+            <option value="">العنوان</option>
           </select>
           <select id="inst-filter-tech" onchange="filterInstTable()"
             style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg2);color:var(--text1);font-size:12px">
-            <option value="">الفني — All</option>
+            <option value="">فني التركيب</option>
           </select>
           <button onclick="_instClearFilters()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text3);font-size:11px;cursor:pointer">Clear</button>
         </div>
@@ -7951,7 +7938,7 @@ function _instPopulateFilters(rows) {
   fill('inst-filter-status',  new Set(rows.map(r => r['الحالة']).filter(Boolean)));
   fill('inst-filter-product', new Set(rows.map(r => r['المنتج']).filter(Boolean)));
   fill('inst-filter-area',    new Set(rows.map(r => r['العنوان']).filter(Boolean)));
-  fill('inst-filter-tech',    new Set(rows.map(r => r['فني التركيب']).filter(Boolean)));
+  fill('inst-filter-tech',    new Set(rows.map(r => (r['فني التركيب']||r['فنى التركيب'])).filter(Boolean)));
 }
 
 function _instClearFilters() {
@@ -7988,14 +7975,50 @@ function _instRender(rows) {
   const scheduled = rows.filter(r => instStatus(r) === 'scheduled').length;
   const pct = n => total > 0 ? (n / total * 100).toFixed(0) + '%' : '0%';
 
-  _s('inst-total',         total.toLocaleString());
-  _s('inst-total-sub',     total + ' installation records');
-  _s('inst-completed',     completed.toLocaleString());
-  _s('inst-completed-pct', pct(completed) + ' of total');
-  _s('inst-issues',        issues.toLocaleString());
-  _s('inst-issues-pct',    pct(issues) + ' of total');
-  _s('inst-scheduled',     scheduled.toLocaleString());
-  _s('inst-scheduled-pct', pct(scheduled) + ' of total');
+  _s('inst-total',     total.toLocaleString());
+  _s('inst-total-sub', total + ' installation records');
+
+  // ── Dynamic status cards ────────────────────────────────────────────────
+  const STATUS_COLORS = {
+    'تم الاسلام بدون ملاحظات':  { bg:'#10b981', icon:'✅' },
+    'تم الاستلام بدون ملاحظات': { bg:'#10b981', icon:'✅' },
+    'موعد تركيب':               { bg:'#f59e0b', icon:'📅' },
+    'رخام طرف العميل':          { bg:'#3b82f6', icon:'🪨' },
+    'متوقف طرف عميل':           { bg:'#ef4444', icon:'⏸️' },
+    'ملاحظات التسليم':           { bg:'#f97316', icon:'📋' },
+    'تركيب رخام':               { bg:'#8b5cf6', icon:'🔨' },
+    'فتش':                      { bg:'#6366f1', icon:'🔍' },
+    'استلام العميل':             { bg:'#14b8a6', icon:'🤝' },
+    'تفعيل ضمان إداري':          { bg:'#0ea5e9', icon:'📄' },
+    'استكمال تركيب':             { bg:'#a855f7', icon:'🔧' },
+    'متوقف طرف شركة':           { bg:'#dc2626', icon:'⛔' },
+  };
+  const FALLBACK_COLORS = ['#64748b','#0891b2','#059669','#d97706','#7c3aed','#db2777'];
+
+  const statMap = {};
+  rows.forEach(r => {
+    const s = (r['الحالة'] || '').trim();
+    if (s) statMap[s] = (statMap[s] || 0) + 1;
+  });
+
+  const cardsEl = document.getElementById('inst-status-cards');
+  if (cardsEl) {
+    let fi = 0;
+    cardsEl.innerHTML = Object.entries(statMap)
+      .sort((a,b) => b[1] - a[1])
+      .map(([status, count]) => {
+        const cfg   = STATUS_COLORS[status];
+        const color = cfg ? cfg.bg : FALLBACK_COLORS[fi++ % FALLBACK_COLORS.length];
+        const icon  = cfg ? cfg.icon : '📌';
+        const pctVal = total > 0 ? (count / total * 100).toFixed(0) : 0;
+        return '<div style="background:' + color + '18;border:1px solid ' + color + '44;border-left:3px solid ' + color
+          + ';border-radius:10px;padding:12px 16px;min-width:140px;flex:0 0 auto">'
+          + '<div style="font-size:10px;color:' + color + ';font-weight:700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="' + status + '">' + icon + ' ' + status + '</div>'
+          + '<div style="font-size:26px;font-weight:900;color:' + color + ';line-height:1">' + count.toLocaleString() + '</div>'
+          + '<div style="font-size:10px;color:var(--text3);margin-top:4px">' + pctVal + '% of total</div>'
+          + '</div>';
+      }).join('');
+  }
 
   // Product chart (actual Arabic values)
   const prodMap = {};
@@ -8010,7 +8033,7 @@ function _instRender(rows) {
   _instBar('inst-chart-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
 
   const techMap = {};
-  rows.forEach(r => { const t = r['فني التركيب'] || ''; if (t) techMap[t] = (techMap[t] || 0) + 1; });
+  rows.forEach(r => { const t = (r['فني التركيب']||r['فنى التركيب']) || ''; if (t) techMap[t] = (techMap[t] || 0) + 1; });
   _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
 
   // Status distribution — group by actual status text
@@ -8045,9 +8068,19 @@ function filterInstTable() {
   if (stFilter) rows = rows.filter(r => (r['الحالة']||'') === stFilter);
   if (prFilter) rows = rows.filter(r => (r['المنتج']||'') === prFilter);
   if (arFilter) rows = rows.filter(r => (r['العنوان']||'') === arFilter);
-  if (tcFilter) rows = rows.filter(r => (r['فني التركيب']||'') === tcFilter);
+  if (tcFilter) rows = rows.filter(r => ((r['فني التركيب']||r['فنى التركيب'])||'') === tcFilter);
 
-  const fmtDate = d => (d && /\d{4}-\d{2}-\d{2}/.test(d)) ? d.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1') : (d && d !== '0' ? d : '—');
+  const fmtDate = d => {
+    if (!d || d === '0' || d === '') return '—';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1');
+    const p = new Date(d);
+    if (!isNaN(p.getTime())) {
+      const dd = String(p.getDate()).padStart(2,'0');
+      const mm = String(p.getMonth()+1).padStart(2,'0');
+      return dd + '/' + mm + '/' + p.getFullYear();
+    }
+    return d;
+  }
 
   // Status badge uses actual Arabic text + colour
   const stBadge = row => {
@@ -8079,7 +8112,7 @@ function filterInstTable() {
     + '<td>' + stBadge(r) + '</td>'
     + '<td style="color:var(--text3);font-size:11px">' + fmtDate(r['تاريخ التوريد']) + '</td>'
     + '<td style="color:var(--text3);font-size:11px">' + fmtDate(r['تاريخ بداية التركيب']) + '</td>'
-    + '<td style="color:var(--text2);font-size:11px">' + (r['فني التركيب']||'—') + '</td>'
+    + '<td style="color:var(--text2);font-size:11px">' + ((r['فني التركيب']||r['فنى التركيب'])||'—') + '</td>'
     + '<td style="text-align:center;color:var(--text2)">' + (r['إجمالي عدد الزيارات']||'—') + '</td>'
     + '<td style="text-align:center;color:var(--text2)">' + (r['إجمالي ايام التركيب']||'—') + '</td>'
     + '</tr>'
