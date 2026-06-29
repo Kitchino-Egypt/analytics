@@ -7945,13 +7945,20 @@ function _instMainFiltered(rows) {
   }
 
   if (monthF && monthF !== 'all') {
-    const mNum = parseInt(monthF, 10);
-    out = out.filter(r => {
-      const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
-      if (!d || d === '0') return false;
-      const p = /^\d{4}-\d{2}/.test(d) ? new Date(d) : new Date(d);
-      return !isNaN(p) && p.getMonth() + 1 === mNum;
-    });
+    // filter-month uses English month names (e.g. "January") — map to 1-based number
+    const _MN = ['January','February','March','April','May','June',
+                 'July','August','September','October','November','December'];
+    const mNum = _MN.indexOf(monthF) + 1;  // 1-12, or 0 if not found
+    if (mNum > 0) {
+      out = out.filter(r => {
+        const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+        if (!d || d === '0') return false;
+        // prefer yyyy-MM-dd fast path, fall back to Date parse
+        if (/^\d{4}-\d{2}/.test(d)) return parseInt(d.substring(5, 7), 10) === mNum;
+        const p = new Date(d);
+        return !isNaN(p) && p.getMonth() + 1 === mNum;
+      });
+    }
   }
 
   if (areaF && areaF !== 'all') {
