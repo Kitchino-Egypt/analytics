@@ -4819,7 +4819,7 @@ function buildCEOCharts() {
         {label:'Contracted',data:_md.map(m=>m.contracted),backgroundColor:'rgba(52,168,83,0.82)',borderColor:TEAL,borderWidth:1.5,borderRadius:3}
       ]
     },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 }
 
@@ -7422,11 +7422,11 @@ function buildPresentationSlides() {
           ]
         },
         options: {
-          responsive: true, maintainAspectRatio: false,
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: true, position: 'bottom', labels: { color: '#aaa', font: { size: 10 } } } },
           scales: {
-            x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { display: false } },
+            x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
@@ -7713,6 +7713,10 @@ function renderYearCompare() {
       const arrow  = better ? '↑' : worse ? '↓' : '→';
       const arrowClr = better ? 'var(--green)' : worse ? 'var(--red)' : 'var(--text3)';
       const val26Clr = better ? 'var(--green)' : worse ? 'var(--red)' : 'var(--text2)';
+      // % change relative to 2025 (only for non-pct metrics where it makes sense)
+      const pctChg = (!m.pct && m.v25 !== 0)
+        ? ' (' + (m.v26 > m.v25 ? '+' : '') + ((m.v26 - m.v25) / Math.abs(m.v25) * 100).toFixed(1) + '%)'
+        : '';
       return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;border-left:3px solid '+arrowClr+'">'
         +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">'+m.label+'</div>'
         +'<div style="display:flex;gap:10px;align-items:center">'
@@ -7726,7 +7730,7 @@ function renderYearCompare() {
             +'<div style="font-size:22px;font-weight:800;color:'+val26Clr+'">'+m.fmt(m.v26)+'</div>'
           +'</div>'
         +'</div>'
-        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+arrow+' '+d+' vs 2025 H1</div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+arrow+' '+d+' vs 2025 H1<span style="font-size:11px;opacity:0.85">'+pctChg+'</span></div>'
         +'</div>';
     }).join('');
   }
@@ -7748,11 +7752,11 @@ function renderYearCompare() {
         { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(66,133,244,0.82)', borderColor:'#008cdc', borderWidth:1, borderRadius:3 }
       ]
     },
-    options: { responsive:true, maintainAspectRatio:false,
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{labels:{color:'#5050a0',font:{size:10}}}, tooltip:{backgroundColor:'#ffffff',borderColor:'#c8c8e0',borderWidth:1,titleColor:'#1a1a3c',bodyColor:'#4a4a88'} },
       scales:{
-        x:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}},
-        y:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.07)'}}
+        y:{ticks:{color:'#5050a0',font:{size:9}},grid:{display:false}},
+        x:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.07)'}}
       }
     }
   });
