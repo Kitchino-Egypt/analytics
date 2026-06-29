@@ -988,7 +988,6 @@ if (_checkSession()) {
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
-    <div class="nav-item" data-page="kpi"><span class="nav-icon">🔬</span>KPI Deep Dive</div>
     <div class="nav-item" data-page="forecast"><span class="nav-icon">🔮</span>Forecast &amp; Pipeline</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
     <div class="nav-item" data-page="yearcompare"><span class="nav-icon">📊</span>2025 vs 2026</div>
@@ -1152,11 +1151,6 @@ if (_checkSession()) {
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">INTELLIGENCE</div>
     <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
-      <div onclick="showPage('kpi')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:10px;padding:14px;cursor:pointer">
-        <div style="font-size:20px;margin-bottom:6px">🔬</div>
-        <div style="font-size:13px;font-weight:700;color:var(--text)">KPI Deep Dive</div>
-        <div style="font-size:10px;color:var(--text3);margin-top:3px">Detailed metrics</div>
-      </div>
       <div onclick="showPage('forecast')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:10px;padding:14px;cursor:pointer">
         <div style="font-size:20px;margin-bottom:6px">🔮</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Forecast</div>
@@ -1646,34 +1640,6 @@ if (_checkSession()) {
   </div>
 </div>
 
-<!-- PAGE 10: KPI DEEP DIVE -->
-<div class="page" id="page-kpi">
-  <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">YOY Measures Growth</div><div class="kpi-value" id="kpi-yoy-value">—</div><div class="kpi-sub" id="kpi-yoy-sub">2025 vs 2026</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Avg Time to Contract</div><div class="kpi-value" id="kpi-avg-contract">~14 days</div><div class="kpi-sub">Est. based on pipeline</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">Cross-sell Rate</div><div class="kpi-value" id="kpi-crosssell">—</div><div class="kpi-sub" id="kpi-crosssell-sub">Repeat customers</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">No-show Rate</div><div class="kpi-value" id="kpi-noshow">—</div><div class="kpi-sub" id="kpi-noshow-sub">Cancelled ÷ total</div></div>
-  </div>
-
-  <div class="chart-grid chart-2">
-    <div class="chart-card">
-      <div class="chart-title">Order Type Distribution</div>
-      <div class="chart-subtitle">All product categories measured</div>
-      <div class="chart-wrap"><canvas id="chart-order-types" height="260"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-title">Payment Tracking</div>
-      <div class="chart-subtitle">Measures with payment recorded</div>
-      <div class="chart-wrap"><canvas id="chart-payment" height="260"></canvas></div>
-    </div>
-  </div>
-
-  <div class="chart-card" style="margin-bottom:22px">
-    <div class="chart-title">Quarterly Comparison — Measures Volume</div>
-    <div class="chart-subtitle">Q1 / Q2 / Q3 / Q4 breakdown</div>
-    <div class="chart-wrap"><canvas id="chart-quarterly" height="180"></canvas></div>
-  </div>
-</div>
 
 <!-- PAGE 10.5: FORECAST & PIPELINE -->
 <div class="page" id="page-forecast">
@@ -4418,163 +4384,6 @@ function buildPaymentChart() {
   });
 }
 
-function buildKPICharts() {
-  if (!ENGINE_READY) {
-    ['chart-order-types','chart-payment','chart-quarterly'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { const ctx = el.getContext('2d'); ctx.clearRect(0,0,el.width,el.height); }
-    });
-    return;
-  }
-  // ── Order Types donut — from engine_orderTypes() ──────────────────────────
-  let otLabels = [], otCounts = [];
-  if (ENGINE_READY && KITCHINO_STATE.orderTypeData && KITCHINO_STATE.orderTypeData.length) {
-    const top = KITCHINO_STATE.orderTypeData.slice(0, 12);
-    otLabels = top.map(x => x.type);
-    otCounts = top.map(x => x.count);
-  }
-  makeChart('chart-order-types', {
-    type:'doughnut',
-    data:{
-      labels: otLabels,
-      datasets:[{data:otCounts,
-        backgroundColor:otLabels.map((_,i)=>'hsl('+(140+i*20)+',55%,'+(55-i*2)+'%)'),
-        borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
-    },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'50%'}
-  });
-
-  // ── Payment breakdown — from real rows when engine ready ──────────────────
-  let payLabels = [], payCounts = [], payColors = [];
-  const _payPalette = {'Paid':GREEN,'No Payment':'rgba(0,0,0,0.18)','None':'rgba(0,0,0,0.12)','Partial':GOLD,'Pending':BLUE};
-  if (ENGINE_READY && KITCHINO_STATE.paymentData && KITCHINO_STATE.paymentData.length) {
-    payLabels = KITCHINO_STATE.paymentData.map(x => x.label);
-    payCounts = KITCHINO_STATE.paymentData.map(x => x.count);
-    payColors = payLabels.map((l,i) => _payPalette[l] || 'hsl('+(200+i*30)+',60%,55%)');
-  }
-  makeChart('chart-payment', {
-    type:'bar',
-    data:{
-      labels: payLabels,
-      datasets:[{label:'Count',data:payCounts,backgroundColor:payColors,borderRadius:4}]
-    },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
-  });
-
-  // ── Quarterly comparison — derived from KITCHINO_STATE.monthlyData ────────
-  const _md = KITCHINO_STATE.monthlyData || [];
-  const qtrs = [
-    {label:'Q1 (Jan-Mar)',  months:[1,2,3]},
-    {label:'Q2 (Apr-Jun)',  months:[4,5,6]},
-    {label:'Q3 (Jul-Sep)',  months:[7,8,9]},
-    {label:'Q4 (Oct-Dec)',  months:[10,11,12]}
-  ];
-  const qTotals = qtrs.map(q => _md.filter(m=>q.months.includes(m.order)).reduce((s,m)=>s+m.total,0));
-  const qContr  = qtrs.map(q => _md.filter(m=>q.months.includes(m.order)).reduce((s,m)=>s+m.contracted,0));
-  makeChart('chart-quarterly', {
-    type:'bar',
-    data:{
-      labels: qtrs.map(q=>q.label),
-      datasets:[
-        {label:'Total',      data:qTotals,backgroundColor:'rgba(66,133,244,0.22)',borderColor:GREEN,borderWidth:1.5,borderRadius:4},
-        {label:'Contracted', data:qContr, backgroundColor:'rgba(52,168,83,0.82)',borderColor:TEAL, borderWidth:1.5,borderRadius:4}
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
-  });
-
-  // ── Dynamic KPI Deep Dive cards ──────────────────────────────────────────────
-  const _kset = (id,v,color) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = v;
-    if (color) el.style.color = color;
-  };
-
-  // YOY Growth — PERIOD-TO-PERIOD only (cap 2025 at same date as latest 2026 data)
-  // Never compare partial 2026 against full 2025 — that gives a false decline.
-  (function(){
-    var rows25all = ENGINE_CLEAN_ROWS.filter(function(r){return r._year==='2025';});
-    var rows26all = ENGINE_CLEAN_ROWS.filter(function(r){return r._year==='2026';});
-    var MNS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    if (rows26all.length > 0) {
-      // Step 1: find latest date present in 2026
-      var maxD26 = null;
-      rows26all.forEach(function(r){if(r._date&&(!maxD26||r._date>maxD26))maxD26=r._date;});
-      var cutM = maxD26 ? maxD26.getMonth() : 11;
-      var cutD = maxD26 ? maxD26.getDate()  : 31;
-      var periodLabel = maxD26 ? 'Jan–'+MNS[cutM]+' '+cutD : 'YTD';
-
-      // Step 2: restrict 2025 to the SAME calendar window
-      var rows25period = rows25all.filter(function(r){
-        if(!r._date) return false;
-        var m=r._date.getMonth(), d=r._date.getDate();
-        return m<cutM||(m===cutM&&d<=cutD);
-      });
-      var n25=rows25period.length, n26=rows26all.length;
-
-      if(n25>0){
-        var yoyPct=+((n26-n25)/n25*100).toFixed(1);
-        var arrow=yoyPct>=0?'↑':'↓';
-        _kset('kpi-yoy-value', arrow+' '+Math.abs(yoyPct)+'%', yoyPct>=0?'var(--green)':'var(--red)');
-        _kset('kpi-yoy-sub',
-          '2026 ('+periodLabel+'): '+n26.toLocaleString()+
-          ' → 2025 same period: '+n25.toLocaleString());
-      } else {
-        _kset('kpi-yoy-value', n26.toLocaleString());
-        _kset('kpi-yoy-sub', '2026 YTD · No 2025 data for same window');
-      }
-
-    } else if(rows25all.length>0){
-      // Only 2025 exists — no YOY possible
-      _kset('kpi-yoy-value', rows25all.length.toLocaleString(), 'var(--text1)');
-      _kset('kpi-yoy-sub', '2025 full year · 2026 data not yet available');
-    }
-  })();
-
-  // Cross-sell Rate — customers with >1 visit / total unique customers
-  if (filteredMeasures && filteredMeasures.length > 0) {
-    const custCount = {};
-    filteredMeasures.forEach(r => { const c=(r.customer||'').trim(); if(c) custCount[c]=(custCount[c]||0)+1; });
-    const totalCust = Object.keys(custCount).length;
-    const repeated  = Object.values(custCount).filter(n=>n>1).length;
-    const csRate    = totalCust>0 ? +(repeated/totalCust*100).toFixed(1) : 0;
-    const csArrow   = csRate >= 15 ? '↑' : '↓';
-    _kset('kpi-crosssell', KITCHINO_STATE.crossSalesRatio + '×', KITCHINO_STATE.crossSalesRatio >= 1.5 ? 'var(--green)' : 'var(--gold)');
-    _kset('kpi-crosssell-sub', repeated + ' repeat of ' + totalCust + ' unique customers');
-  }
-
-  // No-show Rate — cancelled / total
-  if (KITCHINO_STATE.total > 0) {
-    const nsRate  = +(KITCHINO_STATE.cancelled / KITCHINO_STATE.total * 100).toFixed(1);
-    const nsArrow = nsRate <= 10 ? '↓' : '↑';
-    _kset('kpi-noshow', nsArrow + ' ' + nsRate + '%', nsRate<=10?'var(--green)':'var(--red)');
-    _kset('kpi-noshow-sub', KITCHINO_STATE.cancelled + ' cancelled of ' + KITCHINO_STATE.total);
-  }
-
-  // Avg Time to Contract — use discussion rows age as a pipeline proxy
-  // (contracted rows lack a separate "contract date" field; we use days in discussion as proxy)
-  (function(){
-    var now = new Date();
-    var disRows = (filteredMeasures||[]).filter(function(r){return r._discussion && r._date;});
-    var avgEl = document.getElementById('kpi-avg-contract');
-    var subEl = document.getElementById('kpi-avg-contract') && document.getElementById('kpi-avg-contract').parentElement.querySelector('.kpi-sub');
-    if (disRows.length > 0) {
-      var totalDays = disRows.reduce(function(s,r){return s+(now-r._date)/86400000;},0);
-      var avgDays = Math.round(totalDays / disRows.length);
-      if(avgEl) avgEl.textContent = avgDays + ' days';
-      // Also update the sub-label via direct DOM query
-      var card = avgEl ? avgEl.closest('.kpi-card') : null;
-      if (card) {
-        var sub = card.querySelector('.kpi-sub');
-        if(sub) sub.textContent = 'avg. age of ' + disRows.length + ' open discussions';
-      }
-    } else {
-      if(avgEl) avgEl.textContent = '—';
-    }
-  })();
-}
 
 function engine_linReg(y) {
   const n = y.length;
@@ -5684,13 +5493,13 @@ function applyFilters() {
 
   // ── 6. Mark all other built pages as stale — they will rebuild on next visit
   ['executive','daily','monthly','ceo','presentation','conversion','designers',
-   'geographic','sources','kpi','followup'].forEach(p => {
+   'geographic','sources','followup'].forEach(p => {
     if (p !== activePage) builtPages.delete(p);
   });
 }
 
 function _rebuildFilteredPages() {
-  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','kpi','followup'].forEach(p => {
+  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','followup'].forEach(p => {
     if (builtPages.has(p)) {
       builtPages.delete(p);
       const activePage = document.querySelector('.page.active')?.id.replace('page-','');
@@ -5702,8 +5511,7 @@ function _rebuildFilteredPages() {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
-  monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',
-  kpi:'KPI Deep Dive',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up'
+  monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up'
 };
 
 const PAGE_BUILDERS = {
@@ -5715,7 +5523,6 @@ const PAGE_BUILDERS = {
   measures: () => { currentPage = 1; renderMeasuresTable(); buildPaymentChart(); },
   monthly: () => { buildMonthlyCharts(); renderMonthlyKPIs(); },
   sources: buildSourceCharts,
-  kpi: buildKPICharts,
   forecast: buildForecastCharts,
   ceo: buildCEOCharts,
   presentation: buildPresentationSlides,
