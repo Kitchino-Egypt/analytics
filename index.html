@@ -985,6 +985,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="sources"><span class="nav-icon">📡</span>Lead Sources</div>
     <div class="nav-item" data-page="ordertypes"><span class="nav-icon">🗂</span>Order Types</div>
     <div class="nav-item" data-page="instfollowup"><span class="nav-icon">🔧</span>Installation</div>
+    <div class="nav-item" data-page="store"><span class="nav-icon">🏪</span>Store</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
@@ -1174,6 +1175,11 @@ if (_checkSession()) {
         <div style="font-size:20px;margin-bottom:6px">🔧</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Installation</div>
         <div style="font-size:10px;color:var(--text3);margin-top:3px">Follow-up tracker</div>
+      </div>
+      <div onclick="showPage('store')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:14px;cursor:pointer">
+        <div style="font-size:20px;margin-bottom:6px">🏪</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Store</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">Store projects</div>
       </div>
 
     </div>
@@ -2350,6 +2356,82 @@ if (_checkSession()) {
     </div>
     <div style="margin-bottom:18px"><canvas id="chart-payment-breakdown" height="200"></canvas></div>
     <div id="payment-breakdown-table" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- PAGE: STORE PROJECTS -->
+<div class="page" id="page-store">
+  <div id="store-loading" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⏳</div>
+    <div style="color:var(--text2)">Loading Store data…</div>
+  </div>
+  <div id="store-error" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+    <div id="store-error-msg" style="color:var(--red)">Could not load Store data.</div>
+  </div>
+  <div id="store-content" style="display:none">
+
+    <!-- KPI strip -->
+    <div class="kpi-grid kpi-4" id="store-kpi-strip" style="margin-bottom:20px"></div>
+
+    <!-- Charts row -->
+    <div class="chart-grid chart-2" style="margin-bottom:22px">
+      <div class="chart-card">
+        <div class="chart-title">By Project Type</div>
+        <div class="chart-subtitle">Distribution of store projects by type</div>
+        <div class="chart-wrap"><canvas id="store-chart-type" height="260"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">By Designer</div>
+        <div class="chart-subtitle">Projects per designer in store</div>
+        <div class="chart-wrap"><canvas id="store-chart-designer" height="260"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table filters -->
+    <div class="chart-card" style="margin-bottom:22px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <input type="text" id="store-search" placeholder="🔍 Search customer or code…"
+          oninput="filterStoreTable()"
+          style="flex:1;min-width:180px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <select id="store-filter-type" onchange="filterStoreTable()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">نوع المشروع</option>
+        </select>
+        <select id="store-filter-designer" onchange="filterStoreTable()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">المصمم</option>
+        </select>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--card2);color:var(--text2);text-align:left">
+              <th style="padding:8px 10px">#</th>
+              <th style="padding:8px 10px">Project No.</th>
+              <th style="padding:8px 10px">CashGear Code</th>
+              <th style="padding:8px 10px">Customer</th>
+              <th style="padding:8px 10px">Project Type</th>
+              <th style="padding:8px 10px">Designer</th>
+              <th style="padding:8px 10px">Due Amount</th>
+            </tr>
+          </thead>
+          <tbody id="store-table-body"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--text2)">
+        <span id="store-count-label">—</span>
+        <div style="display:flex;gap:8px">
+          <button id="store-prev" onclick="_storePageNav(-1)"
+            style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:12px">← Prev</button>
+          <span id="store-page-label" style="line-height:28px">1 / 1</span>
+          <button id="store-next" onclick="_storePageNav(1)"
+            style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:12px">Next →</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 <script>
@@ -5511,7 +5593,7 @@ function _rebuildFilteredPages() {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
-  monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up'
+  monthly:'Monthly Trends',followup:'Customer Follow-up',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects'
 };
 
 const PAGE_BUILDERS = {
@@ -5528,6 +5610,7 @@ const PAGE_BUILDERS = {
   presentation: buildPresentationSlides,
   ordertypes: buildOrderTypeCharts,
   instfollowup: buildInstFollowupPage,
+  store: buildStorePage,
 };
 
 const builtPages = new Set();
@@ -7710,6 +7793,177 @@ function renderYearCompare() {
 // ════════════════════════════════════════════════════════════════════
 // INSTALLATION FOLLOW-UP PAGE
 // ════════════════════════════════════════════════════════════════════
+// ── Store Projects ──────────────────────────────────────────────────────────
+const STORE_SCRIPT_URL = localStorage.getItem('kitchino_store_url') || 'https://script.google.com/macros/s/AKfycbwRFIdIy6B6rxg5mbr4V-bYmHUJ9w-DXDHGpKhCTP8qM5W4PKHJ_CZWuIsFCymAxTdhBg/exec';
+let _STORE_DATA  = null;
+let _storeFilteredRows = [];
+let _storeCurrentPage  = 1;
+const STORE_PAGE_SIZE  = 100;
+let _storeChartType     = null;
+let _storeChartDesigner = null;
+
+async function buildStorePage() {
+  const loading = document.getElementById('store-loading');
+  const error   = document.getElementById('store-error');
+  const cont    = document.getElementById('store-content');
+  if (!loading) return;
+
+  if (!STORE_SCRIPT_URL) {
+    loading.style.display = 'none';
+    error.style.display   = 'block';
+    document.getElementById('store-error-msg').textContent =
+      '⚠ No Store script URL configured. Add it via Settings.';
+    return;
+  }
+
+  if (_STORE_DATA) { _storeRender(_STORE_DATA); return; }
+
+  loading.style.display = 'block';
+  error.style.display   = 'none';
+  cont.style.display    = 'none';
+
+  try {
+    const data = await jsonpFetch(STORE_SCRIPT_URL + '?_t=' + Date.now(), '_storeCb', 30000);
+    if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data');
+    _STORE_DATA = data.data || [];
+    loading.style.display = 'none';
+    cont.style.display    = 'block';
+    _storeRender(_STORE_DATA);
+  } catch(err) {
+    loading.style.display = 'none';
+    error.style.display   = 'block';
+    document.getElementById('store-error-msg').textContent = '⚠ ' + err.message;
+  }
+}
+
+function _storeRender(allRows) {
+  // KPI strip
+  const total = allRows.length;
+  const typeCounts = {};
+  allRows.forEach(r => {
+    const t = (r['Project Type'] || '—').trim();
+    typeCounts[t] = (typeCounts[t] || 0) + 1;
+  });
+
+  const kpiEl = document.getElementById('store-kpi-strip');
+  if (kpiEl) {
+    const colors = ['teal','gold','blue','green','purple','red'];
+    let html = `<div class="kpi-card teal"><div class="kpi-label">Total Projects</div><div class="kpi-value">${total}</div><div class="kpi-sub">In Store</div></div>`;
+    Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]).forEach(([t,c], i) => {
+      html += `<div class="kpi-card ${colors[(i+1)%colors.length]}"><div class="kpi-label">${t}</div><div class="kpi-value">${c}</div><div class="kpi-sub">${Math.round(c/total*100)}% of total</div></div>`;
+    });
+    kpiEl.innerHTML = html;
+  }
+
+  // Populate filter dropdowns
+  const types     = [...new Set(allRows.map(r=>(r['Project Type']||'').trim()).filter(Boolean))].sort();
+  const designers = [...new Set(allRows.map(r=>(r['Designer']||'').trim()).filter(Boolean))].sort();
+
+  const tSel = document.getElementById('store-filter-type');
+  if (tSel) {
+    const cur = tSel.value;
+    tSel.innerHTML = '<option value="all">نوع المشروع</option>';
+    types.forEach(t => { const o=document.createElement('option');o.value=t;o.textContent=t;if(t===cur)o.selected=true;tSel.appendChild(o); });
+  }
+  const dSel = document.getElementById('store-filter-designer');
+  if (dSel) {
+    const cur = dSel.value;
+    dSel.innerHTML = '<option value="all">المصمم</option>';
+    designers.forEach(d => { const o=document.createElement('option');o.value=d;o.textContent=d;if(d===cur)o.selected=true;dSel.appendChild(o); });
+  }
+
+  // Charts
+  const typeLabels = Object.keys(typeCounts);
+  const typeData   = typeLabels.map(t => typeCounts[t]);
+  const CHART_COLORS = ['#0d9a88','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316','#06b6d4'];
+
+  if (_storeChartType) _storeChartType.destroy();
+  const ctxT = document.getElementById('store-chart-type');
+  if (ctxT) {
+    _storeChartType = new Chart(ctxT.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: typeLabels, datasets: [{ data: typeData, backgroundColor: CHART_COLORS, borderWidth: 2 }] },
+      options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.documentElement).getPropertyValue('--text') || '#fff', font:{size:11} } } } }
+    });
+  }
+
+  const designerCounts = {};
+  allRows.forEach(r => { const d=(r['Designer']||'—').trim(); designerCounts[d]=(designerCounts[d]||0)+1; });
+  const dLabels = Object.keys(designerCounts).sort((a,b)=>designerCounts[b]-designerCounts[a]);
+  const dData   = dLabels.map(d=>designerCounts[d]);
+
+  if (_storeChartDesigner) _storeChartDesigner.destroy();
+  const ctxD = document.getElementById('store-chart-designer');
+  if (ctxD) {
+    _storeChartDesigner = new Chart(ctxD.getContext('2d'), {
+      type: 'bar',
+      data: { labels: dLabels, datasets: [{ label:'Projects', data: dData, backgroundColor: CHART_COLORS }] },
+      options: { responsive:true, indexAxis:'y', plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{ color:'#94a3b8' } }, y:{ ticks:{ color:'#94a3b8' } } } }
+    });
+  }
+
+  filterStoreTable();
+}
+
+function filterStoreTable() {
+  if (!_STORE_DATA) return;
+  const search  = (document.getElementById('store-search')?.value || '').toLowerCase();
+  const typeF   = document.getElementById('store-filter-type')?.value   || 'all';
+  const designF = document.getElementById('store-filter-designer')?.value || 'all';
+
+  let rows = _STORE_DATA;
+  if (typeF   !== 'all') rows = rows.filter(r => (r['Project Type']||'').trim() === typeF);
+  if (designF !== 'all') rows = rows.filter(r => (r['Designer']||'').trim() === designF);
+  if (search) rows = rows.filter(r =>
+    (r['Customer (Arabic)']||'').toLowerCase().includes(search) ||
+    (r['CashGear Code']||'').toLowerCase().includes(search) ||
+    (r['Project No.']||'').toString().includes(search)
+  );
+
+  _storeFilteredRows = rows;
+  _storeCurrentPage  = 1;
+  _storeRenderPage();
+}
+
+function _storePageNav(dir) {
+  const total = Math.max(1, Math.ceil(_storeFilteredRows.length / STORE_PAGE_SIZE));
+  _storeCurrentPage = Math.min(total, Math.max(1, _storeCurrentPage + dir));
+  _storeRenderPage();
+}
+
+function _storeRenderPage() {
+  const rows  = _storeFilteredRows;
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / STORE_PAGE_SIZE));
+  const start = (_storeCurrentPage - 1) * STORE_PAGE_SIZE;
+  const slice = rows.slice(start, start + STORE_PAGE_SIZE);
+
+  const tbody = document.getElementById('store-table-body');
+  if (!tbody) return;
+
+  if (!slice.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text2)">No records found</td></tr>';
+  } else {
+    tbody.innerHTML = slice.map((r, i) => `
+      <tr style="border-bottom:1px solid var(--border);${(start+i)%2===1?'background:var(--card2)':''}">
+        <td style="padding:7px 10px;color:var(--text3)">${start+i+1}</td>
+        <td style="padding:7px 10px">${r['Project No.']||'—'}</td>
+        <td style="padding:7px 10px;color:var(--teal)">${r['CashGear Code']||'—'}</td>
+        <td style="padding:7px 10px;direction:rtl">${r['Customer (Arabic)']||'—'}</td>
+        <td style="padding:7px 10px"><span style="background:var(--card2);padding:2px 8px;border-radius:12px;font-size:11px">${r['Project Type']||'—'}</span></td>
+        <td style="padding:7px 10px">${r['Designer']||'—'}</td>
+        <td style="padding:7px 10px;color:var(--gold)">${r['Due Amount']&&r['Due Amount']!=='0'&&r['Due Amount']!==''?r['Due Amount']:'—'}</td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('store-count-label').textContent =
+    `Showing ${Math.min(start+STORE_PAGE_SIZE,total)} of ${total} records`;
+  document.getElementById('store-page-label').textContent  = `${_storeCurrentPage} / ${pages}`;
+  document.getElementById('store-prev').disabled = _storeCurrentPage <= 1;
+  document.getElementById('store-next').disabled = _storeCurrentPage >= pages;
+}
+
 const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOp6_hBvcLnUifOQkBdr5Ip4xKsW06iqWrzIMEu4-l4zJ2ENuGGyYs5SW1QV0pKRALdQ/exec';
 let _INST_DATA = null;
 
