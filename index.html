@@ -2283,81 +2283,6 @@ if (_checkSession()) {
     <div id="yc-designer-table" style="overflow-x:auto"></div>
   </div>
 </div>
-  </div><!-- end page-content -->
-</div><!-- end main -->
-
-<!-- Order Type Location Breakdown Modal -->
-<div class="modal-overlay" id="pres-ot-modal" onclick="if(event.target===this)document.getElementById('pres-ot-modal').classList.remove('open')">
-  <div class="modal" style="max-width:620px;max-height:85vh;display:flex;flex-direction:column;width:100%">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:12px">
-      <div>
-        <h3 style="font-size:18px;font-weight:900;color:var(--text1);margin-bottom:4px" id="pres-ot-modal-title">Order Type</h3>
-        <p style="color:var(--text3);font-size:12px;margin-bottom:0" id="pres-ot-modal-sub">Location breakdown</p>
-      </div>
-      <button onclick="document.getElementById('pres-ot-modal').classList.remove('open')"
-        style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">✕</button>
-    </div>
-    <!-- Summary KPI strip -->
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap" id="pres-ot-modal-kpis"></div>
-    <!-- Location table -->
-    <div style="overflow-y:auto;flex:1">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Breakdown by Location</div>
-      <div id="pres-ot-modal-list"></div>
-    </div>
-  </div>
-</div>
-<!-- RECONCILIATION PANEL -->
-<div id="reconciliation-panel" style="display:none;position:fixed;top:60px;right:16px;width:420px;max-height:80vh;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
-</div>
-
-<!-- CONNECT MODAL -->
-<div class="modal-overlay" id="connect-modal">
-  <div class="modal" style="max-width:560px">
-    <h3>🔗 Connect Google Sheets</h3>
-    <p style="color:var(--text2);font-size:12px;margin-bottom:12px">Paste your Google Apps Script Web App URL. Deploy from your Sheet → Extensions → Apps Script → Deploy → Web App (Execute as: Me, Access: Anyone).</p>
-    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">📊 Measures Script URL (KitchinoConnector.gs)</label>
-    <input type="text" class="modal-input" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
-
-    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px;margin-top:10px">📋 Contracts Script URL (ContractsConnector.gs)</label>
-    <input type="text" class="modal-input" id="contracts-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="margin-bottom:14px">
-
-    <!-- DIAGNOSTIC PANEL -->
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔬 Connection Diagnostics</div>
-      <div style="display:flex;gap:8px;margin-bottom:6px">
-        <button onclick="runDiagnostic('ping')"       style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">① Ping</button>
-        <button onclick="runDiagnostic('getSummary')" style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">② Summary</button>
-        <button onclick="runDiagnostic('getMonthly')" style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">③ Monthly</button>
-        <button onclick="runDiagnostic('getAll')"     style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">④ Full Load</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:10px">
-        <button onclick="runContractsDiagnostic()" style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--gold);border-radius:6px;cursor:pointer;font-size:11px">⑤ Test Contracts URL →</button>
-      </div>
-      <div id="diag-output" style="font-size:11px;font-family:monospace;color:var(--text2);min-height:40px;max-height:140px;overflow-y:auto;word-break:break-all;line-height:1.5">
-        Enter URLs above, then click ① Ping to test the measures connection.
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeConnectModal()">Cancel</button>
-      <button class="btn-connect" onclick="connectGoogleSheets()">Connect & Load Data</button>
-    </div>
-  </div>
-</div>
-<!-- PAYMENT BREAKDOWN MODAL -->
-<div id="payment-breakdown-modal" onclick="if(event.target===this)closePaymentBreakdown()" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;width:min(540px,94vw);max-height:82vh;overflow-y:auto;padding:26px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div>
-        <div style="font-size:15px;font-weight:800;color:var(--text1)">Payment Exceptions Breakdown</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:3px">Payment category breakdown — filtered data</div>
-      </div>
-      <button onclick="closePaymentBreakdown()" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;line-height:1;padding:0 4px">×</button>
-    </div>
-    <div style="margin-bottom:18px"><canvas id="chart-payment-breakdown" height="200"></canvas></div>
-    <div id="payment-breakdown-table" style="margin-top:8px"></div>
-  </div>
-</div>
 
 <!-- PAGE: STORE PROJECTS -->
 <div class="page" id="page-store">
@@ -2434,6 +2359,117 @@ if (_checkSession()) {
 
   </div>
 </div>
+
+<!-- INSTALLATION STATUS DETAIL MODAL -->
+<div id="inst-status-modal" onclick="if(event.target===this)_instCloseModal()" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:min(720px,95vw);max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.4)">
+    <!-- Header -->
+    <div id="inst-modal-header" style="padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div>
+        <div id="inst-modal-title" style="font-size:16px;font-weight:800;color:var(--text)">Status Details</div>
+        <div id="inst-modal-sub" style="font-size:11px;color:var(--text3);margin-top:3px">—</div>
+      </div>
+      <button onclick="_instCloseModal()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+    </div>
+    <!-- Search inside modal -->
+    <div style="padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
+      <input type="text" id="inst-modal-search" placeholder="🔍 Search by customer or technician…" oninput="_instModalFilter()"
+        style="width:100%;box-sizing:border-box;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+    </div>
+    <!-- Table -->
+    <div style="overflow-y:auto;flex:1;padding:0 24px 20px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
+        <thead style="position:sticky;top:0;background:var(--card);z-index:1">
+          <tr style="color:var(--text2);border-bottom:1px solid var(--border)">
+            <th style="padding:8px 10px;text-align:left;font-weight:600">#</th>
+            <th style="padding:8px 10px;text-align:right;font-weight:600">العميل</th>
+            <th style="padding:8px 10px;text-align:left;font-weight:600">المنتج</th>
+            <th style="padding:8px 10px;text-align:left;font-weight:600">العنوان</th>
+            <th style="padding:8px 10px;text-align:left;font-weight:600">فنى التركيب</th>
+            <th style="padding:8px 10px;text-align:left;font-weight:600">تاريخ التوريد</th>
+          </tr>
+        </thead>
+        <tbody id="inst-modal-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+  </div><!-- end page-content -->
+</div><!-- end main -->
+
+<!-- Order Type Location Breakdown Modal -->
+<div class="modal-overlay" id="pres-ot-modal" onclick="if(event.target===this)document.getElementById('pres-ot-modal').classList.remove('open')">
+  <div class="modal" style="max-width:620px;max-height:85vh;display:flex;flex-direction:column;width:100%">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:12px">
+      <div>
+        <h3 style="font-size:18px;font-weight:900;color:var(--text1);margin-bottom:4px" id="pres-ot-modal-title">Order Type</h3>
+        <p style="color:var(--text3);font-size:12px;margin-bottom:0" id="pres-ot-modal-sub">Location breakdown</p>
+      </div>
+      <button onclick="document.getElementById('pres-ot-modal').classList.remove('open')"
+        style="background:none;border:1px solid var(--border);color:var(--text3);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">✕</button>
+    </div>
+    <!-- Summary KPI strip -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap" id="pres-ot-modal-kpis"></div>
+    <!-- Location table -->
+    <div style="overflow-y:auto;flex:1">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Breakdown by Location</div>
+      <div id="pres-ot-modal-list"></div>
+    </div>
+  </div>
+</div>
+<!-- RECONCILIATION PANEL -->
+<div id="reconciliation-panel" style="display:none;position:fixed;top:60px;right:16px;width:420px;max-height:80vh;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+</div>
+
+<!-- CONNECT MODAL -->
+<div class="modal-overlay" id="connect-modal">
+  <div class="modal" style="max-width:560px">
+    <h3>🔗 Connect Google Sheets</h3>
+    <p style="color:var(--text2);font-size:12px;margin-bottom:12px">Paste your Google Apps Script Web App URL. Deploy from your Sheet → Extensions → Apps Script → Deploy → Web App (Execute as: Me, Access: Anyone).</p>
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">📊 Measures Script URL (KitchinoConnector.gs)</label>
+    <input type="text" class="modal-input" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px;margin-top:10px">📋 Contracts Script URL (ContractsConnector.gs)</label>
+    <input type="text" class="modal-input" id="contracts-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="margin-bottom:14px">
+
+    <!-- DIAGNOSTIC PANEL -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">🔬 Connection Diagnostics</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <button onclick="runDiagnostic('ping')"       style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">① Ping</button>
+        <button onclick="runDiagnostic('getSummary')" style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">② Summary</button>
+        <button onclick="runDiagnostic('getMonthly')" style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">③ Monthly</button>
+        <button onclick="runDiagnostic('getAll')"     style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px">④ Full Load</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button onclick="runContractsDiagnostic()" style="flex:1;padding:6px;background:var(--card2);border:1px solid var(--border);color:var(--gold);border-radius:6px;cursor:pointer;font-size:11px">⑤ Test Contracts URL →</button>
+      </div>
+      <div id="diag-output" style="font-size:11px;font-family:monospace;color:var(--text2);min-height:40px;max-height:140px;overflow-y:auto;word-break:break-all;line-height:1.5">
+        Enter URLs above, then click ① Ping to test the measures connection.
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeConnectModal()">Cancel</button>
+      <button class="btn-connect" onclick="connectGoogleSheets()">Connect & Load Data</button>
+    </div>
+  </div>
+</div>
+<!-- PAYMENT BREAKDOWN MODAL -->
+<div id="payment-breakdown-modal" onclick="if(event.target===this)closePaymentBreakdown()" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;width:min(540px,94vw);max-height:82vh;overflow-y:auto;padding:26px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:var(--text1)">Payment Exceptions Breakdown</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px">Payment category breakdown — filtered data</div>
+      </div>
+      <button onclick="closePaymentBreakdown()" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+    </div>
+    <div style="margin-bottom:18px"><canvas id="chart-payment-breakdown" height="200"></canvas></div>
+    <div id="payment-breakdown-table" style="margin-top:8px"></div>
+  </div>
+</div>
+
 <script>
 (function() {
   function _tryRenderYC() {
@@ -3463,7 +3499,7 @@ function buildExecutiveCharts() {
         {label:'Discussion',    data:discussion, backgroundColor:'rgba(249,171,0,0.75)',  borderColor:'#e09600',borderWidth:1,  borderRadius:3}
       ]
     },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   // Status pie — use KITCHINO_STATE (same values as KPI cards, computed once)
@@ -3490,7 +3526,7 @@ function buildExecutiveCharts() {
       labels:srcSorted.map(s=>s.source),
       datasets:[{label:'Measures',data:srcSorted.map(s=>s.total),backgroundColor:'rgba(26,115,232,0.82)',borderColor:BLUE,borderWidth:1.5,borderRadius:3}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:30}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   // Refresh list-based cards after data loads
@@ -3606,8 +3642,8 @@ function buildDailyCharts() {
       datasets:[{label:'In Discussion',data:[fresh.length, overdue30.length, overdue45.length],
         backgroundColor:[GREEN,GOLD,RED],borderRadius:5}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},
-      scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0}}}}
   });
 }
 
@@ -3873,10 +3909,10 @@ function buildDesignerCharts() {
           {label:'Cancelled',  data:bySorted.map(d=>d.cancelled),  backgroundColor:'rgba(192,36,24,0.82)', borderRadius:3}
         ]
       },
-      options:{responsive:true,plugins:{legend:{position:'bottom'}},
+      options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},
         scales:{
-          x:{stacked:true,grid:{display:false},ticks:{maxRotation:35,font:{size:9}}},
-          y:{stacked:true,grid:{color:'rgba(0,0,0,0.06)'}}
+          y:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},
+          x:{stacked:true,grid:{color:'rgba(0,0,0,0.06)'}}
         }
       }
     });
@@ -4009,7 +4045,7 @@ function buildConversionCharts() {
       labels:aSort.map(a=>a.area),
       datasets:[{label:'Conv. Rate %',data:aSort.map(a=>+(a.contracted/a.total*100).toFixed(1)),backgroundColor:'rgba(52,168,83,0.82)',borderColor:TEAL,borderWidth:1.5,borderRadius:4}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   // ── Best Month Rate / Best Area Rate / Best Source Rate cards ──────────
@@ -4157,7 +4193,7 @@ function buildMonthlyCharts() {
       labels,
       datasets:[{label:'MoM Growth %',data:growth,backgroundColor:growth.map(g=>g>=0?'rgba(66,133,244,0.22)':'rgba(192,36,24,0.82)'),borderColor:growth.map(g=>g>=0?GREEN:RED),borderWidth:1.5,borderRadius:3}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}}}}
   });
   renderMonthlyKPIs();  // update KPI cards after chart builds
 }
@@ -4264,7 +4300,7 @@ function buildSourceCharts() {
       labels:convSort.map(s=>s.source),
       datasets:[{label:'Conv. %',data:convSort.map(s=>+(s.contracted/s.total*100).toFixed(1)),backgroundColor:convSort.map((_,i)=>`hsla(${150-i*8},65%,55%,0.65)`),borderRadius:4}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:30}},y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false}},x:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 }
 
@@ -4771,7 +4807,7 @@ function buildCEOCharts() {
         {label:'Contracted',data:_md.map(m=>m.contracted),borderColor:TEAL,backgroundColor:'rgba(52,168,83,0.15)',fill:true,tension:.4,pointRadius:3}
       ]
     },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   makeChart('chart-pres-trend', {
@@ -5409,7 +5445,7 @@ function buildFollowupCharts() {
       labels:dEntries.map(d=>d[0].split(' ')[0]),
       datasets:[{label:'Open Contracts',data:dEntries.map(d=>d[1]),backgroundColor:'rgba(200,135,0,0.82)',borderColor:GOLD,borderWidth:1.5,borderRadius:4}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0},suggestedMin:0,suggestedMax:Math.max(...dEntries.map(d=>d[1]))+1}}}
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0},suggestedMin:0,suggestedMax:Math.max(...dEntries.map(d=>d[1]))+1}}}
   });
 }
 
@@ -7964,6 +8000,94 @@ function _storeRenderPage() {
   document.getElementById('store-next').disabled = _storeCurrentPage >= pages;
 }
 
+// ── Installation status modal ────────────────────────────────────────────────
+let _instModalRows = [];
+
+function _instOpenModal(status) {
+  if (!_INST_DATA) return;
+  const rows = _instMainFiltered(_INST_DATA).filter(r => (r['الحالة'] || '').trim() === status);
+  _instModalRows = rows;
+
+  // Header
+  const STATUS_COLORS = {
+    'تم الاسلام بدون ملاحظات':  { bg:'#10b981', icon:'✅' },
+    'تم الاستلام بدون ملاحظات': { bg:'#10b981', icon:'✅' },
+    'موعد تركيب':               { bg:'#f59e0b', icon:'📅' },
+    'رخام طرف العميل':          { bg:'#3b82f6', icon:'🪨' },
+    'متوقف طرف عميل':           { bg:'#ef4444', icon:'⏸️' },
+    'متوقف طرف شركة':           { bg:'#dc2626', icon:'⛔' },
+    'ملاحظات التسليم':           { bg:'#f97316', icon:'📋' },
+    'تركيب رخام':               { bg:'#8b5cf6', icon:'🔨' },
+    'فتش':                      { bg:'#6366f1', icon:'🔍' },
+    'استلام العميل':             { bg:'#14b8a6', icon:'🤝' },
+    'تفعيل ضمان إداري':          { bg:'#0ea5e9', icon:'📄' },
+    'استكمال تركيب':             { bg:'#a855f7', icon:'🔧' },
+  };
+  const cfg   = STATUS_COLORS[status] || { bg:'#64748b', icon:'📌' };
+  const color = cfg.bg;
+
+  document.getElementById('inst-modal-title').textContent = cfg.icon + '  ' + status;
+  document.getElementById('inst-modal-title').style.color = color;
+  document.getElementById('inst-modal-sub').textContent   = rows.length + ' project' + (rows.length !== 1 ? 's' : '') + ' with this status';
+  document.getElementById('inst-modal-search').value      = '';
+
+  _instModalRenderTable(rows);
+
+  const modal = document.getElementById('inst-status-modal');
+  modal.style.display = 'flex';
+}
+
+function _instCloseModal() {
+  document.getElementById('inst-status-modal').style.display = 'none';
+}
+
+function _instModalFilter() {
+  const q = (document.getElementById('inst-modal-search')?.value || '').toLowerCase();
+  const filtered = q
+    ? _instModalRows.filter(r =>
+        (r['اسم العميل'] || r['Customer'] || '').toLowerCase().includes(q) ||
+        (r[_instTechKey(_instModalRows)] || '').toLowerCase().includes(q) ||
+        (r['العنوان'] || '').toLowerCase().includes(q)
+      )
+    : _instModalRows;
+  _instModalRenderTable(filtered);
+}
+
+function _instModalRenderTable(rows) {
+  const tk = _instTechKey(rows.length ? rows : (_INST_DATA || []));
+  const tbody = document.getElementById('inst-modal-tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text3)">No records found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => {
+    const customer = r['اسم العميل'] || r['Customer'] || '—';
+    const product  = r['المنتج'] || '—';
+    const area     = r['العنوان'] || '—';
+    const tech     = r[tk] || '—';
+    const dateRaw  = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+    let dateDisp   = '—';
+    if (dateRaw && dateRaw !== '0') {
+      if (/^\d{4}-\d{2}-\d{2}/.test(dateRaw)) {
+        const [y,m,d] = dateRaw.substring(0,10).split('-');
+        dateDisp = d + '/' + m + '/' + y;
+      } else {
+        const p = new Date(dateRaw);
+        if (!isNaN(p)) dateDisp = p.getDate().toString().padStart(2,'0') + '/' + (p.getMonth()+1).toString().padStart(2,'0') + '/' + p.getFullYear();
+      }
+    }
+    return '<tr style="border-bottom:1px solid var(--border);' + (i%2===1?'background:var(--card2)':'') + '">'
+      + '<td style="padding:8px 10px;color:var(--text3)">' + (i+1) + '</td>'
+      + '<td style="padding:8px 10px;direction:rtl;text-align:right">' + customer + '</td>'
+      + '<td style="padding:8px 10px"><span style="background:var(--card2);padding:2px 8px;border-radius:10px;font-size:11px">' + product + '</span></td>'
+      + '<td style="padding:8px 10px;color:var(--text2)">' + area + '</td>'
+      + '<td style="padding:8px 10px;color:var(--teal)">' + tech + '</td>'
+      + '<td style="padding:8px 10px;color:var(--text3)">' + dateDisp + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
 const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOp6_hBvcLnUifOQkBdr5Ip4xKsW06iqWrzIMEu4-l4zJ2ENuGGyYs5SW1QV0pKRALdQ/exec';
 let _INST_DATA = null;
 
@@ -8149,11 +8273,14 @@ function _instRender(allRows) {
           const color = cfg ? cfg.bg : FALLBACK[fi++ % FALLBACK.length];
           const icon  = cfg ? cfg.icon : '📌';
           const pctV  = total > 0 ? (count / total * 100).toFixed(0) : 0;
-          return '<div style="background:' + color + '18;border:1px solid ' + color + '44;border-left:3px solid ' + color
-            + ';border-radius:10px;padding:12px 16px;min-width:140px;flex:0 0 auto">'
+          const safeS = status.replace(/'/g, "\\'");
+          return '<div onclick="_instOpenModal(\'' + safeS + '\')" style="background:' + color + '18;border:1px solid ' + color + '44;border-left:3px solid ' + color
+            + ';border-radius:10px;padding:12px 16px;min-width:140px;flex:0 0 auto;cursor:pointer;transition:transform .15s,box-shadow .15s" '
+            + 'onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px ' + color + '44\'" '
+            + 'onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">'
             + '<div style="font-size:10px;color:' + color + ';font-weight:700;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px" title="' + status + '">' + icon + ' ' + status + '</div>'
             + '<div style="font-size:26px;font-weight:900;color:' + color + ';line-height:1">' + count.toLocaleString() + '</div>'
-            + '<div style="font-size:10px;color:var(--text3);margin-top:4px">' + pctV + '% of total</div>'
+            + '<div style="font-size:10px;color:var(--text3);margin-top:4px">' + pctV + '% of total · click to view</div>'
             + '</div>';
         }).join('');
   }
