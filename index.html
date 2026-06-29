@@ -3499,7 +3499,7 @@ function buildExecutiveCharts() {
         {label:'Discussion',    data:discussion, backgroundColor:'rgba(249,171,0,0.75)',  borderColor:'#e09600',borderWidth:1,  borderRadius:3}
       ]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   // Status pie — use KITCHINO_STATE (same values as KPI cards, computed once)
@@ -3526,7 +3526,7 @@ function buildExecutiveCharts() {
       labels:srcSorted.map(s=>s.source),
       datasets:[{label:'Measures',data:srcSorted.map(s=>s.total),backgroundColor:'rgba(26,115,232,0.82)',borderColor:BLUE,borderWidth:1.5,borderRadius:3}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   // Refresh list-based cards after data loads
@@ -3642,8 +3642,8 @@ function buildDailyCharts() {
       datasets:[{label:'In Discussion',data:[fresh.length, overdue30.length, overdue45.length],
         backgroundColor:[GREEN,GOLD,RED],borderRadius:5}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},
-      scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0}}}}
   });
 }
 
@@ -3860,9 +3860,9 @@ function buildDesignerCharts() {
       }]
     },
     options:{
-      indexAxis:'y',responsive:true,
+      responsive:true,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+'%'}}},
-      scales:{x:{max:50,grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false},ticks:{font:{size:9}}}}
+      scales:{y:{max:50,grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false},ticks:{font:{size:9}}}}
     }
   });
 
@@ -3909,10 +3909,10 @@ function buildDesignerCharts() {
           {label:'Cancelled',  data:bySorted.map(d=>d.cancelled),  backgroundColor:'rgba(192,36,24,0.82)', borderRadius:3}
         ]
       },
-      options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},
+      options:{responsive:true,plugins:{legend:{position:'bottom'}},
         scales:{
-          y:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},
-          x:{stacked:true,grid:{color:'rgba(0,0,0,0.06)'}}
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},
+          y:{stacked:true,grid:{color:'rgba(0,0,0,0.06)'}}
         }
       }
     });
@@ -4022,7 +4022,7 @@ function buildConversionCharts() {
           KITCHINO_STATE.contracted
         ],backgroundColor:['rgba(26,115,232,0.82)','rgba(200,135,0,0.82)','rgba(66,133,244,0.22)'],borderColor:[BLUE,GOLD,GREEN],borderWidth:1.5,borderRadius:6}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,0.06)'}},y:{grid:{display:false}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,0.06)'}},x:{grid:{display:false}}}}
   });
 
   // Conv trend
@@ -4045,7 +4045,7 @@ function buildConversionCharts() {
       labels:aSort.map(a=>a.area),
       datasets:[{label:'Conv. Rate %',data:aSort.map(a=>+(a.contracted/a.total*100).toFixed(1)),backgroundColor:'rgba(52,168,83,0.82)',borderColor:TEAL,borderWidth:1.5,borderRadius:4}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   // ── Best Month Rate / Best Area Rate / Best Source Rate cards ──────────
@@ -4193,7 +4193,7 @@ function buildMonthlyCharts() {
       labels,
       datasets:[{label:'MoM Growth %',data:growth,backgroundColor:growth.map(g=>g>=0?'rgba(66,133,244,0.22)':'rgba(192,36,24,0.82)'),borderColor:growth.map(g=>g>=0?GREEN:RED),borderWidth:1.5,borderRadius:3}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}}}}
   });
   renderMonthlyKPIs();  // update KPI cards after chart builds
 }
@@ -4300,7 +4300,7 @@ function buildSourceCharts() {
       labels:convSort.map(s=>s.source),
       datasets:[{label:'Conv. %',data:convSort.map(s=>+(s.contracted/s.total*100).toFixed(1)),backgroundColor:convSort.map((_,i)=>`hsla(${150-i*8},65%,55%,0.65)`),borderRadius:4}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false}},x:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 }
 
@@ -4807,7 +4807,7 @@ function buildCEOCharts() {
         {label:'Contracted',data:_md.map(m=>m.contracted),borderColor:TEAL,backgroundColor:'rgba(52,168,83,0.15)',fill:true,tension:.4,pointRadius:3}
       ]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 
   makeChart('chart-pres-trend', {
@@ -4819,7 +4819,7 @@ function buildCEOCharts() {
         {label:'Contracted',data:_md.map(m=>m.contracted),backgroundColor:'rgba(52,168,83,0.82)',borderColor:TEAL,borderWidth:1.5,borderRadius:3}
       ]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'}}}}
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'}}}}
   });
 }
 
@@ -5445,7 +5445,7 @@ function buildFollowupCharts() {
       labels:dEntries.map(d=>d[0].split(' ')[0]),
       datasets:[{label:'Open Contracts',data:dEntries.map(d=>d[1]),backgroundColor:'rgba(200,135,0,0.82)',borderColor:GOLD,borderWidth:1.5,borderRadius:4}]
     },
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{y:{grid:{display:false}},x:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0},suggestedMin:0,suggestedMax:Math.max(...dEntries.map(d=>d[1]))+1}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0},suggestedMin:0,suggestedMax:Math.max(...dEntries.map(d=>d[1]))+1}}}
   });
 }
 
@@ -6307,7 +6307,7 @@ function showPaymentBreakdown() {
         }]
       },
       options: {
-        responsive: true, indexAxis: 'y',
+        responsive: true,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -6321,11 +6321,11 @@ function showPaymentBreakdown() {
           }
         },
         scales: {
-          x: {
+          y: {
             grid: { color: 'rgba(0,0,0,0.06)' },
             ticks: { callback: v => v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(0)+'K':v, font:{size:9} }
           },
-          y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } }
         }
       }
     });
@@ -6981,7 +6981,6 @@ function buildPresentationSlides() {
         }]
       },
       options: {
-        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -6989,18 +6988,18 @@ function buildPresentationSlides() {
           tooltip: {
             backgroundColor: '#ffffff', borderColor: '#c8c8e0', borderWidth: 1,
             titleColor: '#1a1a3c', bodyColor: '#4a4a88',
-            callbacks: { label: function(c){ return '  CVR: ' + c.parsed.x + '%'; } }
+            callbacks: { label: function(c){ return '  CVR: ' + c.parsed.y + '%'; } }
           },
           annotation: {}
         },
         scales: {
-          x: {
+          y: {
             min: 0, max: 100,
             ticks: { color: '#94a3b8', font: {size:10}, callback: function(v){ return v+'%'; } },
             grid: { color: 'rgba(255,255,255,0.06)' },
             border: { color: 'rgba(255,255,255,0.08)' }
           },
-          y: {
+          x: {
             ticks: { color: '#94a3b8', font: {size:10} },
             grid: { display: false },
             border: { color: 'rgba(255,255,255,0.08)' }
@@ -7422,11 +7421,11 @@ function buildPresentationSlides() {
           ]
         },
         options: {
-          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: true, position: 'bottom', labels: { color: '#aaa', font: { size: 10 } } } },
           scales: {
-            y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { display: false } },
-            x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
@@ -7752,11 +7751,11 @@ function renderYearCompare() {
         { label:'2026', data: m26.map(m=>m.total), backgroundColor:'rgba(66,133,244,0.82)', borderColor:'#008cdc', borderWidth:1, borderRadius:3 }
       ]
     },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    options: { responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{labels:{color:'#5050a0',font:{size:10}}}, tooltip:{backgroundColor:'#ffffff',borderColor:'#c8c8e0',borderWidth:1,titleColor:'#1a1a3c',bodyColor:'#4a4a88'} },
       scales:{
-        y:{ticks:{color:'#5050a0',font:{size:9}},grid:{display:false}},
-        x:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.07)'}}
+        x:{ticks:{color:'#5050a0',font:{size:9}},grid:{display:false}},
+        y:{ticks:{color:'#5050a0',font:{size:9}},grid:{color:'rgba(0,0,0,0.07)'}}
       }
     }
   });
@@ -7938,7 +7937,7 @@ function _storeRender(allRows) {
     _storeChartDesigner = new Chart(ctxD.getContext('2d'), {
       type: 'bar',
       data: { labels: dLabels, datasets: [{ label:'Projects', data: dData, backgroundColor: CHART_COLORS }] },
-      options: { responsive:true, indexAxis:'y', plugins:{ legend:{display:false} },
+      options: { responsive:true, plugins:{ legend:{display:false} },
         scales:{ x:{ ticks:{ color:'#94a3b8' } }, y:{ ticks:{ color:'#94a3b8' } } } }
     });
   }
