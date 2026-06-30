@@ -1639,7 +1639,7 @@ if (_checkSession()) {
     <div class="table-header"><div class="table-title">Lead Source Performance Matrix</div></div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>Lead Source</th><th>Total Measures</th><th>Contracted</th><th>Conv. Rate</th><th>Share %</th><th>Performance</th></tr></thead>
+        <thead><tr><th>Lead Source</th><th>Total</th><th>Contracted</th><th>Discussion</th><th>Cancelled</th><th>Conv. Rate</th><th>Share %</th><th>Performance</th></tr></thead>
         <tbody id="source-tbody"></tbody>
       </table>
     </div>
@@ -2766,9 +2766,11 @@ function engine_sources(rows) {
   const map = {};
   rows.forEach(r => {
     const s = r.source || 'Unknown';
-    if (!map[s]) map[s] = { source:s, total:0, contracted:0 };
+    if (!map[s]) map[s] = { source:s, total:0, contracted:0, discussion:0, cancelled:0 };
     map[s].total++;
-    if (r._contracted) map[s].contracted++;
+    if      (r._contracted) map[s].contracted++;
+    else if (r._discussion) map[s].discussion++;
+    else if (r._cancelled)  map[s].cancelled++;
   });
   return Object.values(map).filter(s=>s.total>0).sort((a,b)=>b.total-a.total)
     .map(s=>({...s, conversionRate:s.total>0?+(s.contracted/s.total*100).toFixed(1):0}));
@@ -4280,20 +4282,23 @@ function buildSourceCharts() {
     const REPEAT_KEYS = ['repeat', 'repet', 'مكرر', 'عميل قديم'];
     const repeatRows = (filteredMeasures||[]).filter(r => REPEAT_KEYS.some(k => (r.source||'').toLowerCase().includes(k)));
     const repeatCusts = new Set(repeatRows.map(r => r.customer).filter(Boolean));
-    const repeatPct = total > 0 ? (repeatCusts.size / total * 100).toFixed(1) : 0;
+    const uniqueTotal = KITCHINO_STATE.uniqueCustomers || 1;
+    const repeatPct = uniqueTotal > 0 ? (repeatCusts.size / uniqueTotal * 100).toFixed(1) : 0;
     set('src-kpi-repeat', repeatCusts.size.toLocaleString());
-    set('src-kpi-repeat-sub', repeatPct + '% of total');
+    set('src-kpi-repeat-sub', repeatPct + '% of unique customers');
   }
+  const UNKNOWN_SRC = ['unknown','','غير محدد'];
+  const sortedKnown = sorted.filter(s => !UNKNOWN_SRC.includes((s.source||'').toLowerCase().trim()));
   makeChart('chart-source-volume', {
     type:'doughnut',
     data:{
-      labels:sorted.map(s=>s.source),
-      datasets:[{data:sorted.map(s=>s.total),backgroundColor:sorted.map((_,i)=>`hsl(${140+i*22},60%,55%)`),borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
+      labels:sortedKnown.map(s=>s.source),
+      datasets:[{data:sortedKnown.map(s=>s.total),backgroundColor:sortedKnown.map((_,i)=>`hsl(${140+i*22},60%,55%)`),borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'50%'}
   });
 
-  const convSort = [...getFilteredSourceData()].filter(s=>s.total>=2).sort((a,b)=>b.contracted/b.total-a.contracted/a.total);
+  const convSort = [...getFilteredSourceData()].filter(s=>s.total>=3).sort((a,b)=>b.contracted/b.total-a.contracted/a.total);
   makeChart('chart-source-conv', {
     type:'bar',
     data:{
@@ -4946,16 +4951,20 @@ function renderSourceTable() {
   const _fsd = getFilteredSourceData();
   const total = _fsd.reduce((a,b)=>a+b.total,0);
   const sorted = [..._fsd].sort((a,b)=>b.total-a.total);
+  const maxTotal = sorted[0]?.total || 1;
   document.getElementById('source-tbody').innerHTML = sorted.map(s => {
     const rate = +(s.contracted/s.total*100).toFixed(1);
     const share = +(s.total/total*100).toFixed(1);
+    const barW = Math.round(s.total/maxTotal*95);
     return `<tr>
       <td><strong>${s.source}</strong></td>
       <td>${s.total}</td>
       <td style="color:var(--green)">${s.contracted}</td>
+      <td style="color:var(--gold)">${s.discussion||0}</td>
+      <td style="color:var(--red)">${s.cancelled||0}</td>
       <td><span class="badge ${rate>=30?'badge-green':rate>=20?'badge-teal':rate>=15?'badge-gold':'badge-red'}">${rate}%</span></td>
       <td class="muted">${share}%</td>
-      <td style="width:120px"><div class="progress-bar"><div class="progress-fill" style="width:${share*3}%;background:${rate>=25?'var(--green)':'var(--gold)'}"></div></div></td>
+      <td style="width:120px"><div class="progress-bar"><div class="progress-fill" style="width:${barW}%;background:${rate>=25?'var(--green)':'var(--gold)'}"></div></div></td>
     </tr>`;
   }).join('');
 }
@@ -5203,7 +5212,7 @@ function renderExecSourceCard() {
   const maxCount = top8[0]?.total || 1;
   if (totEl) totEl.textContent = srcData.length + ' sources · ' + totalAll.toLocaleString() + ' measures';
   let rows = top8.map((s,i) =>
-    _execRow(i+1, s.source, s.source, s.total, maxCount, null, 'rgba(120,40,180,0.82)', 'drillSource')
+    _execRow(i+1, s.source, s.source, s.total, maxCount, s.conversionRate, 'rgba(120,40,180,0.82)', 'drillSource')
   );
   if (rest.length > 0) {
     const othTotal = rest.reduce((s,x) => s+x.total, 0);
