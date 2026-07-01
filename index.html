@@ -1472,7 +1472,7 @@ if (_checkSession()) {
 <!-- PAGE 5: CONVERSION ANALYSIS -->
 <div class="page" id="page-conversion">
   <div class="kpi-grid kpi-4">
-    <div class="kpi-card green"><div class="kpi-label">Overall Conv. Rate</div><div class="kpi-value" id="kpi-rate">—</div></div>
+    <div class="kpi-card green"><div class="kpi-label">Overall Conv. Rate</div><div class="kpi-value" id="conv-overall-rate">—</div></div>
     <div class="kpi-card teal"><div class="kpi-label">Best Month Rate</div><div class="kpi-value" id="conv-best-month-rate">—</div><div class="kpi-sub" id="conv-best-month-name">—</div></div>
     <div class="kpi-card gold"><div class="kpi-label">Best Area Rate</div><div class="kpi-value" id="conv-best-area-rate">—</div><div class="kpi-sub" id="conv-best-area-name">—</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Best Source Rate</div><div class="kpi-value" id="conv-best-source-rate">—</div><div class="kpi-sub" id="conv-best-source-name">—</div></div>
@@ -3196,7 +3196,7 @@ function updateKPICards() {
   const s   = KITCHINO_STATE;
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   if (!ENGINE_READY) {
-    ['kpi-total','kpi-customers','kpi-contracted','kpi-discussion','kpi-cancelled','kpi-rate',
+    ['kpi-total','kpi-customers','kpi-contracted','kpi-discussion','kpi-cancelled','kpi-rate','conv-overall-rate',
      'ceo-kpi-total','ceo-kpi-contracted','ceo-kpi-discussion','pres-kpi-total','pres-kpi-contracted','pres-kpi-rate'].forEach(id => {
       const el = document.getElementById(id); if (el) el.textContent = '—';
     });
@@ -3211,6 +3211,7 @@ function updateKPICards() {
   set('kpi-discussion', s.discussion.toLocaleString());
   set('kpi-cancelled',  s.cancelled.toLocaleString());
   set('kpi-rate',       s.conversionRate + '%');
+  set('conv-overall-rate', s.conversionRate + '%');
   set('kpi-exec-crosssales',     s.crossSalesRatio > 0 ? s.crossSalesRatio + '×' : '—');
   set('kpi-exec-crosssales-sub', s.contracted + ' orders ÷ ' + s.contractedCustomers + ' contracted customers');
   // CEO View dynamic KPIs
@@ -4220,29 +4221,43 @@ function renderMonthlyKPIs() {
 
   // Best Month by Conversion — highest rate with at least 20 measures
   const qualifiedMonths = data.filter(m => m.total >= 20);
-  const bestConv = qualifiedMonths.reduce((a, b) => {
-    const ra = a.total > 0 ? a.contracted / a.total : 0;
-    const rb = b.total > 0 ? b.contracted / b.total : 0;
-    return rb > ra ? b : a;
-  }, qualifiedMonths[0] || data[0]);
-  const convRate = bestConv.total > 0 ? (bestConv.contracted / bestConv.total * 100).toFixed(1) : '0';
-  set('mt-best-conv-name', fmtLabel(bestConv));
-  set('mt-best-conv-sub',  convRate + '% rate');
 
   // Average monthly
   const avgTotal = Math.round(data.reduce((s, m) => s + m.total, 0) / data.length);
   set('mt-avg-monthly', avgTotal.toLocaleString());
   set('mt-avg-sub', 'measures/month');
 
-  // Worst Month by conversion (minimum rate, at least 20 measures)
-  const worstConv = qualifiedMonths.reduce((a, b) => {
-    const ra = a.total > 0 ? a.contracted / a.total : 1;
-    const rb = b.total > 0 ? b.contracted / b.total : 1;
-    return rb < ra ? b : a;
-  }, qualifiedMonths[0] || data[0]);
-  const worstRate = worstConv.total > 0 ? (worstConv.contracted / worstConv.total * 100).toFixed(1) : '0';
-  set('mt-worst-name', fmtLabel(worstConv));
-  set('mt-worst-sub',  worstRate + '% conversion');
+  // Best Conv — only meaningful when comparing 2+ months
+  if (data.length < 2 || qualifiedMonths.length < 1) {
+    set('mt-best-conv-name', data.length === 1 ? fmtLabel(data[0]) : '—');
+    const singleRate = data.length === 1 && data[0].total > 0
+      ? (data[0].contracted / data[0].total * 100).toFixed(1) : '0';
+    set('mt-best-conv-sub', data.length === 1 ? singleRate + '% rate' : '—');
+  } else {
+    const bestConv = qualifiedMonths.reduce((a, b) => {
+      const ra = a.total > 0 ? a.contracted / a.total : 0;
+      const rb = b.total > 0 ? b.contracted / b.total : 0;
+      return rb > ra ? b : a;
+    }, qualifiedMonths[0]);
+    const convRate = bestConv.total > 0 ? (bestConv.contracted / bestConv.total * 100).toFixed(1) : '0';
+    set('mt-best-conv-name', fmtLabel(bestConv));
+    set('mt-best-conv-sub',  convRate + '% rate');
+  }
+
+  // Worst Month — only meaningful when 2+ qualified months exist AND best ≠ worst
+  if (qualifiedMonths.length < 2) {
+    set('mt-worst-name', '—');
+    set('mt-worst-sub',  qualifiedMonths.length === 0 ? 'no qualifying months' : 'only 1 month shown');
+  } else {
+    const worstConv = qualifiedMonths.reduce((a, b) => {
+      const ra = a.total > 0 ? a.contracted / a.total : 1;
+      const rb = b.total > 0 ? b.contracted / b.total : 1;
+      return rb < ra ? b : a;
+    }, qualifiedMonths[0]);
+    const worstRate = worstConv.total > 0 ? (worstConv.contracted / worstConv.total * 100).toFixed(1) : '0';
+    set('mt-worst-name', fmtLabel(worstConv));
+    set('mt-worst-sub',  worstRate + '% conversion');
+  }
 
   // Update chart subtitle
   const yrF = KITCHINO_STATE.year;
