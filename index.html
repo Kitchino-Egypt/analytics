@@ -5988,21 +5988,93 @@ async function _silentFetch(isAutoRefresh) {
   }
 }
 
-// ── CONTRACTS FETCH — separate JSONP call to ContractsConnector.gs ──────────
+// ── CONTRACTS FETCH — reads same Google Sheet as Contracts Dashboard ─────────
+// Source: kitchino-egypt.github.io/contracts-dashboard/
+// Sheet ID : 1aNmKdJRIQosNpvAwH5CfZUaNZvfZ9yHgoK6yflGi5cA
+// GID (tab): 696153871
+const _CONTRACTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDlHhCbM0-evGhNLuzXbq66j18meRoGr5fxa-cqu-6KBHO-d-uVJ5zLOv_Lnw2TiU0PVBmRG5nXi2a/pub?output=csv&gid=696153871';
+
+function _parseCSV(text) {
+  const rows = [];
+  const lines = text.replace(/\r/g, '').split('\n');
+  function splitLine(line) {
+    const cols = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"' && !inQ) { inQ = true; }
+      else if (ch === '"' && inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else if (ch === '"' && inQ) { inQ = false; }
+      else if (ch === ',' && !inQ) { cols.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur);
+    return cols;
+  }
+  const headers = splitLine(lines[0]);
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const vals = splitLine(lines[i]);
+    const row = {};
+    headers.forEach((h, j) => { row[h.trim()] = (vals[j] || '').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+
 async function _fetchContracts() {
-  const cUrl = localStorage.getItem('kitchino_contracts_url') || 'https://script.google.com/macros/s/AKfycbwVDszfL66suLTChfNC0zmdu9GAV_-6AmkwKqsCWGVjBVRtrz5WTLr9mItfG_Tk_koLYw/exec';
-  if (!cUrl) return;
   try {
-    const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
-    if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
-      CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...data.data);
+    const t = Date.now();
+    const res = await fetch(_CONTRACTS_CSV_URL + '&t=' + t);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    const rows = _parseCSV(csv);
+    const SAFE_CRM_SET = new Set(['contracted','electromechanic','shablona','designer working',
+      'auditing','production','final qc','store','recheck','shipping','installation',
+      'delivered','oto','تعاقد','اوتو','تسليم']);
+    const parsed = rows
+      .filter(r => {
+        const id = String(r['Order ID'] || '').trim();
+        return /^\d{5,}/.test(id) || /^OR\d+/i.test(id);
+      })
+      .map(r => {
+        const crmCode   = (r['CRM Code'] || '').trim();
+        const crmStatus = (r['CRM Status'] || '').trim();
+        return {
+          name:     r['Name']     || '',
+          orderId:  r['Order ID'] || '',
+          designer: r['Designer'] || '',
+          status:   r['Contract Status'] || '',
+          date:     r['Contract Date']   || '',
+          crm:      crmStatus || crmCode,
+          crmCode,
+          age:      parseInt(r['Contract Age (Days)']) || 0,
+          aging:    r['Aging Category'] || '',
+          safe:     SAFE_CRM_SET.has((crmStatus||crmCode).toLowerCase())
+        };
+      });
+    if (parsed.length) {
+      CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...parsed);
       buildFollowupCharts();
       renderFollowupTable();
       updateBadges();
-      console.log('Contracts loaded:', data.count, 'records');
+      console.log('[Contracts] Loaded', parsed.length, 'records from same sheet as Contracts Dashboard');
     }
   } catch (err) {
-    console.warn('Contracts fetch failed:', err.message);
+    console.warn('[Contracts] CSV fetch failed:', err.message);
+    // fallback: try legacy Apps Script URL from localStorage
+    const cUrl = localStorage.getItem('kitchino_contracts_url');
+    if (cUrl) {
+      try {
+        const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
+        if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
+          CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...data.data);
+          buildFollowupCharts();
+          renderFollowupTable();
+          updateBadges();
+        }
+      } catch(e2) { console.warn('[Contracts] Fallback also failed:', e2.message); }
+    }
   }
 }
 
