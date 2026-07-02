@@ -1572,11 +1572,34 @@ if (_checkSession()) {
 
 <!-- PAGE 8: CUSTOMER FOLLOW-UP -->
 <div class="page" id="page-followup">
-  <div class="kpi-grid kpi-4">
-    <div class="kpi-card red"><div class="kpi-label">Overdue (45+ Days)</div><div class="kpi-value" id="fu-overdue">—</div></div>
-    <div class="kpi-card gold"><div class="kpi-label">30–45 Days</div><div class="kpi-value" id="fu-30">—</div></div>
-    <div class="kpi-card blue"><div class="kpi-label">0–30 Days</div><div class="kpi-value" id="fu-fresh">—</div></div>
-    <div class="kpi-card green"><div class="kpi-label">Total in Pipeline</div><div class="kpi-value" id="fu-total">—</div></div>
+  <!-- Row 1: Main KPIs -->
+  <div class="kpi-grid kpi-4" style="margin-bottom:12px">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Sales Orders</div>
+      <div class="kpi-value" id="fu-total">—</div>
+      <div class="kpi-sub">active orders</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">عقد / CONTRACT</div>
+      <div class="kpi-value" id="fu-contracts">—</div>
+      <div class="kpi-sub" id="fu-contracts-sub">of total</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-label">اضافات / INVOICE</div>
+      <div class="kpi-value" id="fu-invoice">—</div>
+      <div class="kpi-sub" id="fu-invoice-sub">of total</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Overdue (45+ Days)</div>
+      <div class="kpi-value" id="fu-overdue">—</div>
+      <div class="kpi-sub" id="fu-overdue-sub">of total</div>
+    </div>
+  </div>
+
+  <!-- CRM Status Pipeline -->
+  <div class="table-card" style="margin-bottom:16px">
+    <div class="table-header"><div class="table-title">CRM Status Pipeline</div></div>
+    <div id="fu-crm-pipeline" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px"></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -4894,10 +4917,56 @@ function renderFollowupTable() {
   });
 
   // Update KPIs on follow-up page
-  document.getElementById('fu-overdue') && (document.getElementById('fu-overdue').textContent = CONTRACTS_DATA.filter(c=>c.age>45).length);
-  document.getElementById('fu-30') && (document.getElementById('fu-30').textContent = CONTRACTS_DATA.filter(c=>c.age>=30&&c.age<=45).length);
-  document.getElementById('fu-fresh') && (document.getElementById('fu-fresh').textContent = CONTRACTS_DATA.filter(c=>c.age<30).length);
-  document.getElementById('fu-total') && (document.getElementById('fu-total').textContent = CONTRACTS_DATA.length);
+  const _fuTotal     = CONTRACTS_DATA.length;
+  const _fuContracts = CONTRACTS_DATA.filter(c => /\u0639\u0642\u062f/.test(c.status||'')).length;
+  const _fuInvoice   = CONTRACTS_DATA.filter(c => /\u0627\u0636\u0627\u0641/.test(c.status||'')).length;
+  const _fuOverdue   = CONTRACTS_DATA.filter(c => c.age > 45).length;
+  const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  _setFu('fu-total',         _fuTotal);
+  _setFu('fu-contracts',     _fuContracts);
+  _setFu('fu-contracts-sub', _fuTotal > 0 ? Math.round(_fuContracts/_fuTotal*100)+'% of total' : 'of total');
+  _setFu('fu-invoice',       _fuInvoice);
+  _setFu('fu-invoice-sub',   _fuTotal > 0 ? Math.round(_fuInvoice/_fuTotal*100)+'% of total' : 'of total');
+  _setFu('fu-overdue',       _fuOverdue);
+  _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'of total');
+  // CRM Status Pipeline
+  const _crmMap = {};
+  CONTRACTS_DATA.forEach(c => { const k = (c.crm||'Unknown').trim().toLowerCase(); _crmMap[k] = (_crmMap[k]||0)+1; });
+  const _CRM_ORDER = [
+    {key:'contracted',       label:'CONTRACTED'},
+    {key:'electromechanic',  label:'ELECTROMECHANIC'},
+    {key:'shablona',         label:'SHABLONA'},
+    {key:'designer working', label:'DESIGNER WORK'},
+    {key:'oto',              label:'OTO'},
+    {key:'auditing',         label:'AUDITING'},
+    {key:'production',       label:'PRODUCTION'},
+    {key:'final qc',         label:'FINAL QC'},
+    {key:'store',            label:'STORE'},
+    {key:'recheck',          label:'RECHECK'},
+    {key:'shipping',         label:'SHIPPING'},
+    {key:'installation',     label:'INSTALLATION'},
+    {key:'delivered',        label:'DELIVERED'},
+    {key:'declined',         label:'DECLINED'}
+  ];
+  const _crmEl = document.getElementById('fu-crm-pipeline');
+  if (_crmEl) {
+    const _knownKeys = new Set(_CRM_ORDER.map(x=>x.key));
+    // Collect any unknown stages from real data to display at end
+    const _extraStages = Object.keys(_crmMap)
+      .filter(k => !_knownKeys.has(k) && k !== 'unknown')
+      .map(k => ({key:k, label:k.toUpperCase()}));
+    const _allStages = [..._CRM_ORDER, ..._extraStages];
+    _crmEl.innerHTML = _allStages.map(({key, label}) => {
+      const count = _crmMap[key] || 0;
+      const pct   = _fuTotal > 0 ? Math.round(count/_fuTotal*100) : 0;
+      const col   = count > 0 ? 'var(--gold)' : 'var(--text-muted,#888)';
+      return '<div style="background:var(--bg2,var(--card));border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:90px;text-align:center;flex:1 1 90px">' +
+        '<div style="font-size:10px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">' + label + '</div>' +
+        '<div style="font-size:24px;font-weight:700;color:' + col + '">' + count + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted,#888);margin-top:2px">' + pct + '% of total</div>' +
+        '</div>';
+    }).join('');
+  }
 }
 
 function renderDesignerTable() {
