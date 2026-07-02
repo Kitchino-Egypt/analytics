@@ -4946,8 +4946,8 @@ function renderFollowupTable() {
   const _isInvFU     = c => c.status === 'فاتورة' || c.status === 'اضافات';
   const _fuContracts = _fuND.filter(c => !_isInvFU(c)).length;
   const _fuInvoice   = _fuND.filter(c => _isInvFU(c)).length;
-  const _fuOverdue   = _fuTotal - _fuSafe;   // orders not yet in safe zone
   const _fuSafe      = _fuND.filter(c => c.safe).length;
+  const _fuOverdue   = _fuTotal - _fuSafe;   // orders not yet in safe zone
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
   _setFu('fu-total',         _fuTotal);
   _setFu('fu-contracts',     _fuContracts);
