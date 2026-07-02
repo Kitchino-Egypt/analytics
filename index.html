@@ -1573,7 +1573,7 @@ if (_checkSession()) {
 <!-- PAGE 8: CUSTOMER FOLLOW-UP -->
 <div class="page" id="page-followup">
   <!-- Row 1: Main KPIs -->
-  <div class="kpi-grid kpi-4" style="margin-bottom:12px">
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px">
     <div class="kpi-card blue">
       <div class="kpi-label">Total Sales Orders</div>
       <div class="kpi-value" id="fu-total">—</div>
@@ -1590,9 +1590,14 @@ if (_checkSession()) {
       <div class="kpi-sub" id="fu-invoice-sub">of total</div>
     </div>
     <div class="kpi-card red">
-      <div class="kpi-label">Overdue (45+ Days)</div>
+      <div class="kpi-label">Over 60 Days</div>
       <div class="kpi-value" id="fu-overdue">—</div>
-      <div class="kpi-sub" id="fu-overdue-sub">of total</div>
+      <div class="kpi-sub" id="fu-overdue-sub">critical stages only</div>
+    </div>
+    <div class="kpi-card teal" style="cursor:pointer" onclick="openFuCrmModal('Safe Zone','__safe__')" title="Click to view Safe Zone contracts">
+      <div class="kpi-label">✅ Safe Zone</div>
+      <div class="kpi-value" id="fu-safe">—</div>
+      <div class="kpi-sub" id="fu-safe-sub">OTO → Delivered</div>
     </div>
   </div>
 
@@ -1618,11 +1623,14 @@ if (_checkSession()) {
   <div class="table-card">
     <div class="table-header">
       <div class="table-title">Follow-up Dashboard</div>
-      <div class="table-actions">
+      <div class="table-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <select class="filter-select" id="fu-designer-filter" onchange="renderFollowupTable()">
+          <option value="all">All Designers</option>
+        </select>
         <select class="filter-select" id="fu-aging-filter" onchange="renderFollowupTable()">
           <option value="all">All Ages</option>
-          <option value="45+">🔴 45+ Days</option>
-          <option value="30-45">🟡 30–45 Days</option>
+          <option value="over60">🔴 Over 60 Days</option>
+          <option value="45-60">🟠 45–60 Days</option>
           <option value="0-30">🟢 0–30 Days</option>
         </select>
       </div>
@@ -1632,6 +1640,20 @@ if (_checkSession()) {
         <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th></tr></thead>
         <tbody id="fu-tbody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- CRM Stage Drill-down Modal -->
+<div id="fu-crm-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuCrmModal()">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:93%;max-width:860px;max-height:82vh;overflow-y:auto;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div id="fu-crm-modal-title" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+      <button onclick="closeFuCrmModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div style="overflow-x:auto">
+      <table><thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Status</th><th>Age (Days)</th><th>Category</th></tr></thead>
+      <tbody id="fu-crm-modal-tbody"></tbody></table>
     </div>
   </div>
 </div>
@@ -4873,12 +4895,14 @@ function renderFollowupTable() {
   const filter = document.getElementById('fu-aging-filter')?.value || 'all';
   const search = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
 
+  const _fuDesF = document.getElementById('fu-designer-filter')?.value || 'all';
   const data = CONTRACTS_DATA.filter(c => {
-    if(filter === '45+') return c.age > 45;
-    if(filter === '30-45') return c.age >= 30 && c.age <= 45;
-    if(filter === '0-30') return c.age < 30;
+    if(filter === 'over60') return c.aging === 'Over 60 Days';
+    if(filter === '45-60')  return c.aging === '45 Days' || c.aging === '60 Days';
+    if(filter === '0-30')   return c.aging === '0-30 Days';
     return true;
-  }).filter(c => {
+  }).filter(c => _fuDesF === 'all' || c.designer === _fuDesF
+  ).filter(c => {
     if (!search) return true;
     return (c.name||'').toLowerCase().includes(search) ||
            String(c.orderId||'').toLowerCase().includes(search) ||
@@ -4922,7 +4946,9 @@ function renderFollowupTable() {
   const _isInvFU     = c => c.status === 'فاتورة' || c.status === 'اضافات';
   const _fuContracts = _fuND.filter(c => !_isInvFU(c)).length;
   const _fuInvoice   = _fuND.filter(c => _isInvFU(c)).length;
-  const _fuOverdue   = _fuND.filter(c => c.age > 45 && !_isInvFU(c)).length;
+  const _CRIT_CRM_FU = new Set(['contracted','electromechanic','shablona','designer working']);
+  const _fuOverdue   = _fuND.filter(c => c.aging === 'Over 60 Days' && (!c.crm || _CRIT_CRM_FU.has((c.crm||'').toLowerCase()))).length;
+  const _fuSafe      = _fuND.filter(c => c.safe).length;
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
   _setFu('fu-total',         _fuTotal);
   _setFu('fu-contracts',     _fuContracts);
@@ -4930,10 +4956,17 @@ function renderFollowupTable() {
   _setFu('fu-invoice',       _fuInvoice);
   _setFu('fu-invoice-sub',   _fuTotal > 0 ? Math.round(_fuInvoice/_fuTotal*100)+'% of total' : 'of total');
   _setFu('fu-overdue',       _fuOverdue);
-  _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'of total');
+  _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'critical stages');
+  _setFu('fu-safe',          _fuSafe);
+  _setFu('fu-safe-sub',      _fuTotal > 0 ? Math.round(_fuSafe/_fuTotal*100)+'% in safe stages' : 'OTO → Delivered');
   // CRM Status Pipeline
   const _crmMap = {};
-  CONTRACTS_DATA.forEach(c => { const k = (c.crm||'Unknown').trim().toLowerCase(); _crmMap[k] = (_crmMap[k]||0)+1; });
+  const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+  CONTRACTS_DATA.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
+  // Populate designer dropdown from live data
+  const _fuDes = [...new Set(CONTRACTS_DATA.map(c=>c.designer).filter(Boolean))].sort();
+  const _fuDesSel = document.getElementById('fu-designer-filter');
+  if (_fuDesSel) { const _cur=_fuDesSel.value; _fuDesSel.innerHTML='<option value="all">All Designers</option>'+_fuDes.map(d=>`<option value="${d}" ${d===_cur?'selected':''}>${d}</option>`).join(''); }
   const _CRM_ORDER = [
     {key:'contracted',       label:'CONTRACTED'},
     {key:'electromechanic',  label:'ELECTROMECHANIC'},
@@ -4962,13 +4995,34 @@ function renderFollowupTable() {
       const count = _crmMap[key] || 0;
       const pct   = _fuTotal > 0 ? Math.round(count/_fuTotal*100) : 0;
       const col   = count > 0 ? 'var(--gold)' : 'var(--text-muted,#888)';
-      return '<div style="background:var(--bg2,var(--card));border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:90px;text-align:center;flex:1 1 90px">' +
+      return '<div style="background:var(--bg2,var(--card));border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:90px;text-align:center;flex:1 1 90px;cursor:pointer;transition:opacity .15s" onclick="openFuCrmModal(\'' + label + '\',\'' + key + '\')" onmouseenter="this.style.opacity=.75" onmouseleave="this.style.opacity=1">' +
         '<div style="font-size:10px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">' + label + '</div>' +
         '<div style="font-size:24px;font-weight:700;color:' + col + '">' + count + '</div>' +
         '<div style="font-size:11px;color:var(--text-muted,#888);margin-top:2px">' + pct + '% of total</div>' +
         '</div>';
     }).join('');
   }
+}
+
+function openFuCrmModal(label, key) {
+  const _NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+  const rows = key === '__safe__'
+    ? CONTRACTS_DATA.filter(c => c.safe)
+    : CONTRACTS_DATA.filter(c => { let k=(c.crm||''). trim().toLowerCase(); return (_NORM[k]||k||'unknown')===key; });
+  const el = document.getElementById('fu-crm-modal-title');
+  if(el) el.innerHTML = '<strong>'+label+'</strong>&nbsp;<span style="color:var(--gold);font-weight:400">'+rows.length+' contracts</span>';
+  const tbody = document.getElementById('fu-crm-modal-tbody');
+  if(tbody) tbody.innerHTML = rows.length
+    ? rows.map((c,i) => '<tr><td class="muted">'+(i+1)+'</td><td>'+(c.name||'—')+'</td><td class="muted">'+(c.orderId||'—')+'</td><td>'+(c.designer||'—')+'</td><td>'+(c.status||'—')+'</td>'
+        +'<td><span class="badge '+(c.age>45?'badge-red':c.age>=30?'badge-gold':'badge-green')+'">'+(c.age||0)+' d</span></td>'
+        +'<td class="muted">'+(c.aging||'—')+'</td></tr>').join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">No contracts in this stage</td></tr>';
+  const modal = document.getElementById('fu-crm-modal');
+  if(modal) modal.style.display = 'flex';
+}
+function closeFuCrmModal() {
+  const modal = document.getElementById('fu-crm-modal');
+  if(modal) modal.style.display = 'none';
 }
 
 function renderDesignerTable() {
@@ -5521,11 +5575,11 @@ function buildFollowupCharts() {
   makeChart('chart-fu-aging', {
     type:'doughnut',
     data:{
-      labels:['0–30 Days','30–45 Days','45+ Days'],
+      labels:['0–30 Days','45–60 Days','Over 60 Days'],
       datasets:[{data:[
-        CONTRACTS_DATA.filter(c=>c.age<30).length,
-        CONTRACTS_DATA.filter(c=>c.age>=30&&c.age<=45).length,
-        CONTRACTS_DATA.filter(c=>c.age>45).length
+        CONTRACTS_DATA.filter(c=>c.aging==='0-30 Days').length,
+        CONTRACTS_DATA.filter(c=>c.aging==='45 Days'||c.aging==='60 Days').length,
+        CONTRACTS_DATA.filter(c=>c.aging==='Over 60 Days').length
       ],backgroundColor:[GREEN,GOLD,RED],borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
     },
     options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'60%'}
