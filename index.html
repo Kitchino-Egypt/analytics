@@ -1590,9 +1590,9 @@ if (_checkSession()) {
       <div class="kpi-sub" id="fu-invoice-sub">of total</div>
     </div>
     <div class="kpi-card red">
-      <div class="kpi-label">Over 60 Days</div>
+      <div class="kpi-label">Need Attention</div>
       <div class="kpi-value" id="fu-overdue">—</div>
-      <div class="kpi-sub" id="fu-overdue-sub">critical stages only</div>
+      <div class="kpi-sub" id="fu-overdue-sub">not in safe zone</div>
     </div>
     <div class="kpi-card teal" style="cursor:pointer" onclick="openFuCrmModal('Safe Zone','__safe__')" title="Click to view Safe Zone contracts">
       <div class="kpi-label">✅ Safe Zone</div>
@@ -4946,8 +4946,7 @@ function renderFollowupTable() {
   const _isInvFU     = c => c.status === 'فاتورة' || c.status === 'اضافات';
   const _fuContracts = _fuND.filter(c => !_isInvFU(c)).length;
   const _fuInvoice   = _fuND.filter(c => _isInvFU(c)).length;
-  const _CRIT_CRM_FU = new Set(['contracted','electromechanic','shablona','designer working']);
-  const _fuOverdue   = _fuND.filter(c => c.aging === 'Over 60 Days' && (!c.crm || _CRIT_CRM_FU.has((c.crm||'').toLowerCase()))).length;
+  const _fuOverdue   = _fuTotal - _fuSafe;   // orders not yet in safe zone
   const _fuSafe      = _fuND.filter(c => c.safe).length;
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
   _setFu('fu-total',         _fuTotal);
@@ -4956,13 +4955,13 @@ function renderFollowupTable() {
   _setFu('fu-invoice',       _fuInvoice);
   _setFu('fu-invoice-sub',   _fuTotal > 0 ? Math.round(_fuInvoice/_fuTotal*100)+'% of total' : 'of total');
   _setFu('fu-overdue',       _fuOverdue);
-  _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'critical stages');
+  _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'not in safe zone');
   _setFu('fu-safe',          _fuSafe);
   _setFu('fu-safe-sub',      _fuTotal > 0 ? Math.round(_fuSafe/_fuTotal*100)+'% in safe stages' : 'OTO → Delivered');
   // CRM Status Pipeline
   const _crmMap = {};
   const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
-  CONTRACTS_DATA.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
+  _fuND.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
   // Populate designer dropdown from live data
   const _fuDes = [...new Set(CONTRACTS_DATA.map(c=>c.designer).filter(Boolean))].sort();
   const _fuDesSel = document.getElementById('fu-designer-filter');
@@ -4987,9 +4986,11 @@ function renderFollowupTable() {
   if (_crmEl) {
     const _knownKeys = new Set(_CRM_ORDER.map(x=>x.key));
     // Collect any unknown stages from real data to display at end
+    const _unknownCount = _crmMap['unknown'] || 0;
     const _extraStages = Object.keys(_crmMap)
       .filter(k => !_knownKeys.has(k) && k !== 'unknown')
       .map(k => ({key:k, label:k.toUpperCase()}));
+    if (_unknownCount > 0) _extraStages.push({key:'unknown', label:'NO STAGE'});
     const _allStages = [..._CRM_ORDER, ..._extraStages];
     _crmEl.innerHTML = _allStages.map(({key, label}) => {
       const count = _crmMap[key] || 0;
@@ -6154,9 +6155,8 @@ async function _fetchContracts() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const csv = await res.text();
     const rows = _parseCSV(csv);
-    const SAFE_CRM_SET = new Set(['contracted','electromechanic','shablona','designer working',
-      'auditing','production','final qc','store','recheck','shipping','installation',
-      'delivered','oto','تعاقد','اوتو','تسليم']);
+    const SAFE_CRM_SET = new Set(['oto','auditing','production','final qc','store','recheck',
+      'shipping','installation','delivered','اوتو','تسليم']);
     const parsed = rows
       .filter(r => {
         const id = String(r['Order ID'] || '').trim();
