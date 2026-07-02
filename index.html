@@ -4917,10 +4917,12 @@ function renderFollowupTable() {
   });
 
   // Update KPIs on follow-up page
-  const _fuTotal     = CONTRACTS_DATA.length;
-  const _fuContracts = CONTRACTS_DATA.filter(c => /\u0639\u0642\u062f/.test(c.status||'')).length;
-  const _fuInvoice   = CONTRACTS_DATA.filter(c => /\u0627\u0636\u0627\u0641/.test(c.status||'')).length;
-  const _fuOverdue   = CONTRACTS_DATA.filter(c => c.age > 45).length;
+  const _fuND        = CONTRACTS_DATA.filter(c => (c.crm||'').toLowerCase() !== 'declined');
+  const _fuTotal     = _fuND.length;
+  const _isInvFU     = c => c.status === 'فاتورة' || c.status === 'اضافات';
+  const _fuContracts = _fuND.filter(c => !_isInvFU(c)).length;
+  const _fuInvoice   = _fuND.filter(c => _isInvFU(c)).length;
+  const _fuOverdue   = _fuND.filter(c => c.age > 45 && !_isInvFU(c)).length;
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
   _setFu('fu-total',         _fuTotal);
   _setFu('fu-contracts',     _fuContracts);
