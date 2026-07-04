@@ -136,22 +136,24 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 }
 .kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,60,0.10); }
 .kpi-card::before { display:none; }
-.kpi-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
-.kpi-value { font-size:26px; font-weight:800; color:var(--text); line-height:1; }
-.kpi-sub { font-size:11px; color:var(--text2); margin-top:6px; display:flex; align-items:center; gap:4px; }
+.kpi-label { font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
+.kpi-value { font-size:30px; font-weight:800; color:var(--text); line-height:1; }
+.kpi-sub { font-size:12px; color:var(--text2); margin-top:6px; display:flex; align-items:center; gap:4px; }
 .kpi-up { color:var(--green); }
 .kpi-down { color:var(--red); }
 .kpi-icon { position:absolute; top:14px; right:16px; font-size:22px; opacity:.18; }
 .kpi-card.green  { background:linear-gradient(135deg,rgba(52,168,83,0.09) 0%,rgba(52,168,83,0.03) 100%);  border-left-color:#34a853; }
 .kpi-card.teal   { background:linear-gradient(135deg,rgba(0,172,193,0.09) 0%,rgba(0,172,193,0.03) 100%);  border-left-color:#00acc1; }
-.kpi-card.gold   { background:linear-gradient(135deg,rgba(249,171,0,0.10) 0%,rgba(249,171,0,0.03) 100%);  border-left-color:#f9ab00; }
-.kpi-card.red    { background:linear-gradient(135deg,rgba(234,67,53,0.09) 0%,rgba(234,67,53,0.03) 100%);  border-left-color:#ea4335; }
+.kpi-card.gold   { background:linear-gradient(135deg,rgba(249,171,0,0.80) 0%,rgba(249,171,0,0.58) 100%);  border-left-color:#f9ab00; }
+.kpi-card.red    { background:linear-gradient(135deg,rgba(234,67,53,0.80) 0%,rgba(234,67,53,0.58) 100%);  border-left-color:#ea4335; }
 .kpi-card.blue   { background:linear-gradient(135deg,rgba(66,133,244,0.09) 0%,rgba(66,133,244,0.03) 100%);border-left-color:#4285f4; }
 .kpi-card.purple { background:linear-gradient(135deg,rgba(156,39,176,0.09) 0%,rgba(156,39,176,0.03) 100%);border-left-color:#9c27b0; }
 .kpi-card.green:hover  { border-left-color:#34a853; }
 .kpi-card.teal:hover   { border-left-color:#00acc1; }
 .kpi-card.gold:hover   { border-left-color:#f9ab00; }
 .kpi-card.red:hover    { border-left-color:#ea4335; }
+.kpi-card.gold .kpi-value,.kpi-card.gold .kpi-label,.kpi-card.gold .kpi-sub { color:#fff; }
+.kpi-card.red  .kpi-value,.kpi-card.red  .kpi-label,.kpi-card.red  .kpi-sub { color:#fff; }
 .kpi-card.blue:hover   { border-left-color:#4285f4; }
 .kpi-card.purple:hover { border-left-color:#9c27b0; }
 
@@ -3910,7 +3912,7 @@ function buildDesignerCharts() {
     options:{
       responsive:true,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+'%'}}},
-      scales:{y:{max:50,grid:{color:'rgba(0,0,0,0.06)'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false},ticks:{font:{size:9}}}}
+      scales:{y:{max:50,grid:{color:'rgba(0,0,0,0.06)'},ticks:{font:{size:11},callback:v=>v+'%'}},x:{grid:{display:false},ticks:{font:{size:11}}}}
     }
   });
 
@@ -3959,7 +3961,7 @@ function buildDesignerCharts() {
       },
       options:{responsive:true,plugins:{legend:{position:'bottom'}},
         scales:{
-          x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},
+          x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},
           y:{stacked:true,grid:{color:'rgba(0,0,0,0.06)'}}
         }
       }
@@ -3979,9 +3981,10 @@ function renderDesignerKPIs() {
   const singleMode = designerF !== 'all';
   const yearF = KITCHINO_STATE.year;
   let fullData = [...(KITCHINO_STATE.allDesignerData || [])].filter(d => d.total > 0);
+  const compData = fullData.filter(d => !isRankingExcluded(d.name));
 
-  const totalAll = fullData.reduce((s,d)=>s+d.total,0);
-  const contrAll = fullData.reduce((s,d)=>s+d.contracted,0);
+  const totalAll = compData.reduce((s,d)=>s+d.total,0);
+  const contrAll = compData.reduce((s,d)=>s+d.contracted,0);
   const avgRate  = totalAll > 0 ? +(contrAll/totalAll*100).toFixed(1) : 0;
 
   // --- HERO SCORECARD ---
@@ -4006,12 +4009,12 @@ function renderDesignerKPIs() {
 
   // --- KPI CARDS ---
   if (!singleMode) {
-    const sorted = [...fullData].sort((a,b)=>(b.contracted/b.total)-(a.contracted/a.total));
+    const sorted = [...compData].sort((a,b)=>(b.contracted/b.total)-(a.contracted/a.total));
     const best  = sorted[0];
     const worst = sorted[sorted.length-1];
 
     set('des-card1-label', 'Active Designers');
-    set('des-card1-val',   fullData.length);
+    set('des-card1-val',   compData.length);
     show('des-card1-sub', false);
 
     set('des-card2-label', 'Best Conversion');
@@ -4030,7 +4033,7 @@ function renderDesignerKPIs() {
   } else {
     const d = fullData.find(x => x.name === designerF) || fullData[0];
     const myRate = d.total > 0 ? (d.contracted/d.total*100).toFixed(1) : '0';
-    const sortedByRate = [...fullData].sort((a,b)=>(b.contracted/b.total)-(a.contracted/a.total));
+    const sortedByRate = [...compData].sort((a,b)=>(b.contracted/b.total)-(a.contracted/a.total));
     const rankPos = sortedByRate.findIndex(x => x.name === designerF) + 1;
     const diff = +(myRate - avgRate).toFixed(1);
     const vsLabel = (diff >= 0 ? '▲ +' : '▼ ') + diff + '% vs team avg (' + avgRate + '%)';
@@ -4052,7 +4055,7 @@ function renderDesignerKPIs() {
 
     set('des-card4-label', 'Team Ranking');
     set('des-card4-val',   '#' + rankPos);
-    set('des-card4-sub',   'of ' + fullData.length + ' designers');
+    set('des-card4-sub',   'of ' + compData.length + ' designers');
     show('des-card4-sub', true);
   }
 }
