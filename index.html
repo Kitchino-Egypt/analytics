@@ -1042,6 +1042,14 @@ if (_checkSession()) {
     </div>
   </div>
 
+  <!-- LAST UPDATED BAR -->
+  <div id="last-updated-bar" style="background:var(--bg);border-bottom:2px solid var(--border);padding:5px 24px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);position:sticky;top:58px;z-index:49">
+    <span>📋</span>
+    <span style="font-weight:600">Sheet last updated:</span>
+    <span id="sheet-last-updated" style="color:var(--text);font-weight:700">—</span>
+    <span id="sheet-last-updated-ago" style="color:var(--text3);font-size:11px"></span>
+  </div>
+
   <!-- MOBILE FILTER PANEL -->
   <div id="mob-filter-panel" style="display:none;background:var(--card);border-bottom:1px solid var(--border);padding:10px 12px;gap:8px;flex-direction:column">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -3068,6 +3076,7 @@ async function _fetchAllRows() {
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
       ENGINE_READY      = true;
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
+      _updateSheetTimestamp(data.lastModified || null);
       // Populate filter dropdowns dynamically from live data
       DESIGNERS = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.designer||'').filter(Boolean))].sort();
       AREAS     = [...new Set(ENGINE_CLEAN_ROWS.flatMap(r=>[r.area||'', r.location||'']).filter(Boolean))].sort();
@@ -5941,6 +5950,28 @@ function runDiagnostic(action) {
 }
 
 // JSONP loader — injects a <script> tag so file:// CORS is never triggered
+function _updateSheetTimestamp(isoOrNull) {
+  const el  = document.getElementById('sheet-last-updated');
+  const ago = document.getElementById('sheet-last-updated-ago');
+  if (!el) return;
+  const dt = isoOrNull ? new Date(isoOrNull) : new Date();
+  const fmt = dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})
+             + ' · ' + dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  el.textContent = fmt;
+  // Relative time
+  const diffMs = Date.now() - dt.getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  const diffHr  = Math.round(diffMs / 3600000);
+  const diffDay = Math.round(diffMs / 86400000);
+  let rel = '';
+  if (diffMin < 2)       rel = '(just now)';
+  else if (diffMin < 60) rel = '(' + diffMin + ' min ago)';
+  else if (diffHr < 24)  rel = '(' + diffHr + ' hr ago)';
+  else                   rel = '(' + diffDay + ' day' + (diffDay>1?'s':'') + ' ago)';
+  if (ago) ago.textContent = rel;
+  KITCHINO_STATE._sheetLastUpdated = dt;
+}
+
 function jsonpFetch(url, callbackName, timeoutMs) {
   return new Promise((resolve, reject) => {
     // Each request gets its OWN script element keyed by callbackName.
