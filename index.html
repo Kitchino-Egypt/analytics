@@ -5274,15 +5274,16 @@ function renderExecAreaCard(overrideRows) {
   });
 
   // "Other" row — all remaining areas beyond top 8
+  KITCHINO_STATE._otherAreas = restAreas.map(a=>({area:a.area,total:a.total,contracted:a.contracted||0}));
+  KITCHINO_STATE._otherAreasGrandTotal = areaData.reduce((s,a)=>s+a.total,0);
   const otherRow = restAreas.length > 0 ? (() => {
     const barPct   = maxCount > 0 ? Math.round(otherTotal / maxCount * 100) : 0;
     const cvr      = otherTotal > 0 ? +(otherContracted/otherTotal*100).toFixed(1) : 0;
     const cvrColor = cvr >= 30 ? '#34a853' : cvr >= 20 ? '#f9ab00' : '#ea4335';
-    const areasJson = JSON.stringify(restAreas.map(a=>({area:a.area,total:a.total,contracted:a.contracted||0})));
-    return `<div class="exec-list-row" style="opacity:.8;border-top:1px dashed var(--border);margin-top:4px;padding-top:6px;cursor:pointer" onclick="toggleOtherAreasDropdown(this, ${areasJson.replace(/`/g,'\\`')})" title="Click to see all other areas">
+    return `<div class="exec-list-row" style="opacity:.8;border-top:1px dashed var(--border);margin-top:4px;padding-top:6px;cursor:pointer" onclick="toggleOtherAreasDropdown(this)" title="Click to see all other areas">
       <div class="exec-rank" style="background:rgba(255,255,255,0.04);color:var(--text3);font-size:9px">…</div>
       <div class="exec-item-info">
-        <div class="exec-item-name" style="color:var(--text2)">Other <span style="font-size:10px;font-weight:400">(${restAreas.length} areas)</span> <span style="font-size:10px;color:var(--text3)">▼</span></div>
+        <div class="exec-item-name" style="color:var(--text2)">Other <span style="font-size:10px;font-weight:400">(${restAreas.length} areas)</span> <span id="other-areas-arrow" style="font-size:10px;color:var(--text3)">▼</span></div>
         <div class="exec-item-bar"><div class="exec-item-fill" style="width:${barPct}%;background:rgba(255,255,255,0.15)"></div></div>
       </div>
       <div class="exec-item-right">
@@ -5297,17 +5298,18 @@ function renderExecAreaCard(overrideRows) {
   if (detailEl) detailEl.innerHTML = '';
 }
 
-function toggleOtherAreasDropdown(rowEl, areas) {
+function toggleOtherAreasDropdown(rowEl) {
   const dd = document.getElementById('other-areas-dropdown');
   if (!dd) return;
-  const arrow = rowEl.querySelector('.exec-item-name span:last-child');
+  const arrow = document.getElementById('other-areas-arrow');
+  const areas = KITCHINO_STATE._otherAreas || [];
   if (dd.style.display !== 'none') {
     dd.style.display = 'none';
     if (arrow) arrow.textContent = '▼';
     return;
   }
   if (arrow) arrow.textContent = '▲';
-  const totalAll = areas.reduce((s,a)=>s+a.total,0);
+  const totalAll = KITCHINO_STATE._otherAreasGrandTotal || areas.reduce((s,a)=>s+a.total,0);
   dd.innerHTML = '<div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;margin:4px 0 8px;padding:8px 0;max-height:260px;overflow-y:auto">'
     + areas.map(a => {
         const cvr = a.total>0?(a.contracted/a.total*100).toFixed(1):0;
@@ -6619,7 +6621,7 @@ function showDigitalSourcesDropdown() {
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
     + '<div><div style="font-size:15px;font-weight:800;color:var(--text)">Digital Lead Sources</div>'
     + '<div style="font-size:12px;color:var(--text3);margin-top:2px">% share from all leads · conversion rate</div></div>'
-    + '<button onclick="document.getElementById('digital-src-modal').remove()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1">×</button>'
+    + '<button onclick="var m=document.getElementById(\'digital-src-modal\');if(m)m.remove();" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1">×</button>'
     + '</div>'
     + '<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">'
     + rows
