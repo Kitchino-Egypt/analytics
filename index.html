@@ -1043,11 +1043,11 @@ if (_checkSession()) {
   </div>
 
   <!-- LAST UPDATED BAR -->
-  <div id="last-updated-bar" style="background:var(--bg);border-bottom:2px solid var(--border);padding:5px 24px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);position:sticky;top:58px;z-index:49">
-    <span>📋</span>
-    <span style="font-weight:600">Sheet last updated:</span>
-    <span id="sheet-last-updated" style="color:var(--text);font-weight:700">—</span>
-    <span id="sheet-last-updated-ago" style="color:var(--text3);font-size:11px"></span>
+  <div id="last-updated-bar" style="background:rgba(26,115,232,0.10);border-bottom:2px solid rgba(26,115,232,0.22);padding:6px 24px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);position:sticky;top:58px;z-index:49">
+    <span style="font-size:15px">🕐</span>
+    <span style="color:var(--text2)">Sheet last updated:</span>
+    <span id="sheet-last-updated" style="color:var(--blue);font-weight:700">Loading…</span>
+    <span id="sheet-last-updated-ago" style="color:var(--text3);font-size:12px"></span>
   </div>
 
   <!-- MOBILE FILTER PANEL -->
@@ -3076,7 +3076,7 @@ async function _fetchAllRows() {
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
       ENGINE_READY      = true;
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
-      _updateSheetTimestamp(data.lastModified || null);
+      _updateSheetTimestamp(data.lastModified || new Date().toISOString());
       // Populate filter dropdowns dynamically from live data
       DESIGNERS = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.designer||'').filter(Boolean))].sort();
       AREAS     = [...new Set(ENGINE_CLEAN_ROWS.flatMap(r=>[r.area||'', r.location||'']).filter(Boolean))].sort();
