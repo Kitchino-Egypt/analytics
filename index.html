@@ -6221,6 +6221,9 @@ async function _fetchContracts() {
     const t = Date.now();
     const res = await fetch(_CONTRACTS_CSV_URL + '&t=' + t);
     if (!res.ok) throw new Error('HTTP ' + res.status);
+    // Capture Last-Modified from the published CSV — reflects actual sheet edit time
+    const lastMod = res.headers.get('Last-Modified') || res.headers.get('date');
+    if (lastMod) _updateSheetTimestamp(new Date(lastMod).toISOString());
     const csv = await res.text();
     const rows = _parseCSV(csv);
     const SAFE_CRM_SET = new Set(['oto','auditing','production','final qc','store','recheck',
