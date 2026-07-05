@@ -3076,7 +3076,7 @@ async function _fetchAllRows() {
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
       ENGINE_READY      = true;
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
-      _updateSheetTimestamp(data.lastModified || new Date().toISOString());
+      _updateSheetTimestamp(data.lastUpdated || null);
       // Populate filter dropdowns dynamically from live data
       DESIGNERS = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.designer||'').filter(Boolean))].sort();
       AREAS     = [...new Set(ENGINE_CLEAN_ROWS.flatMap(r=>[r.area||'', r.location||'']).filter(Boolean))].sort();
