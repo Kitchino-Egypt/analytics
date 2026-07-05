@@ -1043,7 +1043,7 @@ if (_checkSession()) {
   </div>
 
   <!-- LAST UPDATED BAR -->
-  <div id="last-updated-bar" style="background:rgba(26,115,232,0.10);border-bottom:2px solid rgba(26,115,232,0.22);padding:6px 24px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);position:sticky;top:58px;z-index:49">
+  <div id="last-updated-bar" style="background:rgba(26,115,232,0.10);border-bottom:2px solid rgba(26,115,232,0.22);padding:6px 24px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text)">
     <span style="font-size:15px">🕐</span>
     <span style="color:var(--text2)">Sheet last updated:</span>
     <span id="sheet-last-updated" style="color:var(--blue);font-weight:700">Loading…</span>
@@ -6221,9 +6221,6 @@ async function _fetchContracts() {
     const t = Date.now();
     const res = await fetch(_CONTRACTS_CSV_URL + '&t=' + t);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    // Capture Last-Modified from the published CSV — reflects actual sheet edit time
-    const lastMod = res.headers.get('Last-Modified') || res.headers.get('date');
-    if (lastMod) _updateSheetTimestamp(new Date(lastMod).toISOString());
     const csv = await res.text();
     const rows = _parseCSV(csv);
     const SAFE_CRM_SET = new Set(['oto','auditing','production','final qc','store','recheck',
