@@ -4976,7 +4976,7 @@ function renderFollowupTable() {
   // CRM Status Pipeline
   const _crmMap = {};
   const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
-  _fuND.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
+  CONTRACTS_DATA.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
   // Populate designer dropdown from live data
   const _fuDes = [...new Set(CONTRACTS_DATA.map(c=>c.designer).filter(Boolean))].sort();
   const _fuDesSel = document.getElementById('fu-designer-filter');
