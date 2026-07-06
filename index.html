@@ -5807,13 +5807,13 @@ function applyFilters() {
 
   // ── 6. Mark all other built pages as stale — they will rebuild on next visit
   ['executive','daily','monthly','ceo','presentation','conversion','designers',
-   'geographic','sources','followup'].forEach(p => {
+   'geographic','sources','followup','instfollowup','store'].forEach(p => {
     if (p !== activePage) builtPages.delete(p);
   });
 }
 
 function _rebuildFilteredPages() {
-  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','followup'].forEach(p => {
+  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','followup','instfollowup','store'].forEach(p => {
     if (builtPages.has(p)) {
       builtPages.delete(p);
       const activePage = document.querySelector('.page.active')?.id.replace('page-','');
@@ -8448,32 +8448,43 @@ function _instMainFiltered(rows) {
   const monthF = (document.getElementById('filter-month')?.value || 'all').trim();
   const areaF  = (document.getElementById('filter-area')?.value  || 'all').trim();
 
+  // ── Robust date parser: handles yyyy-MM-dd, d-MMM-yyyy, dd/MM/yyyy, JS Date ─
+  const _MABB = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const _parseInstDate = d => {
+    if (!d || d === '0') return null;
+    // yyyy-MM-dd
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return { y: d.substring(0,4), m: parseInt(d.substring(5,7),10) };
+    // d-MMM-yyyy or dd-MMM-yyyy  (e.g. "5-Jul-2026")
+    const dm = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
+    if (dm) return { y: dm[3], m: _MABB[dm[2].toLowerCase()] || 0 };
+    // dd/MM/yyyy
+    const ds = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ds) return { y: ds[3], m: parseInt(ds[2],10) };
+    // fallback: JS Date
+    const p = new Date(d);
+    if (!isNaN(p)) return { y: String(p.getFullYear()), m: p.getMonth()+1 };
+    return null;
+  };
+
   let out = rows;
 
   if (yearF && yearF !== 'all') {
     out = out.filter(r => {
-      const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
-      if (!d || d === '0') return false;
-      // yyyy-MM-dd  or  full date string
-      if (/^\d{4}/.test(d)) return d.startsWith(yearF);
-      const p = new Date(d);
-      return !isNaN(p) && String(p.getFullYear()) === yearF;
+      const raw = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+      const pd = _parseInstDate(raw);
+      return pd && pd.y === yearF;
     });
   }
 
   if (monthF && monthF !== 'all') {
-    // filter-month uses English month names (e.g. "January") — map to 1-based number
     const _MN = ['January','February','March','April','May','June',
                  'July','August','September','October','November','December'];
-    const mNum = _MN.indexOf(monthF) + 1;  // 1-12, or 0 if not found
+    const mNum = _MN.indexOf(monthF) + 1;
     if (mNum > 0) {
       out = out.filter(r => {
-        const d = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
-        if (!d || d === '0') return false;
-        // prefer yyyy-MM-dd fast path, fall back to Date parse
-        if (/^\d{4}-\d{2}/.test(d)) return parseInt(d.substring(5, 7), 10) === mNum;
-        const p = new Date(d);
-        return !isNaN(p) && p.getMonth() + 1 === mNum;
+        const raw = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+        const pd = _parseInstDate(raw);
+        return pd && pd.m === mNum;
       });
     }
   }
@@ -8561,6 +8572,38 @@ function _instBar(id, entries, colorFn) {
   }).join('');
 }
 
+
+function _instRenderCharts(rows) {
+  const PROD_COLORS = ['#10b981','#6366f1','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+
+  const prodMap = {};
+  rows.forEach(r => { const p = r['المنتج'] || 'Unknown'; prodMap[p] = (prodMap[p] || 0) + 1; });
+  const prodKeys = Object.keys(prodMap).sort();
+  _instBar('inst-chart-product', Object.entries(prodMap).sort((a,b)=>b[1]-a[1]),
+    l => PROD_COLORS[prodKeys.indexOf(l) % PROD_COLORS.length]);
+
+  const areaMap = {};
+  rows.forEach(r => { const a = r['العنوان'] || ''; if (a) areaMap[a] = (areaMap[a] || 0) + 1; });
+  _instBar('inst-chart-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
+
+  const techMap = {};
+  const tk = _instTechKey(rows.length ? rows : (_INST_DATA||[]));
+  rows.forEach(r => { const t = (r[tk] || r['فني التركيب'] || r['فنى التركيب'] || '').trim(); if (t) techMap[t] = (techMap[t] || 0) + 1; });
+  _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
+
+  const statDistMap = {};
+  rows.forEach(r => {
+    const cat   = instStatus(r);
+    const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'') : cat === 'issue' ? '⚠️ ' + (r['الحالة']||'') : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'') : (r['الحالة']||'Other');
+    statDistMap[label] = (statDistMap[label] || 0) + 1;
+  });
+  const statDistColors = {};
+  Object.keys(statDistMap).forEach(k => {
+    statDistColors[k] = k.startsWith('✅') ? '#10b981' : k.startsWith('⚠️') ? '#ef4444' : k.startsWith('📅') ? '#f59e0b' : '#94a3b8';
+  });
+  _instBar('inst-chart-status', Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]), l => statDistColors[l] || '#94a3b8');
+}
+
 function _instRender(allRows) {
   // Apply main portal filters first
   const rows = _instMainFiltered(allRows);
@@ -8617,35 +8660,8 @@ function _instRender(allRows) {
         }).join('');
   }
 
-  // ── Charts ────────────────────────────────────────────────────────────────
-  const prodMap = {};
-  rows.forEach(r => { const p = r['المنتج'] || 'Unknown'; prodMap[p] = (prodMap[p] || 0) + 1; });
-  const PROD_COLORS = ['#10b981','#6366f1','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
-  const prodKeys = Object.keys(prodMap).sort();
-  _instBar('inst-chart-product', Object.entries(prodMap).sort((a,b)=>b[1]-a[1]),
-    l => PROD_COLORS[prodKeys.indexOf(l) % PROD_COLORS.length]);
-
-  const areaMap = {};
-  rows.forEach(r => { const a = r['العنوان'] || ''; if (a) areaMap[a] = (areaMap[a] || 0) + 1; });
-  _instBar('inst-chart-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
-
-  const techMap = {};
-  const tk = _instTechKey(rows.length ? rows : (_INST_DATA||[]));
-  rows.forEach(r => { const t = (r[tk] || r['فني التركيب'] || r['فنى التركيب'] || '').trim(); if (t) techMap[t] = (techMap[t] || 0) + 1; });
-  _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
-
-  // Status distribution chart
-  const statDistMap = {};
-  rows.forEach(r => {
-    const cat   = instStatus(r);
-    const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'') : cat === 'issue' ? '⚠️ ' + (r['الحالة']||'') : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'') : (r['الحالة']||'Other');
-    statDistMap[label] = (statDistMap[label] || 0) + 1;
-  });
-  const statDistColors = {};
-  Object.keys(statDistMap).forEach(k => {
-    statDistColors[k] = k.startsWith('✅') ? '#10b981' : k.startsWith('⚠️') ? '#ef4444' : k.startsWith('📅') ? '#f59e0b' : '#94a3b8';
-  });
-  _instBar('inst-chart-status', Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]), l => statDistColors[l] || '#94a3b8');
+  // ── Charts (delegated to shared helper so local filters also update them) ─
+  _instRenderCharts(rows);
 
   // Also re-populate local tech filter with filtered data (so technician list stays accurate)
   _instPopulateFilters(_INST_DATA || rows);
@@ -8675,6 +8691,8 @@ function filterInstTable() {
   // Store filtered rows and reset to page 1 when filters change
   _instFilteredRows = rows;
   _instCurrentPage  = 1;
+  // Also update charts to reflect local filter selection
+  _instRenderCharts(rows);
   _instRenderPage();
 }
 
@@ -8701,7 +8719,7 @@ function _instRenderPage() {
 
   const fmtDate = d => {
     if (!d || d === '0' || d === '') return '—';
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d.replace(/(\d{4})-(\d{2})-(\d{2})/, '//');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1');
     const p = new Date(d);
     if (!isNaN(p.getTime())) {
       const dd = String(p.getDate()).padStart(2,'0');
