@@ -8758,7 +8758,7 @@ function _instRenderCharts(rows) {
     const tc = _txtColor(); const gc = _gridColor();
     _instCJs[cid] = new Chart(canvas.getContext('2d'), {
       type:'bar',
-      data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:5, borderSkipped:false, barThickness:20, maxBarThickness:32 }] },
+      data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:5, borderSkipped:false, borderWidth:0, barThickness:20, maxBarThickness:32 }] },
       options:{
         responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' installs' }}},
@@ -8781,7 +8781,7 @@ function _instRenderCharts(rows) {
   const techMap = {};
   const tk = _instTechKey(rows.length ? rows : (_INST_DATA||[]));
   rows.forEach(r => { const t = (r[tk]||r['فني التركيب']||r['فنى التركيب']||'').trim(); if(t) techMap[t]=(techMap[t]||0)+1; });
-  const TECH_COLORS = ['#8b5cf6','#a78bfa','#7c3aed','#6d28d9','#5b21b6','#4c1d95','#ddd6fe','#ede9fe','#c4b5fd','#9061f9'];
+  const TECH_COLORS = ['#3b82f6','#60a5fa','#93c5fd','#94a3b8','#bfdbfe','#64748b','#2563eb','#cbd5e1','#1d4ed8','#e2e8f0'];
   const techEntries2 = Object.entries(techMap).sort((a,b)=>b[1]-a[1]);
   _hbar('inst-canvas-tech', techEntries2, (l) => TECH_COLORS[techEntries2.findIndex(e=>e[0]===l)%TECH_COLORS.length]);
 
