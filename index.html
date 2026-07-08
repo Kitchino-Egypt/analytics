@@ -1621,7 +1621,7 @@ if (_checkSession()) {
   <!-- CRM Status Pipeline -->
   <div class="table-card" style="margin-bottom:16px">
     <div class="table-header"><div class="table-title">CRM Status Pipeline</div></div>
-    <div id="fu-crm-pipeline" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px"></div>
+    <div id="fu-crm-pipeline" style="display:block;padding:12px 16px"></div>
   </div>
 
   <div class="chart-grid chart-2">
@@ -5059,16 +5059,21 @@ function renderFollowupTable() {
       .map(k => ({key:k, label:k.toUpperCase()}));
     if (_unknownCount > 0) _extraStages.push({key:'unknown', label:'NO STAGE'});
     const _allStages = [..._CRM_ORDER, ..._extraStages];
-    _crmEl.innerHTML = _allStages.map(({key, label}) => {
+    // Split into two rows of 7
+    const _row1 = _allStages.slice(0, 7);
+    const _row2 = _allStages.slice(7);
+    const _cardHtml = ({key, label}) => {
       const count = _crmMap[key] || 0;
       const pct   = _fuTotal > 0 ? Math.round(count/_fuTotal*100) : 0;
       const col   = count > 0 ? 'var(--gold)' : 'var(--text-muted,#888)';
-      return '<div style="background:var(--bg2,var(--card));border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:90px;text-align:center;flex:1 1 90px;cursor:pointer;transition:opacity .15s;overflow:hidden" onclick="openFuCrmModal(\'' + label + '\',\'' + key + '\')" onmouseenter="this.style.opacity=.75" onmouseleave="this.style.opacity=1">' +
+      return '<div style="background:var(--bg2,var(--card));border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:0;text-align:center;flex:1 1 0;cursor:pointer;transition:opacity .15s;overflow:hidden" onclick="openFuCrmModal(\'' + label + '\',\'' + key + '\')" onmouseenter="this.style.opacity=.75" onmouseleave="this.style.opacity=1">' +
         '<div style="font-size:10px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0;margin-bottom:6px;text-align:center;word-break:break-word;overflow-wrap:anywhere;line-height:1.25">' + label + '</div>' +
         '<div style="font-size:24px;font-weight:700;color:' + col + '">' + count + '</div>' +
         '<div style="font-size:11px;color:var(--text-muted,#888);margin-top:2px">' + pct + '% of total</div>' +
         '</div>';
-    }).join('');
+    };
+    const _rowWrap = cards => '<div style="display:flex;gap:8px;margin-bottom:8px">' + cards.map(_cardHtml).join('') + '</div>';
+    _crmEl.innerHTML = _rowWrap(_row1) + (_row2.length ? _rowWrap(_row2) : '');
   }
 }
 
