@@ -129,6 +129,7 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .kpi-3 { grid-template-columns:repeat(3,1fr); }
 .kpi-6 { grid-template-columns:repeat(6,1fr); }
 .kpi-7 { grid-template-columns:repeat(7,1fr); }
+.kpi-8 { grid-template-columns:repeat(8,1fr); }
 .kpi-card {
   background:var(--card); border:1px solid var(--border); border-radius:12px;
   padding:16px 18px; position:relative; overflow:hidden; transition:.2s;
@@ -347,7 +348,7 @@ tbody td.muted { color:var(--text2); }
 ::-webkit-scrollbar-thumb:hover { background:var(--text3); }
 
 /* RESPONSIVE */
-@media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } .kpi-7 { grid-template-columns:repeat(4,1fr); } }
+@media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } .kpi-7 { grid-template-columns:repeat(4,1fr); } .kpi-8 { grid-template-columns:repeat(4,1fr); } }
 @media(max-width:900px) {
   /* Hide sidebar completely — shown only when JS adds .open class */
   .sidebar { display:none !important; }
@@ -1212,10 +1213,11 @@ if (_checkSession()) {
       <div style="font-size:42px;font-weight:900;color:var(--green);line-height:1" id="kpi-current-month">—</div>
     </div>
   </div>
-  <div class="kpi-grid kpi-7" id="exec-kpis">
+  <div class="kpi-grid kpi-8" id="exec-kpis">
     <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-sub-total">—</div></div>
     <div class="kpi-card"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub" id="kpi-sub-customers">—</div></div>
     <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub" id="kpi-sub-contracted">—</div></div>
+    <div class="kpi-card blue"><div class="kpi-icon">🤝</div><div class="kpi-label">Contracted Customers</div><div class="kpi-value" id="kpi-exec-contr-custs">—</div><div class="kpi-sub" id="kpi-exec-contr-custs-sub">unique contracted clients</div></div>
     <div class="kpi-card gold"><div class="kpi-icon">💬</div><div class="kpi-label">In Discussion</div><div class="kpi-value" id="kpi-discussion">—</div><div class="kpi-sub" id="kpi-sub-discussion">—</div></div>
     <div class="kpi-card red"><div class="kpi-icon">❌</div><div class="kpi-label">Cancelled</div><div class="kpi-value" id="kpi-cancelled">—</div><div class="kpi-sub" id="kpi-sub-cancelled">—</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">📈</div><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpi-rate">—</div><div class="kpi-sub" id="kpi-sub-rate">—</div></div>
@@ -3303,6 +3305,8 @@ function updateKPICards() {
   set('conv-overall-rate', s.conversionRate + '%');
   set('kpi-exec-crosssales',     s.crossSalesRatio > 0 ? s.crossSalesRatio + '×' : '—');
   set('kpi-exec-crosssales-sub', s.contracted + ' orders ÷ ' + s.contractedCustomers + ' contracted customers');
+  set('kpi-exec-contr-custs',     s.contractedCustomers > 0 ? s.contractedCustomers.toLocaleString() : '—');
+  set('kpi-exec-contr-custs-sub', s.contractedCustomers + ' of ' + s.uniqueCustomers + ' unique customers');
   // CEO View dynamic KPIs
   set('ceo-kpi-total',             s.total.toLocaleString());
   set('ceo-kpi-unique',            s.uniqueCustomers.toLocaleString());
