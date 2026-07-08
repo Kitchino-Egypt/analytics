@@ -1620,8 +1620,8 @@ if (_checkSession()) {
 
   <div class="chart-grid chart-2">
     <div class="chart-card">
-      <div class="chart-title">Contract Age Distribution</div>
-      <div class="chart-subtitle">Aging brackets for open contracts</div>
+      <div class="chart-title">CRM Stage Breakdown</div>
+      <div class="chart-subtitle">Delivered · In Store · Other stages</div>
       <div class="chart-wrap"><canvas id="chart-fu-aging" height="220"></canvas></div>
     </div>
     <div class="chart-card">
@@ -5750,18 +5750,23 @@ function renderScorecard() {
 }
 
 function buildFollowupCharts() {
-  makeChart('chart-fu-aging', {
-    type:'doughnut',
-    data:{
-      labels:['0–30 Days','45–60 Days','Over 60 Days'],
-      datasets:[{data:[
-        CONTRACTS_DATA.filter(c=>c.aging==='0-30 Days').length,
-        CONTRACTS_DATA.filter(c=>c.aging==='45 Days'||c.aging==='60 Days').length,
-        CONTRACTS_DATA.filter(c=>c.aging==='Over 60 Days').length
-      ],backgroundColor:[GREEN,GOLD,RED],borderColor:'#f2f2f8',borderWidth:2,hoverOffset:5}]
-    },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},cutout:'60%'}
-  });
+  (function(){
+    const _CN = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+    const normCrm = c => { const k=(c.crm||'').trim().toLowerCase(); return _CN[k]||k||'unknown'; };
+    const delivered = CONTRACTS_DATA.filter(c => normCrm(c) === 'delivered').length;
+    const inStore   = CONTRACTS_DATA.filter(c => normCrm(c) === 'store').length;
+    const other     = CONTRACTS_DATA.filter(c => { const k=normCrm(c); return k!=='delivered'&&k!=='store'; }).length;
+    makeChart('chart-fu-aging', {
+      type:'doughnut',
+      data:{
+        labels:['✅ Delivered','🏪 In Store','⏳ Other Stages'],
+        datasets:[{data:[delivered, inStore, other],
+          backgroundColor:['#10b981','#3b82f6','#f59e0b'],
+          borderColor:'#f2f2f8',borderWidth:2,hoverOffset:6}]
+      },
+      options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}},cutout:'62%'}
+    });
+  })();
 
   const byDesigner = {};
   CONTRACTS_DATA.forEach(c=>{byDesigner[c.designer]=(byDesigner[c.designer]||0)+1});
@@ -8239,9 +8244,11 @@ function renderYearCompare() {
     }
   });
 
-  // Designer comparison table
+  // Designer comparison table — both years filtered to Jan–Jul for fair comparison
+  const rows25h1 = rows25.filter(r => H1.includes(r._monthName));
+  const rows26h1 = rows26.filter(r => H1.includes(r._monthName));
   const desMap = {};
-  [...rows25,...rows26].forEach(r => {
+  [...rows25h1,...rows26h1].forEach(r => {
     const d = r.designer||'Unknown'; if(!d||d==='Unknown') return;
     if(!desMap[d]) desMap[d]={name:d,t25:0,c25:0,t26:0,c26:0};
     if(r._year==='2025'){desMap[d].t25++;if(r._contracted)desMap[d].c25++;}
