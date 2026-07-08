@@ -1604,8 +1604,9 @@ if (_checkSession()) {
       <div class="kpi-value" id="fu-overdue">—</div>
       <div class="kpi-sub" id="fu-overdue-sub">not in safe zone</div>
     </div>
-    <div class="kpi-card teal" style="cursor:pointer" onclick="openFuCrmModal('Safe Zone','__safe__')" title="Click to view Safe Zone contracts">
+    <div class="kpi-card teal" style="cursor:pointer" onclick="openFuSafeModal()" title="Click for details">
       <div class="kpi-label">✅ Safe Zone</div>
+      <div style="font-size:11px;color:inherit;opacity:0.75;margin-bottom:2px">(Contracts + اضافات)</div>
       <div class="kpi-value" id="fu-safe">—</div>
       <div class="kpi-sub" id="fu-safe-sub">OTO → Delivered</div>
     </div>
@@ -1655,6 +1656,15 @@ if (_checkSession()) {
 </div>
 
 <!-- CRM Stage Drill-down Modal -->
+<div id="fu-safe-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuSafeModal()">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">✅ Safe Zone Breakdown</div>
+      <button onclick="closeFuSafeModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div id="fu-safe-modal-body" style="display:flex;flex-direction:column;gap:14px"></div>
+  </div>
+</div>
 <div id="fu-crm-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuCrmModal()">
   <div style="background:var(--card);border-radius:14px;padding:24px;width:93%;max-width:860px;max-height:82vh;overflow-y:auto;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
@@ -5039,6 +5049,38 @@ function openFuCrmModal(label, key) {
 function closeFuCrmModal() {
   const modal = document.getElementById('fu-crm-modal');
   if(modal) modal.style.display = 'none';
+}
+function openFuSafeModal() {
+  const _isInvFU = c => c.status === 'فاتورة' || c.status === 'اضافات';
+  const _fuND = CONTRACTS_DATA.filter(c => (c.crm||'').toLowerCase() !== 'declined');
+  const safeAll      = _fuND.filter(c => c.safe);
+  const safeContracts = safeAll.filter(c => !_isInvFU(c)).length;
+  const safeInvoice   = safeAll.filter(c => _isInvFU(c)).length;
+  const total         = safeAll.length;
+  const body = document.getElementById('fu-safe-modal-body');
+  if (body) body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2,var(--bg));border-radius:10px;padding:16px 20px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px">Contracts (عقد)</div>
+        <div style="font-size:32px;font-weight:700;color:var(--teal,#14b8a6);margin-top:4px">${safeContracts}</div>
+        <div style="font-size:12px;color:var(--text-muted,#888);margin-top:2px">${total > 0 ? Math.round(safeContracts/total*100) : 0}% of safe zone</div>
+      </div>
+      <div style="font-size:28px;opacity:0.3">+</div>
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px">اضافات / Invoice</div>
+        <div style="font-size:32px;font-weight:700;color:var(--gold,#f9ab00);margin-top:4px">${safeInvoice}</div>
+        <div style="font-size:12px;color:var(--text-muted,#888);margin-top:2px">${total > 0 ? Math.round(safeInvoice/total*100) : 0}% of safe zone</div>
+      </div>
+    </div>
+    <div style="text-align:center;font-size:13px;color:var(--text-muted,#888);padding:8px 0">
+      Total Safe Zone: <strong style="color:var(--text)">${total}</strong> orders (OTO → Delivered)
+    </div>`;
+  const modal = document.getElementById('fu-safe-modal');
+  if (modal) modal.style.display = 'flex';
+}
+function closeFuSafeModal() {
+  const modal = document.getElementById('fu-safe-modal');
+  if (modal) modal.style.display = 'none';
 }
 
 function renderDesignerTable() {
