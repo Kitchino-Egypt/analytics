@@ -1974,24 +1974,24 @@ if (_checkSession()) {
       <div class="chart-card">
         <div class="chart-title">By Product Type</div>
         <div class="chart-subtitle">Installation count per product category</div>
-        <div id="inst-chart-product" style="padding:4px 0;min-height:240px;display:flex;align-items:center;justify-content:center"><canvas id="inst-canvas-product" style="max-height:240px"></canvas></div>
+        <div id="inst-chart-product" style="padding:4px 0;min-height:380px;display:flex;align-items:center;justify-content:center"><canvas id="inst-canvas-product" style="max-height:380px"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">By Area</div>
         <div class="chart-subtitle">Installation count per geographic area</div>
-        <div id="inst-chart-area" style="padding:4px 0"><canvas id="inst-canvas-area" style="max-height:220px"></canvas></div>
+        <div id="inst-chart-area" style="padding:4px 0;min-height:320px"><canvas id="inst-canvas-area" style="height:320px"></canvas></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card">
         <div class="chart-title">By Technician</div>
         <div class="chart-subtitle">Installations assigned per technician</div>
-        <div id="inst-chart-tech" style="padding:4px 0"><canvas id="inst-canvas-tech" style="max-height:220px"></canvas></div>
+        <div id="inst-chart-tech" style="padding:4px 0;min-height:320px"><canvas id="inst-canvas-tech" style="height:320px"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">Status Distribution</div>
         <div class="chart-subtitle">Overall installation status breakdown</div>
-        <div id="inst-chart-status" style="padding:4px 0"><canvas id="inst-canvas-status" style="max-height:220px"></canvas></div>
+        <div id="inst-chart-status" style="padding:4px 0;min-height:320px"><canvas id="inst-canvas-status" style="height:320px"></canvas></div>
       </div>
     </div>
     <div class="table-card">
@@ -8733,9 +8733,9 @@ function _instRenderCharts(rows) {
         }]
       },
       options: {
-        cutout:'62%', responsive:true, maintainAspectRatio:true,
+        cutout:'60%', responsive:true, maintainAspectRatio:false,
         plugins:{
-          legend:{ position:'right', labels:{ color:_txtColor(), font:{size:11}, boxWidth:12, padding:10, generateLabels: chart => {
+          legend:{ position:'right', labels:{ color:_txtColor(), font:{size:13}, boxWidth:14, padding:14, generateLabels: chart => {
             const ds = chart.data.datasets[0]; const total = ds.data.reduce((a,b)=>a+b,0);
             return chart.data.labels.map((label,i)=>({ text: label+' ('+ds.data[i]+')', fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], lineWidth:0, index:i }));
           }}},
@@ -8758,21 +8758,18 @@ function _instRenderCharts(rows) {
     const tc = _txtColor(); const gc = _gridColor();
     _instCJs[cid] = new Chart(canvas.getContext('2d'), {
       type:'bar',
-      data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:5, borderSkipped:false, barThickness:14 }] },
+      data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:5, borderSkipped:false, barThickness:20, maxBarThickness:32 }] },
       options:{
-        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' installs' }}},
         scales:{
-          x:{ grid:{color:gc}, ticks:{color:tc, font:{size:10}}, border:{display:false} },
-          y:{ grid:{display:false}, ticks:{color:tc, font:{size:11}}, border:{display:false} }
+          x:{ grid:{display:false}, ticks:{color:tc, font:{size:10}}, border:{display:false} },
+          y:{ grid:{color:gc}, ticks:{color:tc, font:{size:10}}, border:{display:false} }
         }, animation:{ duration:600 }
       }
     });
-    // Adjust canvas container height based on row count
-    const wrap = canvas.parentElement;
-    if (wrap) wrap.style.height = Math.max(160, top.length * 32 + 20) + 'px';
+    canvas.style.height = '320px';
     canvas.style.maxHeight = 'none';
-    canvas.style.height = '100%';
   }
 
   // ── By Area ─────────────────────────────────────────────────────────────────
