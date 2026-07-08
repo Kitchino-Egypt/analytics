@@ -1974,24 +1974,24 @@ if (_checkSession()) {
       <div class="chart-card">
         <div class="chart-title">By Product Type</div>
         <div class="chart-subtitle">Installation count per product category</div>
-        <div id="inst-chart-product" style="padding:8px 0"></div>
+        <div id="inst-chart-product" style="padding:4px 0;min-height:240px;display:flex;align-items:center;justify-content:center"><canvas id="inst-canvas-product" style="max-height:240px"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">By Area</div>
         <div class="chart-subtitle">Installation count per geographic area</div>
-        <div id="inst-chart-area" style="padding:8px 0"></div>
+        <div id="inst-chart-area" style="padding:4px 0"><canvas id="inst-canvas-area" style="max-height:220px"></canvas></div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card">
         <div class="chart-title">By Technician</div>
         <div class="chart-subtitle">Installations assigned per technician</div>
-        <div id="inst-chart-tech" style="padding:8px 0"></div>
+        <div id="inst-chart-tech" style="padding:4px 0"><canvas id="inst-canvas-tech" style="max-height:220px"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">Status Distribution</div>
         <div class="chart-subtitle">Overall installation status breakdown</div>
-        <div id="inst-chart-status" style="padding:8px 0"></div>
+        <div id="inst-chart-status" style="padding:4px 0"><canvas id="inst-canvas-status" style="max-height:220px"></canvas></div>
       </div>
     </div>
     <div class="table-card">
@@ -8705,35 +8705,105 @@ function _instBar(id, entries, colorFn) {
 }
 
 
-function _instRenderCharts(rows) {
-  const PROD_COLORS = ['#10b981','#6366f1','#f59e0b','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+// ── Installation Chart.js instances (destroyed & recreated on each render) ──
+let _instCJs = {};
+function _instKillChart(id) { if (_instCJs[id]) { try { _instCJs[id].destroy(); } catch(e){} delete _instCJs[id]; } }
 
+function _instRenderCharts(rows) {
+  const PROD_COLORS = ['#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#0ea5e9','#a3e635'];
+  const _txtColor  = () => getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#888';
+  const _gridColor = () => 'rgba(128,128,128,0.1)';
+
+  // ── Donut: By Product Type ──────────────────────────────────────────────────
   const prodMap = {};
   rows.forEach(r => { const p = r['المنتج'] || 'Unknown'; prodMap[p] = (prodMap[p] || 0) + 1; });
-  const prodKeys = Object.keys(prodMap).sort();
-  _instBar('inst-chart-product', Object.entries(prodMap).sort((a,b)=>b[1]-a[1]),
-    l => PROD_COLORS[prodKeys.indexOf(l) % PROD_COLORS.length]);
+  const prodEntries = Object.entries(prodMap).sort((a,b)=>b[1]-a[1]);
+  _instKillChart('prod');
+  const prodCanvas = document.getElementById('inst-canvas-product');
+  if (prodCanvas && prodEntries.length) {
+    _instCJs['prod'] = new Chart(prodCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: prodEntries.map(e=>e[0]),
+        datasets: [{
+          data: prodEntries.map(e=>e[1]),
+          backgroundColor: prodEntries.map((_,i)=>PROD_COLORS[i%PROD_COLORS.length]),
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#fff',
+          borderWidth: 3, hoverOffset: 8
+        }]
+      },
+      options: {
+        cutout:'62%', responsive:true, maintainAspectRatio:true,
+        plugins:{
+          legend:{ position:'right', labels:{ color:_txtColor(), font:{size:11}, boxWidth:12, padding:10, generateLabels: chart => {
+            const ds = chart.data.datasets[0]; const total = ds.data.reduce((a,b)=>a+b,0);
+            return chart.data.labels.map((label,i)=>({ text: label+' ('+ds.data[i]+')', fillStyle: ds.backgroundColor[i], strokeStyle: ds.backgroundColor[i], lineWidth:0, index:i }));
+          }}},
+          tooltip:{ callbacks:{ label: ctx => ' '+ctx.label+': '+ctx.raw+' ('+Math.round(ctx.raw/ctx.dataset.data.reduce((a,b)=>a+b,0)*100)+'%)' }}
+        }, animation:{ animateRotate:true, duration:700 }
+      }
+    });
+  }
 
+  // ── H-Bar helper ────────────────────────────────────────────────────────────
+  function _hbar(canvasId, entries, colorFn, limit) {
+    const cid = canvasId.replace('inst-canvas-','');
+    _instKillChart(cid);
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !entries.length) return;
+    const top = entries.slice(0, limit||15);
+    const labels = top.map(e=>e[0]);
+    const values = top.map(e=>e[1]);
+    const colors = labels.map(l => colorFn(l));
+    const tc = _txtColor(); const gc = _gridColor();
+    _instCJs[cid] = new Chart(canvas.getContext('2d'), {
+      type:'bar',
+      data:{ labels, datasets:[{ data:values, backgroundColor:colors, borderRadius:5, borderSkipped:false, barThickness:14 }] },
+      options:{
+        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' installs' }}},
+        scales:{
+          x:{ grid:{color:gc}, ticks:{color:tc, font:{size:10}}, border:{display:false} },
+          y:{ grid:{display:false}, ticks:{color:tc, font:{size:11}}, border:{display:false} }
+        }, animation:{ duration:600 }
+      }
+    });
+    // Adjust canvas container height based on row count
+    const wrap = canvas.parentElement;
+    if (wrap) wrap.style.height = Math.max(160, top.length * 32 + 20) + 'px';
+    canvas.style.maxHeight = 'none';
+    canvas.style.height = '100%';
+  }
+
+  // ── By Area ─────────────────────────────────────────────────────────────────
   const areaMap = {};
   rows.forEach(r => { const a = r['العنوان'] || ''; if (a) areaMap[a] = (areaMap[a] || 0) + 1; });
-  _instBar('inst-chart-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
+  _hbar('inst-canvas-area', Object.entries(areaMap).sort((a,b)=>b[1]-a[1]), () => '#3b82f6');
 
+  // ── By Technician ───────────────────────────────────────────────────────────
   const techMap = {};
   const tk = _instTechKey(rows.length ? rows : (_INST_DATA||[]));
-  rows.forEach(r => { const t = (r[tk] || r['فني التركيب'] || r['فنى التركيب'] || '').trim(); if (t) techMap[t] = (techMap[t] || 0) + 1; });
-  _instBar('inst-chart-tech', Object.entries(techMap).sort((a,b)=>b[1]-a[1]), () => '#8b5cf6');
+  rows.forEach(r => { const t = (r[tk]||r['فني التركيب']||r['فنى التركيب']||'').trim(); if(t) techMap[t]=(techMap[t]||0)+1; });
+  const TECH_COLORS = ['#8b5cf6','#a78bfa','#7c3aed','#6d28d9','#5b21b6','#4c1d95','#ddd6fe','#ede9fe','#c4b5fd','#9061f9'];
+  const techEntries2 = Object.entries(techMap).sort((a,b)=>b[1]-a[1]);
+  _hbar('inst-canvas-tech', techEntries2, (l) => TECH_COLORS[techEntries2.findIndex(e=>e[0]===l)%TECH_COLORS.length]);
 
+  // ── Status Distribution ─────────────────────────────────────────────────────
   const statDistMap = {};
   rows.forEach(r => {
-    const cat   = instStatus(r);
-    const label = cat === 'completed' ? '✅ ' + (r['الحالة']||'') : cat === 'issue' ? '⚠️ ' + (r['الحالة']||'') : cat === 'scheduled' ? '📅 ' + (r['الحالة']||'') : (r['الحالة']||'Other');
-    statDistMap[label] = (statDistMap[label] || 0) + 1;
+    const cat = instStatus(r);
+    const label = cat==='completed' ? (r['الحالة']||'') : cat==='issue' ? (r['الحالة']||'') : cat==='scheduled' ? (r['الحالة']||'') : (r['الحالة']||'Other');
+    statDistMap[label] = (statDistMap[label]||0)+1;
   });
-  const statDistColors = {};
-  Object.keys(statDistMap).forEach(k => {
-    statDistColors[k] = k.startsWith('✅') ? '#10b981' : k.startsWith('⚠️') ? '#ef4444' : k.startsWith('📅') ? '#f59e0b' : '#94a3b8';
-  });
-  _instBar('inst-chart-status', Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]), l => statDistColors[l] || '#94a3b8');
+  const statColorFn = l => {
+    const r = rows.find(x=>(x['الحالة']||'')=== l);
+    if (!r) return '#94a3b8';
+    const c = instStatus(r);
+    return c==='completed'?'#10b981':c==='issue'?'#ef4444':c==='scheduled'?'#f59e0b':'#94a3b8';
+  };
+  // Slight color variation by index for same-category bars
+  const statEntries = Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]);
+  _hbar('inst-canvas-status', statEntries, statColorFn);
 }
 
 function _instRender(allRows) {
