@@ -1599,7 +1599,7 @@ if (_checkSession()) {
       <div class="kpi-value" id="fu-invoice">—</div>
       <div class="kpi-sub" id="fu-invoice-sub">of total</div>
     </div>
-    <div class="kpi-card red">
+    <div class="kpi-card purple">
       <div class="kpi-label">Need Attention</div>
       <div class="kpi-value" id="fu-overdue">—</div>
       <div class="kpi-sub" id="fu-overdue-sub">not in safe zone</div>
@@ -1631,6 +1631,9 @@ if (_checkSession()) {
     </div>
   </div>
 
+  <!-- Designer tabs bar -->
+  <div id="fu-designer-tabs-bar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+
   <div class="table-card">
     <div class="table-header">
       <div class="table-title">Follow-up Dashboard</div>
@@ -1656,6 +1659,19 @@ if (_checkSession()) {
 </div>
 
 <!-- CRM Stage Drill-down Modal -->
+<div id="fu-des-stage-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuDesModal()">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:95%;max-width:900px;max-height:85vh;overflow-y:auto;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div id="fu-des-modal-title" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+      <button onclick="closeFuDesModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <div id="fu-des-modal-pipeline" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px"></div>
+    <div style="overflow-x:auto">
+      <table><thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>CRM Stage</th><th>Status</th><th>Age (Days)</th><th>Category</th></tr></thead>
+      <tbody id="fu-des-modal-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
 <div id="fu-safe-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuSafeModal()">
   <div style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
@@ -4991,6 +5007,17 @@ function renderFollowupTable() {
   const _fuDes = [...new Set(CONTRACTS_DATA.map(c=>c.designer).filter(Boolean))].sort();
   const _fuDesSel = document.getElementById('fu-designer-filter');
   if (_fuDesSel) { const _cur=_fuDesSel.value; _fuDesSel.innerHTML='<option value="all">All Designers</option>'+_fuDes.map(d=>`<option value="${d}" ${d===_cur?'selected':''}>${d}</option>`).join(''); }
+  // Populate designer tabs bar
+  const _tabsBar = document.getElementById('fu-designer-tabs-bar');
+  if (_tabsBar) {
+    const _tabBase = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;white-space:nowrap';
+    _tabsBar.innerHTML = _fuDes.map(d => {
+      const cnt = CONTRACTS_DATA.filter(c => c.designer === d).length;
+      return `<div style="${_tabBase}" onclick="openFuDesModal('${d.replace(/'/g,"\'")}')" onmouseenter="this.style.background='var(--gold)';this.style.color='#1e1e1e';this.style.borderColor='var(--gold)'" onmouseleave="this.style.background='';this.style.color='';this.style.borderColor='var(--border)'">
+        ${d} <span style="margin-left:6px;background:var(--bg2,var(--bg));border-radius:10px;padding:1px 7px;font-size:11px">${cnt}</span>
+      </div>`;
+    }).join('');
+  }
   const _CRM_ORDER = [
     {key:'contracted',       label:'CONTRACTED'},
     {key:'electromechanic',  label:'ELECTROMECHANIC'},
@@ -5022,7 +5049,7 @@ function renderFollowupTable() {
       const pct   = _fuTotal > 0 ? Math.round(count/_fuTotal*100) : 0;
       const col   = count > 0 ? 'var(--gold)' : 'var(--text-muted,#888)';
       return '<div style="background:var(--bg2,var(--card));border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:90px;text-align:center;flex:1 1 90px;cursor:pointer;transition:opacity .15s" onclick="openFuCrmModal(\'' + label + '\',\'' + key + '\')" onmouseenter="this.style.opacity=.75" onmouseleave="this.style.opacity=1">' +
-        '<div style="font-size:10px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">' + label + '</div>' +
+        '<div style="font-size:10px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;text-align:center">' + label + '</div>' +
         '<div style="font-size:24px;font-weight:700;color:' + col + '">' + count + '</div>' +
         '<div style="font-size:11px;color:var(--text-muted,#888);margin-top:2px">' + pct + '% of total</div>' +
         '</div>';
@@ -5080,6 +5107,61 @@ function openFuSafeModal() {
 }
 function closeFuSafeModal() {
   const modal = document.getElementById('fu-safe-modal');
+  if (modal) modal.style.display = 'none';
+}
+function openFuDesModal(designer) {
+  const _NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+  const rows = CONTRACTS_DATA.filter(c => c.designer === designer);
+  // Title
+  const titleEl = document.getElementById('fu-des-modal-title');
+  if (titleEl) titleEl.innerHTML = `👤 <strong>${designer}</strong> &nbsp;<span style="color:var(--gold);font-weight:400">${rows.length} contracts</span>`;
+  // Mini pipeline
+  const _CRM_ORDER = ['contracted','electromechanic','shablona','designer working','oto','auditing','production','final qc','store','recheck','shipping','installation','delivered','declined'];
+  const stageMap = {};
+  rows.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_NORM[k]||k||'unknown'; stageMap[k]=(stageMap[k]||0)+1; });
+  const pipeEl = document.getElementById('fu-des-modal-pipeline');
+  if (pipeEl) {
+    const stages = _CRM_ORDER.filter(k => stageMap[k] > 0);
+    const extras = Object.keys(stageMap).filter(k => !_CRM_ORDER.includes(k) && k !== 'unknown' && stageMap[k] > 0);
+    if (stageMap['unknown'] > 0) extras.push('unknown');
+    pipeEl.innerHTML = [...stages, ...extras].map(k => {
+      const cnt = stageMap[k] || 0;
+      const lbl = k === 'unknown' ? 'NO STAGE' : k.toUpperCase();
+      return `<div style="background:var(--bg2,var(--bg));border:1px solid var(--border);border-radius:8px;padding:8px 12px;min-width:80px;text-align:center;flex:0 0 auto">
+        <div style="font-size:9px;font-weight:700;color:var(--text-muted,#888);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;text-align:center">${lbl}</div>
+        <div style="font-size:22px;font-weight:700;color:var(--gold)">${cnt}</div>
+      </div>`;
+    }).join('');
+  }
+  // Table
+  const tbody = document.getElementById('fu-des-modal-tbody');
+  if (tbody) {
+    const sorted = [...rows].sort((a,b) => {
+      const ord = k => _CRM_ORDER.indexOf((_NORM[(k.crm||'').trim().toLowerCase()]||((k.crm||'').trim().toLowerCase())||'unknown'));
+      return ord(a) - ord(b);
+    });
+    tbody.innerHTML = sorted.length
+      ? sorted.map((c,i) => {
+          const stageKey = (_NORM[(c.crm||'').trim().toLowerCase()]||(c.crm||'').trim().toLowerCase()||'unknown');
+          const stageLabel = stageKey === 'unknown' ? 'No Stage' : (c.crm||'—');
+          const ageClass = c.age > 45 ? 'badge-red' : c.age >= 30 ? 'badge-gold' : 'badge-green';
+          return `<tr>
+            <td class="muted">${i+1}</td>
+            <td>${c.name||'—'}</td>
+            <td class="muted">${c.orderId||'—'}</td>
+            <td><span class="badge badge-teal" style="font-size:10px">${stageLabel}</span></td>
+            <td>${c.status||'—'}</td>
+            <td><span class="badge ${ageClass}">${c.age||0} d</span></td>
+            <td class="muted">${c.aging||'—'}</td>
+          </tr>`;
+        }).join('')
+      : '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text2)">No contracts found</td></tr>';
+  }
+  const modal = document.getElementById('fu-des-stage-modal');
+  if (modal) modal.style.display = 'flex';
+}
+function closeFuDesModal() {
+  const modal = document.getElementById('fu-des-stage-modal');
   if (modal) modal.style.display = 'none';
 }
 
