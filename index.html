@@ -2339,7 +2339,7 @@ if (_checkSession()) {
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
     <div>
       <div style="font-size:20px;font-weight:800;color:var(--text1)">2025 vs 2026 — Year Comparison</div>
-      <div style="font-size:12px;color:var(--text3);margin-top:2px">Side-by-side KPI comparison · January–June H1 for 2026</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:2px">Side-by-side KPI comparison · January–July for 2026</div>
     </div>
   </div>
 
@@ -7649,7 +7649,7 @@ function buildPresentationSlides() {
 
 
   // ── Slide 6: H1 2025 vs 2026 — PERIOD-TO-PERIOD (same date cutoff) ─────────
-  const H1_MONTHS = [1,2,3,4,5,6];
+  const H1_MONTHS = [1,2,3,4,5,6,7];
   const h1_26 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2026' && H1_MONTHS.includes(r._monthOrder));
 
   // Find the latest date present in 2026 H1 data → cutoff for a fair comparison
@@ -8119,7 +8119,7 @@ function renderYearCompare() {
   }
   try {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const H1 = ['January','February','March','April','May','June'];
+  const H1 = ['January','February','March','April','May','June','July'];
 
   const rows25 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2025');
   const rows26 = ENGINE_CLEAN_ROWS.filter(r => r._year === '2026');
@@ -8180,16 +8180,16 @@ function renderYearCompare() {
         +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">'+m.label+'</div>'
         +'<div style="display:flex;gap:10px;align-items:center">'
           +'<div style="flex:1">'
-            +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2025 H1</div>'
+            +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2025 Jan–Jul</div>'
             +'<div style="font-size:22px;font-weight:800;color:var(--text2)">'+m.fmt(m.v25)+'</div>'
           +'</div>'
           +'<div style="font-size:22px;font-weight:900;color:'+arrowClr+'">'+arrow+'</div>'
           +'<div style="flex:1;text-align:right">'
-            +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2026 H1</div>'
+            +'<div style="font-size:9px;color:var(--text3);margin-bottom:2px">2026 Jan–Jul</div>'
             +'<div style="font-size:22px;font-weight:800;color:'+val26Clr+'">'+m.fmt(m.v26)+'</div>'
           +'</div>'
         +'</div>'
-        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+arrow+' '+d+' vs 2025 H1<span style="font-size:11px;opacity:0.85">'+pctChg+'</span></div>'
+        +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:'+dc+'">'+arrow+' '+d+' vs 2025 Jan–Jul<span style="font-size:11px;opacity:0.85">'+pctChg+'</span></div>'
         +'</div>';
     }).join('');
   }
