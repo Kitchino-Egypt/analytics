@@ -6125,11 +6125,11 @@ document.querySelectorAll('.nav-item[data-page]').forEach(el => {
 // ============================================================
 // GOOGLE SHEETS LIVE CONNECTION  (JSONP — works from file://)
 // ============================================================
-// ── Force revert to original Measures URL ──
+// ── Force Measures URL to company account ──
 (function(){
-  localStorage.setItem('kitchino_sheets_url', 'https://script.google.com/macros/s/AKfycbxpw9huYT7FI3KaVkzmKxRK9z94yoGCgfdWzhxQmfhtf4Kxx1IFMn6PY_uhWeKyZ5mk/exec');
+  localStorage.setItem('kitchino_sheets_url', 'https://script.google.com/macros/s/AKfycbyRg_-qF667hPMM5qXFRs3QPd7jgo-sdLAZprgGG0ZqljHOJD_B5tjpN-AQdG4Hyxen/exec');
 })();
-let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || 'https://script.google.com/macros/s/AKfycbxpw9huYT7FI3KaVkzmKxRK9z94yoGCgfdWzhxQmfhtf4Kxx1IFMn6PY_uhWeKyZ5mk/exec';
+let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || 'https://script.google.com/macros/s/AKfycbyRg_-qF667hPMM5qXFRs3QPd7jgo-sdLAZprgGG0ZqljHOJD_B5tjpN-AQdG4Hyxen/exec';
 let _liveData  = null;   // cached live dataset
 
 function openConnectModal() {
