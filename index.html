@@ -6259,7 +6259,7 @@ async function connectGoogleSheets() {
     // Single call — getAllData returns summary + monthly + designers + areas + sources + contracts
     const yearF = document.getElementById('filter-year')?.value || 'all';
     const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
-    const data = await jsonpFetch(url + '?action=getAll' + yearParam, '_kitchinoLiveData', 20000);
+    const data = await jsonpFetch(url + '?action=getAll' + yearParam, '_kitchinoLiveData', 45000);
 
     if (data.status !== 'ok' && data.summary && data.summary.status !== 'ok') {
       throw new Error(data.message || 'Unexpected response from Apps Script');
@@ -6391,7 +6391,7 @@ async function _silentFetch(isAutoRefresh) {
     const data = await jsonpFetch(
       sheetsUrl + '?action=getAll' + yearParam + '&_t=' + Date.now(),
       '_kitchinoAutoRefresh',
-      20000
+      45000
     );
     if (!data || (data.status && data.status !== 'ok' && !data.monthly)) {
       throw new Error(data?.message || 'Unexpected response');
