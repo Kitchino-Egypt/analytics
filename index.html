@@ -989,6 +989,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="ordertypes"><span class="nav-icon">🗂</span>Order Types</div>
     <div class="nav-item" data-page="instfollowup"><span class="nav-icon">🔧</span>Installation</div>
     <div class="nav-item" data-page="store"><span class="nav-icon">🏪</span>Store</div>
+    <div class="nav-item" data-page="receivables"><span class="nav-icon">💰</span>Receivables &amp; Delivery</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
@@ -2439,6 +2440,86 @@ if (_checkSession()) {
             style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:12px">← Prev</button>
           <span id="store-page-label" style="line-height:28px">1 / 1</span>
           <button id="store-next" onclick="_storePageNav(1)"
+            style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:12px">Next →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PAGE: RECEIVABLES & DELIVERY -->
+<div class="page" id="page-receivables">
+  <div id="rd-loading" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⏳</div>
+    <div style="color:var(--text2)">Loading Receivables & Delivery data…</div>
+  </div>
+  <div id="rd-error" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+    <div id="rd-error-msg" style="color:var(--red)">Could not load data.</div>
+  </div>
+  <div id="rd-content" style="display:none">
+
+    <!-- KPI strip -->
+    <div class="kpi-grid kpi-4" id="rd-kpi-strip" style="margin-bottom:20px"></div>
+
+    <!-- Charts row -->
+    <div class="chart-grid chart-2" style="margin-bottom:22px">
+      <div class="chart-card">
+        <div class="chart-title">By Project Type</div>
+        <div class="chart-subtitle">Distribution by product category</div>
+        <div class="chart-wrap"><canvas id="rd-chart-type" height="260"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">By Designer</div>
+        <div class="chart-subtitle">Orders per designer</div>
+        <div class="chart-wrap"><canvas id="rd-chart-designer" height="260"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Filters + Table -->
+    <div class="chart-card" style="margin-bottom:22px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+        <input type="text" id="rd-search" placeholder="🔍 Search by client name or project no…"
+          oninput="filterRdTable()"
+          style="flex:1;min-width:180px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <select id="rd-filter-status" onchange="filterRdTable()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">All Stages</option>
+        </select>
+        <select id="rd-filter-type" onchange="filterRdTable()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">نوع المشروع</option>
+        </select>
+        <select id="rd-filter-designer" onchange="filterRdTable()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">المصمم</option>
+        </select>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="background:var(--card2);color:var(--text2);text-align:left">
+              <th style="padding:8px 10px">#</th>
+              <th style="padding:8px 10px">Project No.</th>
+              <th style="padding:8px 10px">Client Name</th>
+              <th style="padding:8px 10px">Project Type</th>
+              <th style="padding:8px 10px">Designer</th>
+              <th style="padding:8px 10px">Status</th>
+              <th style="padding:8px 10px">Due Amount</th>
+            </tr>
+          </thead>
+          <tbody id="rd-table-body"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--text2)">
+        <span id="rd-count-label">—</span>
+        <div style="display:flex;gap:8px">
+          <button id="rd-prev" onclick="_rdPageNav(-1)"
+            style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:12px">← Prev</button>
+          <span id="rd-page-label" style="line-height:28px">1 / 1</span>
+          <button id="rd-next" onclick="_rdPageNav(1)"
             style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;font-size:12px">Next →</button>
         </div>
       </div>
@@ -5956,13 +6037,13 @@ function applyFilters() {
 
   // ── 6. Mark all other built pages as stale — they will rebuild on next visit
   ['executive','daily','monthly','ceo','presentation','conversion','designers',
-   'geographic','sources','followup','instfollowup','store'].forEach(p => {
+   'geographic','sources','followup','instfollowup','store','receivables'].forEach(p => {
     if (p !== activePage) builtPages.delete(p);
   });
 }
 
 function _rebuildFilteredPages() {
-  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','followup','instfollowup','store'].forEach(p => {
+  ['executive','daily','monthly','ceo','presentation','conversion','designers','geographic','sources','followup','instfollowup','store','receivables'].forEach(p => {
     if (builtPages.has(p)) {
       builtPages.delete(p);
       const activePage = document.querySelector('.page.active')?.id.replace('page-','');
@@ -5974,7 +6055,7 @@ function _rebuildFilteredPages() {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects',receivables:'Receivables & Delivery'
 };
 
 const PAGE_BUILDERS = {
@@ -5992,6 +6073,7 @@ const PAGE_BUILDERS = {
   ordertypes: buildOrderTypeCharts,
   instfollowup: buildInstFollowupPage,
   store: buildStorePage,
+  receivables: buildReceivablesPage,
 };
 
 const builtPages = new Set();
@@ -6043,7 +6125,7 @@ document.querySelectorAll('.nav-item[data-page]').forEach(el => {
 // ============================================================
 // GOOGLE SHEETS LIVE CONNECTION  (JSONP — works from file://)
 // ============================================================
-let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || 'https://script.google.com/macros/s/AKfycbxpw9huYT7FI3KaVkzmKxRK9z94yoGCgfdWzhxQmfhtf4Kxx1IFMn6PY_uhWeKyZ5mk/exec';
+let sheetsUrl = localStorage.getItem('kitchino_sheets_url') || 'https://script.google.com/macros/s/AKfycbyRg_-qF667hPMM5qXFRs3QPd7jgo-sdLAZprgGG0ZqljHOJD_B5tjpN-AQdG4Hyxen/exec';
 let _liveData  = null;   // cached live dataset
 
 function openConnectModal() {
@@ -8481,6 +8563,198 @@ function _storeRenderPage() {
   document.getElementById('store-page-label').textContent  = `${_storeCurrentPage} / ${pages}`;
   document.getElementById('store-prev').disabled = _storeCurrentPage <= 1;
   document.getElementById('store-next').disabled = _storeCurrentPage >= pages;
+}
+
+// ── Receivables & Delivery ──────────────────────────────────────────────────
+const RD_SCRIPT_URL = localStorage.getItem('kitchino_rd_url') || '';
+let _RD_DATA = null;
+let _rdFilteredRows = [];
+let _rdCurrentPage  = 1;
+const RD_PAGE_SIZE  = 100;
+let _rdChartType     = null;
+let _rdChartDesigner = null;
+
+const _RD_STATUS_COLORS = {
+  'production': { color:'#3b82f6', label:'Production' },
+  'final qc':   { color:'#f59e0b', label:'Final QC'   },
+  'store':      { color:'#10b981', label:'Store'       },
+};
+
+async function buildReceivablesPage() {
+  const loading = document.getElementById('rd-loading');
+  const error   = document.getElementById('rd-error');
+  const cont    = document.getElementById('rd-content');
+  if (!loading) return;
+
+  if (!RD_SCRIPT_URL) {
+    loading.style.display = 'none';
+    error.style.display   = 'block';
+    document.getElementById('rd-error-msg').textContent =
+      '⚠ No Receivables & Delivery script URL configured. Add it via Settings.';
+    return;
+  }
+
+  if (_RD_DATA) { _rdRender(_RD_DATA); return; }
+
+  loading.style.display = 'block';
+  error.style.display   = 'none';
+  cont.style.display    = 'none';
+
+  try {
+    const data = await jsonpFetch(RD_SCRIPT_URL + '?_t=' + Date.now(), '_rdCb', 30000);
+    if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data');
+    _RD_DATA = data.data || [];
+    loading.style.display = 'none';
+    cont.style.display    = 'block';
+    _rdRender(_RD_DATA);
+  } catch(err) {
+    loading.style.display = 'none';
+    error.style.display   = 'block';
+    document.getElementById('rd-error-msg').textContent = '⚠ ' + err.message;
+  }
+}
+
+function _rdRender(allRows) {
+  const total      = allRows.length;
+  const production = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'production').length;
+  const finalQc    = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'final qc').length;
+  const inStore    = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'store').length;
+
+  // KPI cards
+  const kpiEl = document.getElementById('rd-kpi-strip');
+  if (kpiEl) {
+    kpiEl.innerHTML =
+      `<div class="kpi-card teal"><div class="kpi-icon">📋</div><div class="kpi-label">Total Orders</div><div class="kpi-value">${total}</div><div class="kpi-sub">All pending delivery</div></div>` +
+      `<div class="kpi-card blue"><div class="kpi-icon">🏭</div><div class="kpi-label">In Production</div><div class="kpi-value">${production}</div><div class="kpi-sub">${total?Math.round(production/total*100):0}% of total</div></div>` +
+      `<div class="kpi-card gold"><div class="kpi-icon">🔍</div><div class="kpi-label">Final QC</div><div class="kpi-value">${finalQc}</div><div class="kpi-sub">${total?Math.round(finalQc/total*100):0}% of total</div></div>` +
+      `<div class="kpi-card green"><div class="kpi-icon">🏪</div><div class="kpi-label">In Store</div><div class="kpi-value">${inStore}</div><div class="kpi-sub">${total?Math.round(inStore/total*100):0}% of total</div></div>`;
+  }
+
+  // Populate dropdowns
+  const statuses  = [...new Set(allRows.map(r=>(r['Project Status']||'').trim()).filter(Boolean))].sort();
+  const types     = [...new Set(allRows.map(r=>(r['Project Type']||'').trim()).filter(Boolean))].sort();
+  const designers = [...new Set(allRows.map(r=>(r['Designer']||'').trim().replace(/^\t/,'')).filter(Boolean))].sort();
+
+  const sSel = document.getElementById('rd-filter-status');
+  if (sSel) {
+    const cur = sSel.value;
+    sSel.innerHTML = '<option value="all">All Stages</option>';
+    statuses.forEach(s => { const o=document.createElement('option');o.value=s;o.textContent=s;if(s===cur)o.selected=true;sSel.appendChild(o); });
+  }
+  const tSel = document.getElementById('rd-filter-type');
+  if (tSel) {
+    const cur = tSel.value;
+    tSel.innerHTML = '<option value="all">نوع المشروع</option>';
+    types.forEach(t => { const o=document.createElement('option');o.value=t;o.textContent=t;if(t===cur)o.selected=true;tSel.appendChild(o); });
+  }
+  const dSel = document.getElementById('rd-filter-designer');
+  if (dSel) {
+    const cur = dSel.value;
+    dSel.innerHTML = '<option value="all">المصمم</option>';
+    designers.forEach(d => { const o=document.createElement('option');o.value=d;o.textContent=d;if(d===cur)o.selected=true;dSel.appendChild(o); });
+  }
+
+  // Charts
+  const CHART_COLORS = ['#0d9a88','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#f97316','#06b6d4'];
+  const typeCounts = {};
+  allRows.forEach(r => { const t=(r['Project Type']||'—').trim(); typeCounts[t]=(typeCounts[t]||0)+1; });
+  const typeLabels = Object.keys(typeCounts).sort((a,b)=>typeCounts[b]-typeCounts[a]);
+
+  if (_rdChartType) _rdChartType.destroy();
+  const ctxT = document.getElementById('rd-chart-type');
+  if (ctxT) {
+    _rdChartType = new Chart(ctxT.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: typeLabels, datasets: [{ data: typeLabels.map(t=>typeCounts[t]), backgroundColor: CHART_COLORS, borderWidth: 2 }] },
+      options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.documentElement).getPropertyValue('--text')||'#fff', font:{size:11} } } } }
+    });
+  }
+
+  const desCounts = {};
+  allRows.forEach(r => { const d=(r['Designer']||'—').trim().replace(/^	/,''); desCounts[d]=(desCounts[d]||0)+1; });
+  const desLabels = Object.keys(desCounts).sort((a,b)=>desCounts[b]-desCounts[a]);
+
+  if (_rdChartDesigner) _rdChartDesigner.destroy();
+  const ctxD = document.getElementById('rd-chart-designer');
+  if (ctxD) {
+    _rdChartDesigner = new Chart(ctxD.getContext('2d'), {
+      type: 'bar',
+      data: { labels: desLabels, datasets: [{ label:'Orders', data: desLabels.map(d=>desCounts[d]), backgroundColor: CHART_COLORS }] },
+      options: { responsive:true, plugins:{ legend:{display:false} },
+        scales:{ x:{ ticks:{ color:'#94a3b8' } }, y:{ ticks:{ color:'#94a3b8', stepSize:1 } } } }
+    });
+  }
+
+  filterRdTable();
+}
+
+function filterRdTable() {
+  if (!_RD_DATA) return;
+  const search  = (document.getElementById('rd-search')?.value || '').toLowerCase();
+  const statusF = document.getElementById('rd-filter-status')?.value || 'all';
+  const typeF   = document.getElementById('rd-filter-type')?.value   || 'all';
+  const designF = document.getElementById('rd-filter-designer')?.value || 'all';
+
+  let rows = _RD_DATA;
+  if (statusF !== 'all') rows = rows.filter(r => (r['Project Status']||'').trim() === statusF);
+  if (typeF   !== 'all') rows = rows.filter(r => (r['Project Type']||'').trim() === typeF);
+  if (designF !== 'all') rows = rows.filter(r => (r['Designer']||'').trim().replace(/^	/,'') === designF);
+  if (search) rows = rows.filter(r =>
+    (r['Client Name']||'').toLowerCase().includes(search) ||
+    (r['Project No.']||'').toString().toLowerCase().includes(search)
+  );
+
+  _rdFilteredRows = rows;
+  _rdCurrentPage  = 1;
+  _rdRenderPage();
+}
+
+function _rdPageNav(dir) {
+  const total = Math.max(1, Math.ceil(_rdFilteredRows.length / RD_PAGE_SIZE));
+  _rdCurrentPage = Math.min(total, Math.max(1, _rdCurrentPage + dir));
+  _rdRenderPage();
+}
+
+const _RD_STATUS_BADGE = {
+  'production': 'background:#3b82f6;color:#fff',
+  'final qc':   'background:#f59e0b;color:#1e1e1e',
+  'store':      'background:#10b981;color:#fff',
+};
+
+function _rdRenderPage() {
+  const rows  = _rdFilteredRows;
+  const total = rows.length;
+  const pages = Math.max(1, Math.ceil(total / RD_PAGE_SIZE));
+  const start = (_rdCurrentPage - 1) * RD_PAGE_SIZE;
+  const slice = rows.slice(start, start + RD_PAGE_SIZE);
+
+  const tbody = document.getElementById('rd-table-body');
+  if (!tbody) return;
+
+  if (!slice.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text2)">No records found</td></tr>';
+  } else {
+    tbody.innerHTML = slice.map((r, i) => {
+      const status = (r['Project Status']||'').trim().toLowerCase();
+      const badge  = _RD_STATUS_BADGE[status] || 'background:var(--card2);color:var(--text2)';
+      const due    = (r['Due Amount']||'').trim();
+      return `<tr style="border-bottom:1px solid var(--border);${(start+i)%2===1?'background:var(--card2)':''}">
+        <td style="padding:7px 10px;color:var(--text3)">${start+i+1}</td>
+        <td style="padding:7px 10px;font-weight:600">${(r['Project No.']||'—').toString().replace(/\n|\t/g,'').trim()}</td>
+        <td style="padding:7px 10px;direction:rtl;text-align:right">${r['Client Name']||'—'}</td>
+        <td style="padding:7px 10px"><span style="background:var(--card2);padding:2px 8px;border-radius:12px;font-size:11px">${r['Project Type']||'—'}</span></td>
+        <td style="padding:7px 10px">${(r['Designer']||'—').replace(/^\t/,'')}</td>
+        <td style="padding:7px 10px"><span style="${badge};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600">${r['Project Status']||'—'}</span></td>
+        <td style="padding:7px 10px;color:var(--gold);font-weight:600">${due && due!=='0' ? due : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('rd-count-label').textContent =
+    `Showing ${Math.min(start+RD_PAGE_SIZE,total)} of ${total} records`;
+  document.getElementById('rd-page-label').textContent  = `${_rdCurrentPage} / ${pages}`;
+  document.getElementById('rd-prev').disabled = _rdCurrentPage <= 1;
+  document.getElementById('rd-next').disabled = _rdCurrentPage >= pages;
 }
 
 // ── Installation status modal ────────────────────────────────────────────────
