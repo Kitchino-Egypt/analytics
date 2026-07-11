@@ -2730,17 +2730,30 @@ const _ENGINE_MONTHS = ['January','February','March','April','May','June',
 
 // ── Date parser for connector format "yyyy-MM-dd" ────────────────────────────
 function engine_parseDate(val) {
-  if (!val) return null;
-  if (typeof val === 'string') {
-    const s = val.trim();
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
-      const d = new Date(s + 'T00:00:00');
-      return isNaN(d.getTime()) ? null : d;
-    }
-    const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if (dmy) { const d = new Date(+dmy[3],+dmy[2]-1,+dmy[1]); return isNaN(d.getTime())?null:d; }
+  if (val == null || val === '') return null;
+  // Google Sheets / Excel serial number (days since 1899-12-30)
+  if (typeof val === 'number') {
+    if (val < 1 || val > 200000) return null;
+    const d = new Date(Date.UTC(1899, 11, 30) + Math.round(val) * 86400000);
+    return (!isNaN(d.getTime()) && d.getFullYear() >= 2000) ? d : null;
   }
-  return null;
+  if (typeof val !== 'string') return null;
+  const s = val.trim();
+  if (!s) return null;
+  // YYYY-MM-DD (ISO) — produced by Utilities.formatDate; strip time component
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const d = new Date(s.substring(0, 10) + 'T00:00:00');
+    return (!isNaN(d.getTime()) && d.getFullYear() >= 2000) ? d : null;
+  }
+  // YYYY/MM/DD
+  const ymd = s.match(/^(\d{4})[\/](\d{1,2})[\/](\d{1,2})/);
+  if (ymd) { const d = new Date(+ymd[1],+ymd[2]-1,+ymd[3]); return (!isNaN(d.getTime())&&d.getFullYear()>=2000)?d:null; }
+  // D/M/YYYY or D-M-YYYY (Egyptian/European format, with or without trailing content)
+  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (dmy) { const d = new Date(+dmy[3],+dmy[2]-1,+dmy[1]); return (!isNaN(d.getTime())&&d.getFullYear()>=2000)?d:null; }
+  // Fallback: let JS try to parse (handles "Jan 1 2025", "1 January 2025", etc.)
+  const fb = new Date(s);
+  return (!isNaN(fb.getTime()) && fb.getFullYear() >= 2000) ? fb : null;
 }
 
 // ── Enterprise Data Validation Pipeline ──────────────────────────────────────
@@ -6256,7 +6269,7 @@ async function connectGoogleSheets() {
     // Single call — getAllData returns summary + monthly + designers + areas + sources + contracts
     const yearF = document.getElementById('filter-year')?.value || 'all';
     const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
-    const data = await jsonpFetch(url + '?action=getAll' + yearParam, '_kitchinoLiveData', 45000);
+    const data = await jsonpFetch(url + '?action=getAll' + yearParam, '_kitchinoLiveData', 60000);
 
     if (data.status !== 'ok' && data.summary && data.summary.status !== 'ok') {
       throw new Error(data.message || 'Unexpected response from Apps Script');
@@ -6388,7 +6401,7 @@ async function _silentFetch(isAutoRefresh) {
     const data = await jsonpFetch(
       sheetsUrl + '?action=getAll' + yearParam + '&_t=' + Date.now(),
       '_kitchinoAutoRefresh',
-      45000
+      60000
     );
     if (!data || (data.status && data.status !== 'ok' && !data.monthly)) {
       throw new Error(data?.message || 'Unexpected response');
