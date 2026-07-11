@@ -2004,12 +2004,12 @@ if (_checkSession()) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card">
         <div class="chart-title">Monthly Installations</div>
-        <div class="chart-subtitle">Installation count per month (by install start date)</div>
+        <div class="chart-subtitle">Contracted measures per month (main data)</div>
         <div style="padding:4px 0;min-height:280px"><canvas id="inst-canvas-monthly" style="height:280px"></canvas></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">Installation Curve</div>
-        <div class="chart-subtitle">Cumulative installations over time</div>
+        <div class="chart-subtitle">Cumulative تم الاستلام بدون ملاحظات over time</div>
         <div style="padding:4px 0;min-height:280px"><canvas id="inst-canvas-curve" style="height:280px"></canvas></div>
       </div>
     </div>
@@ -9125,68 +9125,86 @@ function _instRenderCharts(rows) {
   const statEntries = Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]);
   _hbar('inst-canvas-status', statEntries, statColorFn);
 
-  // ── Monthly Installations Bar Chart ─────────────────────────────────────────
-  const _parseInstDate = d => {
-    if (!d || d === '') return null;
-    let dt;
-    if (/^\d{4}-\d{2}-\d{2}/.test(d)) dt = new Date(d.substring(0,10)+'T00:00:00');
-    else if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(d)) { const p=d.split('/'); dt = new Date(+p[2],+p[1]-1,+p[0]); }
-    else dt = new Date(d);
-    return dt && !isNaN(dt.getTime()) ? dt : null;
-  };
-  const _MON_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const monthMapInst = {};
-  rows.forEach(r => {
-    const dt = _parseInstDate(r['\u062a\u0627\u0631\u064a\u062e \u0628\u062f\u0627\u064a\u0629 \u0627\u0644\u062a\u0631\u0643\u064a\u0628']);
-    if (!dt) return;
-    const key = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');
-    monthMapInst[key] = (monthMapInst[key]||0)+1;
-  });
-  const monthEntries = Object.entries(monthMapInst).sort((a,b)=>a[0].localeCompare(b[0]));
-  _instKillChart('monthly');
-  const monthCanvas = document.getElementById('inst-canvas-monthly');
-  if (monthCanvas && monthEntries.length) {
-    const tc4=_txtColor(); const gc4=_gridColor();
-    _instCJs['monthly'] = new Chart(monthCanvas.getContext('2d'), {
-      type:'bar',
-      data:{ labels: monthEntries.map(([k])=>{ const p=k.split('-'); return _MON_LABELS[+p[1]-1]+' '+p[0]; }),
-             datasets:[{ data: monthEntries.map(e=>e[1]), backgroundColor:'#3b82f6', borderRadius:6, borderSkipped:false, barThickness:22, maxBarThickness:36 }] },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' installs' }}},
-        scales:{
-          x:{ grid:{display:false}, ticks:{color:tc4,font:{size:10}}, border:{display:false} },
-          y:{ grid:{color:gc4}, ticks:{color:tc4,font:{size:10},stepSize:1}, border:{display:false}, beginAtZero:true }
-        }, animation:{ duration:600 }
-      }
-    });
-    monthCanvas.style.height = '280px'; monthCanvas.style.maxHeight = 'none';
+  // ── Monthly Measures Bar Chart (from main ENGINE_CLEAN_ROWS) ────────────────
+  {
+    const yearF = (document.getElementById('filter-year')?.value    || 'all').trim();
+    const desF  = (document.getElementById('filter-designer')?.value|| 'all').trim();
+    const arF   = (document.getElementById('filter-area')?.value    || 'all').trim();
+    const moF   = (document.getElementById('filter-month')?.value   || 'all').trim();
+    const mainRows   = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, designer:desF, area:arF, month:moF});
+    const monthlyAgg = engine_monthly(mainRows);
+    _instKillChart('monthly');
+    const monthCanvas = document.getElementById('inst-canvas-monthly');
+    if (monthCanvas && monthlyAgg.length) {
+      const tc4=_txtColor(); const gc4=_gridColor();
+      _instCJs['monthly'] = new Chart(monthCanvas.getContext('2d'), {
+        type:'bar',
+        data:{
+          labels: monthlyAgg.map(m => m.month.substring(0,3)+' '+m.year),
+          datasets:[{
+            data: monthlyAgg.map(m => m.contracted),
+            backgroundColor:'#3b82f6', borderRadius:6, borderSkipped:false, barThickness:22, maxBarThickness:36
+          }]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' contracted' }}},
+          scales:{
+            x:{ grid:{display:false}, ticks:{color:tc4,font:{size:10}}, border:{display:false} },
+            y:{ grid:{color:gc4}, ticks:{color:tc4,font:{size:10},stepSize:1}, border:{display:false}, beginAtZero:true }
+          }, animation:{ duration:600 }
+        }
+      });
+      monthCanvas.style.height = '280px'; monthCanvas.style.maxHeight = 'none';
+    }
   }
 
-  // ── Cumulative Installation Curve ────────────────────────────────────────────
-  _instKillChart('curve');
-  const curveCanvas = document.getElementById('inst-canvas-curve');
-  if (curveCanvas && monthEntries.length) {
-    let cum = 0;
-    const cumData = monthEntries.map(([,v])=>{ cum+=v; return cum; });
-    const tc5=_txtColor(); const gc5=_gridColor();
-    _instCJs['curve'] = new Chart(curveCanvas.getContext('2d'), {
-      type:'line',
-      data:{ labels: monthEntries.map(([k])=>{ const p=k.split('-'); return _MON_LABELS[+p[1]-1]+' '+p[0]; }),
-             datasets:[{ data: cumData, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.10)',
-               borderWidth:2.5, fill:true, tension:0.35,
-               pointRadius:4, pointBackgroundColor:'#10b981', pointBorderColor:'#fff', pointBorderWidth:2,
-               pointHoverRadius:6 }] },
-      options:{
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' total installs' }}},
-        scales:{
-          x:{ grid:{display:false}, ticks:{color:tc5,font:{size:10}}, border:{display:false} },
-          y:{ grid:{color:gc5}, ticks:{color:tc5,font:{size:10}}, border:{display:false}, beginAtZero:true }
-        }, animation:{ duration:700 }
-      }
+  // ── Cumulative Curve — تم الاستلام بدون ملاحظات only ──────────────────────────────
+  {
+    const COMPLETED_STATUS = 'تم الاستلام بدون ملاحظات';
+    const _MABB2 = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const _pid2 = d => {
+      if (!d || d==='0'||d==='') return null;
+      if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.substring(0,7);           // yyyy-MM
+      const dm = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
+      if (dm) return dm[3]+'-'+String(_MABB2[dm[2].toLowerCase()]||0).padStart(2,'0');
+      const ds = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (ds) return ds[3]+'-'+ds[2].padStart(2,'0');
+      const p = new Date(d);
+      if (!isNaN(p)) return p.getFullYear()+'-'+String(p.getMonth()+1).padStart(2,'0');
+      return null;
+    };
+    const curveMap = {};
+    rows.filter(r => (r['الحالة']||'').trim() === COMPLETED_STATUS).forEach(r => {
+      const ym = _pid2((r['تاريخ بداية التركيب']||'').trim());
+      if (ym) curveMap[ym] = (curveMap[ym]||0)+1;
     });
-    curveCanvas.style.height = '280px'; curveCanvas.style.maxHeight = 'none';
+    const curveEntries = Object.entries(curveMap).sort((a,b)=>a[0].localeCompare(b[0]));
+    _instKillChart('curve');
+    const curveCanvas = document.getElementById('inst-canvas-curve');
+    if (curveCanvas && curveEntries.length) {
+      const _ML2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const curveLabels = curveEntries.map(([k])=>{ const p=k.split('-'); return _ML2[+p[1]-1]+' '+p[0]; });
+      let cum=0; const cumData = curveEntries.map(([,v])=>{ cum+=v; return cum; });
+      const tc5=_txtColor(); const gc5=_gridColor();
+      _instCJs['curve'] = new Chart(curveCanvas.getContext('2d'), {
+        type:'line',
+        data:{ labels: curveLabels, datasets:[{
+          data: cumData, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.10)',
+          borderWidth:2.5, fill:true, tension:0.35,
+          pointRadius:4, pointBackgroundColor:'#10b981', pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:6
+        }]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' completed total' }}},
+          scales:{
+            x:{ grid:{display:false}, ticks:{color:tc5,font:{size:10}}, border:{display:false} },
+            y:{ grid:{color:gc5}, ticks:{color:tc5,font:{size:10}}, border:{display:false}, beginAtZero:true }
+          }, animation:{ duration:700 }
+        }
+      });
+      curveCanvas.style.height = '280px'; curveCanvas.style.maxHeight = 'none';
+    }
   }
 }
 
