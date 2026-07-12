@@ -9125,7 +9125,9 @@ function _instRenderCharts(rows) {
   const statEntries = Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]);
   _hbar('inst-canvas-status', statEntries, statColorFn);
 
-  // ── Monthly Installations Bar Chart (installation follow-up data) ───────────
+  // ── Monthly Installations + Curve — always use main-filtered data ────────────
+  // These two charts are unaffected by local table filters (status/product/area/tech)
+  // so their totals always match the KPI cards at the top of the page.
   {
     const _MABB3 = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
     const _pidYM = d => {
@@ -9140,9 +9142,13 @@ function _instRenderCharts(rows) {
       return null;
     };
     const _ML3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    // Group ALL installation rows by month (total per month)
+
+    // Always pull from the full year-filtered dataset, ignoring local table filters
+    const _allInstRows = _instMainFiltered(_INST_DATA || []);
+
+    // ── Left: total installations per month (all statuses) ──────────────────────
     const monthMapInst = {};
-    rows.forEach(r => {
+    _allInstRows.forEach(r => {
       const ym = _pidYM((r['\u062a\u0627\u0631\u064a\u062e \u0628\u062f\u0627\u064a\u0629 \u0627\u0644\u062a\u0631\u0643\u064a\u0628']||'').trim());
       if (ym) monthMapInst[ym] = (monthMapInst[ym]||0)+1;
     });
@@ -9169,9 +9175,9 @@ function _instRenderCharts(rows) {
       monthCanvas.style.height = '280px'; monthCanvas.style.maxHeight = 'none';
     }
 
-    // ── Cumulative Curve — تم الاستلام بدون ملاحظات only ────────────────────────
+    // ── Right: cumulative تم الاستلام بدون ملاحظات (completed) ────────────────────
     const curveMap = {};
-    rows.filter(r => (r['\u0627\u0644\u062d\u0627\u0644\u0629']||'').trim() === '\u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645 \u0628\u062f\u0648\u0646 \u0645\u0644\u0627\u062d\u0638\u0627\u062a').forEach(r => {
+    _allInstRows.filter(r => (r['\u0627\u0644\u062d\u0627\u0644\u0629']||'').trim() === '\u062a\u0645 \u0627\u0644\u0627\u0633\u062a\u0644\u0627\u0645 \u0628\u062f\u0648\u0646 \u0645\u0644\u0627\u062d\u0638\u0627\u062a').forEach(r => {
       const ym = _pidYM((r['\u062a\u0627\u0631\u064a\u062e \u0628\u062f\u0627\u064a\u0629 \u0627\u0644\u062a\u0631\u0643\u064a\u0628']||'').trim());
       if (ym) curveMap[ym] = (curveMap[ym]||0)+1;
     });
@@ -9180,7 +9186,7 @@ function _instRenderCharts(rows) {
     const curveCanvas = document.getElementById('inst-canvas-curve');
     if (curveCanvas && curveEntries.length) {
       const curveLabels = curveEntries.map(([k])=>{ const p=k.split('-'); return _ML3[+p[1]-1]+' '+p[0]; });
-      let cum=0; const cumData = curveEntries.map(([,v])=>{ cum+=v; return cum; });
+      const cumData = curveEntries.map(([,v])=>v);
       const tc5=_txtColor(); const gc5=_gridColor();
       _instCJs['curve'] = new Chart(curveCanvas.getContext('2d'), {
         type:'line',
@@ -9191,7 +9197,7 @@ function _instRenderCharts(rows) {
         }]},
         options:{
           responsive:true, maintainAspectRatio:false,
-          plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' completed total' }}},
+          plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' completed' }}},
           scales:{
             x:{ grid:{display:false}, ticks:{color:tc5,font:{size:10}}, border:{display:false} },
             y:{ grid:{color:gc5}, ticks:{color:tc5,font:{size:10}}, border:{display:false}, beginAtZero:true }
