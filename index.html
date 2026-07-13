@@ -6485,36 +6485,10 @@ function _parseCSV(text) {
 }
 
 async function _fetchContracts() {
-  const _applyContracts = (rows) => {
-    CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...rows);
-    _contractsLoadedAt = Date.now();
-    buildFollowupCharts();
-    renderFollowupTable();
-    updateBadges();
-  };
+  const SAFE_CRM_SET = new Set(['oto','auditing','production','final qc','store','recheck',
+    'shipping','installation','delivered','اوتو','تسليم']);
 
-  // Primary: Apps Script URL (if configured) — reads live from sheet, no CSV cache
-  const cUrl = localStorage.getItem('kitchino_contracts_url') ||
-               document.getElementById('contracts-url')?.value.trim();
-  if (cUrl) {
-    try {
-      const data = await jsonpFetch(cUrl + '?_t=' + Date.now(), '_kitchinoContracts', 20000);
-      if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
-        _applyContracts(data.data);
-        console.log('[Contracts] Loaded', data.data.length, 'records from Apps Script');
-        return;
-      }
-    } catch(e) { console.warn('[Contracts] Apps Script failed, falling back to CSV:', e.message); }
-  }
-
-  // Fallback: CSV URL (may be up to 5 min stale due to Google cache)
-  try {
-    const res = await fetch(_CONTRACTS_CSV_URL + '&t=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const csv = await res.text();
-    const rows = _parseCSV(csv);
-    const SAFE_CRM_SET = new Set(['oto','auditing','production','final qc','store','recheck',
-      'shipping','installation','delivered','اوتو','تسليم']);
+  const _applyCSV = (rows) => {
     const parsed = rows
       .filter(r => {
         const id = String(r['Order ID'] || '').trim();
@@ -6537,11 +6511,37 @@ async function _fetchContracts() {
         };
       });
     if (parsed.length) {
-      _applyContracts(parsed);
-      console.log('[Contracts] Loaded', parsed.length, 'records from CSV (no Apps Script configured)');
+      CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...parsed);
+      _contractsLoadedAt = Date.now();
+      buildFollowupCharts();
+      renderFollowupTable();
+      updateBadges();
+      console.log('[Contracts] Loaded', parsed.length, 'records from CSV');
     }
+  };
+
+  // Primary: CSV URL (live from published sheet)
+  try {
+    const res = await fetch(_CONTRACTS_CSV_URL + '&t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    _applyCSV(_parseCSV(csv));
   } catch (err) {
-    console.warn('[Contracts] CSV fetch also failed:', err.message);
+    console.warn('[Contracts] CSV fetch failed:', err.message);
+    // Fallback: Apps Script URL if configured (used only when ContractsConnector.gs is deployed)
+    const cUrl = localStorage.getItem('kitchino_contracts_url');
+    if (cUrl) {
+      try {
+        const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
+        if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
+          CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...data.data);
+          _contractsLoadedAt = Date.now();
+          buildFollowupCharts();
+          renderFollowupTable();
+          updateBadges();
+        }
+      } catch(e2) { console.warn('[Contracts] Fallback also failed:', e2.message); }
+    }
   }
 }
 
