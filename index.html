@@ -2687,6 +2687,7 @@ let DESIGNERS = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let AREAS     = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let MONTHS    = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let CONTRACTS_DATA   = [];   // populated by _fetchContracts() from ContractsConnector.gs
+let _contractsLoadedAt = null; // timestamp of last successful contracts fetch
 // ════════════════════════════════════════════════════════════════════════════
 // KITCHINO BI ENGINE — Row-level aggregation (mirrors Google Data Studio)
 // ════════════════════════════════════════════════════════════════════════════
@@ -6126,7 +6127,14 @@ function showPage(name) {
       if(name==='ordertypes') renderOrderTypeTable();
       if(name==='monthly') renderMonthlyTable();
       if(name==='sources') renderSourceTable();
-      if(name==='followup') { buildFollowupCharts(); renderFollowupTable(); }
+      if(name==='followup') {
+        const _CONTRACTS_STALE_MS = 5 * 60 * 1000;
+        if (!_contractsLoadedAt || (Date.now() - _contractsLoadedAt) > _CONTRACTS_STALE_MS) {
+          _fetchContracts(); // re-renders when done
+        } else {
+          buildFollowupCharts(); renderFollowupTable();
+        }
+      }
       if(name==='daily') renderFollowupTable();
       if(name==='ceo') renderScorecard();
     }, 50);
@@ -6508,6 +6516,7 @@ async function _fetchContracts() {
       });
     if (parsed.length) {
       CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...parsed);
+      _contractsLoadedAt = Date.now();
       buildFollowupCharts();
       renderFollowupTable();
       updateBadges();
@@ -6522,6 +6531,7 @@ async function _fetchContracts() {
         const data = await jsonpFetch(cUrl, '_kitchinoContracts', 20000);
         if (data && data.status === 'ok' && Array.isArray(data.data) && data.data.length) {
           CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...data.data);
+          _contractsLoadedAt = Date.now();
           buildFollowupCharts();
           renderFollowupTable();
           updateBadges();
