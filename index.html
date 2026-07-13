@@ -6454,7 +6454,7 @@ async function _silentFetch(isAutoRefresh) {
 // Source: kitchino-egypt.github.io/contracts-dashboard/
 // Sheet ID : 1aNmKdJRIQosNpvAwH5CfZUaNZvfZ9yHgoK6yflGi5cA
 // GID (tab): 696153871
-const _CONTRACTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRDlHhCbM0-evGhNLuzXbq66j18meRoGr5fxa-cqu-6KBHO-d-uVJ5zLOv_Lnw2TiU0PVBmRG5nXi2a/pub?output=csv&gid=696153871';
+const _CONTRACTS_CSV_URL = 'https://docs.google.com/spreadsheets/d/1WwWFOiAM8oUdrvCn6_bxh9P_P5HqUb3bucCUK95bKls/export?format=csv&gid=696153871';
 
 function _parseCSV(text) {
   const rows = [];
@@ -6594,14 +6594,22 @@ function _updateCountdown() {
   if (el2) el2.textContent = txt;
 }
 
+let _instPollTimer = null;
+
 function _startPolling() {
   if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
   if (_countdownTimer)   clearInterval(_countdownTimer);
+  if (_instPollTimer)    clearInterval(_instPollTimer);
   _nextRefreshAt = Date.now() + AUTO_REFRESH_MS;
   _autoRefreshTimer = setInterval(() => {
     _nextRefreshAt = Date.now() + AUTO_REFRESH_MS;
     _silentFetch(true);
   }, AUTO_REFRESH_MS);
+  // Background poll for installation data every 2 minutes
+  _instPollTimer = setInterval(() => {
+    _instLoadedAt = null; // force re-fetch
+    _instLoad();
+  }, 2 * 60 * 1000);
   _countdownTimer = setInterval(_updateCountdown, 1000);
   _updateCountdown();
 }
