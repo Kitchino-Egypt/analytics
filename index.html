@@ -8876,6 +8876,7 @@ function _instModalRenderTable(rows) {
 
 const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOp6_hBvcLnUifOQkBdr5Ip4xKsW06iqWrzIMEu4-l4zJ2ENuGGyYs5SW1QV0pKRALdQ/exec';
 let _INST_DATA = null;
+let _instLoadedAt = null;   // timestamp of last successful fetch
 
 // ── Classify row status category for colour-coding ───────────────────────────
 function instStatus(row) {
@@ -8964,6 +8965,7 @@ async function _instLoad() {
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data returned');
     const rows = Array.isArray(data) ? data : (data.data || []);
     _INST_DATA = rows;
+    _instLoadedAt = Date.now();   // record fetch time
     loading.style.display = 'none';
     cont.style.display    = 'block';
     refreshYearDropdown();   // add installation years to global year filter
@@ -8978,8 +8980,11 @@ async function _instLoad() {
 }
 
 function buildInstFollowupPage() {
-  if (_INST_DATA) { _instRender(_INST_DATA); return; }
-  _instLoad();
+  const INST_STALE_MS = 5 * 60 * 1000; // 5 minutes
+  if (_INST_DATA && _instLoadedAt && (Date.now() - _instLoadedAt) < INST_STALE_MS) {
+    _instRender(_INST_DATA); return;
+  }
+  _instLoad(); // fetch fresh data
 }
 
 // ── Populate local filter dropdowns from actual data (runs once after load) ──
