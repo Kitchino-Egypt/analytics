@@ -8974,6 +8974,51 @@ function _instMainFiltered(rows) {
   return out;
 }
 
+// ── Normalize raw installation rows to canonical field names ─────────────────
+// Works regardless of how the sheet columns are named (partial Arabic matching).
+function _instNormalizeRows(rows) {
+  if (!rows || !rows.length) return rows;
+  const keys = Object.keys(rows[0]);
+
+  // Find the first key containing ALL supplied Arabic fragments
+  function findKey() {
+    const frags = Array.from(arguments);
+    return keys.find(k => frags.every(f => k.includes(f))) || null;
+  }
+
+  const kRowNum    = findKey('ح');                          // ح
+  const kCustomer  = findKey('عميل');                   // عميل
+  const kProduct   = findKey('منتج');                   // منتج
+  const kProject   = findKey('مشروع') || findKey('رقم');      // مشروع / رقم
+  const kAddress   = findKey('عنوان');                  // عنوان
+  const kStatus    = findKey('حال');                         // حال → الحالة / الحاله
+  const kDelivDate = findKey('توريد');                  // توريد
+  const kInstDate  = findKey('بداي') || findKey('تركيب', 'تاريخ'); // بداي OR تركيب+تاريخ
+  const kTech      = findKey('فن', 'تركيب');          // فن + تركيب
+  const kVisits    = findKey('زيار');                   // زيار
+  const kInstDays  = findKey('يام', 'تركيب');    // يام + تركيب
+
+  const g = (r, k) => k ? (r[k] || '') : '';
+
+  // If all canonical keys already exist, skip remapping
+  const alreadyMapped = ['العميل','المنتج','الحالة'].every(k => k in rows[0]);
+  if (alreadyMapped) return rows;
+
+  return rows.map(r => ({
+    'ح':                       g(r, kRowNum),
+    'العميل':                 g(r, kCustomer),
+    'المنتج':                 g(r, kProduct),
+    'رقم المشروع':           g(r, kProject),
+    'العنوان':                g(r, kAddress),
+    'الحالة':                 g(r, kStatus),
+    'تاريخ التوريد':         g(r, kDelivDate),
+    'تاريخ بداية التركيب':   g(r, kInstDate),
+    'فني التركيب':        g(r, kTech),
+    'إجمالي عدد الزيارات':   g(r, kVisits),
+    'إجمالي ايام التركيب':  g(r, kInstDays)
+  }));
+}
+
 async function _instLoad() {
   const loading = document.getElementById('inst-loading');
   const error   = document.getElementById('inst-error');
@@ -8985,7 +9030,7 @@ async function _instLoad() {
   try {
     const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 30000);
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data returned');
-    const rows = Array.isArray(data) ? data : (data.data || []);
+    const rows = _instNormalizeRows(Array.isArray(data) ? data : (data.data || []));
     _INST_DATA = rows;
     _instLoadedAt = Date.now();   // record fetch time
     loading.style.display = 'none';
