@@ -8897,6 +8897,7 @@ function _instModalRenderTable(rows) {
 }
 
 const INSTALL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbHHWUuiRl-ZZ4cuyl6AyQQm-j0h1F_YqN0n4yoCv6ykeROmDwqL2GNFO1169au6tFRA/exec';
+const _INSTALL_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQSNljZwumcoayWEUFB4PHpN5rULKEmcyFaoawMsJlWvQ3KGsLkHXOj-rb6lC0BQnttY83zd0IxuKeZ/pub?gid=0&single=true&output=csv';
 let _INST_DATA = null;
 let _instLoadedAt = null;   // timestamp of last successful fetch
 
@@ -9030,17 +9031,38 @@ async function _instLoad() {
   loading.style.display = 'block';
   error.style.display   = 'none';
   cont.style.display    = 'none';
+
+  const _applyRows = (rows) => {
+    if (!rows || !rows.length) throw new Error('Empty data');
+    const norm = _instNormalizeRows(rows);
+    if (!norm || !norm.length) throw new Error('Normalisation returned 0 rows');
+    _INST_DATA = norm;
+    _instLoadedAt = Date.now();
+    loading.style.display = 'none';
+    cont.style.display    = 'block';
+    refreshYearDropdown();
+    _instPopulateFilters(norm);
+    _instRender(norm);
+    console.log('[Install] Loaded', norm.length, 'rows');
+  };
+
+  // Primary: CSV (no cold-start, no JSONP timeout issues)
+  try {
+    const res = await fetch(_INSTALL_CSV_URL + '&t=' + Date.now());
+    if (!res.ok) throw new Error('CSV HTTP ' + res.status);
+    const csv = await res.text();
+    const rows = _parseCSV(csv);
+    if (rows && rows.length > 10) { _applyRows(rows); return; }
+    throw new Error('CSV returned too few rows: ' + (rows ? rows.length : 0));
+  } catch(csvErr) {
+    console.warn('[Install] CSV failed, trying JSONP:', csvErr.message);
+  }
+
+  // Fallback: JSONP via Apps Script pre-computed Summary tab
   try {
     const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 60000);
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data returned');
-    const rows = _instNormalizeRows(Array.isArray(data) ? data : (data.data || []));
-    _INST_DATA = rows;
-    _instLoadedAt = Date.now();   // record fetch time
-    loading.style.display = 'none';
-    cont.style.display    = 'block';
-    refreshYearDropdown();   // add installation years to global year filter
-    _instPopulateFilters(rows);
-    _instRender(rows);
+    _applyRows(Array.isArray(data) ? data : (data.data || []));
   } catch(e) {
     loading.style.display = 'none';
     error.style.display   = 'block';
