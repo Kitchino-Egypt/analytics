@@ -9000,9 +9000,12 @@ function _instNormalizeRows(rows) {
 
   const g = (r, k) => k ? (r[k] || '') : '';
 
-  // If all canonical keys already exist, skip remapping
-  const alreadyMapped = ['العميل','المنتج','الحالة'].every(k => k in rows[0]);
-  if (alreadyMapped) return rows;
+  // Log actual keys for debugging
+  console.log('[InstallNorm] Raw keys:', Object.keys(rows[0]));
+  console.log('[InstallNorm] Column map → customer:', kCustomer, 'product:', kProduct,
+    'project:', kProject, 'address:', kAddress, 'status:', kStatus,
+    'delivDate:', kDelivDate, 'instDate:', kInstDate, 'tech:', kTech,
+    'visits:', kVisits, 'instDays:', kInstDays);
 
   return rows.map(r => ({
     'ح':                       g(r, kRowNum),
@@ -9028,7 +9031,7 @@ async function _instLoad() {
   error.style.display   = 'none';
   cont.style.display    = 'none';
   try {
-    const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 30000);
+    const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 60000);
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data returned');
     const rows = _instNormalizeRows(Array.isArray(data) ? data : (data.data || []));
     _INST_DATA = rows;
