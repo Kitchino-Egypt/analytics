@@ -5105,12 +5105,12 @@ function renderFollowupTable() {
 
   // Update KPIs on follow-up page
   const _fuND        = CONTRACTS_DATA.filter(c => (c.crm||'').toLowerCase() !== 'declined');
-  const _fuTotal     = _fuND.length;
+  const _fuTotal     = CONTRACTS_DATA.length;  // all orders including declined
   const _isInvFU     = c => c.status === 'فاتورة' || c.status === 'اضافات';
-  const _fuContracts = _fuND.filter(c => !_isInvFU(c)).length;
-  const _fuInvoice   = _fuND.filter(c => _isInvFU(c)).length;
-  const _fuSafe      = _fuND.filter(c => c.safe).length;
-  const _fuOverdue   = _fuTotal - _fuSafe;   // orders not yet in safe zone
+  const _fuContracts = CONTRACTS_DATA.filter(c => !_isInvFU(c)).length;
+  const _fuInvoice   = CONTRACTS_DATA.filter(c => _isInvFU(c)).length;
+  const _fuSafe      = _fuND.filter(c => c.safe).length;  // safe = non-declined safe orders
+  const _fuOverdue   = _fuND.filter(c => !c.safe).length; // active but not yet safe
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
   _setFu('fu-total',         _fuTotal);
   _setFu('fu-contracts',     _fuContracts);
