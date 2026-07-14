@@ -9020,7 +9020,7 @@ function _instNormalizeRows(rows) {
     'فني التركيب':        g(r, kTech),
     'إجمالي عدد الزيارات':   g(r, kVisits),
     'إجمالي ايام التركيب':  g(r, kInstDays)
-  }));
+  })).filter(r => r['العميل'].trim() || r['رقم المشروع'].trim());
 }
 
 async function _instLoad() {
@@ -9233,7 +9233,7 @@ function _instRenderCharts(rows) {
       const dm = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
       if (dm) return dm[3]+'-'+String(_MABB3[dm[2].toLowerCase()]||0).padStart(2,'0');
       const ds = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (ds) return ds[3]+'-'+ds[2].padStart(2,'0');
+      if (ds) { const a=+ds[1],b=+ds[2],y=ds[3]; const m=a>12?b:a; return y+'-'+String(m).padStart(2,'0'); }
       const p = new Date(d);
       if (!isNaN(p)) return p.getFullYear()+'-'+String(p.getMonth()+1).padStart(2,'0');
       return null;
