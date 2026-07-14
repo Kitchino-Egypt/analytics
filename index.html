@@ -9021,46 +9021,55 @@ function _instNormalizeRows(rows) {
   if (!rows || !rows.length) return rows;
   const keys = Object.keys(rows[0]);
 
-  // Find the first key containing ALL supplied Arabic fragments
-  function findKey() {
-    const frags = Array.from(arguments);
-    return keys.find(k => frags.every(f => k.includes(f))) || null;
+  // fIdx: find column index by Arabic fragment matching;
+  // falls back to known column position from Apps Script log when text-match fails.
+  // Apps Script confirmed: rowNum=0 customer=1 product=2 project=3 address=4
+  //   status=5 delivDate=6 instDate=8 tech=9 visits=13 instDays=14
+  function fIdx(defCol, ...frags) {
+    const i = keys.findIndex(k => frags.every(f => k.includes(f)));
+    return i >= 0 ? i : (defCol < keys.length ? defCol : -1);
   }
 
-  const kRowNum    = findKey('ح');                          // ح
-  const kCustomer  = findKey('عميل');                   // عميل
-  const kProduct   = findKey('منتج');                   // منتج
-  const kProject   = findKey('مشروع') || findKey('رقم');      // مشروع / رقم
-  const kAddress   = findKey('عنوان');                  // عنوان
-  const kStatus    = findKey('حال');                         // حال → الحالة / الحاله
-  const kDelivDate = findKey('توريد');                  // توريد
-  const kInstDate  = findKey('بداي') || findKey('تركيب', 'تاريخ'); // بداي OR تركيب+تاريخ
-  const kTech      = findKey('فن', 'تركيب');          // فن + تركيب
-  const kVisits    = findKey('زيار');                   // زيار
-  const kInstDays  = findKey('يام', 'تركيب');    // يام + تركيب
+  const iRowNum    = fIdx(0,  'ح');
+  const iCustomer  = fIdx(1,  'عميل');
+  const iProduct   = fIdx(2,  'منتج');
+  const iProject   = fIdx(3,  'مشروع');
+  const iAddress   = fIdx(4,  'عنوان');
+  const iStatus    = fIdx(5,  'حال');
+  const iDelivDate = fIdx(6,  'توريد');
+  // instDate: try 'بداي', then key with both تاريخ+تركيب, else col 8
+  const iInstDate  = (() => {
+    let i = keys.findIndex(k => k.includes('بداي'));
+    if (i >= 0) return i;
+    i = keys.findIndex(k => k.includes('تاريخ') && k.includes('تركيب'));
+    if (i >= 0) return i;
+    return 8 < keys.length ? 8 : -1;
+  })();
+  const iTech      = fIdx(9,  'فن', 'تركيب');
+  const iVisits    = fIdx(13, 'زيار');
+  const iInstDays  = fIdx(14, 'يام', 'تركيب');
 
-  const g = (r, k) => k ? (r[k] || '') : '';
+  // Access by column index via insertion-ordered keys[]
+  const g = (r, i) => (i >= 0 && i < keys.length) ? ((r[keys[i]] || '').trim()) : '';
 
-  // Log actual keys for debugging
-  console.log('[InstallNorm] Raw keys:', Object.keys(rows[0]));
-  console.log('[InstallNorm] Column map → customer:', kCustomer, 'product:', kProduct,
-    'project:', kProject, 'address:', kAddress, 'status:', kStatus,
-    'delivDate:', kDelivDate, 'instDate:', kInstDate, 'tech:', kTech,
-    'visits:', kVisits, 'instDays:', kInstDays);
+  console.log('[InstallNorm] cols:', keys.length,
+    '| delivDate@', iDelivDate, keys[iDelivDate]||'?',
+    '| instDate@', iInstDate, keys[iInstDate]||'?',
+    '| tech@', iTech, keys[iTech]||'?');
 
   return rows.map(r => ({
-    'ح':                       g(r, kRowNum),
-    'العميل':                 g(r, kCustomer),
-    'المنتج':                 g(r, kProduct),
-    'رقم المشروع':           g(r, kProject),
-    'العنوان':                g(r, kAddress),
-    'الحالة':                 g(r, kStatus),
-    'تاريخ التوريد':         g(r, kDelivDate),
-    'تاريخ بداية التركيب':   g(r, kInstDate),
-    'فني التركيب':        g(r, kTech),
-    'إجمالي عدد الزيارات':   g(r, kVisits),
-    'إجمالي ايام التركيب':  g(r, kInstDays)
-  })).filter(r => r['العميل'].trim() || r['رقم المشروع'].trim());
+    'ح':                       g(r, iRowNum),
+    'العميل':                 g(r, iCustomer),
+    'المنتج':                 g(r, iProduct),
+    'رقم المشروع':           g(r, iProject),
+    'العنوان':                g(r, iAddress),
+    'الحالة':                 g(r, iStatus),
+    'تاريخ التوريد':         g(r, iDelivDate),
+    'تاريخ بداية التركيب':   g(r, iInstDate),
+    'فني التركيب':        g(r, iTech),
+    'إجمالي عدد الزيارات':   g(r, iVisits),
+    'إجمالي ايام التركيب':  g(r, iInstDays)
+  })).filter(r => r['العميل'] || r['رقم المشروع']);
 }
 
 async function _instLoad() {
