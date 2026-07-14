@@ -8949,8 +8949,9 @@ function _instMainFiltered(rows) {
   if (yearF && yearF !== 'all') {
     out = out.filter(r => {
       const raw = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+      if (!raw) return true;           // no date → include (in-progress records)
       const pd = _parseInstDate(raw);
-      return pd && pd.y === yearF;
+      return !pd || pd.y === yearF;   // unparseable date → include
     });
   }
 
@@ -8961,8 +8962,9 @@ function _instMainFiltered(rows) {
     if (mNum > 0) {
       out = out.filter(r => {
         const raw = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+        if (!raw) return true;         // no date → include
         const pd = _parseInstDate(raw);
-        return pd && pd.m === mNum;
+        return !pd || pd.m === mNum;
       });
     }
   }
