@@ -9006,12 +9006,24 @@ function _parseInstCSV(text) {
   }
   console.log('[InstallCSV] Header detected at row', hdrRow, '— score:', bestScore);
   const headers = splitLine(lines[hdrRow]);
+  // ── KEY FIX: merged/empty header cells all produce '' as key.
+  // That causes JS object collision — only the LAST empty column survives.
+  // Give every empty or duplicate header a unique _colN key so all 15+
+  // columns are preserved and positional fallback in fIdx works correctly.
+  const usedKeys = {};
+  const safeHeaders = headers.map((h, j) => {
+    const k = h.trim();
+    if (k === '' || usedKeys[k]) return '_col' + j;   // unique positional key
+    usedKeys[k] = true;
+    return k;
+  });
+  console.log('[InstallCSV] Safe headers (' + safeHeaders.length + '):', safeHeaders.slice(0,16).join(' | '));
   const rows = [];
   for (let i = hdrRow + 1; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
     const vals = splitLine(lines[i]);
     const row = {};
-    headers.forEach((h, j) => { row[h.trim()] = (vals[j] || '').trim(); });
+    safeHeaders.forEach((h, j) => { row[h] = (vals[j] || '').trim(); });
     rows.push(row);
   }
   return rows;
