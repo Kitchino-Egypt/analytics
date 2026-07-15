@@ -1996,8 +1996,8 @@ if (_checkSession()) {
         <div id="inst-chart-tech" style="padding:4px 0;min-height:320px"><canvas id="inst-canvas-tech" style="height:320px"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Status Distribution</div>
-        <div class="chart-subtitle">Overall installation status breakdown</div>
+        <div class="chart-title">Installation Timeline</div>
+        <div class="chart-subtitle">Monthly تاريخ بداية التركيب vs تاريخ التسليم</div>
         <div id="inst-chart-status" style="padding:4px 0;min-height:320px"><canvas id="inst-canvas-status" style="height:320px"></canvas></div>
       </div>
     </div>
@@ -8984,51 +8984,61 @@ function _instMainFiltered(rows) {
 // This parser scores the first 6 rows and picks the one that matches the most
 // known Arabic field fragments (تاريخ التوريد, فني التركيب, etc.).
 function _parseInstCSV(text) {
-  const lines = text.replace(/\r/g, '').split('\n');
-  function splitLine(line) {
-    const cols = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"' && !inQ) { inQ = true; }
-      else if (ch === '"' && inQ && line[i+1] === '"') { cur += '"'; i++; }
-      else if (ch === '"' && inQ) { inQ = false; }
-      else if (ch === ',' && !inQ) { cols.push(cur); cur = ''; }
-      else { cur += ch; }
+  // RFC-4180 compliant parser: handles embedded newlines inside quoted fields.
+  // Naively splitting on \n first breaks multi-line quoted headers like "تاريخ\nالتوريد".
+  function parseCSVFull(src) {
+    const rows = []; let row = [], field = '', inQ = false;
+    for (let i = 0; i < src.length; i++) {
+      const ch = src[i], nx = src[i+1];
+      if (inQ) {
+        if (ch === '"' && nx === '"') { field += '"'; i++; }
+        else if (ch === '"') { inQ = false; }
+        else { field += ch; }
+      } else {
+        if      (ch === '"')  { inQ = true; }
+        else if (ch === ',')  { row.push(field); field = ''; }
+        else if (ch === '\r') { /* skip bare CR */ }
+        else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+        else                  { field += ch; }
+      }
     }
-    cols.push(cur); return cols;
+    if (field || row.length) { row.push(field); rows.push(row); }
+    return rows;
   }
-  // Score each of the first 6 rows: pick the one containing the most field fragments
+
+  const parsed = parseCSVFull(text);
+  if (!parsed.length) return [];
+
+  // Pick the header row by Arabic-fragment scoring
   const FRAGS = ['عميل','منتج','حال','توريد','بداي','فن','عنوان','مشروع','زيار'];
   let hdrRow = 0, bestScore = 0;
-  for (let i = 0; i < Math.min(6, lines.length); i++) {
-    const score = FRAGS.filter(f => lines[i].includes(f)).length;
+  for (let i = 0; i < Math.min(6, parsed.length); i++) {
+    const rowText = parsed[i].join(',');
+    const score = FRAGS.filter(f => rowText.includes(f)).length;
     if (score > bestScore) { bestScore = score; hdrRow = i; }
   }
-  console.log('[InstallCSV] Header detected at row', hdrRow, '— score:', bestScore);
-  const headers = splitLine(lines[hdrRow]);
-  // ── KEY FIX: merged/empty header cells all produce '' as key.
-  // That causes JS object collision — only the LAST empty column survives.
-  // Give every empty or duplicate header a unique _colN key so all 15+
-  // columns are preserved and positional fallback in fIdx works correctly.
+  console.log('[InstallCSV] Header detected at row', hdrRow, '— score:', bestScore, '| cols:', parsed[hdrRow].length);
+
+  // Normalize headers: collapse embedded newlines/spaces → single space, then trim
   const usedKeys = {};
-  const safeHeaders = headers.map((h, j) => {
-    const k = h.trim();
-    if (k === '' || usedKeys[k]) return '_col' + j;   // unique positional key
+  const safeHeaders = parsed[hdrRow].map((h, j) => {
+    const k = h.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (k === '' || usedKeys[k]) return '_col' + j;
     usedKeys[k] = true;
     return k;
   });
   console.log('[InstallCSV] Safe headers (' + safeHeaders.length + '):', safeHeaders.slice(0,16).join(' | '));
+
   const rows = [];
-  for (let i = hdrRow + 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const vals = splitLine(lines[i]);
+  for (let i = hdrRow + 1; i < parsed.length; i++) {
+    const vals = parsed[i];
+    if (!vals.join('').trim()) continue;
     const row = {};
     safeHeaders.forEach((h, j) => { row[h] = (vals[j] || '').trim(); });
     rows.push(row);
   }
   return rows;
 }
-
 function _instNormalizeRows(rows) {
   if (!rows || !rows.length) return rows;
   const keys = Object.keys(rows[0]);
@@ -9060,6 +9070,7 @@ function _instNormalizeRows(rows) {
   const iTech      = fIdx(9,  'فن', 'تركيب');
   const iVisits    = fIdx(13, 'زيار');
   const iInstDays  = fIdx(14, 'يام', 'تركيب');
+  const iDelivCompl = fIdx(16, 'تسليم');   // تاريخ التسليم (col 16)
 
   // Access by column index via insertion-ordered keys[]
   const g = (r, i) => (i >= 0 && i < keys.length) ? ((r[keys[i]] || '').trim()) : '';
@@ -9080,7 +9091,8 @@ function _instNormalizeRows(rows) {
     'تاريخ بداية التركيب':   g(r, iInstDate),
     'فني التركيب':        g(r, iTech),
     'إجمالي عدد الزيارات':   g(r, iVisits),
-    'إجمالي ايام التركيب':  g(r, iInstDays)
+    'إجمالي ايام التركيب':  g(r, iInstDays),
+    'تاريخ التسليم':            g(r, iDelivCompl)
   })).filter(r => r['العميل'] || r['رقم المشروع']);
 }
 
@@ -9266,22 +9278,68 @@ function _instRenderCharts(rows) {
   const techEntries2 = Object.entries(techMap).sort((a,b)=>b[1]-a[1]);
   _hbar('inst-canvas-tech', techEntries2, (l) => TECH_COLORS[techEntries2.findIndex(e=>e[0]===l)%TECH_COLORS.length]);
 
-  // ── Status Distribution ─────────────────────────────────────────────────────
-  const statDistMap = {};
-  rows.forEach(r => {
-    const cat = instStatus(r);
-    const label = cat==='completed' ? (r['الحالة']||'') : cat==='issue' ? (r['الحالة']||'') : cat==='scheduled' ? (r['الحالة']||'') : (r['الحالة']||'Other');
-    statDistMap[label] = (statDistMap[label]||0)+1;
-  });
-  const statColorFn = l => {
-    const r = rows.find(x=>(x['الحالة']||'')=== l);
-    if (!r) return '#94a3b8';
-    const c = instStatus(r);
-    return c==='completed'?'#10b981':c==='issue'?'#ef4444':c==='scheduled'?'#f59e0b':'#94a3b8';
-  };
-  // Slight color variation by index for same-category bars
-  const statEntries = Object.entries(statDistMap).sort((a,b)=>b[1]-a[1]);
-  _hbar('inst-canvas-status', statEntries, statColorFn);
+  // ── Installation Timeline: تاريخ بداية التركيب vs تاريخ التسليم ──────────────
+  {
+    const _MBB = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const _pYM2 = d => {
+      if (!d||d==='') return null;
+      if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.substring(0,7);
+      const dm = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
+      if (dm) return dm[3]+'-'+String(_MBB[dm[2].toLowerCase()]||0).padStart(2,'0');
+      const ds = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (ds) { const a=+ds[1],b=+ds[2],y=ds[3]; const m=a>12?b:a; return y+'-'+String(m).padStart(2,'0'); }
+      const p2 = new Date(d); if (!isNaN(p2)) return p2.getFullYear()+'-'+String(p2.getMonth()+1).padStart(2,'0');
+      return null;
+    };
+    const _TML = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const _tlRows = _instMainFiltered(_INST_DATA || []);
+    const startMap = {}, endMap = {};
+    _tlRows.forEach(r => {
+      const s = _pYM2((r['تاريخ بداية التركيب']||'').trim());
+      if (s) startMap[s] = (startMap[s]||0)+1;
+      const e = _pYM2((r['تاريخ التسليم']||'').trim());
+      if (e) endMap[e] = (endMap[e]||0)+1;
+    });
+    const allYMs = [...new Set([...Object.keys(startMap),...Object.keys(endMap)])].sort();
+    _instKillChart('status');
+    _instKillChart('inst-canvas-status');
+    const tlCanvas = document.getElementById('inst-canvas-status');
+    if (tlCanvas && allYMs.length) {
+      const tcT=_txtColor(), gcT=_gridColor();
+      const tlLabels = allYMs.map(k=>{ const p=k.split('-'); return _TML[+p[1]-1]+' '+p[0]; });
+      _instCJs['status'] = new Chart(tlCanvas.getContext('2d'), {
+        type:'line',
+        data:{ labels: tlLabels, datasets:[
+          {
+            label: 'بداية التركيب',
+            data: allYMs.map(k=>startMap[k]||0),
+            borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.10)',
+            borderWidth:2.5, fill:true, tension:0.35,
+            pointRadius:4, pointBackgroundColor:'#3b82f6', pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:6
+          },
+          {
+            label: 'تاريخ التسليم',
+            data: allYMs.map(k=>endMap[k]||0),
+            borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)',
+            borderWidth:2.5, fill:true, tension:0.35,
+            pointRadius:4, pointBackgroundColor:'#10b981', pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:6
+          }
+        ]},
+        options:{
+          responsive:true, maintainAspectRatio:false,
+          plugins:{
+            legend:{ display:true, labels:{ color:tcT, font:{size:11}, boxWidth:14 } },
+            tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+' records' }}
+          },
+          scales:{
+            x:{ grid:{display:false}, ticks:{color:tcT,font:{size:10}}, border:{display:false} },
+            y:{ grid:{color:gcT}, ticks:{color:tcT,font:{size:10}}, border:{display:false}, beginAtZero:true }
+          }, animation:{ duration:600 }
+        }
+      });
+      tlCanvas.style.height = '320px'; tlCanvas.style.maxHeight = 'none';
+    }
+  }
 
   // ── Monthly Installations + Curve — always use main-filtered data ────────────
   // These two charts are unaffected by local table filters (status/product/area/tech)
