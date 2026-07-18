@@ -139,7 +139,7 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 
 /* PAGE CONTENT */
 .page-content { padding:22px 24px; flex:1; }
-.page { display:none; }
+.page { display:none; position:relative; }
 .page.active { display:block; }
 
 /* KPI CARDS */
@@ -2418,6 +2418,15 @@ if (_checkSession()) {
 
 <!-- PAGE: STORE PROJECTS -->
 <div class="page" id="page-store">
+  <!-- ▼ MAINTENANCE BANNER — remove this block when data is ready ▼ -->
+  <div style="position:absolute;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(var(--bg-rgb,15,17,23),0.92);backdrop-filter:blur(6px);border-radius:12px;min-height:300px">
+    <div style="text-align:center;padding:40px 32px">
+      <div style="font-size:40px;margin-bottom:16px">🔄</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text1,#e2e8f0);margin-bottom:8px">Data Updating…</div>
+      <div style="font-size:13px;color:var(--text2,#94a3b8);max-width:260px;line-height:1.6">Will be available soon. Check back shortly.</div>
+    </div>
+  </div>
+  <!-- ▲ MAINTENANCE BANNER ▲ -->
   <div id="store-loading" style="text-align:center;padding:60px 0;display:none">
     <div style="font-size:32px;margin-bottom:12px">⏳</div>
     <div style="color:var(--text2)">Loading Store data…</div>
@@ -2494,6 +2503,15 @@ if (_checkSession()) {
 
 <!-- PAGE: RECEIVABLES & DELIVERY -->
 <div class="page" id="page-receivables">
+  <!-- ▼ MAINTENANCE BANNER — remove this block when data is ready ▼ -->
+  <div style="position:absolute;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(var(--bg-rgb,15,17,23),0.92);backdrop-filter:blur(6px);border-radius:12px;min-height:300px">
+    <div style="text-align:center;padding:40px 32px">
+      <div style="font-size:40px;margin-bottom:16px">🔄</div>
+      <div style="font-size:18px;font-weight:700;color:var(--text1,#e2e8f0);margin-bottom:8px">Data Updating…</div>
+      <div style="font-size:13px;color:var(--text2,#94a3b8);max-width:260px;line-height:1.6">Will be available soon. Check back shortly.</div>
+    </div>
+  </div>
+  <!-- ▲ MAINTENANCE BANNER ▲ -->
   <div id="rd-loading" style="text-align:center;padding:60px 0;display:none">
     <div style="font-size:32px;margin-bottom:12px">⏳</div>
     <div style="color:var(--text2)">Loading Receivables & Delivery data…</div>
