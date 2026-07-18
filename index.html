@@ -25,6 +25,25 @@
   --purple: #ce93d8;
   --sidebar-w: 240px;
 }
+/* ── DARK MODE ───────────────────────────────────────────────────────────── */
+body.dark {
+  --bg: #0f1117;
+  --bg2: #161b27;
+  --card: #1c2333;
+  --card2: #1e2740;
+  --border: #2d3748;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+}
+body.dark .sidebar {
+  background: #090c14 !important;
+  border-right-color: #1a1f2e !important;
+}
+body.dark .kpi-card { box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
+body.dark .chart-card, body.dark .table-card { box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
+body.dark table thead th { background: #1a2035; }
+body.dark table tbody tr:hover { background: rgba(255,255,255,0.04); }
 * { margin:0; padding:0; 
 
 /* Card elevation - Contracts Dashboard style */
@@ -1019,6 +1038,8 @@ if (_checkSession()) {
       <div class="page-title" id="page-title">Executive Summary</div>
       <div class="page-subtitle" id="page-subtitle">Kitchino — High-End Kitchens & Furniture, Egypt</div>
     </div>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark / light mode"
+      style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:15px;cursor:pointer;line-height:1;transition:all .2s;margin-right:4px">🌙</button>
     <div class="topbar-filters">
       <select class="filter-select" id="filter-year" onchange="applyFilters()">
         <option value="all" selected>All Years</option>
@@ -1367,7 +1388,11 @@ if (_checkSession()) {
 <div class="page" id="page-measures">
   <div class="kpi-grid kpi-4">
     <div class="kpi-card green"><div class="kpi-label">Total Records</div><div class="kpi-value" id="mt-total">1,767</div></div>
-    <div class="kpi-card teal"><div class="kpi-label">Filtered Results</div><div class="kpi-value" id="mt-filtered">1,767</div></div>
+    <div class="kpi-card red" onclick="showNoPayList()" style="cursor:pointer" title="Click to see customers with no payment">
+      <div class="kpi-label">No Pay Customers ↗</div>
+      <div class="kpi-value" id="mt-nopay">—</div>
+      <div class="kpi-sub" style="font-size:9px;opacity:0.7">Click for Breakdown</div>
+    </div>
     <div class="kpi-card gold" onclick="showPaymentBreakdown()" style="cursor:pointer" title="Click to see payment exceptions breakdown"><div class="kpi-label">Total Payment ↗</div><div class="kpi-value" id="mt-payment">—</div><div class="kpi-sub" style="font-size:9px;opacity:0.7">Click for Breakdown</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Repeated Customers (Unique)</div><div class="kpi-value" id="mt-repeated">—</div></div>
   </div>
@@ -2643,6 +2668,20 @@ if (_checkSession()) {
   </div>
 </div>
 <!-- PAYMENT BREAKDOWN MODAL -->
+<!-- No Pay Customers Modal -->
+<div id="nopay-modal" onclick="if(event.target===this)closeNoPayList()" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:16px;padding:28px;max-width:720px;width:92%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.4)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div>
+        <div style="font-size:17px;font-weight:800;color:var(--text)">No Pay Customers</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px" id="nopay-subtitle">Customers with no payment recorded</div>
+      </div>
+      <button onclick="closeNoPayList()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);padding:4px 8px">✕</button>
+    </div>
+    <div id="nopay-list"></div>
+  </div>
+</div>
+
 <div id="payment-breakdown-modal" onclick="if(event.target===this)closePaymentBreakdown()" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.72);backdrop-filter:blur(4px);align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;width:min(540px,94vw);max-height:82vh;overflow-y:auto;padding:26px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
@@ -5457,7 +5496,15 @@ function renderMeasuresTable() {
     return true;
   });
 
-  document.getElementById('mt-filtered').textContent = displayRows.length.toLocaleString();
+  // ── No Pay count: rows with no positive payment recorded ─────────────────
+  var _noPayRows = displayRows.filter(function(r) {
+    var n = parseFloat(String(r.payment || '').replace(/,/g,''));
+    return !(n > 0);
+  });
+  var noPayEl = document.getElementById('mt-nopay');
+  if (noPayEl) noPayEl.textContent = _noPayRows.length.toLocaleString();
+  // Stash for modal use
+  window._noPayRowsCache = _noPayRows;
 
   // ── Payment total from filtered rows ──────────────────────────────────────
   var _payTotal = 0;
@@ -6698,6 +6745,14 @@ function refreshData() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  // Restore saved dark/light theme
+  try {
+    if (localStorage.getItem('kitchino-theme') === 'dark') {
+      document.body.classList.add('dark');
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.textContent = '☀️';
+    }
+  } catch(e){}
   populateFilters();
   // Note: refreshYearDropdown() is called after engine loads data in _fetchAllRows()
   renderMeasuresTable();       // populate filteredMeasures first
@@ -7000,6 +7055,63 @@ function showDigitalSourcesDropdown() {
     + '</div></div>';
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   document.body.appendChild(modal);
+}
+
+function toggleTheme() {
+  const dark = document.body.classList.toggle('dark');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = dark ? '☀️' : '🌙';
+  try { localStorage.setItem('kitchino-theme', dark ? 'dark' : 'light'); } catch(e){}
+}
+
+function showNoPayList() {
+  const rows = window._noPayRowsCache || [];
+  const modal = document.getElementById('nopay-modal');
+  if (!modal) return;
+  const sub = document.getElementById('nopay-subtitle');
+  if (sub) sub.textContent = rows.length + ' customer record' + (rows.length!==1?'s':'') + ' with no payment';
+
+  // Sort: contracted first, then by customer name
+  const STATUS_ORDER = {'تعاقد':0,'مناقشة':1,'الغاء':2};
+  const sorted = [...rows].sort((a,b) => {
+    const sa = STATUS_ORDER[a.status]??9, sb = STATUS_ORDER[b.status]??9;
+    if (sa !== sb) return sa - sb;
+    return (a.customer||'').localeCompare(b.customer||'', 'ar');
+  });
+
+  const statusLabel = s => s==='تعاقد'?'<span style="color:#10b981;font-weight:700">✅ Contracted</span>'
+    :s==='مناقشة'?'<span style="color:#f59e0b;font-weight:700">💬 Discussion</span>'
+    :'<span style="color:#ef4444;font-weight:700">❌ Cancelled</span>';
+
+  const listEl = document.getElementById('nopay-list');
+  if (!sorted.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text3)">🎉 No customers without payment</div>';
+  } else {
+    listEl.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      + '<thead><tr style="border-bottom:2px solid var(--border)">'
+      + '<th style="padding:8px 10px;text-align:left;color:var(--text2)">Customer</th>'
+      + '<th style="padding:8px 10px;text-align:left;color:var(--text2)">Designer</th>'
+      + '<th style="padding:8px 10px;text-align:left;color:var(--text2)">Date</th>'
+      + '<th style="padding:8px 10px;text-align:left;color:var(--text2)">Area</th>'
+      + '<th style="padding:8px 10px;text-align:left;color:var(--text2)">Status</th>'
+      + '</tr></thead><tbody>'
+      + sorted.map(r => '<tr style="border-bottom:1px solid var(--border)">'
+        + '<td style="padding:7px 10px;font-weight:600;color:var(--text)">' + (r.customer||'—') + '</td>'
+        + '<td style="padding:7px 10px;color:var(--text2)">' + (r.designer||'—') + '</td>'
+        + '<td style="padding:7px 10px;color:var(--text3)">' + (r.visitDate||r._monthName||'—') + '</td>'
+        + '<td style="padding:7px 10px;color:var(--text2)">' + (r.location||r.area||'—') + '</td>'
+        + '<td style="padding:7px 10px">' + statusLabel(r.status) + '</td>'
+        + '</tr>').join('')
+      + '</tbody></table>';
+  }
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeNoPayList() {
+  const modal = document.getElementById('nopay-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
 }
 
 function closePaymentBreakdown() {
