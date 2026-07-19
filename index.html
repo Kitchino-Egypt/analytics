@@ -6933,8 +6933,9 @@ function showPaymentBreakdown() {
 
   filteredMeasures.forEach(r => {
     const note  = (r.paymentNote || '').trim();
-    const label = note || '—';
     const pay   = parseFloat(String(r.payment || '').replace(/,/g,'')) || 0;
+    // Named paymentNote takes priority; fallback: numeric payment → 'Paid', zero → '—'
+    const label = note || (pay > 0 ? 'Paid' : '—');
     counts[label]  = (counts[label]  || 0) + 1;
     amounts[label] = (amounts[label] || 0) + pay;
     if (!custSets[label]) custSets[label] = new Set();
