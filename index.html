@@ -1397,6 +1397,13 @@ if (_checkSession()) {
     <div class="kpi-card blue"><div class="kpi-label">Repeated Customers (Unique)</div><div class="kpi-value" id="mt-repeated">—</div></div>
   </div>
 
+  <!-- Measures vs Unique Customers dual-line chart -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">Measures vs Unique Customers</div>
+    <div class="chart-subtitle">Monthly total measures compared to unique customer count</div>
+    <div class="chart-wrap"><canvas id="chart-mt-measures-customers" height="160"></canvas></div>
+  </div>
+
   <div class="chart-card" style="margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
       <div>
@@ -4765,6 +4772,58 @@ function renderOrderTypeTable() {
 }
 
 
+function buildMTMeasuresCustomersChart() {
+  if (!ENGINE_READY) return;
+  const _mData = KITCHINO_STATE.monthlyData || [];
+  if (!_mData.length) return;
+  const _mMultiYr = [...new Set(_mData.map(m=>m.year).filter(Boolean))].length > 1;
+  const _mLabels = _mData.map(m => {
+    const mon = (m.month||'').substr(0,3);
+    return _mMultiYr && m.year ? mon+' '+m.year.substr(2) : mon;
+  });
+  const _custMo = {};
+  (filteredMeasures||[]).forEach(r => {
+    const k = r._year + '_' + r._monthOrder;
+    if (!_custMo[k]) _custMo[k] = new Set();
+    const c = (r.customer||'').trim().toLowerCase();
+    if (c) _custMo[k].add(c);
+  });
+  const _ucData = _mData.map(m => (_custMo[m.year+'_'+m.order]||new Set()).size);
+  makeChart('chart-mt-measures-customers', {
+    type:'line',
+    data:{
+      labels: _mLabels,
+      datasets:[
+        {
+          label:'Total Measures',
+          data: _mData.map(m=>m.total),
+          borderColor:'#4285f4', backgroundColor:'rgba(66,133,244,0.10)',
+          borderWidth:2.5, fill:true, tension:0.35,
+          pointRadius:4, pointBackgroundColor:'#4285f4', pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:6
+        },
+        {
+          label:'Unique Customers',
+          data: _ucData,
+          borderColor:'#34a853', backgroundColor:'rgba(52,168,83,0.08)',
+          borderWidth:2.5, fill:true, tension:0.35,
+          pointRadius:4, pointBackgroundColor:'#34a853', pointBorderColor:'#fff', pointBorderWidth:2, pointHoverRadius:6
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:14 } },
+        tooltip:{ callbacks:{ label: ctx=>' '+ctx.raw+(ctx.datasetIndex===0?' measures':' customers') }}
+      },
+      scales:{
+        x:{ grid:{display:false}, ticks:{font:{size:9}} },
+        y:{ grid:{color:'rgba(0,0,0,0.06)'}, beginAtZero:true, ticks:{font:{size:9}} }
+      }
+    }
+  });
+}
+
 function buildPaymentChart() {
   if (!ENGINE_READY) return;
   // Compute directly from filteredMeasures for always-fresh data
@@ -6214,7 +6273,7 @@ const PAGE_BUILDERS = {
   designers: buildDesignerCharts,
   conversion: buildConversionCharts,
   geographic: buildGeographicCharts,
-  measures: () => { currentPage = 1; renderMeasuresTable(); buildPaymentChart(); },
+  measures: () => { currentPage = 1; renderMeasuresTable(); buildPaymentChart(); buildMTMeasuresCustomersChart(); },
   monthly: () => { buildMonthlyCharts(); renderMonthlyKPIs(); },
   sources: buildSourceCharts,
   forecast: buildForecastCharts,
