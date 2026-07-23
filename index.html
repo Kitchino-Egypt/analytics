@@ -1394,6 +1394,7 @@ if (_checkSession()) {
       <div class="kpi-sub" style="font-size:9px;opacity:0.7">Click for Breakdown</div>
     </div>
     <div class="kpi-card gold" onclick="showPaymentBreakdown()" style="cursor:pointer" title="Click to see payment exceptions breakdown"><div class="kpi-label">Total Payment ↗</div><div class="kpi-value" id="mt-payment">—</div><div class="kpi-sub" style="font-size:9px;opacity:0.7">Click for Breakdown</div></div>
+    <div class="kpi-card teal"><div class="kpi-label">Fast Track Orders</div><div class="kpi-value" id="mt-fasttrack">—</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Repeated Customers (Unique)</div><div class="kpi-value" id="mt-repeated">—</div></div>
   </div>
 
@@ -2948,7 +2949,7 @@ function engine_cleanRows(rawRows) {
 
     clean.push({
       code: orderCode, orderCode, customer, designer, status, area, location,
-      source, orderType, payment, paymentNote,
+      source, orderType, payment, paymentNote, fastTrack: !!r.fastTrack,
       visitDate:   r.visitDate || '',
       month:       _ENGINE_MONTHS[mIdx],
       _date:       date,
@@ -5582,6 +5583,11 @@ function renderMeasuresTable() {
   if (noPayEl) noPayEl.textContent = _noPayRows.length.toLocaleString();
   // Stash for modal use
   window._noPayRowsCache = _noPayRows;
+
+  // ── Fast Track count ──────────────────────────────────────────────────────
+  var _ftCount = displayRows.filter(function(r) { return r.fastTrack === true; }).length;
+  var ftEl = document.getElementById('mt-fasttrack');
+  if (ftEl) ftEl.textContent = _ftCount.toLocaleString();
 
   // ── Payment total from filtered rows ──────────────────────────────────────
   var _payTotal = 0;
