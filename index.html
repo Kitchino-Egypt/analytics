@@ -5337,6 +5337,7 @@ function renderFollowupTable() {
       const noteText    = noteInfo && noteInfo.note ? noteInfo.note : '';
       const hasReminder = !!(noteInfo && noteInfo.reminderDate && !noteInfo.reminderSent);
       const notePreview = noteText ? (noteText.length > 26 ? noteText.slice(0,26) + '…' : noteText) : '+ Add note';
+      const noteDate    = noteInfo && noteInfo.lastUpdated ? String(noteInfo.lastUpdated).split(' ')[0] : '';
       const escId   = String(c.orderId||'').replace(/'/g, "\\'");
       const escName = String(c.name||'').replace(/'/g, "\\'");
       const noteTitle = noteText ? noteText.replace(/"/g,'&quot;') : 'Add a follow-up note';
@@ -5350,7 +5351,10 @@ function renderFollowupTable() {
         <td><span class="badge ${ageClass}">${c.age} days</span></td>
         <td class="muted">${c.aging}</td>
         <td>${priority}</td>
-        <td><span onclick="openNoteModal('${escId}','${escName}')" style="cursor:pointer;font-size:11px;white-space:nowrap;${noteText ? 'color:var(--text2)' : 'color:var(--green);font-weight:600'}" title="${noteTitle}">${hasReminder ? '⏰ ' : (noteText ? '🗒 ' : '')}${notePreview}</span></td>
+        <td>
+          <div onclick="openNoteModal('${escId}','${escName}')" style="cursor:pointer;font-size:11px;white-space:nowrap;${noteText ? 'color:var(--text2)' : 'color:var(--green);font-weight:600'}" title="${noteTitle}">${hasReminder ? '⏰ ' : (noteText ? '🗒 ' : '')}${notePreview}</div>
+          ${noteDate ? '<div style="font-size:9px;color:var(--text3);margin-top:2px">' + noteDate + '</div>' : ''}
+        </td>
       </tr>`;
     }).join('');
   }
@@ -6403,6 +6407,68 @@ function runJourneySearch() {
   box.innerHTML = _renderJourneyTimeline(q, visits, contracts, installs);
 }
 
+// Robust date parser — handles yyyy-MM-dd, d-MMM-yyyy, dd/MM/yyyy, and JS Date fallback
+function _journeyParseDate(d) {
+  if (!d) return null;
+  d = String(d).trim();
+  if (!d) return null;
+  const MABB = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  let m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  m = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
+  if (m) { const mo = MABB[m[2].toLowerCase()]; if (mo != null) return new Date(+m[3], mo, +m[1]); }
+  m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  const p = new Date(d);
+  return isNaN(p) ? null : p;
+}
+
+function _journeyFmtDate(d) {
+  if (!d) return '—';
+  return d.toISOString().slice(0, 10);
+}
+
+// Total journey duration: first site visit → the installation record hits a
+// "received / completed" status (استلام / استلام عميل / تم الاستلام بدون
+// ملاحظات / تفعيل ضمان اداري). Still-open journeys show elapsed days so far.
+function _journeyDurationCard(visits, installs) {
+  const vDates = visits.map(r => _journeyParseDate(r.visitDate)).filter(Boolean);
+  if (!vDates.length) return '';
+  const startDate = new Date(Math.min.apply(null, vDates.map(d => d.getTime())));
+
+  const COMPLETE_STATUSES = ['استلام عميل', 'تم الاستلام بدون ملاحظات', 'تفعيل ضمان اداري', 'استلام'];
+  const completedRows = (installs || []).filter(r => {
+    const s = (r['الحالة'] || '').trim();
+    if (!s) return false;
+    return COMPLETE_STATUSES.some(cs => s === cs || s.indexOf(cs) > -1);
+  });
+
+  let endDate = null;
+  if (completedRows.length) {
+    const dates = completedRows
+      .map(r => _journeyParseDate(r['تاريخ التسليم']) || _journeyParseDate(r['تاريخ بداية التركيب']))
+      .filter(Boolean);
+    if (dates.length) endDate = new Date(Math.max.apply(null, dates.map(d => d.getTime())));
+  }
+
+  const msPerDay = 86400000;
+  let bodyHtml;
+  if (endDate) {
+    const days = Math.round((endDate - startDate) / msPerDay);
+    bodyHtml = '<div class="kpi-value" style="font-size:26px">' + days + ' days</div>'
+      + '<div class="kpi-sub">✅ Completed — ' + _journeyFmtDate(startDate) + ' → ' + _journeyFmtDate(endDate) + '</div>';
+  } else {
+    const days = Math.round((new Date() - startDate) / msPerDay);
+    bodyHtml = '<div class="kpi-value" style="font-size:26px">' + days + ' days <span style="font-size:12px;color:var(--gold);font-weight:600">(ongoing)</span></div>'
+      + '<div class="kpi-sub">⏳ In progress — started ' + _journeyFmtDate(startDate) + '</div>';
+  }
+
+  return '<div class="kpi-card blue" style="margin-bottom:16px;max-width:340px">'
+    + '<div class="kpi-label">🕐 Total Journey Duration</div>'
+    + bodyHtml
+    + '</div>';
+}
+
 function _renderJourneyTimeline(name, visits, contracts, installs) {
   const sortByKey = (arr, key) => [...arr].sort((a, b) => String(a[key]||'').localeCompare(String(b[key]||'')));
   const vSorted = sortByKey(visits, 'visitDate');
@@ -6471,6 +6537,8 @@ function _renderJourneyTimeline(name, visits, contracts, installs) {
     + contracts.length + ' contract' + (contracts.length !== 1 ? 's' : '') + ' · '
     + installs.length + ' installation' + (installs.length !== 1 ? 's' : '')
     + '</div></div>';
+
+  out += _journeyDurationCard(vSorted, iSorted);
 
   out += section('📐', 'Site Visits', vSorted.length,
     vSorted.length ? vSorted.map(visitCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No visit records found</div>');
