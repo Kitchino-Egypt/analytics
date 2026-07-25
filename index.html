@@ -997,6 +997,7 @@ if (_checkSession()) {
     <div class="nav-label">Tracking</div>
     <div class="nav-item" data-page="measures"><span class="nav-icon">📋</span>Measures Tracking</div>
     <div class="nav-item" data-page="followup"><span class="nav-icon">🔔</span>Contracted Customers Follow-up</div>
+    <div class="nav-item" data-page="journey"><span class="nav-icon">🧭</span>Customer Journey</div>
     <div class="nav-item" data-page="monthly"><span class="nav-icon">📅</span>Monthly Trends</div>
   </div>
   <div class="nav-section">
@@ -1377,7 +1378,7 @@ if (_checkSession()) {
     </div>
     <div style="overflow-x:auto">
       <table id="followup-table">
-        <thead><tr><th>#</th><th>Customer Name</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Contract Date</th><th>Age (Days)</th><th>Aging Category</th><th>Action</th></tr></thead>
+        <thead><tr><th>#</th><th>Customer Name</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Contract Date</th><th>Age (Days)</th><th>Aging Category</th><th>Action</th><th>Notes</th></tr></thead>
         <tbody id="followup-tbody"></tbody>
       </table>
     </div>
@@ -1698,7 +1699,7 @@ if (_checkSession()) {
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th></tr></thead>
+        <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th><th>Notes</th></tr></thead>
         <tbody id="fu-tbody"></tbody>
       </table>
     </div>
@@ -1738,6 +1739,42 @@ if (_checkSession()) {
       <table><thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Status</th><th>Age (Days)</th><th>Category</th></tr></thead>
       <tbody id="fu-crm-modal-tbody"></tbody></table>
     </div>
+  </div>
+</div>
+<!-- Customer Note + Reminder Modal -->
+<div id="fu-note-modal" onclick="if(event.target===this)closeNoteModal()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">🗒 Note — <span id="fu-note-customer-label"></span></div>
+      <button onclick="closeNoteModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+    </div>
+    <input type="hidden" id="fu-note-orderid">
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Note</label>
+    <textarea id="fu-note-text" rows="4" placeholder="Add a follow-up note…" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-family:inherit;resize:vertical;margin-bottom:12px"></textarea>
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">Reminder date (optional — sends an email when this date arrives)</label>
+    <input type="date" id="fu-note-reminder" style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;margin-bottom:16px">
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeNoteModal()" style="padding:9px 18px;background:none;border:1px solid var(--border);color:var(--text2);border-radius:8px;cursor:pointer;font-size:13px">Cancel</button>
+      <button id="fu-note-save-btn" onclick="saveNoteModal()" style="padding:9px 22px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: CUSTOMER JOURNEY -->
+<div class="page" id="page-journey">
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">🧭 Customer Journey</div>
+    <div class="chart-subtitle">Search a customer to see their full journey — site visit, contract stage, and installation — in one timeline</div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+      <input type="text" id="journey-search" list="journey-customers" placeholder="🔍 Type a customer name…"
+        style="flex:1;min-width:240px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px"
+        onkeydown="if(event.key==='Enter') runJourneySearch()">
+      <datalist id="journey-customers"></datalist>
+      <button onclick="runJourneySearch()" style="padding:10px 22px;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px">Search</button>
+    </div>
+  </div>
+  <div id="journey-result">
+    <div style="text-align:center;padding:40px;color:var(--text3)">Type a customer name to begin</div>
   </div>
 </div>
 
@@ -2668,7 +2705,10 @@ if (_checkSession()) {
     <input type="text" class="modal-input" id="sheets-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
 
     <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px;margin-top:10px">📋 Contracts Script URL (ContractsConnector.gs)</label>
-    <input type="text" class="modal-input" id="contracts-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="margin-bottom:14px">
+    <input type="text" class="modal-input" id="contracts-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="margin-bottom:10px">
+
+    <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:4px">🔔 Notes &amp; Reminders Script URL (ContractNotes.gs)</label>
+    <input type="text" class="modal-input" id="notes-url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="margin-bottom:14px">
 
     <!-- DIAGNOSTIC PANEL -->
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
@@ -2773,6 +2813,8 @@ let AREAS     = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let MONTHS    = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let CONTRACTS_DATA   = [];   // populated by _fetchContracts() from ContractsConnector.gs
 let _contractsLoadedAt = null; // timestamp of last successful contracts fetch
+let CONTRACT_NOTES   = {};   // orderId -> {note, reminderDate, reminderSent, lastUpdated} — from ContractNotes.gs
+const NOTES_SCRIPT_URL = localStorage.getItem('kitchino_notes_url') || '';
 // ════════════════════════════════════════════════════════════════════════════
 // KITCHINO BI ENGINE — Row-level aggregation (mirrors Google Data Studio)
 // ════════════════════════════════════════════════════════════════════════════
@@ -5245,30 +5287,20 @@ function buildCEOCharts() {
 // ============================================================
 function renderFollowupTable() {
   // ── Apply main topbar filters to CONTRACTS_DATA ─────────────────────────
+  // Month filter is intentionally excluded: the follow-up page shows ALL active
+  // contracts for a designer/year — filtering by contract-signed month would
+  // hide customers who are still in progress from earlier months.
   const _mainYear = document.getElementById('filter-year')?.value  || 'all';
   const _mainDes  = document.getElementById('filter-designer')?.value || 'all';
-  const _mainMon  = document.getElementById('filter-month')?.value || 'all';
-  const _MNAMES   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const _MABB2    = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  const _parseCDate = d => {
+  const _parseCYear = d => {
     if (!d) return null;
-    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return { y: d.substring(0,4), m: parseInt(d.substring(5,7),10) };
-    const dm = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
-    if (dm) return { y: dm[3], m: _MABB2[dm[2].toLowerCase()] || 0 };
-    const ds = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (ds) return { y: ds[3], m: parseInt(ds[2],10) };
-    const p = new Date(d);
-    if (!isNaN(p)) return { y: String(p.getFullYear()), m: p.getMonth()+1 };
-    return null;
+    const m4 = d.match(/(\d{4})/); return m4 ? m4[1] : null;
   };
   const _mainFiltered = CONTRACTS_DATA.filter(c => {
-    if (_mainDes !== 'all' && c.designer !== _mainDes) return false;
-    if (_mainYear !== 'all' || _mainMon !== 'all') {
-      const pd = _parseCDate(c.date);
-      if (pd) {
-        if (_mainYear !== 'all' && pd.y !== _mainYear) return false;
-        if (_mainMon  !== 'all' && _MNAMES[pd.m - 1] !== _mainMon)  return false;
-      }
+    if (_mainDes  !== 'all' && c.designer !== _mainDes)  return false;
+    if (_mainYear !== 'all') {
+      const cy = _parseCYear(c.date);
+      if (cy && cy !== _mainYear) return false;
     }
     return true;
   });
@@ -5295,12 +5327,19 @@ function renderFollowupTable() {
 
   let rowsHtml;
   if (data.length === 0) {
-    rowsHtml = `<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px;">No results found${search ? ' for <strong style=\'color:var(--green)\'>"' + search + '"</strong>' : ''}</td></tr>`;
+    rowsHtml = `<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px;">No results found${search ? ' for <strong style=\'color:var(--green)\'>"' + search + '"</strong>' : ''}</td></tr>`;
   } else {
     rowsHtml = data.map((c,i) => {
       const ageClass = c.age > 45 ? 'badge-red' : c.age >= 30 ? 'badge-gold' : 'badge-green';
       const priority = c.age > 45 ? '🔴 Urgent' : c.age >= 30 ? '🟡 High' : '🟢 Normal';
       const statusBadge = c.status === 'Contract Signed' ? 'badge-teal' : 'badge-gold';
+      const noteInfo    = CONTRACT_NOTES[c.orderId];
+      const noteText    = noteInfo && noteInfo.note ? noteInfo.note : '';
+      const hasReminder = !!(noteInfo && noteInfo.reminderDate && !noteInfo.reminderSent);
+      const notePreview = noteText ? (noteText.length > 26 ? noteText.slice(0,26) + '…' : noteText) : '+ Add note';
+      const escId   = String(c.orderId||'').replace(/'/g, "\\'");
+      const escName = String(c.name||'').replace(/'/g, "\\'");
+      const noteTitle = noteText ? noteText.replace(/"/g,'&quot;') : 'Add a follow-up note';
       return `<tr>
         <td class="muted">${i+1}</td>
         <td>${c.name}</td>
@@ -5311,6 +5350,7 @@ function renderFollowupTable() {
         <td><span class="badge ${ageClass}">${c.age} days</span></td>
         <td class="muted">${c.aging}</td>
         <td>${priority}</td>
+        <td><span onclick="openNoteModal('${escId}','${escName}')" style="cursor:pointer;font-size:11px;white-space:nowrap;${noteText ? 'color:var(--text2)' : 'color:var(--green);font-weight:600'}" title="${noteTitle}">${hasReminder ? '⏰ ' : (noteText ? '🗒 ' : '')}${notePreview}</span></td>
       </tr>`;
     }).join('');
   }
@@ -6311,10 +6351,141 @@ function _rebuildFilteredPages() {
   });
 }
 
+// ============================================================
+// CUSTOMER JOURNEY — end-to-end view joining Measures, Contracts, Installation
+// ============================================================
+function _journeyNorm(s) {
+  return (s || '').toString().replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function buildJourneyPage() {
+  _journeyPopulateList();
+}
+
+function _journeyPopulateList() {
+  const dl = document.getElementById('journey-customers');
+  if (!dl) return;
+  const names = new Set();
+  (ENGINE_CLEAN_ROWS || []).forEach(r => { if (r.customer) names.add(r.customer.trim()); });
+  (CONTRACTS_DATA || []).forEach(r => { if (r.name) names.add(r.name.trim()); });
+  (_INST_DATA || []).forEach(r => { const c = r['العميل']; if (c) names.add(c.trim()); });
+  dl.innerHTML = [...names].sort((a, b) => a.localeCompare(b, 'ar'))
+    .map(n => '<option value="' + n.replace(/"/g, '&quot;') + '"></option>').join('');
+}
+
+function runJourneySearch() {
+  _journeyPopulateList();
+  const input = document.getElementById('journey-search');
+  const q = (input ? input.value : '').trim();
+  const box = document.getElementById('journey-result');
+  if (!box) return;
+  if (!q) {
+    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">Type a customer name to begin</div>';
+    return;
+  }
+
+  const qNorm = _journeyNorm(q);
+  const matches = (val) => {
+    const v = _journeyNorm(val);
+    if (!v) return false;
+    return v === qNorm || v.includes(qNorm) || qNorm.includes(v);
+  };
+
+  const visits    = (ENGINE_CLEAN_ROWS || []).filter(r => matches(r.customer));
+  const contracts = (CONTRACTS_DATA   || []).filter(r => matches(r.name));
+  const installs  = (_INST_DATA       || []).filter(r => matches(r['العميل']));
+
+  if (!visits.length && !contracts.length && !installs.length) {
+    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">🔍 No records found for "' + q.replace(/</g,'&lt;') + '"</div>';
+    return;
+  }
+
+  box.innerHTML = _renderJourneyTimeline(q, visits, contracts, installs);
+}
+
+function _renderJourneyTimeline(name, visits, contracts, installs) {
+  const sortByKey = (arr, key) => [...arr].sort((a, b) => String(a[key]||'').localeCompare(String(b[key]||'')));
+  const vSorted = sortByKey(visits, 'visitDate');
+  const cSorted = sortByKey(contracts, 'date');
+  const iSorted = installs;
+
+  const section = (icon, title, count, bodyHtml) =>
+    '<div class="chart-card" style="margin-bottom:16px">'
+    + '<div class="chart-title">' + icon + ' ' + title + ' <span style="font-size:12px;font-weight:600;color:var(--text3)">(' + count + ')</span></div>'
+    + bodyHtml
+    + '</div>';
+
+  const statusBadge = s => s === 'تعاقد' ? 'badge-teal' : s === 'مناقشة' ? 'badge-gold' : s === 'الغاء' ? 'badge-red' : 'badge-gold';
+
+  const visitCard = r =>
+    '<div style="border-left:3px solid var(--blue);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0">'
+    + '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    + '<div style="font-weight:700;color:var(--text)">📅 ' + (r.visitDate || '—') + '</div>'
+    + '<div><span class="badge ' + statusBadge(r.status) + '">' + (r.status || '—') + '</span></div>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-top:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px">'
+    + '<div>👤 Designer: <b style="color:var(--text)">' + (r.designer || '—') + '</b></div>'
+    + '<div>📍 Area: <b style="color:var(--text)">' + (r.area || r.location || '—') + '</b></div>'
+    + '<div>📡 Source: <b style="color:var(--text)">' + (r.source || '—') + '</b></div>'
+    + '<div>🗂 Type: <b style="color:var(--text)">' + (r.orderType || '—') + '</b></div>'
+    + '<div>💳 Payment: <b style="color:var(--text)">' + (r.paymentNote || (parseFloat(r.payment) > 0 ? 'Paid' : '—')) + '</b></div>'
+    + (r.orderCode ? '<div>🔖 Code: <b style="color:var(--text)">' + r.orderCode + '</b></div>' : '')
+    + (r.fastTrack ? '<div>⚡ <b style="color:#14b8a6">Fast Track</b></div>' : '')
+    + '</div></div>';
+
+  const contractCard = r =>
+    '<div style="border-left:3px solid var(--green);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0">'
+    + '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    + '<div style="font-weight:700;color:var(--text)">📅 ' + (r.date || '—') + '</div>'
+    + '<div>' + (r.safe ? '<span class="badge badge-teal">✅ Safe Zone</span>' : '<span class="badge badge-gold">⏳ In Progress</span>') + '</div>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-top:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px">'
+    + '<div>👤 Designer: <b style="color:var(--text)">' + (r.designer || '—') + '</b></div>'
+    + '<div>🔖 Order ID: <b style="color:var(--text)">' + (r.orderId || '—') + '</b></div>'
+    + '<div>🏷 Stage: <b style="color:var(--text)">' + (r.crm || '—') + '</b></div>'
+    + '<div>⏱ Age: <b style="color:var(--text)">' + (r.age || 0) + ' days</b></div>'
+    + '<div>📊 Aging: <b style="color:var(--text)">' + (r.aging || '—') + '</b></div>'
+    + '</div></div>';
+
+  const installCard = r =>
+    '<div style="border-left:3px solid var(--teal);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0">'
+    + '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    + '<div style="font-weight:700;color:var(--text)">🔧 ' + (r['المنتج'] || 'Installation') + '</div>'
+    + '<div><span class="badge badge-teal">' + (r['الحالة'] || '—') + '</span></div>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-top:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px">'
+    + '<div>🔖 Project #: <b style="color:var(--text)">' + (r['رقم المشروع'] || '—') + '</b></div>'
+    + '<div>📍 Address: <b style="color:var(--text)">' + (r['العنوان'] || '—') + '</b></div>'
+    + '<div>🚚 Supply Date: <b style="color:var(--text)">' + (r['تاريخ التوريد'] || '—') + '</b></div>'
+    + '<div>🛠 Install Start: <b style="color:var(--text)">' + (r['تاريخ بداية التركيب'] || '—') + '</b></div>'
+    + '<div>👷 Technician: <b style="color:var(--text)">' + (r['فني التركيب'] || '—') + '</b></div>'
+    + '<div>🔁 Visits: <b style="color:var(--text)">' + (r['إجمالي عدد الزيارات'] || '—') + '</b></div>'
+    + '<div>📆 Install Days: <b style="color:var(--text)">' + (r['إجمالي ايام التركيب'] || '—') + '</b></div>'
+    + '<div>✅ Delivered: <b style="color:var(--text)">' + (r['تاريخ التسليم'] || '—') + '</b></div>'
+    + '</div></div>';
+
+  let out = '<div style="margin-bottom:18px">'
+    + '<div style="font-size:19px;font-weight:800;color:var(--text)">👤 ' + name + '</div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-top:4px">'
+    + visits.length + ' visit' + (visits.length !== 1 ? 's' : '') + ' · '
+    + contracts.length + ' contract' + (contracts.length !== 1 ? 's' : '') + ' · '
+    + installs.length + ' installation' + (installs.length !== 1 ? 's' : '')
+    + '</div></div>';
+
+  out += section('📐', 'Site Visits', vSorted.length,
+    vSorted.length ? vSorted.map(visitCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No visit records found</div>');
+  out += section('📝', 'Contract / CRM Stage', cSorted.length,
+    cSorted.length ? cSorted.map(contractCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No contract yet — still in the visit/discussion stage</div>');
+  out += section('🔧', 'Installation', iSorted.length,
+    iSorted.length ? iSorted.map(installCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">Not yet in installation</div>');
+
+  return out;
+}
+
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects',receivables:'Receivables & Delivery'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer Journey',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects',receivables:'Receivables & Delivery'
 };
 
 const PAGE_BUILDERS = {
@@ -6333,6 +6504,7 @@ const PAGE_BUILDERS = {
   instfollowup: buildInstFollowupPage,
   store: buildStorePage,
   receivables: buildReceivablesPage,
+  journey: buildJourneyPage,
 };
 
 const builtPages = new Set();
@@ -6367,6 +6539,7 @@ function showPage(name) {
         } else {
           buildFollowupCharts(); renderFollowupTable();
         }
+        _fetchContractNotes();
       }
       if(name==='daily') renderFollowupTable();
       if(name==='ceo') renderScorecard();
@@ -6778,6 +6951,65 @@ async function _fetchContracts() {
   }
 }
 
+// ── Notes & Reminders (ContractNotes.gs) — read via JSONP, write via fetch ──
+async function _fetchContractNotes() {
+  const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
+  if (!url) return;
+  try {
+    const data = await jsonpFetch(url + '?_t=' + Date.now(), '_kitchinoNotes', 20000);
+    if (data && data.status === 'ok' && Array.isArray(data.data)) {
+      CONTRACT_NOTES = {};
+      data.data.forEach(n => { if (n.orderId) CONTRACT_NOTES[n.orderId] = n; });
+      renderFollowupTable();
+    }
+  } catch (e) { console.warn('[Notes] fetch failed:', e.message); }
+}
+
+// Posts as text/plain body (no custom headers) → browser treats it as a
+// "simple request" and skips the CORS preflight that Apps Script doesn't
+// handle. Apps Script's doPost still parses e.postData.contents as JSON.
+async function _postContractNote(orderId, customer, note, reminderDate) {
+  const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
+  if (!url) { alert('⚠ Notes script not configured yet. Add the URL via Connect Google Sheets.'); return false; }
+  try {
+    await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ orderId, customer, note, reminderDate: reminderDate || '' })
+    });
+    CONTRACT_NOTES[orderId] = { orderId, customer, note, reminderDate: reminderDate || '', reminderSent: false, lastUpdated: new Date().toISOString() };
+    return true;
+  } catch (e) {
+    console.warn('[Notes] save failed:', e.message);
+    alert('⚠ Could not save note: ' + e.message);
+    return false;
+  }
+}
+
+function openNoteModal(orderId, customerName) {
+  const existing = CONTRACT_NOTES[orderId] || {};
+  document.getElementById('fu-note-orderid').value = orderId;
+  document.getElementById('fu-note-customer-label').textContent = customerName || orderId;
+  document.getElementById('fu-note-text').value = existing.note || '';
+  document.getElementById('fu-note-reminder').value = existing.reminderDate || '';
+  document.getElementById('fu-note-modal').style.display = 'flex';
+}
+
+function closeNoteModal() {
+  document.getElementById('fu-note-modal').style.display = 'none';
+}
+
+async function saveNoteModal() {
+  const orderId  = document.getElementById('fu-note-orderid').value;
+  const customer = document.getElementById('fu-note-customer-label').textContent;
+  const note     = document.getElementById('fu-note-text').value.trim();
+  const reminder = document.getElementById('fu-note-reminder').value;
+  const btn = document.getElementById('fu-note-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  const ok = await _postContractNote(orderId, customer, note, reminder);
+  if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+  if (ok) { closeNoteModal(); renderFollowupTable(); }
+}
+
 function runContractsDiagnostic() {
   const cUrl = document.getElementById('contracts-url')?.value.trim() || localStorage.getItem('kitchino_contracts_url') || '';
   const out  = document.getElementById('diag-output');
@@ -6855,9 +7087,12 @@ async function connectGoogleSheets() {
   localStorage.setItem('kitchino_sheets_url', url);
   const cUrl = document.getElementById('contracts-url')?.value.trim();
   if (cUrl) localStorage.setItem('kitchino_contracts_url', cUrl);
+  const nUrl = document.getElementById('notes-url')?.value.trim();
+  if (nUrl) localStorage.setItem('kitchino_notes_url', nUrl);
   closeConnectModal();
   await _silentFetch(false);
   await _fetchContracts();
+  _fetchContractNotes();
   _startPolling();
 }
 
@@ -6907,10 +7142,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // If a Sheets URL was previously saved, fetch immediately on open.
   // No user action required — dashboard always boots with fresh data.
   if (sheetsUrl) {
-    _silentFetch(false).then(() => { _fetchContracts(); _startPolling(); });
+    _silentFetch(false).then(() => { _fetchContracts(); _fetchContractNotes(); _startPolling(); });
   } else {
     _setSourceLabel('local');
     _fetchContracts();   // contracts can load even without measures URL
+    _fetchContractNotes();
   }
 });
 
