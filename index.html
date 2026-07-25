@@ -6359,7 +6359,33 @@ function _rebuildFilteredPages() {
 // CUSTOMER JOURNEY — end-to-end view joining Measures, Contracts, Installation
 // ============================================================
 function _journeyNorm(s) {
-  return (s || '').toString().replace(/\s+/g, ' ').trim().toLowerCase();
+  return (s || '').toString()
+    .replace(/\([^)]*\)/g, ' ')            // strip parenthetical notes
+    .replace(/[ً-ٰٟ]/g, '') // strip Arabic diacritics (tashkeel)
+    .replace(/[-_/]+/g, ' ')               // dashes/underscores/slashes → space
+    .replace(/\d{4,}/g, ' ')               // strip long digit runs (phone numbers, codes)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function _journeyTokens(s) {
+  return _journeyNorm(s).split(' ').filter(Boolean);
+}
+
+// Matches across sheets even when one side has extra text (phone numbers,
+// area notes, designer initials) or the sheets don't spell the name
+// identically — falls back to token overlap after exact/substring checks.
+function _journeyMatches(a, b) {
+  const na = _journeyNorm(a), nb = _journeyNorm(b);
+  if (!na || !nb) return false;
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  const ta = _journeyTokens(a), tb = _journeyTokens(b);
+  if (!ta.length || !tb.length) return false;
+  const shorter   = ta.length <= tb.length ? ta : tb;
+  const longerSet = new Set(ta.length <= tb.length ? tb : ta);
+  const overlap = shorter.filter(t => longerSet.has(t)).length;
+  return overlap >= Math.min(2, shorter.length) && (overlap / shorter.length) >= 0.6;
 }
 
 function buildJourneyPage() {
@@ -6377,7 +6403,8 @@ function _journeyPopulateList() {
     .map(n => '<option value="' + n.replace(/"/g, '&quot;') + '"></option>').join('');
 }
 
-function runJourneySearch() {
+function runJourneySearch(_retriesLeft) {
+  if (_retriesLeft === undefined) _retriesLeft = 5;
   _journeyPopulateList();
   const input = document.getElementById('journey-search');
   const q = (input ? input.value : '').trim();
@@ -6388,16 +6415,21 @@ function runJourneySearch() {
     return;
   }
 
-  const qNorm = _journeyNorm(q);
-  const matches = (val) => {
-    const v = _journeyNorm(val);
-    if (!v) return false;
-    return v === qNorm || v.includes(qNorm) || qNorm.includes(v);
-  };
+  // Measures data loads asynchronously right after the portal opens — if it
+  // hasn't arrived yet, retry briefly instead of silently showing 0 visits.
+  if ((!ENGINE_CLEAN_ROWS || !ENGINE_CLEAN_ROWS.length) && _retriesLeft > 0) {
+    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">⏳ Measures data is still loading — retrying…</div>';
+    setTimeout(() => runJourneySearch(_retriesLeft - 1), 1200);
+    return;
+  }
 
-  const visits    = (ENGINE_CLEAN_ROWS || []).filter(r => matches(r.customer));
-  const contracts = (CONTRACTS_DATA   || []).filter(r => matches(r.name));
-  const installs  = (_INST_DATA       || []).filter(r => matches(r['العميل']));
+  const visits    = (ENGINE_CLEAN_ROWS || []).filter(r => _journeyMatches(q, r.customer));
+  const contracts = (CONTRACTS_DATA   || []).filter(r => _journeyMatches(q, r.name));
+  const installs  = (_INST_DATA       || []).filter(r => _journeyMatches(q, r['العميل']));
+
+  console.log('[Journey] search "' + q + '" — ENGINE_CLEAN_ROWS:', (ENGINE_CLEAN_ROWS||[]).length,
+    '| CONTRACTS_DATA:', (CONTRACTS_DATA||[]).length, '| _INST_DATA:', (_INST_DATA||[]).length,
+    '| matched visits:', visits.length, 'contracts:', contracts.length, 'installs:', installs.length);
 
   if (!visits.length && !contracts.length && !installs.length) {
     box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">🔍 No records found for "' + q.replace(/</g,'&lt;') + '"</div>';
