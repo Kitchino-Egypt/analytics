@@ -997,7 +997,7 @@ if (_checkSession()) {
     <div class="nav-label">Tracking</div>
     <div class="nav-item" data-page="measures"><span class="nav-icon">📋</span>Measures Tracking</div>
     <div class="nav-item" data-page="followup"><span class="nav-icon">🔔</span>Contracted Customers Follow-up</div>
-    <div class="nav-item" data-page="journey"><span class="nav-icon">🧭</span>Customer Journey</div>
+    <div class="nav-item" data-page="journey"><span class="nav-icon">🧭</span>Customer / Order Journey</div>
     <div class="nav-item" data-page="monthly"><span class="nav-icon">📅</span>Monthly Trends</div>
   </div>
   <div class="nav-section">
@@ -1760,13 +1760,13 @@ if (_checkSession()) {
   </div>
 </div>
 
-<!-- PAGE: CUSTOMER JOURNEY -->
+<!-- PAGE: CUSTOMER / ORDER JOURNEY -->
 <div class="page" id="page-journey">
   <div class="chart-card" style="margin-bottom:16px">
-    <div class="chart-title">🧭 Customer Journey</div>
-    <div class="chart-subtitle">Search a customer to see their full journey — site visit, contract stage, and installation — in one timeline</div>
+    <div class="chart-title">🧭 Customer / Order Journey</div>
+    <div class="chart-subtitle">Search by customer name or order code to see the full journey — site visit, contract stage, and installation — in one timeline</div>
     <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
-      <input type="text" id="journey-search" list="journey-customers" placeholder="🔍 Type a customer name…"
+      <input type="text" id="journey-search" list="journey-customers" placeholder="🔍 Search by customer name or order code…"
         style="flex:1;min-width:240px;padding:10px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px"
         onkeydown="if(event.key==='Enter') runJourneySearch()">
       <datalist id="journey-customers"></datalist>
@@ -1774,7 +1774,7 @@ if (_checkSession()) {
     </div>
   </div>
   <div id="journey-result">
-    <div style="text-align:center;padding:40px;color:var(--text3)">Type a customer name to begin</div>
+    <div style="text-align:center;padding:40px;color:var(--text3)">Search by customer name or order code to begin</div>
   </div>
 </div>
 
@@ -6373,6 +6373,14 @@ function _journeyTokens(s) {
   return _journeyNorm(s).split(' ').filter(Boolean);
 }
 
+// Normalizes an order code/ID for cross-sheet comparison — pulls out the
+// digit sequence (handles "OR2600720" vs "2600720" vs "2600720 "), falling
+// back to trimmed lowercase text for non-numeric codes.
+function _journeyCodeNorm(s) {
+  const digits = String(s || '').replace(/\D/g, '');
+  return digits || String(s || '').trim().toLowerCase();
+}
+
 // Matches across sheets even when one side has extra text (phone numbers,
 // area notes, designer initials) or the sheets don't spell the name
 // identically — falls back to token overlap after exact/substring checks.
@@ -6396,47 +6404,92 @@ function _journeyPopulateList() {
   const dl = document.getElementById('journey-customers');
   if (!dl) return;
   const names = new Set();
-  (ENGINE_CLEAN_ROWS || []).forEach(r => { if (r.customer) names.add(r.customer.trim()); });
-  (CONTRACTS_DATA || []).forEach(r => { if (r.name) names.add(r.name.trim()); });
-  (_INST_DATA || []).forEach(r => { const c = r['العميل']; if (c) names.add(c.trim()); });
+  (ENGINE_CLEAN_ROWS || []).forEach(r => {
+    if (r.customer) names.add(r.customer.trim());
+    if (r.orderCode) names.add(String(r.orderCode).trim());
+  });
+  (CONTRACTS_DATA || []).forEach(r => {
+    if (r.name) names.add(r.name.trim());
+    if (r.orderId) names.add(String(r.orderId).trim());
+  });
+  (_INST_DATA || []).forEach(r => {
+    const c = r['العميل']; if (c) names.add(c.trim());
+    const p = r['رقم المشروع']; if (p) names.add(String(p).trim());
+  });
   dl.innerHTML = [...names].sort((a, b) => a.localeCompare(b, 'ar'))
     .map(n => '<option value="' + n.replace(/"/g, '&quot;') + '"></option>').join('');
 }
 
 function runJourneySearch(_retriesLeft) {
-  if (_retriesLeft === undefined) _retriesLeft = 5;
+  if (_retriesLeft === undefined) _retriesLeft = 8;
   _journeyPopulateList();
   const input = document.getElementById('journey-search');
   const q = (input ? input.value : '').trim();
   const box = document.getElementById('journey-result');
   if (!box) return;
   if (!q) {
-    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">Type a customer name to begin</div>';
+    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">Search by customer name or order code to begin</div>';
     return;
   }
 
-  // Measures data loads asynchronously right after the portal opens — if it
-  // hasn't arrived yet, retry briefly instead of silently showing 0 visits.
-  if ((!ENGINE_CLEAN_ROWS || !ENGINE_CLEAN_ROWS.length) && _retriesLeft > 0) {
-    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">⏳ Measures data is still loading — retrying…</div>';
+  // Installation data is lazy-loaded only when the Installation Follow-up
+  // page has been visited (_INST_DATA stays null until _instLoad() runs).
+  // Journey shouldn't depend on visit order, so trigger it here directly.
+  // (_instLoad() is safe to call repeatedly — it just re-fetches.)
+  if (_INST_DATA === null && typeof _instLoad === 'function') {
+    _instLoad();
+  }
+
+  // Measures / Installation data loads asynchronously — if either hasn't
+  // arrived yet, retry briefly instead of silently showing 0 results.
+  const stillLoading = (!ENGINE_CLEAN_ROWS || !ENGINE_CLEAN_ROWS.length) || _INST_DATA === null;
+  if (stillLoading && _retriesLeft > 0) {
+    box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">⏳ Data is still loading — retrying…</div>';
     setTimeout(() => runJourneySearch(_retriesLeft - 1), 1200);
     return;
   }
 
-  const visits    = (ENGINE_CLEAN_ROWS || []).filter(r => _journeyMatches(q, r.customer));
-  const contracts = (CONTRACTS_DATA   || []).filter(r => _journeyMatches(q, r.name));
-  const installs  = (_INST_DATA       || []).filter(r => _journeyMatches(q, r['العميل']));
+  // Direct code search — only kicks in if the query has digits, so a name
+  // search never accidentally collides with an order code.
+  const qCode = /\d/.test(q) ? _journeyCodeNorm(q) : '';
+
+  let visits    = (ENGINE_CLEAN_ROWS || []).filter(r => _journeyMatches(q, r.customer) || (qCode && _journeyCodeNorm(r.orderCode) === qCode));
+  let contracts = (CONTRACTS_DATA   || []).filter(r => _journeyMatches(q, r.name)     || (qCode && _journeyCodeNorm(r.orderId)   === qCode));
+  let installs  = (_INST_DATA       || []).filter(r => _journeyMatches(q, r['العميل']) || (qCode && _journeyCodeNorm(r['رقم المشروع']) === qCode));
+
+  // Cross-reference pass: the same customer is sometimes entered with a
+  // different name spelling in each sheet. Once we have a match anywhere,
+  // collect its order code/ID and pull in any record from the OTHER sources
+  // that shares that same code — even if the name text doesn't match at all.
+  const codeSet = new Set();
+  contracts.forEach(r => { if (r.orderId)   codeSet.add(_journeyCodeNorm(r.orderId)); });
+  visits.forEach(r =>    { if (r.orderCode) codeSet.add(_journeyCodeNorm(r.orderCode)); });
+  installs.forEach(r =>  { const p = r['رقم المشروع']; if (p) codeSet.add(_journeyCodeNorm(p)); });
+
+  if (codeSet.size) {
+    (ENGINE_CLEAN_ROWS || []).forEach(r => {
+      if (r.orderCode && codeSet.has(_journeyCodeNorm(r.orderCode)) && visits.indexOf(r) === -1) visits.push(r);
+    });
+    (CONTRACTS_DATA || []).forEach(r => {
+      if (r.orderId && codeSet.has(_journeyCodeNorm(r.orderId)) && contracts.indexOf(r) === -1) contracts.push(r);
+    });
+    (_INST_DATA || []).forEach(r => {
+      const p = r['رقم المشروع'];
+      if (p && codeSet.has(_journeyCodeNorm(p)) && installs.indexOf(r) === -1) installs.push(r);
+    });
+  }
 
   console.log('[Journey] search "' + q + '" — ENGINE_CLEAN_ROWS:', (ENGINE_CLEAN_ROWS||[]).length,
     '| CONTRACTS_DATA:', (CONTRACTS_DATA||[]).length, '| _INST_DATA:', (_INST_DATA||[]).length,
-    '| matched visits:', visits.length, 'contracts:', contracts.length, 'installs:', installs.length);
+    '| matched visits:', visits.length, 'contracts:', contracts.length, 'installs:', installs.length,
+    '| cross-ref codes:', [...codeSet]);
 
   if (!visits.length && !contracts.length && !installs.length) {
     box.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)">🔍 No records found for "' + q.replace(/</g,'&lt;') + '"</div>';
     return;
   }
 
-  box.innerHTML = _renderJourneyTimeline(q, visits, contracts, installs);
+  box.innerHTML = _renderJourneyTimeline(q, visits, contracts, installs, qCode);
 }
 
 // Robust date parser — handles yyyy-MM-dd, d-MMM-yyyy, dd/MM/yyyy, and JS Date fallback
@@ -6501,7 +6554,7 @@ function _journeyDurationCard(visits, installs) {
     + '</div>';
 }
 
-function _renderJourneyTimeline(name, visits, contracts, installs) {
+function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
   const sortByKey = (arr, key) => [...arr].sort((a, b) => String(a[key]||'').localeCompare(String(b[key]||'')));
   const vSorted = sortByKey(visits, 'visitDate');
   const cSorted = sortByKey(contracts, 'date');
@@ -6579,12 +6632,34 @@ function _renderJourneyTimeline(name, visits, contracts, installs) {
     + '<div>✅ Delivered: <b style="color:var(--text)">' + (r['تاريخ التسليم'] || '—') + '</b></div>'
     + '</div></div>';
 
+  // Distinct order codes/IDs across everything matched — tells us whether
+  // this is a single order (Order Journey) or a repeat customer spanning
+  // several orders (Customer Journey).
+  const allCodes = new Set();
+  visits.forEach(v =>    { if (v.orderCode) allCodes.add(_journeyCodeNorm(v.orderCode)); });
+  contracts.forEach(c => { if (c.orderId)   allCodes.add(_journeyCodeNorm(c.orderId)); });
+  installs.forEach(i =>  { const p = i['رقم المشروع']; if (p) allCodes.add(_journeyCodeNorm(p)); });
+
+  const isOrderSearch = !!qCode && allCodes.has(qCode);
+  let headerTitle;
+  if (isOrderSearch) {
+    const cMatch = contracts.find(c => _journeyCodeNorm(c.orderId) === qCode);
+    const vMatch = visits.find(v => _journeyCodeNorm(v.orderCode) === qCode);
+    const iMatch = installs.find(i => _journeyCodeNorm(i['رقم المشروع']) === qCode);
+    const resolvedCustomer = (cMatch && cMatch.name) || (vMatch && vMatch.customer) || (iMatch && iMatch['العميل']) || '';
+    headerTitle = '📦 Order ' + name + (resolvedCustomer ? ' — ' + resolvedCustomer : '');
+  } else {
+    headerTitle = '👤 ' + name;
+  }
+  const spanNote = allCodes.size > 1 ? ' · spans ' + allCodes.size + ' orders' : (allCodes.size === 1 ? ' · order ' + [...allCodes][0] : '');
+
   let out = '<div style="margin-bottom:18px">'
-    + '<div style="font-size:19px;font-weight:800;color:var(--text)">👤 ' + name + '</div>'
+    + '<div style="font-size:19px;font-weight:800;color:var(--text)">' + headerTitle + '</div>'
     + '<div style="font-size:12px;color:var(--text3);margin-top:4px">'
     + visits.length + ' visit' + (visits.length !== 1 ? 's' : '') + ' · '
     + contracts.length + ' contract' + (contracts.length !== 1 ? 's' : '') + ' · '
     + installs.length + ' installation' + (installs.length !== 1 ? 's' : '')
+    + spanNote
     + '</div></div>';
 
   out += _journeyDurationCard(vSorted, iSorted);
@@ -6611,7 +6686,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer Journey',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects',receivables:'Receivables & Delivery'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',store:'Store Projects',receivables:'Receivables & Delivery'
 };
 
 const PAGE_BUILDERS = {
