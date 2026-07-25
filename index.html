@@ -6516,7 +6516,7 @@ function _journeyFmtDate(d) {
 // Total journey duration: first site visit → the installation record hits a
 // "received / completed" status (استلام / استلام عميل / تم الاستلام بدون
 // ملاحظات / تفعيل ضمان اداري). Still-open journeys show elapsed days so far.
-function _journeyDurationCard(visits, installs) {
+function _journeyDurationCard(visits, installs, contracts) {
   const vDates = visits.map(r => _journeyParseDate(r.visitDate)).filter(Boolean);
   if (!vDates.length) return '';
   const startDate = new Date(Math.min.apply(null, vDates.map(d => d.getTime())));
@@ -6536,12 +6536,21 @@ function _journeyDurationCard(visits, installs) {
     if (dates.length) endDate = new Date(Math.max.apply(null, dates.map(d => d.getTime())));
   }
 
+  // Cancelled orders shouldn't be shown as "in progress" — check both the
+  // Measures status (الغاء) and the Contracts CRM stage (declined).
+  const isCancelled = !endDate && (
+    visits.some(r => (r.status || '') === 'الغاء') ||
+    (contracts || []).some(r => (r.crm || '').toLowerCase() === 'declined')
+  );
+
   const msPerDay = 86400000;
   let bodyHtml;
   if (endDate) {
     const days = Math.round((endDate - startDate) / msPerDay);
     bodyHtml = '<div class="kpi-value" style="font-size:26px">' + days + ' days</div>'
       + '<div class="kpi-sub">✅ Completed — ' + _journeyFmtDate(startDate) + ' → ' + _journeyFmtDate(endDate) + '</div>';
+  } else if (isCancelled) {
+    bodyHtml = '<div class="kpi-sub">❌ Cancelled — started ' + _journeyFmtDate(startDate) + '</div>';
   } else {
     const days = Math.round((new Date() - startDate) / msPerDay);
     bodyHtml = '<div class="kpi-value" style="font-size:26px">' + days + ' days <span style="font-size:12px;color:var(--gold);font-weight:600">(ongoing)</span></div>'
@@ -6662,7 +6671,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
     + spanNote
     + '</div></div>';
 
-  out += _journeyDurationCard(vSorted, iSorted);
+  out += _journeyDurationCard(vSorted, iSorted, cSorted);
 
   out += section('📐', 'Site Visits', vSorted.length,
     vSorted.length ? vSorted.map(visitCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No visit records found</div>');
