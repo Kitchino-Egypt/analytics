@@ -6545,6 +6545,23 @@ function _renderJourneyTimeline(name, visits, contracts, installs) {
     + '<div>📊 Aging: <b style="color:var(--text)">' + (r.aging || '—') + '</b></div>'
     + '</div></div>';
 
+  // Fallback stage card sourced from Measures Tracking — used only when this
+  // customer has no record yet in the Contracted Customers Follow-up sheet.
+  const _measuresStageLabel = s => s === 'تعاقد' ? 'Contracted (تعاقد)' : s === 'مناقشة' ? 'In Discussion (مناقشة)' : s === 'الغاء' ? 'Cancelled (الغاء)' : (s || '—');
+  const measuresStageCard = r =>
+    '<div style="border-left:3px solid var(--gold);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0">'
+    + '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    + '<div style="font-weight:700;color:var(--text)">📅 ' + (r.visitDate || '—') + '</div>'
+    + '<div><span class="badge badge-gold">📋 From Measures Tracking</span></div>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-top:6px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:4px">'
+    + '<div>👤 Designer: <b style="color:var(--text)">' + (r.designer || '—') + '</b></div>'
+    + '<div>🏷 Status: <b style="color:var(--text)">' + _measuresStageLabel(r.status) + '</b></div>'
+    + '<div>🔖 Code: <b style="color:var(--text)">' + (r.orderCode || '—') + '</b></div>'
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-top:6px">⚠ Not yet in Contracted Customers Follow-up — showing latest status from the visit log</div>'
+    + '</div>';
+
   const installCard = r =>
     '<div style="border-left:3px solid var(--teal);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0">'
     + '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
@@ -6574,8 +6591,17 @@ function _renderJourneyTimeline(name, visits, contracts, installs) {
 
   out += section('📐', 'Site Visits', vSorted.length,
     vSorted.length ? vSorted.map(visitCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No visit records found</div>');
-  out += section('📝', 'Contract / CRM Stage', cSorted.length,
-    cSorted.length ? cSorted.map(contractCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No contract yet — still in the visit/discussion stage</div>');
+  // Contract / CRM Stage: use the Contracted Customers Follow-up sheet when
+  // this customer has a record there; otherwise fall back to the status
+  // logged in Measures Tracking (تعاقد / مناقشة / الغاء) so the section isn't
+  // empty just because the contract hasn't been entered into that sheet yet.
+  if (cSorted.length) {
+    out += section('📝', 'Contract / CRM Stage', cSorted.length, cSorted.map(contractCard).join(''));
+  } else {
+    const statusedVisits = vSorted.filter(r => r.status);
+    out += section('📝', 'Contract / CRM Stage', statusedVisits.length,
+      statusedVisits.length ? statusedVisits.map(measuresStageCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No contract yet — still in the visit/discussion stage</div>');
+  }
   out += section('🔧', 'Installation', iSorted.length,
     iSorted.length ? iSorted.map(installCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">Not yet in installation</div>');
 
