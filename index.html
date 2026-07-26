@@ -9645,7 +9645,7 @@ function _instModalFilter() {
   const q = (document.getElementById('inst-modal-search')?.value || '').toLowerCase();
   const filtered = q
     ? _instModalRows.filter(r =>
-        (r['اسم العميل'] || r['Customer'] || '').toLowerCase().includes(q) ||
+        (r['العميل'] || '').toLowerCase().includes(q) ||
         (r[_instTechKey(_instModalRows)] || '').toLowerCase().includes(q) ||
         (r['العنوان'] || '').toLowerCase().includes(q)
       )
@@ -9662,7 +9662,7 @@ function _instModalRenderTable(rows) {
     return;
   }
   tbody.innerHTML = rows.map((r, i) => {
-    const customer = r['اسم العميل'] || r['Customer'] || '—';
+    const customer = r['العميل'] || '—';
     const product  = r['المنتج'] || '—';
     const area     = r['العنوان'] || '—';
     const tech     = r[tk] || '—';
