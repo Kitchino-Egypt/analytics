@@ -1745,7 +1745,10 @@ if (_checkSession()) {
 <div id="fu-note-modal" onclick="if(event.target===this)closeNoteModal()" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);align-items:center;justify-content:center">
   <div style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-size:16px;font-weight:700;color:var(--text)">🗒 Note — <span id="fu-note-customer-label"></span></div>
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text)">🗒 Note — <span id="fu-note-customer-label"></span></div>
+        <div id="fu-note-meta" style="font-size:11px;color:var(--text3);margin-top:3px"></div>
+      </div>
       <button onclick="closeNoteModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
     </div>
     <input type="hidden" id="fu-note-orderid">
@@ -5337,7 +5340,7 @@ function renderFollowupTable() {
       const noteText    = noteInfo && noteInfo.note ? noteInfo.note : '';
       const hasReminder = !!(noteInfo && noteInfo.reminderDate && !noteInfo.reminderSent);
       const notePreview = noteText ? (noteText.length > 26 ? noteText.slice(0,26) + '…' : noteText) : '+ Add note';
-      const noteDate    = noteInfo && noteInfo.lastUpdated ? String(noteInfo.lastUpdated).split(' ')[0] : '';
+      const noteDate    = _fmtNoteDate(noteInfo && noteInfo.lastUpdated);
       const escId   = String(c.orderId||'').replace(/'/g, "\\'");
       const escName = String(c.name||'').replace(/'/g, "\\'");
       const noteTitle = noteText ? noteText.replace(/"/g,'&quot;') : 'Add a follow-up note';
@@ -6563,6 +6566,30 @@ function _journeyDurationCard(visits, installs, contracts) {
     + '</div>';
 }
 
+// Inline note strip rendered under an installation card. Uses the same
+// CONTRACT_NOTES store / modal as the Follow-up page, keyed by project number.
+function _journeyNoteRow(projectNo, customerName) {
+  const key = String(projectNo || '').trim();
+  if (!key) return '';
+  const info     = CONTRACT_NOTES[key] || {};
+  const noteText = info.note || '';
+  const noteDate = _fmtNoteDate(info.lastUpdated);
+  const pending  = !!(info.reminderDate && !info.reminderSent);
+  const escKey   = key.replace(/'/g, "\\'");
+  const escName  = String(customerName || '').replace(/'/g, "\\'");
+  const label    = noteText
+    ? (pending ? '⏰ ' : '🗒 ') + noteText.replace(/</g, '&lt;')
+    : '+ Add note';
+  return '<div onclick="openNoteModal(\'' + escKey + '\',\'' + escName + '\')" '
+    + 'style="margin-top:8px;padding:7px 10px;border-radius:6px;cursor:pointer;'
+    + 'background:rgba(148,163,184,0.10);border:1px dashed var(--border);font-size:11px;'
+    + (noteText ? 'color:var(--text2)' : 'color:var(--green);font-weight:600') + '" '
+    + 'title="Click to add or edit a note for this project">'
+    + label
+    + (noteDate ? '<span style="float:right;font-size:10px;color:var(--text3)">' + noteDate + '</span>' : '')
+    + '</div>';
+}
+
 function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
   const sortByKey = (arr, key) => [...arr].sort((a, b) => String(a[key]||'').localeCompare(String(b[key]||'')));
   const vSorted = sortByKey(visits, 'visitDate');
@@ -6639,7 +6666,9 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
     + '<div>🔁 Visits: <b style="color:var(--text)">' + (r['إجمالي عدد الزيارات'] || '—') + '</b></div>'
     + '<div>📆 Install Days: <b style="color:var(--text)">' + (r['إجمالي ايام التركيب'] || '—') + '</b></div>'
     + '<div>✅ Delivered: <b style="color:var(--text)">' + (r['تاريخ التسليم'] || '—') + '</b></div>'
-    + '</div></div>';
+    + '</div>'
+    + _journeyNoteRow(r['رقم المشروع'], r['العميل'] || name)
+    + '</div>';
 
   // Distinct order codes/IDs across everything matched — tells us whether
   // this is a single order (Order Journey) or a repeat customer spanning
@@ -7161,6 +7190,16 @@ async function _fetchContracts() {
   }
 }
 
+// Normalises a note timestamp to a plain yyyy-MM-dd date. Handles both the
+// server format ("yyyy-MM-dd HH:mm") and the ISO string used for the local
+// optimistic update after saving ("yyyy-MM-ddTHH:mm:ss.sssZ").
+function _fmtNoteDate(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : s.split(' ')[0];
+}
+
 // ── Notes & Reminders (ContractNotes.gs) — read via JSONP, write via fetch ──
 async function _fetchContractNotes() {
   const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
@@ -7201,6 +7240,11 @@ function openNoteModal(orderId, customerName) {
   document.getElementById('fu-note-customer-label').textContent = customerName || orderId;
   document.getElementById('fu-note-text').value = existing.note || '';
   document.getElementById('fu-note-reminder').value = existing.reminderDate || '';
+  const meta = document.getElementById('fu-note-meta');
+  if (meta) {
+    const d = _fmtNoteDate(existing.lastUpdated);
+    meta.textContent = d ? 'Last note saved: ' + d : '';
+  }
   document.getElementById('fu-note-modal').style.display = 'flex';
 }
 
@@ -7217,7 +7261,14 @@ async function saveNoteModal() {
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   const ok = await _postContractNote(orderId, customer, note, reminder);
   if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
-  if (ok) { closeNoteModal(); renderFollowupTable(); }
+  if (ok) {
+    closeNoteModal();
+    renderFollowupTable();
+    // If the note was added from the Journey page, re-run the search so the
+    // inline note strip on the installation card updates immediately.
+    const activePg = document.querySelector('.page.active')?.id.replace('page-','');
+    if (activePg === 'journey') runJourneySearch();
+  }
 }
 
 function runContractsDiagnostic() {
