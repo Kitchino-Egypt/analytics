@@ -2479,6 +2479,26 @@ if (_checkSession()) {
     <div style="height:260px"><canvas id="lr-chart-years"></canvas></div>
   </div>
 
+  <!-- ── YEAR-OVER-YEAR ANALYSIS ── -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Year-over-Year Analysis</div>
+      <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden">
+        <button id="lr-yoy-ytd"  onclick="_lrSetYoyMode('ytd')"  style="padding:4px 14px;font-size:11px;border:none;background:var(--blue);color:#fff;font-weight:700;cursor:pointer">Like-for-like</button>
+        <button id="lr-yoy-full" onclick="_lrSetYoyMode('full')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">Full year</button>
+      </div>
+    </div>
+    <div id="lr-yoy-note" style="font-size:11px;color:var(--text3);margin-bottom:12px"></div>
+    <div style="height:250px;margin-bottom:14px"><canvas id="lr-chart-yoy"></canvas></div>
+    <div id="lr-yoy-table" style="overflow-x:auto"></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Monthly Shape — All Years Overlaid</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Every year plotted on the same Jan–Dec axis, to see whether the pattern repeats</div>
+    <div style="height:270px"><canvas id="lr-chart-overlay"></canvas></div>
+  </div>
+
   <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Seasonality — Month × Year</div>
     <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Darker = busier. Reveals which months are reliably peak or slow.</div>
@@ -9545,11 +9565,174 @@ function _lrSetDesYear(y) {
   _lrRenderDesigners();
 }
 
+// ── Year-over-Year ────────────────────────────────────────────────────────
+// Two modes:
+//   ytd  = like-for-like, Jan → the last month with data in the current year.
+//          The current year is incomplete, so comparing its running total to
+//          prior FULL years would always look like a collapse.
+//   full = whole calendar year, current year flagged as partial.
+function _lrCutoffMonth(combined) {
+  const cy = _lrPartialYear();
+  const row = combined[cy];
+  if (!row) return 12;
+  let last = 0;
+  row.forEach((v,i) => { if (v > 0) last = i; });
+  return last + 1;                       // count of months to include
+}
+
+function _lrYoySeries(combined, mode) {
+  const years  = Object.keys(combined).sort();
+  const cutoff = mode === 'ytd' ? _lrCutoffMonth(combined) : 12;
+  return years.map(y => {
+    const row = combined[y];
+    const val = row.slice(0, cutoff).reduce((a,b)=>a+b,0);
+    return { year:y, value:val };
+  });
+}
+
+function _lrSetYoyMode(mode) {
+  window._lrYoyMode = mode;
+  [['ytd','lr-yoy-ytd'],['full','lr-yoy-full']].forEach(([m,id]) => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    const on = (m === mode);
+    b.style.background = on ? 'var(--blue)' : 'transparent';
+    b.style.color      = on ? '#fff' : 'var(--text2)';
+    b.style.fontWeight = on ? '700' : '500';
+  });
+  _lrRenderYOY(_lrCombinedMeasures());
+}
+
+function _lrRenderYOY(combined) {
+  const mode   = window._lrYoyMode || 'ytd';
+  const series = _lrYoySeries(combined, mode);
+  const cutoff = mode === 'ytd' ? _lrCutoffMonth(combined) : 12;
+  const cy     = _lrPartialYear();
+
+  const note = document.getElementById('lr-yoy-note');
+  if (note) {
+    note.textContent = mode === 'ytd'
+      ? 'Comparing Jan–' + _LR_MONTHS[cutoff-1] + ' for every year, so ' + cy + ' is measured against the same window'
+      : 'Full calendar-year totals · ' + cy + ' is still in progress';
+  }
+
+  // Growth % vs the prior year
+  const growth = series.map((s,i) => i === 0 ? null
+    : (series[i-1].value ? +(((s.value - series[i-1].value) / series[i-1].value) * 100).toFixed(1) : null));
+
+  // ── Combo chart: volume bars + growth line ──
+  if (typeof Chart !== 'undefined') {
+    makeChart('lr-chart-yoy', {
+      type:'bar',
+      data:{ labels: series.map(s => s.year), datasets:[
+        { type:'bar', label:'Measures', data: series.map(s=>s.value), yAxisID:'y',
+          backgroundColor: series.map(s => s.year===cy && mode==='full'
+            ? 'rgba(251,191,36,0.55)' : 'rgba(59,130,246,0.70)'),
+          borderRadius:6, borderWidth:0, order:2 },
+        { type:'line', label:'YoY growth %', data: growth, yAxisID:'y1',
+          borderColor:'#10b981', backgroundColor:'#10b981',
+          tension:0.3, spanGaps:true, pointRadius:4, borderWidth:2, order:1 }
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:'#94a3b8', boxWidth:12 } },
+          tooltip:{ callbacks:{ label: c => c.dataset.yAxisID === 'y1'
+            ? 'YoY: ' + (c.parsed.y==null ? 'n/a (first year)' : (c.parsed.y>0?'+':'')+c.parsed.y+'%')
+            : c.parsed.y.toLocaleString()+' measures' } } },
+        scales:{
+          y:{ beginAtZero:true, position:'left',
+              ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(148,163,184,0.12)' } },
+          y1:{ position:'right', ticks:{ color:'#10b981', callback:v=>v+'%' },
+               grid:{ drawOnChartArea:false } },
+          x:{ ticks:{ color:'#94a3b8' }, grid:{ display:false } } } }
+    });
+  }
+
+  // ── Table ──
+  const box = document.getElementById('lr-yoy-table');
+  if (!box) return;
+  const rates = _lrAllRates();
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        + '<thead><tr style="border-bottom:1px solid var(--border)">'
+        + ['Year','Measures','Change','YoY %','Conversion','vs Prior']
+            .map((t,i)=>'<th style="padding:8px 10px;text-align:'+(i?'right':'left')
+              +';color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">'+t+'</th>').join('')
+        + '</tr></thead><tbody>';
+
+  series.forEach((s,i) => {
+    const prev = i ? series[i-1].value : null;
+    const diff = prev == null ? null : s.value - prev;
+    const g    = growth[i];
+    const gc   = g == null ? 'var(--text3)' : g > 0 ? 'var(--green)' : g < 0 ? 'var(--red)' : 'var(--text3)';
+    const cvr  = rates[s.year]?.cvr;
+    const pcvr = i ? rates[series[i-1].year]?.cvr : null;
+    const cd   = (cvr != null && pcvr != null) ? +(cvr - pcvr).toFixed(1) : null;
+    const cdc  = cd == null ? 'var(--text3)' : cd > 0 ? 'var(--green)' : cd < 0 ? 'var(--red)' : 'var(--text3)';
+    h += '<tr style="border-bottom:1px solid var(--border)">'
+      + '<td style="padding:8px 10px;font-weight:700;color:var(--text1)">'+s.year
+        + (s.year===cy ? ' <span style="font-size:9px;font-weight:500;color:var(--text3)">partial</span>' : '')+'</td>'
+      + '<td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--text1)">'+s.value.toLocaleString()+'</td>'
+      + '<td style="padding:8px 10px;text-align:right;color:'+gc+'">'+(diff==null?'—':(diff>0?'+':'')+diff.toLocaleString())+'</td>'
+      + '<td style="padding:8px 10px;text-align:right;font-weight:700;color:'+gc+'">'+(g==null?'—':(g>0?'+':'')+g+'%')+'</td>'
+      + '<td style="padding:8px 10px;text-align:right;color:var(--text2)">'+(cvr==null?'not tracked':cvr+'%')+'</td>'
+      + '<td style="padding:8px 10px;text-align:right;font-weight:700;color:'+cdc+'">'+(cd==null?'—':(cd>0?'+':'')+cd+'pp')+'</td>'
+      + '</tr>';
+  });
+
+  // CAGR across complete years only
+  const complete = series.filter(s => s.year !== cy || mode === 'ytd');
+  if (complete.length > 1) {
+    const first = complete[0], last = complete[complete.length-1];
+    const yrs = complete.length - 1;
+    const cagr = first.value > 0 ? (Math.pow(last.value/first.value, 1/yrs) - 1) * 100 : null;
+    h += '</tbody></table>'
+      + '<div style="font-size:11px;color:var(--text3);margin-top:10px">'
+      + 'Compound annual growth ' + first.year + '→' + last.year + ': '
+      + '<b style="color:' + (cagr>=0?'var(--green)':'var(--red)') + '">'
+      + (cagr==null?'—':(cagr>0?'+':'')+cagr.toFixed(1)+'%') + '</b> per year'
+      + '</div>';
+  } else { h += '</tbody></table>'; }
+  box.innerHTML = h;
+}
+
+// Monthly overlay — every year on one Jan–Dec axis
+function _lrRenderOverlay(combined) {
+  if (typeof Chart === 'undefined') return;
+  const years = Object.keys(combined).sort();
+  const cy    = _lrPartialYear();
+  const palette = ['#64748b','#8b5cf6','#0ea5e9','#f59e0b','#10b981','#ef4444'];
+  const ds = years.map((y,i) => {
+    const isCur = (y === cy);
+    // trim trailing zeros for the in-progress year so the line stops rather
+    // than diving to zero for months that simply haven't happened yet
+    let data = combined[y].slice();
+    if (isCur) { let last=0; data.forEach((v,j)=>{ if(v>0) last=j; });
+                 data = data.map((v,j)=> j<=last ? v : null); }
+    return { label: y + (isCur?' (partial)':''), data,
+             borderColor: palette[i % palette.length],
+             backgroundColor: palette[i % palette.length],
+             borderWidth: isCur ? 3 : 2, tension:0.35, spanGaps:false,
+             pointRadius: isCur ? 3 : 2,
+             borderDash: isCur ? [] : (y < '2025' ? [5,3] : []) };
+  });
+  makeChart('lr-chart-overlay', {
+    type:'line',
+    data:{ labels:_LR_MONTHS, datasets: ds },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#94a3b8', boxWidth:12, usePointStyle:true } },
+        tooltip:{ mode:'index', intersect:false } },
+      interaction:{ mode:'index', intersect:false },
+      scales:{ y:{ beginAtZero:true, ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(148,163,184,0.12)' } },
+               x:{ ticks:{ color:'#94a3b8' }, grid:{ display:false } } } }
+  });
+}
+
 function renderLongRunTrend() {
   try {
     const combined = _lrCombinedMeasures();
     _lrRenderKPIs(combined);
     _lrRenderYearChart(combined);
+    _lrRenderYOY(combined);
+    _lrRenderOverlay(combined);
     _lrRenderHeatmap(combined);
     _lrRenderRatesChart();
     _lrRenderDesigners();
