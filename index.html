@@ -2462,6 +2462,46 @@ if (_checkSession()) {
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
     <div id="yc-designer-table" style="overflow-x:auto"></div>
   </div>
+
+  <!-- ══════════════ LONG-RUN TREND 2021 → 2026 ══════════════ -->
+  <div style="margin:26px 0 14px;padding-top:18px;border-top:2px solid var(--border)">
+    <div style="font-size:19px;font-weight:800;color:var(--text1)">Long-Run Trend — 2021 → 2026</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:3px">
+      2021–2024 from historical records · 2025–2026 live from Google Sheets
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="lr-kpi-grid"></div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Measures by Year</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Total measure volume per year across six years</div>
+    <div style="height:260px"><canvas id="lr-chart-years"></canvas></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Seasonality — Month × Year</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Darker = busier. Reveals which months are reliably peak or slow.</div>
+    <div id="lr-heatmap" style="overflow-x:auto"></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Conversion &amp; Cancellation Trend</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Tracked from 2023 onward — earlier years recorded volume only</div>
+    <div style="height:240px"><canvas id="lr-chart-rates"></canvas></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Designer Performance — 2023</div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="lr-hide-former" onchange="_lrRenderDesigners()" style="cursor:pointer">
+        Hide former team members
+      </label>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Measures and achievement rate · former staff marked</div>
+    <div id="lr-designer-table" style="overflow-x:auto"></div>
+  </div>
 </div>
 
 <!-- PAGE: STORE PROJECTS -->
@@ -2785,6 +2825,7 @@ if (_checkSession()) {
     if (typeof renderYearCompare !== 'function') { setTimeout(_tryRenderYC, 300); return; }
     // ENGINE_READY is a 'let' var -- NOT on window, but renderYearCompare handles it internally
     renderYearCompare();
+    if (typeof renderLongRunTrend === 'function') renderLongRunTrend();
   }
   document.addEventListener('click', function(e) {
     var t = e.target, nav = null;
@@ -6566,9 +6607,11 @@ function _journeyDurationCard(visits, installs, contracts) {
     + '</div>';
 }
 
-// Inline note strip rendered under an installation card. Uses the same
-// CONTRACT_NOTES store / modal as the Follow-up page, keyed by project number.
-function _journeyNoteRow(projectNo, customerName) {
+// Note panel rendered to the RIGHT of an installation card, so the person in
+// charge can explain the numbers next to them (e.g. why an order took 11
+// visits). Shares the CONTRACT_NOTES store / modal with the Follow-up page,
+// keyed by project number.
+function _journeyNotePanel(projectNo, customerName) {
   const key = String(projectNo || '').trim();
   if (!key) return '';
   const info     = CONTRACT_NOTES[key] || {};
@@ -6577,16 +6620,21 @@ function _journeyNoteRow(projectNo, customerName) {
   const pending  = !!(info.reminderDate && !info.reminderSent);
   const escKey   = key.replace(/'/g, "\\'");
   const escName  = String(customerName || '').replace(/'/g, "\\'");
-  const label    = noteText
-    ? (pending ? '⏰ ' : '🗒 ') + noteText.replace(/</g, '&lt;')
-    : '+ Add note';
+
+  const body = noteText
+    ? '<div style="font-size:11px;color:var(--text2);line-height:1.5;white-space:pre-wrap;word-break:break-word">'
+        + noteText.replace(/</g, '&lt;') + '</div>'
+      + (noteDate ? '<div style="font-size:10px;color:var(--text3);margin-top:6px">' + noteDate + '</div>' : '')
+    : '<div style="font-size:11px;color:var(--green);font-weight:600">+ Add note</div>'
+      + '<div style="font-size:10px;color:var(--text3);margin-top:4px">Explain visits, delays, or issues</div>';
+
   return '<div onclick="openNoteModal(\'' + escKey + '\',\'' + escName + '\')" '
-    + 'style="margin-top:8px;padding:7px 10px;border-radius:6px;cursor:pointer;'
-    + 'background:rgba(148,163,184,0.10);border:1px dashed var(--border);font-size:11px;'
-    + (noteText ? 'color:var(--text2)' : 'color:var(--green);font-weight:600') + '" '
+    + 'style="flex:0 0 210px;min-width:180px;padding:9px 11px;border-radius:8px;cursor:pointer;'
+    + 'background:rgba(148,163,184,0.10);border:1px dashed var(--border);display:flex;flex-direction:column" '
     + 'title="Click to add or edit a note for this project">'
-    + label
-    + (noteDate ? '<span style="float:right;font-size:10px;color:var(--text3)">' + noteDate + '</span>' : '')
+    + '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">'
+    + (pending ? '⏰ ' : '🗒 ') + 'Note</div>'
+    + body
     + '</div>';
 }
 
@@ -6652,7 +6700,9 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
     + '</div>';
 
   const installCard = r =>
-    '<div style="border-left:3px solid var(--teal);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0">'
+    '<div style="border-left:3px solid var(--teal);padding:10px 14px;margin-bottom:8px;background:var(--bg2);border-radius:0 8px 8px 0;display:flex;gap:14px;align-items:stretch;flex-wrap:wrap">'
+    // ── Left column: project details ──
+    + '<div style="flex:1 1 460px;min-width:0">'
     + '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">'
     + '<div style="font-weight:700;color:var(--text)">🔧 ' + (r['المنتج'] || 'Installation') + '</div>'
     + '<div><span class="badge badge-teal">' + (r['الحالة'] || '—') + '</span></div>'
@@ -6667,7 +6717,9 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
     + '<div>📆 Install Days: <b style="color:var(--text)">' + (r['إجمالي ايام التركيب'] || '—') + '</b></div>'
     + '<div>✅ Delivered: <b style="color:var(--text)">' + (r['تاريخ التسليم'] || '—') + '</b></div>'
     + '</div>'
-    + _journeyNoteRow(r['رقم المشروع'], r['العميل'] || name)
+    + '</div>'
+    // ── Right column: note panel ──
+    + _journeyNotePanel(r['رقم المشروع'], r['العميل'] || name)
     + '</div>';
 
   // Distinct order codes/IDs across everything matched — tells us whether
@@ -6785,7 +6837,7 @@ function showPage(name) {
     }, 50);
   }
   // Year comparison page: always re-render (data-driven, no caching needed)
-  if(name==='yearcompare') setTimeout(renderYearCompare, 150);
+  if(name==='yearcompare') setTimeout(function(){ renderYearCompare(); renderLongRunTrend(); }, 150);
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
@@ -9104,6 +9156,321 @@ document.addEventListener('fullscreenchange', function() {
 // ============================================================
 // YEAR COMPARISON PAGE (2025 vs 2026)
 // ============================================================
+// ════════════════════════════════════════════════════════════════════════════
+// HISTORICAL DATA 2021–2024  —  source: "Years Comparison" sheet
+// (MEGA SHEET, 2023 sales annual presentation data)
+// Volume + rates only. Static historical figures — safe to hard-code.
+// NOTE: Dec-2024 reconciled to 64 (year total 871). The monthly row in the
+// sheet showed 65/872, but the declined, achieved and summary tables all
+// state 871 — 871 is used here.
+// ════════════════════════════════════════════════════════════════════════════
+const KITCHINO_HISTORY = {
+  source: 'Years Comparison sheet — 2021-2024',
+  years: ['2021','2022','2023','2024'],
+  // Monthly measure volume, Jan → Dec
+  measures: {
+    '2021': [48,44,54,39,39,64,45,44,55,85,86,52],
+    '2022': [62,59,44,24,38,78,49,50,58,103,80,53],
+    '2023': [61,63,80,38,80,49,81,74,73,69,106,74],
+    '2024': [134,51,66,44,75,55,59,67,74,116,66,64]
+  },
+  // Monthly achieved (contracted) — only tracked from 2023 onward
+  achieved: {
+    '2023': [23,23,21,9,15,5,12,8,9,22,38,25],
+    '2024': [50,14,9,2,10,5,10,14,13,37,20,11]
+  },
+  // Monthly declined / cancelled — only tracked from 2023 onward
+  declined: {
+    '2023': [5,6,9,4,8,5,15,8,8,10,8,2],
+    '2024': [23,22,34,25,9,3,4,3,0,25,13,0]
+  },
+  // Designer performance 2023 (the only year with designer detail in this sheet)
+  designers2023: [
+      {n:"Sherif Tarek",m:86,r:0.36},
+      {n:"Mohammad Fawzy",m:82,r:0.28},
+      {n:"Amr Zydan",m:82,r:0.1683},
+      {n:"Amira Kassem",m:77,r:0.1942},
+      {n:"Amira Farouk",m:69,r:0.1783},
+      {n:"Marwa El Fishawy",m:68,r:0.2917},
+      {n:"Basma Nouseer",m:58,r:0.1842},
+      {n:"Mohammad Ramadan",m:47,r:0.255},
+      {n:"Maryam Mohammad",m:46,r:0.2458},
+      {n:"Mohammad Atef",m:44,r:0.2857},
+      {n:"Monica Alfy",m:41,r:0.1917},
+      {n:"Esraa Ali",m:40,r:0.2517},
+      {n:"Maryet Emad",m:38,r:0.26},
+      {n:"Wael Mohsen",m:36,r:0.0917},
+      {n:"Amira EL Araby",m:14,r:0.3167},
+      {n:"Elham Fekry",m:7,r:0.4167},
+      {n:"Demiana Rafaat",m:6,r:0.25},
+      {n:"Nermeen Ayman",m:2,r:0},
+      {n:"Admin",m:2,r:null}
+  ]
+};
+
+// Maps historical name spellings onto the names used in the live data, so the
+// same person lines up across years. Anyone not in the live DESIGNERS list
+// after mapping is flagged as a former team member.
+const HIST_NAME_MAP = {
+  'mohammad fawzy':'Mohamed Fawzy',
+  'amira kassem':'Amira Kasem',
+  'marwa el fishawy':'Marwa Elfishawy',
+  'basma nouseer':'Basma Nosair',
+  'maryam mohammad':'Maryem Mohamed',
+  'mohammad atef':'Mohamed Atef',
+  'amira el araby':'Amira Araby',
+  'elham fekry':'Elham Fekry',
+  'admin':'إدارة'
+};
+
+function _histCanonical(name) {
+  const k = (name||'').trim().toLowerCase();
+  return HIST_NAME_MAP[k] || (name||'').trim();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LONG-RUN TREND 2021 → 2026  (historical 2021-24 + live 2025-26)
+// ════════════════════════════════════════════════════════════════════════════
+const _LR_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Builds {year: [12 monthly counts]} for the live years, from the engine rows.
+function _lrLiveMeasures() {
+  const out = {};
+  (ENGINE_CLEAN_ROWS || []).forEach(r => {
+    const y = r._year, mi = r._month;
+    if (!y || mi == null) return;
+    if (!out[y]) out[y] = new Array(12).fill(0);
+    out[y][mi]++;
+  });
+  return out;
+}
+
+// Live achieved (contracted) + declined (cancelled) per year.
+function _lrLiveRates() {
+  const out = {};
+  (ENGINE_CLEAN_ROWS || []).forEach(r => {
+    const y = r._year;
+    if (!y) return;
+    if (!out[y]) out[y] = { total:0, achieved:0, declined:0 };
+    out[y].total++;
+    if (r._contracted) out[y].achieved++;
+    if (r._cancelled)  out[y].declined++;
+  });
+  return out;
+}
+
+// Merges historical + live into one ordered series. Live years win if both
+// exist, since the engine holds the row-level truth.
+function _lrCombinedMeasures() {
+  const hist = KITCHINO_HISTORY.measures, live = _lrLiveMeasures();
+  const years = [...new Set([...Object.keys(hist), ...Object.keys(live)])].sort();
+  const out = {};
+  years.forEach(y => { out[y] = live[y] || hist[y]; });
+  return out;
+}
+
+// The current calendar year is still in progress — flag it so partial totals
+// aren't read as a decline.
+function _lrPartialYear() { return String(new Date().getFullYear()); }
+
+function _lrRenderKPIs(combined) {
+  const el = document.getElementById('lr-kpi-grid');
+  if (!el) return;
+  const years   = Object.keys(combined).sort();
+  const partial = _lrPartialYear();
+  const totals  = years.map(y => ({ y, t: combined[y].reduce((a,b)=>a+b,0) }));
+  const grand   = totals.reduce((a,b)=>a+b.t,0);
+
+  // Best year excludes the in-progress one
+  const complete = totals.filter(x => x.y !== partial);
+  const best     = complete.length ? complete.reduce((a,b)=> b.t>a.t?b:a) : totals[0];
+
+  // Peak month across all complete years
+  const monthTot = new Array(12).fill(0);
+  complete.forEach(x => combined[x.y].forEach((v,i)=> monthTot[i]+=v));
+  const peakIdx  = monthTot.indexOf(Math.max(...monthTot));
+
+  // Average conversion across years that track it
+  const rates = _lrAllRates();
+  const cvrs  = Object.values(rates).map(r => r.cvr).filter(v => v != null);
+  const avgCvr = cvrs.length ? (cvrs.reduce((a,b)=>a+b,0)/cvrs.length) : null;
+
+  const card = (label, value, note, color) =>
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;border-left:3px solid '+color+'">'
+    + '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">'+label+'</div>'
+    + '<div style="font-size:24px;font-weight:800;color:'+color+'">'+value+'</div>'
+    + '<div style="font-size:11px;color:var(--text3);margin-top:3px">'+note+'</div>'
+    + '</div>';
+
+  el.innerHTML =
+      card('Total Measures', grand.toLocaleString(), years[0]+'–'+years[years.length-1], 'var(--blue)')
+    + card('Best Year', best.t.toLocaleString(), best.y + ' — highest completed year', 'var(--green)')
+    + card('Peak Month', _LR_MONTHS[peakIdx], monthTot[peakIdx].toLocaleString()+' measures all-time', 'var(--gold)')
+    + card('Avg Conversion', avgCvr != null ? avgCvr.toFixed(1)+'%' : '—',
+           avgCvr != null ? 'across tracked years' : 'not tracked', 'var(--teal)');
+}
+
+// Conversion / cancellation per year: historical where recorded, live otherwise.
+function _lrAllRates() {
+  const out = {};
+  Object.keys(KITCHINO_HISTORY.achieved).forEach(y => {
+    const tot = KITCHINO_HISTORY.measures[y].reduce((a,b)=>a+b,0);
+    const ach = KITCHINO_HISTORY.achieved[y].reduce((a,b)=>a+b,0);
+    const dec = (KITCHINO_HISTORY.declined[y]||[]).reduce((a,b)=>a+b,0);
+    out[y] = { cvr: tot? +(ach/tot*100).toFixed(1) : null,
+               cxl: tot? +(dec/tot*100).toFixed(1) : null };
+  });
+  const live = _lrLiveRates();
+  Object.keys(live).forEach(y => {
+    const r = live[y];
+    out[y] = { cvr: r.total? +(r.achieved/r.total*100).toFixed(1) : null,
+               cxl: r.total? +(r.declined/r.total*100).toFixed(1) : null };
+  });
+  return out;
+}
+
+function _lrRenderYearChart(combined) {
+  const cv = document.getElementById('lr-chart-years');
+  if (!cv || typeof Chart === 'undefined') return;
+  const years   = Object.keys(combined).sort();
+  const partial = _lrPartialYear();
+  const totals  = years.map(y => combined[y].reduce((a,b)=>a+b,0));
+  // In-progress year shown in a lighter tone so it isn't misread as a drop
+  const colors  = years.map(y => y === partial ? 'rgba(251,191,36,0.55)' : 'rgba(59,130,246,0.75)');
+  makeChart('lr-chart-years', {
+    type:'bar',
+    data:{ labels: years.map(y => y===partial ? y+' (partial)' : y),
+           datasets:[{ label:'Measures', data: totals, backgroundColor: colors,
+                       borderRadius:6, borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label: c => c.parsed.y.toLocaleString()+' measures' } } },
+      scales:{ y:{ beginAtZero:true, ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(148,163,184,0.12)' } },
+               x:{ ticks:{ color:'#94a3b8' }, grid:{ display:false } } } }
+  });
+}
+
+function _lrRenderHeatmap(combined) {
+  const box = document.getElementById('lr-heatmap');
+  if (!box) return;
+  const years   = Object.keys(combined).sort();
+  const partial = _lrPartialYear();
+  let max = 0;
+  years.forEach(y => combined[y].forEach(v => { if (v > max) max = v; }));
+
+  let h = '<table style="width:100%;border-collapse:separate;border-spacing:3px;min-width:620px">';
+  h += '<tr><td style="font-size:10px;color:var(--text3)"></td>'
+     + _LR_MONTHS.map(m => '<td style="font-size:10px;color:var(--text3);text-align:center;padding-bottom:2px">'+m+'</td>').join('')
+     + '<td style="font-size:10px;color:var(--text3);text-align:center;padding-left:6px">Total</td></tr>';
+
+  years.forEach(y => {
+    const row = combined[y];
+    const tot = row.reduce((a,b)=>a+b,0);
+    h += '<tr><td style="font-size:11px;font-weight:700;color:var(--text2);padding-right:6px;white-space:nowrap">'
+       + y + (y===partial?' <span style="font-weight:400;color:var(--text3)">(partial)</span>':'') + '</td>';
+    row.forEach((v,i) => {
+      // 0 in the in-progress year means "not yet", not "zero business"
+      const future = (y === partial && v === 0);
+      const ratio  = max ? v/max : 0;
+      const bg     = future ? 'transparent' : 'rgba(59,130,246,'+(0.10 + ratio*0.75).toFixed(2)+')';
+      const txt    = future ? 'var(--text3)' : (ratio > 0.55 ? '#fff' : 'var(--text2)');
+      h += '<td title="'+_LR_MONTHS[i]+' '+y+': '+(future?'not yet recorded':v+' measures')+'" '
+         + 'style="text-align:center;font-size:11px;font-weight:600;padding:7px 4px;border-radius:5px;'
+         + 'background:'+bg+';color:'+txt+';'+(future?'border:1px dashed var(--border)':'')+'">'
+         + (future ? '·' : v) + '</td>';
+    });
+    h += '<td style="text-align:center;font-size:11px;font-weight:800;color:var(--text1);padding-left:6px">'+tot.toLocaleString()+'</td></tr>';
+  });
+  h += '</table>';
+  box.innerHTML = h;
+}
+
+function _lrRenderRatesChart() {
+  const cv = document.getElementById('lr-chart-rates');
+  if (!cv || typeof Chart === 'undefined') return;
+  const rates = _lrAllRates();
+  const years = Object.keys(rates).sort();
+  makeChart('lr-chart-rates', {
+    type:'line',
+    data:{ labels: years, datasets:[
+      { label:'Conversion %',   data: years.map(y=>rates[y].cvr),
+        borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)',
+        tension:0.3, fill:true, spanGaps:true, pointRadius:4 },
+      { label:'Cancellation %', data: years.map(y=>rates[y].cxl),
+        borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.10)',
+        tension:0.3, fill:true, spanGaps:true, pointRadius:4 }
+    ]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#94a3b8', boxWidth:12 } },
+        tooltip:{ callbacks:{ label: c => c.dataset.label+': '+(c.parsed.y==null?'not tracked':c.parsed.y+'%') } } },
+      scales:{ y:{ beginAtZero:true, ticks:{ color:'#94a3b8', callback:v=>v+'%' },
+                   grid:{ color:'rgba(148,163,184,0.12)' } },
+               x:{ ticks:{ color:'#94a3b8' }, grid:{ display:false } } } }
+  });
+}
+
+function _lrRenderDesigners() {
+  const box = document.getElementById('lr-designer-table');
+  if (!box) return;
+  const hideFormer = !!document.getElementById('lr-hide-former')?.checked;
+
+  // Live roster, lower-cased, to decide who is still with the company
+  const liveSet = new Set((DESIGNERS||[]).map(d => (d||'').trim().toLowerCase()));
+
+  const rows = KITCHINO_HISTORY.designers2023
+    .map(d => {
+      const canon  = _histCanonical(d.n);
+      const isCurrent = liveSet.has(canon.toLowerCase());
+      return { ...d, canon, isCurrent };
+    })
+    .filter(d => !hideFormer || d.isCurrent);
+
+  if (!rows.length) { box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No designers to show</div>'; return; }
+
+  const maxM = Math.max(...rows.map(r => r.m));
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        + '<thead><tr style="border-bottom:1px solid var(--border)">'
+        + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">#</th>'
+        + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Designer</th>'
+        + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Measures</th>'
+        + '<th style="padding:8px 10px;text-align:right;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Achievement</th>'
+        + '</tr></thead><tbody>';
+
+  rows.forEach((r,i) => {
+    const pct = r.r != null ? (r.r*100) : null;
+    const rc  = pct == null ? 'var(--text3)' : pct >= 30 ? 'var(--green)' : pct >= 20 ? 'var(--gold)' : 'var(--red)';
+    const bar = maxM ? (r.m/maxM*100) : 0;
+    h += '<tr style="border-bottom:1px solid var(--border);'+(r.isCurrent?'':'opacity:.62')+'">'
+      + '<td style="padding:8px 10px;color:var(--text3)">'+(i+1)+'</td>'
+      + '<td style="padding:8px 10px;color:var(--text1);font-weight:600;white-space:nowrap">'+r.canon
+      + (r.isCurrent ? '' : ' <span style="font-size:9px;font-weight:600;color:var(--text3);border:1px solid var(--border);border-radius:8px;padding:1px 6px;margin-left:4px">former</span>')
+      + '</td>'
+      + '<td style="padding:8px 10px;min-width:150px">'
+        + '<div style="display:flex;align-items:center;gap:8px">'
+        + '<div style="flex:1;height:6px;background:rgba(148,163,184,0.15);border-radius:3px;overflow:hidden">'
+        + '<div style="width:'+bar.toFixed(1)+'%;height:100%;background:var(--blue)"></div></div>'
+        + '<span style="font-weight:700;color:var(--text1);min-width:28px;text-align:right">'+r.m+'</span></div></td>'
+      + '<td style="padding:8px 10px;text-align:right;font-weight:700;color:'+rc+'">'
+        + (pct == null ? '—' : pct.toFixed(1)+'%') + '</td>'
+      + '</tr>';
+  });
+  h += '</tbody></table>';
+  box.innerHTML = h;
+}
+
+function renderLongRunTrend() {
+  try {
+    const combined = _lrCombinedMeasures();
+    _lrRenderKPIs(combined);
+    _lrRenderYearChart(combined);
+    _lrRenderHeatmap(combined);
+    _lrRenderRatesChart();
+    _lrRenderDesigners();
+  } catch (e) {
+    console.warn('[LongRun] render failed:', e.message);
+  }
+}
+
 function renderYearCompare() {
   var _dbg = document.getElementById("yc-kpi-grid");
   if (_dbg) _dbg.innerHTML = "<div style='color:#40c4ff;padding:10px'>Loading...</div>";
