@@ -2493,13 +2493,19 @@ if (_checkSession()) {
 
   <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Designer Performance — 2023</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Designer Performance</div>
+        <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden">
+          <button id="lr-desyr-2023" onclick="_lrSetDesYear('2023')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">2023</button>
+          <button id="lr-desyr-2024" onclick="_lrSetDesYear('2024')" style="padding:4px 14px;font-size:11px;border:none;background:var(--blue);color:#fff;font-weight:700;cursor:pointer">2024</button>
+        </div>
+      </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="lr-hide-former" onchange="_lrRenderDesigners()" style="cursor:pointer">
         Hide former team members
       </label>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Measures and achievement rate · former staff marked</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Measures, declined count and achievement rate · former staff marked</div>
     <div id="lr-designer-table" style="overflow-x:auto"></div>
   </div>
 </div>
@@ -9205,27 +9211,84 @@ const KITCHINO_HISTORY = {
       {n:"Demiana Rafaat",m:6,r:0.25},
       {n:"Nermeen Ayman",m:2,r:0},
       {n:"Admin",m:2,r:null}
+  ],
+  // Designer performance 2024 (source: "2024 Final Report" sheet)
+  designers2024: [
+      {n:"A. Kassem",m:69,r:0.1884,d:12},
+      {n:"M. Fawzy",m:68,r:0.1912,d:14},
+      {n:"M. Atef",m:66,r:0.2727,d:21},
+      {n:"Basma Nosser",m:61,r:0.2623,d:13},
+      {n:"A. Farouk",m:60,r:0.2333,d:8},
+      {n:"Monica Alfy",m:59,r:0.2542,d:12},
+      {n:"Marwa El Fishawy",m:58,r:0.1724,d:11},
+      {n:"A.Araby",m:57,r:0.386,d:14},
+      {n:"Amr Zydan",m:57,r:0.1579,d:8},
+      {n:"Sherif Tarek",m:55,r:0.2727,d:7},
+      {n:"Yasmin Khalil",m:51,r:0.1569,d:8},
+      {n:"Maryiam Mohammad",m:49,r:0.3265,d:7},
+      {n:"Yasmin Mansour",m:47,r:0.1277,d:10},
+      {n:"Esraa Ali",m:44,r:0.1591,d:10},
+      {n:"Elham Fikry",m:36,r:0.1667,d:8},
+      {n:"Mareyt Emad",m:33,r:0.2424,d:8}
   ]
 };
 
-// Maps historical name spellings onto the names used in the live data, so the
-// same person lines up across years. Anyone not in the live DESIGNERS list
-// after mapping is flagged as a former team member.
+// Maps historical name spellings onto the names the company uses today.
+// Confirmed by Nabila — note Farouk → Kafrawy is a genuine surname change,
+// not a spelling variant, so it can only be resolved by explicit mapping.
 const HIST_NAME_MAP = {
+  // 2023 sheet spellings
   'mohammad fawzy':'Mohamed Fawzy',
   'amira kassem':'Amira Kasem',
-  'marwa el fishawy':'Marwa Elfishawy',
+  'amira farouk':'Amira Kafrawy',
+  'marwa el fishawy':'Marwa Alfishawy',
   'basma nouseer':'Basma Nosair',
-  'maryam mohammad':'Maryem Mohamed',
+  'maryam mohammad':'Maryam Mohammad',
   'mohammad atef':'Mohamed Atef',
-  'amira el araby':'Amira Araby',
+  'amira el araby':'Amira Elaraby',
   'elham fekry':'Elham Fekry',
-  'admin':'إدارة'
+  'maryet emad':'Maryet Emad',
+  'admin':'إدارة',
+  // 2024 sheet spellings (initials)
+  'a. kassem':'Amira Kasem',
+  'a.kassem':'Amira Kasem',
+  'm. fawzy':'Mohamed Fawzy',
+  'm.fawzy':'Mohamed Fawzy',
+  'm. atef':'Mohamed Atef',
+  'm.atef':'Mohamed Atef',
+  'a. farouk':'Amira Kafrawy',
+  'a.farouk':'Amira Kafrawy',
+  'a.araby':'Amira Elaraby',
+  'a. araby':'Amira Elaraby',
+  'basma nosser':'Basma Nosair',
+  'maryiam mohammad':'Maryam Mohammad',
+  'elham fikry':'Elham Fekry',
+  'mareyt emad':'Maryet Emad'
 };
 
 function _histCanonical(name) {
-  const k = (name||'').trim().toLowerCase();
+  const k = (name||'').trim().toLowerCase().replace(/\s+/g,' ');
   return HIST_NAME_MAP[k] || (name||'').trim();
+}
+
+// Aggressive normalisation used ONLY for deciding current-vs-former. The live
+// sheets spell the same person differently (Elfishawy / Alfishawy / El Fishawy,
+// Mohamed / Mohammad, Maryam / Maryem), so exact string matching is unreliable.
+function _histKey(name) {
+  let s = (name||'').toString().trim().toLowerCase();
+  s = s.replace(/[.\-_']/g,' ').replace(/\s+/g,' ').trim();
+  // unify common transliteration variants
+  s = s.replace(/\bmoh?amm?ed\b|\bmohammad\b|\bmohamad\b/g,'mohamed');
+  s = s.replace(/\bmar[yi]{1,2}[aei]*m\b/g,'maryam');   // maryam/maryem/maryiam/mariam
+  s = s.replace(/\bmareyt\b/g,'maryet');
+  s = s.replace(/\bfikry\b/g,'fekry');
+  s = s.replace(/\bnou?ss?e?er\b|\bnosser\b|\bnoseer\b/g,'nosair');
+  s = s.replace(/\bkass?em\b/g,'kasem');
+  // Drop the el-/al- article from SURNAMES only. Stripping it everywhere would
+  // mangle first names that legitimately start with it (Elham → ham).
+  const parts = s.split(' ').filter(t => t && t !== 'el' && t !== 'al');
+  const out = parts.map((t,i) => i === 0 ? t : t.replace(/^(el|al)(?=.{3,})/, ''));
+  return out.join('').replace(/[^a-z؀-ۿ]/g,'');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -9413,26 +9476,31 @@ function _lrRenderDesigners() {
   const box = document.getElementById('lr-designer-table');
   if (!box) return;
   const hideFormer = !!document.getElementById('lr-hide-former')?.checked;
+  const year = window._lrDesYear || '2024';
+  const data = year === '2023' ? KITCHINO_HISTORY.designers2023 : KITCHINO_HISTORY.designers2024;
 
-  // Live roster, lower-cased, to decide who is still with the company
-  const liveSet = new Set((DESIGNERS||[]).map(d => (d||'').trim().toLowerCase()));
+  // Match on the normalised key, not the raw string — the live sheets spell
+  // several designers differently from the historical records.
+  const liveKeys = new Set((DESIGNERS||[]).map(d => _histKey(d)).filter(Boolean));
 
-  const rows = KITCHINO_HISTORY.designers2023
+  const rows = data
     .map(d => {
-      const canon  = _histCanonical(d.n);
-      const isCurrent = liveSet.has(canon.toLowerCase());
-      return { ...d, canon, isCurrent };
+      const canon = _histCanonical(d.n);
+      return { ...d, canon, isCurrent: liveKeys.has(_histKey(canon)) };
     })
     .filter(d => !hideFormer || d.isCurrent);
 
   if (!rows.length) { box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No designers to show</div>'; return; }
 
+  const hasDecl = rows.some(r => r.d != null);
   const maxM = Math.max(...rows.map(r => r.m));
+
   let h = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
         + '<thead><tr style="border-bottom:1px solid var(--border)">'
         + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">#</th>'
         + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Designer</th>'
         + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Measures</th>'
+        + (hasDecl ? '<th style="padding:8px 10px;text-align:right;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Declined</th>' : '')
         + '<th style="padding:8px 10px;text-align:right;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Achievement</th>'
         + '</tr></thead><tbody>';
 
@@ -9450,12 +9518,31 @@ function _lrRenderDesigners() {
         + '<div style="flex:1;height:6px;background:rgba(148,163,184,0.15);border-radius:3px;overflow:hidden">'
         + '<div style="width:'+bar.toFixed(1)+'%;height:100%;background:var(--blue)"></div></div>'
         + '<span style="font-weight:700;color:var(--text1);min-width:28px;text-align:right">'+r.m+'</span></div></td>'
+      + (hasDecl ? '<td style="padding:8px 10px;text-align:right;color:var(--text2)">'+(r.d==null?'—':r.d)+'</td>' : '')
       + '<td style="padding:8px 10px;text-align:right;font-weight:700;color:'+rc+'">'
         + (pct == null ? '—' : pct.toFixed(1)+'%') + '</td>'
       + '</tr>';
   });
   h += '</tbody></table>';
+
+  const tot = rows.reduce((a,b)=>a+b.m,0);
+  h += '<div style="font-size:10px;color:var(--text3);margin-top:8px">'
+     + rows.length + ' designers · ' + tot.toLocaleString() + ' measures'
+     + (hideFormer ? ' (former hidden)' : '') + '</div>';
   box.innerHTML = h;
+}
+
+function _lrSetDesYear(y) {
+  window._lrDesYear = y;
+  ['2023','2024'].forEach(function(yy){
+    var b = document.getElementById('lr-desyr-'+yy);
+    if (!b) return;
+    var on = (yy === y);
+    b.style.background = on ? 'var(--blue)' : 'transparent';
+    b.style.color      = on ? '#fff' : 'var(--text2)';
+    b.style.fontWeight = on ? '700' : '500';
+  });
+  _lrRenderDesigners();
 }
 
 function renderLongRunTrend() {
