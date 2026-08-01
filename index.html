@@ -909,9 +909,10 @@ const _KA_ROLE_KEY      = 'kitchino_auth_role';
 // Each entry logs in with access to ONE page only. The master password above
 // still grants the full portal. To add a role: hash the password (SHA-256)
 // and map it to a page key (see the nav data-page attributes).
-//   KitchinoInstall@2025 → Installation Follow-up only
+//   KitchinoInstall@2025 → Installation Follow-up + Customer/Order Journey
+// Values are a comma-separated list of page keys.
 const _KA_ROLES = {
-  'e8818e9a02824a46eb96b3130368a23436b584de69340e34db116c009bd988c5': 'instfollowup'
+  'e8818e9a02824a46eb96b3130368a23436b584de69340e34db116c009bd988c5': 'instfollowup,journey'
 };
 
 // ── LOGOUT ────────────────────────────────────────────────────────────────
@@ -11251,21 +11252,30 @@ function _instRenderPage() {
   var ALIAS = {
     installation:'instfollowup', install:'instfollowup', instfollowup:'instfollowup',
     measures:'measures', followup:'followup', contracts:'followup',
-    journey:'journey', customerjourney:'journey',
+    journey:'journey', customerjourney:'journey', order:'journey',
     store:'store', receivables:'receivables', delivery:'receivables',
     executive:'executive', daily:'daily', ceo:'ceo', monthly:'monthly',
     designers:'designers', sources:'sources', geographic:'geographic',
     conversion:'conversion', ordertypes:'ordertypes', forecast:'forecast'
   };
-  var target = ALIAS[v] || v;
+
+  // Accepts "installation" or "installation,journey"
+  function parseList(str) {
+    return String(str || '').split(',')
+      .map(function (s) { return s.trim().toLowerCase(); })
+      .filter(Boolean)
+      .map(function (s) { return ALIAS[s] || s; })
+      .filter(function (p) { return !!document.getElementById('page-' + p); });
+  }
+
+  var allowed = parseList(v);
 
   function apply() {
-    var pg = document.getElementById('page-' + target);
-    if (!pg) { console.warn('[LockedView] unknown page:', target); return false; }
+    if (!allowed.length) return false;
 
-    // Sidebar: keep only the permitted entry, drop now-empty sections
+    // Sidebar: keep only the permitted entries, drop now-empty sections
     document.querySelectorAll('.nav-item[data-page]').forEach(function (el) {
-      if (el.dataset.page !== target) el.style.display = 'none';
+      el.style.display = (allowed.indexOf(el.dataset.page) > -1) ? '' : 'none';
     });
     document.querySelectorAll('.nav-section').forEach(function (sec) {
       var items = sec.querySelectorAll('.nav-item[data-page]');
@@ -11273,42 +11283,53 @@ function _instRenderPage() {
         return e.style.display !== 'none';
       });
       if (items.length && !anyVisible) sec.style.display = 'none';
+      else if (items.length) sec.style.display = '';
     });
 
     // Hide the mobile home shortcut — it would offer a way back to everything
     var mb = document.getElementById('menu-btn');
     if (mb) mb.style.display = 'none';
 
-    if (typeof window.showPage === 'function') window.showPage(target);
+    // Only jump to the landing page if the user isn't already on a permitted one
+    var current = document.querySelector('.page.active');
+    var currentKey = current ? current.id.replace('page-', '') : '';
+    if (allowed.indexOf(currentKey) === -1 && typeof window.showPage === 'function') {
+      window.showPage(allowed[0]);
+    }
     return true;
   }
 
   function lockNavigation() {
     if (typeof window.showPage !== 'function' || window.__navLocked) return;
     var orig = window.showPage;
-    window.showPage = function () { return orig(target); };   // always land here
+    // Navigation between permitted pages is fine; anything else lands on the first
+    window.showPage = function (n) {
+      return orig(allowed.indexOf(n) > -1 ? n : allowed[0]);
+    };
     if (typeof window.showMobileHome === 'function') {
-      window.showMobileHome = function () { return orig(target); };
+      window.showMobileHome = function () { return orig(allowed[0]); };
     }
     window.__navLocked = true;
   }
 
   function boot(tries) {
     tries = tries || 0;
-    var ok = apply();
+    apply();
     lockNavigation();
     // The main script renders asynchronously, so re-assert a few times
     if (tries < 12) setTimeout(function () { boot(tries + 1); }, 400);
   }
 
   // Exposed so the login screen can lock the view when a role password is used
-  window._kaApplyRole = function (page) {
-    if (!page) return;
-    target = ALIAS[page] || page;
+  window._kaApplyRole = function (pages) {
+    var list = parseList(pages);
+    if (!list.length) return;
+    allowed = list;
+    window.__navLocked = false;   // re-wrap with the new allow-list
     boot(0);
   };
 
-  if (!v) return;   // no ?view= parameter → nothing to do unless a role logs in
+  if (!allowed.length) return;   // no ?view= parameter → full portal unless a role logs in
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 250); });
