@@ -903,6 +903,16 @@ tbody td.muted { color:var(--text2); }
 const _KA_HASH = 'a68735303783660a4e389a15c01ba6f97c56b64025af96b0f5bfc59c62a5d641'; // Kitchino@2025
 const _KA_SESSION_HOURS = 8; // hours before re-login required
 const _KA_STORAGE_KEY   = 'kitchino_auth_ts';
+const _KA_ROLE_KEY      = 'kitchino_auth_role';
+
+// ── ROLE PASSWORDS ────────────────────────────────────────────────────────
+// Each entry logs in with access to ONE page only. The master password above
+// still grants the full portal. To add a role: hash the password (SHA-256)
+// and map it to a page key (see the nav data-page attributes).
+//   KitchinoInstall@2025 → Installation Follow-up only
+const _KA_ROLES = {
+  'e8818e9a02824a46eb96b3130368a23436b584de69340e34db116c009bd988c5': 'instfollowup'
+};
 
 async function _sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -918,13 +928,19 @@ function _checkSession() {
   } catch(e) { return false; }
 }
 
-function _grantAccess() {
+function _grantAccess(role) {
   const card = document.getElementById('login-card');
   card.classList.add('fade-out');
   setTimeout(() => {
     document.getElementById('kitchino-login-overlay').classList.add('hidden');
   }, 300);
-  try { localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString()); } catch(e) {}
+  try {
+    localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString());
+    if (role) localStorage.setItem(_KA_ROLE_KEY, role);
+    else      localStorage.removeItem(_KA_ROLE_KEY);
+  } catch(e) {}
+  // A role login is restricted to a single page
+  if (role && typeof window._kaApplyRole === 'function') window._kaApplyRole(role);
 }
 
 async function attemptLogin() {
@@ -937,9 +953,10 @@ async function attemptLogin() {
   err.classList.remove('visible');
   try {
     const hash = await _sha256(pw);
-    if (hash === _KA_HASH) {
+    const role = _KA_ROLES[hash] || null;
+    if (hash === _KA_HASH || role) {
       btn.textContent = '✓ Access Granted';
-      setTimeout(_grantAccess, 400);
+      setTimeout(function(){ _grantAccess(role); }, 400);
     } else {
       err.classList.add('visible');
       const card = document.getElementById('login-card');
@@ -971,7 +988,9 @@ document.getElementById('login-password').addEventListener('keydown', function(e
 
 // Check existing session on load
 if (_checkSession()) {
-  _grantAccess();
+  var _savedRole = null;
+  try { _savedRole = localStorage.getItem(_KA_ROLE_KEY); } catch(e) {}
+  _grantAccess(_savedRole);
 } else {
   // Focus the password input after a short delay
   setTimeout(() => {
@@ -11202,6 +11221,87 @@ function _instRenderPage() {
 
 
 
+</script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// LOCKED VIEW  —  ?view=installation
+// Restricts the portal to a single page for users who only need one section.
+// This is UX scoping, not a security boundary: the underlying Google Sheets
+// are published, so this hides pages rather than protecting data.
+// ════════════════════════════════════════════════════════════════════════════
+(function () {
+  var q = new URLSearchParams(window.location.search);
+  var v = (q.get('view') || '').trim().toLowerCase();
+
+  // Friendly aliases so the link can read naturally
+  var ALIAS = {
+    installation:'instfollowup', install:'instfollowup', instfollowup:'instfollowup',
+    measures:'measures', followup:'followup', contracts:'followup',
+    journey:'journey', customerjourney:'journey',
+    store:'store', receivables:'receivables', delivery:'receivables',
+    executive:'executive', daily:'daily', ceo:'ceo', monthly:'monthly',
+    designers:'designers', sources:'sources', geographic:'geographic',
+    conversion:'conversion', ordertypes:'ordertypes', forecast:'forecast'
+  };
+  var target = ALIAS[v] || v;
+
+  function apply() {
+    var pg = document.getElementById('page-' + target);
+    if (!pg) { console.warn('[LockedView] unknown page:', target); return false; }
+
+    // Sidebar: keep only the permitted entry, drop now-empty sections
+    document.querySelectorAll('.nav-item[data-page]').forEach(function (el) {
+      if (el.dataset.page !== target) el.style.display = 'none';
+    });
+    document.querySelectorAll('.nav-section').forEach(function (sec) {
+      var items = sec.querySelectorAll('.nav-item[data-page]');
+      var anyVisible = Array.prototype.some.call(items, function (e) {
+        return e.style.display !== 'none';
+      });
+      if (items.length && !anyVisible) sec.style.display = 'none';
+    });
+
+    // Hide the mobile home shortcut — it would offer a way back to everything
+    var mb = document.getElementById('menu-btn');
+    if (mb) mb.style.display = 'none';
+
+    if (typeof window.showPage === 'function') window.showPage(target);
+    return true;
+  }
+
+  function lockNavigation() {
+    if (typeof window.showPage !== 'function' || window.__navLocked) return;
+    var orig = window.showPage;
+    window.showPage = function () { return orig(target); };   // always land here
+    if (typeof window.showMobileHome === 'function') {
+      window.showMobileHome = function () { return orig(target); };
+    }
+    window.__navLocked = true;
+  }
+
+  function boot(tries) {
+    tries = tries || 0;
+    var ok = apply();
+    lockNavigation();
+    // The main script renders asynchronously, so re-assert a few times
+    if (tries < 12) setTimeout(function () { boot(tries + 1); }, 400);
+  }
+
+  // Exposed so the login screen can lock the view when a role password is used
+  window._kaApplyRole = function (page) {
+    if (!page) return;
+    target = ALIAS[page] || page;
+    boot(0);
+  };
+
+  if (!v) return;   // no ?view= parameter → nothing to do unless a role logs in
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 250); });
+  } else {
+    setTimeout(boot, 250);
+  }
+})();
 </script>
 </body>
 </html>
