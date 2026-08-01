@@ -2515,11 +2515,7 @@ if (_checkSession()) {
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Designer Performance</div>
-        <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden">
-          <button id="lr-desyr-all"  onclick="_lrSetDesYear('all')"  style="padding:4px 14px;font-size:11px;border:none;background:var(--blue);color:#fff;font-weight:700;cursor:pointer">All years</button>
-          <button id="lr-desyr-2023" onclick="_lrSetDesYear('2023')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">2023</button>
-          <button id="lr-desyr-2024" onclick="_lrSetDesYear('2024')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">2024</button>
-        </div>
+        <div id="lr-desyr-tabs" style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden"></div>
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
         <input type="checkbox" id="lr-hide-former" onchange="_lrRenderDesigners()" style="cursor:pointer">
@@ -9514,16 +9510,16 @@ function _lrLiveDesigners() {
 // Merges historical (2023, 2024) with live years into one row per designer.
 function _lrDesignerMatrix() {
   const rowsByKey = {};
-  const add = (rawName, year, m, rate) => {
+  const add = (rawName, year, m, rate, decl) => {
     const canon = _histCanonical(rawName);
     const k = _histKey(canon);
     if (!k) return;
     if (!rowsByKey[k]) rowsByKey[k] = { key:k, name:canon, years:{} };
-    rowsByKey[k].years[year] = { m:m, r:rate };
+    rowsByKey[k].years[year] = { m:m, r:rate, d:(decl==null?null:decl) };
   };
 
-  (KITCHINO_HISTORY.designers2023||[]).forEach(d => add(d.n, '2023', d.m, d.r));
-  (KITCHINO_HISTORY.designers2024||[]).forEach(d => add(d.n, '2024', d.m, d.r));
+  (KITCHINO_HISTORY.designers2023||[]).forEach(d => add(d.n, '2023', d.m, d.r, d.d));
+  (KITCHINO_HISTORY.designers2024||[]).forEach(d => add(d.n, '2024', d.m, d.r, d.d));
 
   const live = _lrLiveDesigners();
   Object.keys(live).forEach(k => {
@@ -9531,7 +9527,7 @@ function _lrDesignerMatrix() {
     if (!rowsByKey[k]) rowsByKey[k] = { key:k, name:rec.display, years:{} };
     Object.keys(rec.years).forEach(y => {
       const v = rec.years[y];
-      rowsByKey[k].years[y] = { m:v.m, r: v.m ? v.c/v.m : null };
+      rowsByKey[k].years[y] = { m:v.m, r: v.m ? v.c/v.m : null, d:null };
     });
   });
 
@@ -9607,23 +9603,23 @@ function _lrRenderDesignerMatrix() {
 function _lrRenderDesigners() {
   const box = document.getElementById('lr-designer-table');
   if (!box) return;
-  const hideFormer = !!document.getElementById('lr-hide-former')?.checked;
   const year = window._lrDesYear || 'all';
+  _lrBuildDesYearTabs();
   if (year === 'all') return _lrRenderDesignerMatrix();
-  const data = year === '2023' ? KITCHINO_HISTORY.designers2023 : KITCHINO_HISTORY.designers2024;
 
-  // Match on the normalised key, not the raw string — the live sheets spell
-  // several designers differently from the historical records.
+  const hideFormer = !!document.getElementById('lr-hide-former')?.checked;
   const liveKeys = new Set((DESIGNERS||[]).map(d => _histKey(d)).filter(Boolean));
 
-  const rows = data
-    .map(d => {
-      const canon = _histCanonical(d.n);
-      return { ...d, canon, isCurrent: liveKeys.has(_histKey(canon)) };
-    })
-    .filter(d => !hideFormer || d.isCurrent);
+  // Single-year view is drawn from the same merged matrix, so it works for
+  // historical AND live years without a separate code path.
+  let rows = _lrDesignerMatrix()
+    .filter(r => r.years[year])
+    .map(r => ({ name:r.name, isCurrent: liveKeys.has(r.key),
+                 m:r.years[year].m, r:r.years[year].r, d:r.years[year].d }));
+  if (hideFormer) rows = rows.filter(r => r.isCurrent);
+  rows.sort((a,b) => b.m - a.m);
 
-  if (!rows.length) { box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No designers to show</div>'; return; }
+  if (!rows.length) { box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No designer data for '+year+'</div>'; return; }
 
   const hasDecl = rows.some(r => r.d != null);
   const maxM = Math.max(...rows.map(r => r.m));
@@ -9643,7 +9639,7 @@ function _lrRenderDesigners() {
     const bar = maxM ? (r.m/maxM*100) : 0;
     h += '<tr style="border-bottom:1px solid var(--border);'+(r.isCurrent?'':'opacity:.62')+'">'
       + '<td style="padding:8px 10px;color:var(--text3)">'+(i+1)+'</td>'
-      + '<td style="padding:8px 10px;color:var(--text1);font-weight:600;white-space:nowrap">'+r.canon
+      + '<td style="padding:8px 10px;color:var(--text1);font-weight:600;white-space:nowrap">'+r.name
       + (r.isCurrent ? '' : ' <span style="font-size:9px;font-weight:600;color:var(--text3);border:1px solid var(--border);border-radius:8px;padding:1px 6px;margin-left:4px">former</span>')
       + '</td>'
       + '<td style="padding:8px 10px;min-width:150px">'
@@ -9657,24 +9653,36 @@ function _lrRenderDesigners() {
       + '</tr>';
   });
   h += '</tbody></table>';
-
   const tot = rows.reduce((a,b)=>a+b.m,0);
   h += '<div style="font-size:10px;color:var(--text3);margin-top:8px">'
      + rows.length + ' designers · ' + tot.toLocaleString() + ' measures'
-     + (hideFormer ? ' (former hidden)' : '') + '</div>';
+     + (year === _lrPartialYear() ? ' · year still in progress' : '')
+     + (hideFormer ? ' · former hidden' : '') + '</div>';
   box.innerHTML = h;
+}
+
+// Tabs are generated from the years that actually carry designer data, so
+// 2025/2026 appear automatically as the live sheet fills up.
+function _lrBuildDesYearTabs() {
+  const bar = document.getElementById('lr-desyr-tabs');
+  if (!bar) return;
+  const years = [...new Set(_lrDesignerMatrix().flatMap(r => Object.keys(r.years)))].sort();
+  const active = window._lrDesYear || 'all';
+  const partial = _lrPartialYear();
+  const btn = (val, label) => {
+    const on = (val === active);
+    return '<button onclick="_lrSetDesYear(\'' + val + '\')" '
+      + 'style="padding:4px 13px;font-size:11px;border:none;cursor:pointer;'
+      + 'background:' + (on ? 'var(--blue)' : 'transparent') + ';'
+      + 'color:' + (on ? '#fff' : 'var(--text2)') + ';'
+      + 'font-weight:' + (on ? '700' : '500') + '">' + label + '</button>';
+  };
+  bar.innerHTML = btn('all','All years')
+    + years.map(y => btn(y, y + (y===partial ? '*' : ''))).join('');
 }
 
 function _lrSetDesYear(y) {
   window._lrDesYear = y;
-  ['all','2023','2024'].forEach(function(yy){
-    var b = document.getElementById('lr-desyr-'+yy);
-    if (!b) return;
-    var on = (yy === y);
-    b.style.background = on ? 'var(--blue)' : 'transparent';
-    b.style.color      = on ? '#fff' : 'var(--text2)';
-    b.style.fontWeight = on ? '700' : '500';
-  });
   _lrRenderDesigners();
 }
 
