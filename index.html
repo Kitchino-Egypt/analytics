@@ -2516,8 +2516,9 @@ if (_checkSession()) {
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Designer Performance</div>
         <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden">
+          <button id="lr-desyr-all"  onclick="_lrSetDesYear('all')"  style="padding:4px 14px;font-size:11px;border:none;background:var(--blue);color:#fff;font-weight:700;cursor:pointer">All years</button>
           <button id="lr-desyr-2023" onclick="_lrSetDesYear('2023')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">2023</button>
-          <button id="lr-desyr-2024" onclick="_lrSetDesYear('2024')" style="padding:4px 14px;font-size:11px;border:none;background:var(--blue);color:#fff;font-weight:700;cursor:pointer">2024</button>
+          <button id="lr-desyr-2024" onclick="_lrSetDesYear('2024')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">2024</button>
         </div>
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
@@ -9304,6 +9305,7 @@ function _histKey(name) {
   s = s.replace(/\bfikry\b/g,'fekry');
   s = s.replace(/\bnou?ss?e?er\b|\bnosser\b|\bnoseer\b/g,'nosair');
   s = s.replace(/\bkass?em\b/g,'kasem');
+  s = s.replace(/\bz[iy]dan\b/g,'zydan');            // Zidan / Zydan
   // Drop the el-/al- article from SURNAMES only. Stripping it everywhere would
   // mangle first names that legitimately start with it (Elham → ham).
   const parts = s.split(' ').filter(t => t && t !== 'el' && t !== 'al');
@@ -9492,11 +9494,122 @@ function _lrRenderRatesChart() {
   });
 }
 
+// Per-designer stats for the LIVE years, keyed by the same normalised key used
+// for the historical records so the two merge cleanly.
+function _lrLiveDesigners() {
+  const out = {};   // key -> { year -> {m, contracted} }
+  (ENGINE_CLEAN_ROWS || []).forEach(r => {
+    const nm = (r.designer||'').trim();
+    if (!nm) return;
+    const y = r._year; if (!y) return;
+    const k = _histKey(nm);
+    if (!out[k]) out[k] = { display: nm, years: {} };
+    if (!out[k].years[y]) out[k].years[y] = { m:0, c:0 };
+    out[k].years[y].m++;
+    if (r._contracted) out[k].years[y].c++;
+  });
+  return out;
+}
+
+// Merges historical (2023, 2024) with live years into one row per designer.
+function _lrDesignerMatrix() {
+  const rowsByKey = {};
+  const add = (rawName, year, m, rate) => {
+    const canon = _histCanonical(rawName);
+    const k = _histKey(canon);
+    if (!k) return;
+    if (!rowsByKey[k]) rowsByKey[k] = { key:k, name:canon, years:{} };
+    rowsByKey[k].years[year] = { m:m, r:rate };
+  };
+
+  (KITCHINO_HISTORY.designers2023||[]).forEach(d => add(d.n, '2023', d.m, d.r));
+  (KITCHINO_HISTORY.designers2024||[]).forEach(d => add(d.n, '2024', d.m, d.r));
+
+  const live = _lrLiveDesigners();
+  Object.keys(live).forEach(k => {
+    const rec = live[k];
+    if (!rowsByKey[k]) rowsByKey[k] = { key:k, name:rec.display, years:{} };
+    Object.keys(rec.years).forEach(y => {
+      const v = rec.years[y];
+      rowsByKey[k].years[y] = { m:v.m, r: v.m ? v.c/v.m : null };
+    });
+  });
+
+  return Object.values(rowsByKey);
+}
+
+function _lrRenderDesignerMatrix() {
+  const box = document.getElementById('lr-designer-table');
+  if (!box) return;
+  const hideFormer = !!document.getElementById('lr-hide-former')?.checked;
+  const partial = _lrPartialYear();
+
+  const liveKeys = new Set((DESIGNERS||[]).map(d => _histKey(d)).filter(Boolean));
+  let rows = _lrDesignerMatrix().map(r => ({ ...r, isCurrent: liveKeys.has(r.key) }));
+  if (hideFormer) rows = rows.filter(r => r.isCurrent);
+
+  // Only show years that actually have designer-level data
+  const years = [...new Set(rows.flatMap(r => Object.keys(r.years)))].sort();
+  if (!years.length) { box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No designer data</div>'; return; }
+
+  // Trend uses the last two COMPLETE years — the in-progress year would
+  // otherwise read as a decline for everyone.
+  const complete = years.filter(y => y !== partial);
+  const tA = complete[complete.length-2], tB = complete[complete.length-1];
+
+  rows.forEach(r => {
+    const a = r.years[tA]?.m, b = r.years[tB]?.m;
+    r._sort = b ?? a ?? 0;
+    r.trend = (a != null && b != null && a > 0) ? ((b-a)/a*100) : null;
+  });
+  rows.sort((x,y) => y._sort - x._sort);
+
+  const cell = (v, isPartial) => {
+    if (!v) return '<td style="padding:7px 8px;text-align:center;color:var(--text3)">—</td>';
+    const pct = v.r != null ? (v.r*100) : null;
+    const pc  = pct == null ? 'var(--text3)' : pct >= 30 ? 'var(--green)' : pct >= 20 ? 'var(--gold)' : 'var(--red)';
+    return '<td style="padding:7px 8px;text-align:center' + (isPartial ? ';opacity:.75' : '') + '">'
+      + '<div style="font-weight:700;color:var(--text1);font-size:13px">' + v.m + '</div>'
+      + '<div style="font-size:9px;color:' + pc + ';font-weight:600">' + (pct==null?'—':pct.toFixed(0)+'%') + '</div>'
+      + '</td>';
+  };
+
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px">'
+        + '<thead><tr style="border-bottom:1px solid var(--border)">'
+        + '<th style="padding:8px 8px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">#</th>'
+        + '<th style="padding:8px 8px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Designer</th>'
+        + years.map(y => '<th style="padding:8px 8px;text-align:center;color:var(--text3);font-size:10px;letter-spacing:.7px">'
+            + y + (y===partial ? '<div style="font-size:8px;font-weight:400;text-transform:none">partial</div>' : '') + '</th>').join('')
+        + '<th style="padding:8px 8px;text-align:center;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Trend</th>'
+        + '</tr></thead><tbody>';
+
+  rows.forEach((r,i) => {
+    const t  = r.trend;
+    const tc = t == null ? 'var(--text3)' : t > 5 ? 'var(--green)' : t < -5 ? 'var(--red)' : 'var(--text3)';
+    const ta = t == null ? '—' : t > 5 ? '↑' : t < -5 ? '↓' : '→';
+    h += '<tr style="border-bottom:1px solid var(--border);'+(r.isCurrent?'':'opacity:.6')+'">'
+      + '<td style="padding:7px 8px;color:var(--text3)">'+(i+1)+'</td>'
+      + '<td style="padding:7px 8px;color:var(--text1);font-weight:600;white-space:nowrap">'+r.name
+      + (r.isCurrent ? '' : ' <span style="font-size:9px;font-weight:600;color:var(--text3);border:1px solid var(--border);border-radius:8px;padding:1px 6px">former</span>')
+      + '</td>'
+      + years.map(y => cell(r.years[y], y===partial)).join('')
+      + '<td style="padding:7px 8px;text-align:center;font-weight:700;color:'+tc+';white-space:nowrap">'
+        + ta + (t==null?'':' <span style="font-size:10px">'+(t>0?'+':'')+t.toFixed(0)+'%</span>') + '</td>'
+      + '</tr>';
+  });
+  h += '</tbody></table>'
+     + '<div style="font-size:10px;color:var(--text3);margin-top:8px">'
+     + 'Big number = measures · small number = achievement rate · Trend compares '
+     + tA + ' → ' + tB + (hideFormer ? ' · former hidden' : '') + '</div>';
+  box.innerHTML = h;
+}
+
 function _lrRenderDesigners() {
   const box = document.getElementById('lr-designer-table');
   if (!box) return;
   const hideFormer = !!document.getElementById('lr-hide-former')?.checked;
-  const year = window._lrDesYear || '2024';
+  const year = window._lrDesYear || 'all';
+  if (year === 'all') return _lrRenderDesignerMatrix();
   const data = year === '2023' ? KITCHINO_HISTORY.designers2023 : KITCHINO_HISTORY.designers2024;
 
   // Match on the normalised key, not the raw string — the live sheets spell
@@ -9554,7 +9667,7 @@ function _lrRenderDesigners() {
 
 function _lrSetDesYear(y) {
   window._lrDesYear = y;
-  ['2023','2024'].forEach(function(yy){
+  ['all','2023','2024'].forEach(function(yy){
     var b = document.getElementById('lr-desyr-'+yy);
     if (!b) return;
     var on = (yy === y);
