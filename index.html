@@ -914,6 +914,19 @@ const _KA_ROLES = {
   'e8818e9a02824a46eb96b3130368a23436b584de69340e34db116c009bd988c5': 'instfollowup'
 };
 
+// ── LOGOUT ────────────────────────────────────────────────────────────────
+// Clears the session and the role, then reloads so the login screen returns.
+function kitchinoLogout() {
+  if (!confirm('Sign out of the dashboard?')) return;
+  try {
+    localStorage.removeItem(_KA_STORAGE_KEY);
+    localStorage.removeItem(_KA_ROLE_KEY);
+  } catch (e) {}
+  // Drop any ?view= lock so the next person gets a clean login
+  var url = window.location.origin + window.location.pathname;
+  window.location.replace(url);
+}
+
 async function _sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -1082,6 +1095,7 @@ if (_checkSession()) {
       <div id="auto-refresh-countdown" title="Auto-refresh countdown" style="font-size:10px;color:var(--text3);white-space:nowrap;min-width:52px;text-align:center">⏱ 3:00</div>
       <button class="refresh-btn" onclick="exportPDF()">⬇ Export</button>
       <button class="refresh-btn" onclick="showReconciliationPanel()" style="background:rgba(52,168,83,0.82);color:var(--teal);border-color:var(--teal)" title="Data Audit Report">⚙ Audit</button>
+      <button class="refresh-btn" id="logout-btn" onclick="kitchinoLogout()" style="background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.45)" title="Sign out of the dashboard">⏻ Logout</button>
     </div>
   </div>
 
