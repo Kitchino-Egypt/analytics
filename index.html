@@ -10880,7 +10880,10 @@ var INST_PRODUCT_MERGE = {
   'غرفه نوم':'Bedroom', 'غرفة نوم':'Bedroom',
   'خزانه / دولاب':'Closet', 'خزانة / دولاب':'Closet', 'دولاب':'Closet',
   'مكتبة تلفزيون':'TV Unit', 'مكتبه تلفزيون':'TV Unit',
-  'تجاليد':'Cladding'
+  'تجاليد':'Cladding',
+  'كافى كورنر':'Coffee Corner', 'كافي كورنر':'Coffee Corner',
+  'غرفة اطفال':'Kids Room', 'غرفه اطفال':'Kids Room', 'غرفة أطفال':'Kids Room',
+  'غرفه ضيوف':'Living Room', 'غرفة ضيوف':'Living Room'
 };
 
 function _instProduct(raw) {
@@ -10978,8 +10981,9 @@ function _instRenderByProduct() {
   var rows = _instMainFiltered(_INST_DATA);
   var idx  = _instSpeedIndex(rows);
 
+  // Every product type is listed, including one-off jobs and Arabic-only
+  // labels that have no English equivalent — they show exactly as recorded.
   var products = Object.keys(idx)
-    .filter(function (p) { return idx[p].all.length >= 2; })
     .sort(function (a, b) { return _avg(idx[a].all) - _avg(idx[b].all); });
 
   if (!products.length) {
