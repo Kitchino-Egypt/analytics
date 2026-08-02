@@ -2083,6 +2083,11 @@ if (_checkSession()) {
         <div class="kpi-value" id="inst-total">—</div>
         <div class="kpi-sub" id="inst-total-sub">records</div>
       </div>
+      <div class="kpi-card teal" style="min-width:170px;flex:0 0 auto">
+        <div class="kpi-label">Avg Install Days</div>
+        <div class="kpi-value" id="inst-avg-days">—</div>
+        <div class="kpi-sub" id="inst-avg-days-sub">per order</div>
+      </div>
       <div id="inst-status-cards" style="display:flex;gap:10px;flex-wrap:wrap;flex:1"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
@@ -2121,6 +2126,21 @@ if (_checkSession()) {
         <div style="padding:4px 0;min-height:280px"><canvas id="inst-canvas-curve" style="height:280px"></canvas></div>
       </div>
     </div>
+    <!-- Technician speed by product type -->
+    <div class="chart-card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="chart-title">Technician Speed by Product Type</div>
+          <div class="chart-subtitle" id="inst-tech-sub">Median installation days · lower is faster</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="inst-tech-thin" onchange="_instRenderTechMatrix()" style="cursor:pointer">
+          Show combinations with fewer than 3 jobs
+        </label>
+      </div>
+      <div id="inst-tech-matrix" style="overflow-x:auto;margin-top:12px"></div>
+    </div>
+
     <div class="table-card">
       <div class="table-header">
         <div class="table-title">Installation Records</div>
@@ -10835,6 +10855,191 @@ function _instRenderCharts(rows) {
   }
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// INSTALLATION SPEED KPIs
+// ════════════════════════════════════════════════════════════════════════════
+// Product names are typed in Arabic by some staff and English by others. These
+// are the SAME product, so they are merged for reporting. Confirmed by Nabila:
+//   Kitchen = مطبخ · Dressing Room = دريسنج · Kitchenette = كتشنت · Laundry = لاندري
+// Add further pairs here as they're confirmed — anything not listed is left
+// exactly as recorded.
+var INST_PRODUCT_MERGE = {
+  'مطبخ':'Kitchen',
+  'دريسنج':'Dressing Room', 'دريسينج':'Dressing Room',
+  'كتشنت':'Kitchenette', 'كيتشينيت':'Kitchenette', 'kitchennette':'Kitchenette',
+  'لاندري':'Laundry Room'
+};
+
+function _instProduct(raw) {
+  var p = (raw || '').toString().trim();
+  if (!p) return '';
+  if (INST_PRODUCT_MERGE[p]) return INST_PRODUCT_MERGE[p];
+  var lower = p.toLowerCase();
+  if (INST_PRODUCT_MERGE[lower]) return INST_PRODUCT_MERGE[lower];
+  return p;   // not a confirmed pair — leave as recorded
+}
+
+// Parses the install-days value. Returns null for anything unusable:
+// blanks, text, and negatives (a negative duration is a data-entry error).
+// Zero is also excluded — it reads as "not recorded" rather than same-day.
+function _instDays(raw) {
+  if (raw === null || raw === undefined) return null;
+  var s = String(raw).trim().replace(/,/g, '');
+  if (!s) return null;
+  var n = parseFloat(s);
+  if (isNaN(n) || n <= 0) return null;
+  return n;
+}
+
+function _median(arr) {
+  if (!arr.length) return null;
+  var s = arr.slice().sort(function (a, b) { return a - b; });
+  var m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+// One order = one project number. A multi-item order (kitchen + TV unit) is a
+// single order, so its duration is the longest of its items — it isn't finished
+// until the last item is.
+function _instOrderDurations(rows) {
+  var byProject = {}, loose = [];
+  rows.forEach(function (r) {
+    var d = _instDays(r['إجمالي ايام التركيب']);
+    if (d === null) return;
+    var pn = (r['رقم المشروع'] || '').toString().trim();
+    if (!pn) { loose.push(d); return; }
+    byProject[pn] = (byProject[pn] === undefined) ? d : Math.max(byProject[pn], d);
+  });
+  return Object.keys(byProject).map(function (k) { return byProject[k]; }).concat(loose);
+}
+
+function _instRenderAvgDays(rows) {
+  var el = document.getElementById('inst-avg-days');
+  if (!el) return;
+  var sub = document.getElementById('inst-avg-days-sub');
+  var durations = _instOrderDurations(rows);
+
+  if (!durations.length) {
+    el.textContent = '—';
+    if (sub) sub.textContent = 'no install-days recorded';
+    return;
+  }
+  var med  = _median(durations);
+  var mean = durations.reduce(function (a, b) { return a + b; }, 0) / durations.length;
+
+  // Median leads: a handful of stalled jobs (up to ~1000 days) drag the mean
+  // far above what a normal install actually takes.
+  el.innerHTML = Math.round(med) + '<span style="font-size:13px;font-weight:600;opacity:.75"> days</span>';
+  if (sub) {
+    sub.innerHTML = 'median · avg ' + Math.round(mean) + 'd'
+      + '<span style="opacity:.7"> · ' + durations.length + ' orders</span>';
+  }
+}
+
+function _instRenderTechMatrix() {
+  var box = document.getElementById('inst-tech-matrix');
+  if (!box || !_INST_DATA) return;
+  var rows = _instMainFiltered(_INST_DATA);
+  var showThin = !!document.getElementById('inst-tech-thin')?.checked;
+  var MIN_N = showThin ? 1 : 3;
+
+  // technician -> product -> [durations]
+  var g = {}, prodTotals = {};
+  rows.forEach(function (r) {
+    var d = _instDays(r['إجمالي ايام التركيب']);
+    if (d === null) return;
+    var t = (r['فني التركيب'] || '').toString().trim();
+    var p = _instProduct(r['المنتج']);
+    if (!t || !p) return;
+    if (!g[t]) g[t] = {};
+    if (!g[t][p]) g[t][p] = [];
+    g[t][p].push(d);
+    prodTotals[p] = (prodTotals[p] || 0) + 1;
+  });
+
+  // Keep the products with the most data — a 30-column table helps nobody
+  var products = Object.keys(prodTotals)
+    .sort(function (a, b) { return prodTotals[b] - prodTotals[a]; })
+    .slice(0, 6);
+
+  var techs = Object.keys(g).filter(function (t) {
+    return products.some(function (p) { return g[t][p] && g[t][p].length >= MIN_N; });
+  });
+
+  if (!techs.length || !products.length) {
+    box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:14px">'
+      + 'Not enough installation-days data for this breakdown'
+      + (showThin ? '' : ' — tick the box above to include thinly-covered combinations') + '</div>';
+    return;
+  }
+
+  // Rank technicians by their overall median across the shown products
+  techs.forEach(function (t) {
+    var all = [];
+    products.forEach(function (p) { if (g[t][p]) all = all.concat(g[t][p]); });
+    g[t].__all = all;
+    g[t].__med = _median(all);
+  });
+  techs.sort(function (a, b) { return (g[a].__med || 1e9) - (g[b].__med || 1e9); });
+
+  // Colour each cell against that product's own median — comparing a kitchen
+  // to a shoe unit would be meaningless.
+  var prodMed = {};
+  products.forEach(function (p) {
+    var all = [];
+    techs.forEach(function (t) { if (g[t][p]) all = all.concat(g[t][p]); });
+    prodMed[p] = _median(all);
+  });
+
+  var h = '<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:640px">'
+        + '<thead><tr style="border-bottom:1px solid var(--border)">'
+        + '<th style="padding:8px 10px;text-align:left;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Technician</th>'
+        + products.map(function (p) {
+            return '<th style="padding:8px 8px;text-align:center;color:var(--text3);font-size:10px;letter-spacing:.5px">'
+              + p + '<div style="font-size:8px;font-weight:400;opacity:.7">' + prodTotals[p] + ' jobs</div></th>';
+          }).join('')
+        + '<th style="padding:8px 10px;text-align:center;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.7px">Overall</th>'
+        + '</tr></thead><tbody>';
+
+  techs.forEach(function (t, i) {
+    h += '<tr style="border-bottom:1px solid var(--border)">'
+      + '<td style="padding:7px 10px;color:var(--text1);font-weight:600;white-space:nowrap">'
+      + '<span style="color:var(--text3);font-weight:400;margin-right:6px">' + (i + 1) + '</span>' + t + '</td>';
+    products.forEach(function (p) {
+      var vals = g[t][p];
+      if (!vals || vals.length < MIN_N) {
+        h += '<td style="padding:7px 8px;text-align:center;color:var(--text3)">—</td>';
+        return;
+      }
+      var m = _median(vals);
+      var ref = prodMed[p] || m;
+      var col = m <= ref * 0.75 ? 'var(--green)' : m >= ref * 1.4 ? 'var(--red)' : 'var(--text1)';
+      var thin = vals.length < 3;
+      h += '<td style="padding:7px 8px;text-align:center' + (thin ? ';opacity:.55' : '') + '" '
+        + 'title="' + t + ' · ' + p + ': median ' + Math.round(m) + ' days over ' + vals.length + ' jobs">'
+        + '<div style="font-weight:700;color:' + col + '">' + Math.round(m) + '</div>'
+        + '<div style="font-size:9px;color:var(--text3)">n=' + vals.length + '</div></td>';
+    });
+    var om = g[t].__med;
+    h += '<td style="padding:7px 10px;text-align:center;font-weight:800;color:var(--text1)">'
+      + (om == null ? '—' : Math.round(om))
+      + '<div style="font-size:9px;font-weight:400;color:var(--text3)">n=' + g[t].__all.length + '</div></td>'
+      + '</tr>';
+  });
+  h += '</tbody></table>';
+
+  var used = 0; rows.forEach(function (r) { if (_instDays(r['إجمالي ايام التركيب']) !== null) used++; });
+  h += '<div style="font-size:10px;color:var(--text3);margin-top:9px;line-height:1.6">'
+     + 'Median days per job · <span style="color:var(--green)">green</span> = faster than typical for that product, '
+     + '<span style="color:var(--red)">red</span> = slower · n = jobs measured<br>'
+     + 'Based on ' + used + ' of ' + rows.length + ' records — blanks, zeros and negative values are excluded as unrecorded or erroneous.'
+     + '</div>';
+  box.innerHTML = h;
+
+  var sub = document.getElementById('inst-tech-sub');
+  if (sub) sub.textContent = 'Median installation days · lower is faster · ' + techs.length + ' technicians, top ' + products.length + ' product types';
+}
+
 function _instRender(allRows) {
   // Apply main portal filters first
   const rows = _instMainFiltered(allRows);
@@ -10848,6 +11053,9 @@ function _instRender(allRows) {
 
   _s('inst-total',         total.toLocaleString());
   _s('inst-total-sub',     total + ' installation records');
+
+  _instRenderAvgDays(rows);
+  _instRenderTechMatrix();
 
   // ── Dynamic status cards ─────────────────────────────────────────────────
   const STATUS_COLORS = {
