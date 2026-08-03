@@ -1684,7 +1684,7 @@ if (_checkSession()) {
       <div class="kpi-label">✅ Safe Zone</div>
       <div style="font-size:11px;color:inherit;opacity:0.75;margin-bottom:2px">(Contracts + اضافات)</div>
       <div class="kpi-value" id="fu-safe">—</div>
-      <div class="kpi-sub" id="fu-safe-sub">OTO → Delivered</div>
+      <div class="kpi-sub" id="fu-safe-sub">Technical Office → Delivered</div>
     </div>
   </div>
 
@@ -5433,10 +5433,10 @@ function renderFollowupTable() {
   _setFu('fu-overdue',       _fuOverdue);
   _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'not in safe zone');
   _setFu('fu-safe',          _fuSafe);
-  _setFu('fu-safe-sub',      _fuTotal > 0 ? Math.round(_fuSafe/_fuTotal*100)+'% in safe stages' : 'OTO → Delivered');
+  _setFu('fu-safe-sub',      _fuTotal > 0 ? Math.round(_fuSafe/_fuTotal*100)+'% in safe stages' : 'Technical Office → Delivered');
   // CRM Status Pipeline
   const _crmMap = {};
-  const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+  const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
   _mainFiltered.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
   // Populate designer dropdown from live data
   const _fuDes = [...new Set(_mainFiltered.map(c=>c.designer).filter(Boolean))].sort();
@@ -5458,7 +5458,7 @@ function renderFollowupTable() {
     {key:'electromechanic',  label:'ELECTROMECHANIC'},
     {key:'shablona',         label:'SHABLONA'},
     {key:'designer working', label:'DESIGNER WORK'},
-    {key:'oto',              label:'OTO'},
+    {key:'oto',              label:'TECHNICAL OFFICE'},
     {key:'auditing',         label:'AUDITING'},
     {key:'production',       label:'PRODUCTION'},
     {key:'final qc',         label:'FINAL QC'},
@@ -5498,7 +5498,7 @@ function renderFollowupTable() {
 }
 
 function openFuCrmModal(label, key) {
-  const _NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+  const _NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
   const rows = key === '__safe__'
     ? CONTRACTS_DATA.filter(c => c.safe)
     : CONTRACTS_DATA.filter(c => { let k=(c.crm||''). trim().toLowerCase(); return (_NORM[k]||k||'unknown')===key; });
@@ -5540,7 +5540,7 @@ function openFuSafeModal() {
       </div>
     </div>
     <div style="text-align:center;font-size:13px;color:var(--text-muted,#888);padding:8px 0">
-      Total Safe Zone: <strong style="color:var(--text)">${total}</strong> orders (OTO → Delivered)
+      Total Safe Zone: <strong style="color:var(--text)">${total}</strong> orders (Technical Office → Delivered)
     </div>`;
   const modal = document.getElementById('fu-safe-modal');
   if (modal) modal.style.display = 'flex';
@@ -5550,7 +5550,7 @@ function closeFuSafeModal() {
   if (modal) modal.style.display = 'none';
 }
 function openFuDesModal(designer) {
-  const _NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+  const _NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
   const rows = CONTRACTS_DATA.filter(c => c.designer === designer);
   // Title
   const titleEl = document.getElementById('fu-des-modal-title');
@@ -6199,7 +6199,7 @@ function renderScorecard() {
 
 function buildFollowupCharts() {
   (function(){
-    const _CN = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic'};
+    const _CN = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
     const normCrm = c => { const k=(c.crm||'').trim().toLowerCase(); return _CN[k]||k||'unknown'; };
     const delivered = CONTRACTS_DATA.filter(c => normCrm(c) === 'delivered').length;
     const inStore   = CONTRACTS_DATA.filter(c => normCrm(c) === 'store').length;
@@ -7188,7 +7188,11 @@ function _parseCSV(text) {
 }
 
 async function _fetchContracts() {
-  const SAFE_CRM_SET = new Set(['oto','auditing','production','final qc','store','recheck',
+  // "OTO" was renamed to "Technical Office" — both spellings must count as
+  // safe, otherwise renamed records silently drop out of the Safe Zone.
+  const SAFE_CRM_SET = new Set(['oto','technical office','tecnical office',
+    'المكتب الفني','المكتب الفنى','مكتب فني','مكتب فنى',
+    'auditing','production','final qc','store','recheck',
     'shipping','installation','delivered','اوتو','تسليم']);
 
   const _applyCSV = (rows) => {
