@@ -2088,6 +2088,11 @@ if (_checkSession()) {
         <div class="kpi-value" id="inst-avg-days">—</div>
         <div class="kpi-sub" id="inst-avg-days-sub">per order</div>
       </div>
+      <div class="kpi-card gold" style="min-width:190px;flex:0 0 auto">
+        <div class="kpi-label">Supply → Install Start</div>
+        <div class="kpi-value" id="inst-lag-days">—</div>
+        <div class="kpi-sub" id="inst-lag-days-sub">waiting time</div>
+      </div>
       <div id="inst-status-cards" style="display:flex;gap:10px;flex-wrap:wrap;flex:1"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
@@ -2126,6 +2131,13 @@ if (_checkSession()) {
         <div style="padding:4px 0;min-height:280px"><canvas id="inst-canvas-curve" style="height:280px"></canvas></div>
       </div>
     </div>
+    <!-- Supply → install start lag distribution -->
+    <div class="chart-card" style="margin-bottom:16px">
+      <div class="chart-title">Waiting Time — Supply to Installation Start</div>
+      <div class="chart-subtitle" id="inst-lag-sub">How long materials wait before installation begins</div>
+      <div id="inst-lag-dist" style="margin-top:14px"></div>
+    </div>
+
     <!-- KPI 1 — average days per order type -->
     <div class="chart-card" style="margin-bottom:16px">
       <div class="chart-title">Average Installation Days by Order Type</div>
@@ -6645,6 +6657,51 @@ function _journeyNotePanel(projectNo, customerName) {
     + '</div>';
 }
 
+// Aging for a single installation record. Measures elapsed time from the
+// supply date — when materials left the warehouse — which is when the clock
+// that matters operationally starts. The journey-duration card above covers
+// the whole lifecycle from first visit; this isolates the installation phase.
+function _journeyAging(r) {
+  const supply    = _journeyParseDate(r['تاريخ التوريد']);
+  const startInst = _journeyParseDate(r['تاريخ بداية التركيب']);
+  const delivered = _journeyParseDate(r['تاريخ التسليم']);
+  if (!supply && !startInst) return '';
+
+  const DAY = 86400000;
+  const today = new Date();
+  const days = (a, b) => (a && b) ? Math.round((b - a) / DAY) : null;
+
+  const toStart = days(supply, startInst);          // supply → install start
+  const toDone  = days(startInst || supply, delivered);
+  const age     = days(supply || startInst, delivered || today);
+
+  const pill = (label, val, colour) =>
+    '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(148,163,184,0.10);'
+    + 'border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;white-space:nowrap">'
+    + '<span style="color:var(--text3)">' + label + '</span>'
+    + '<b style="color:' + colour + '">' + val + '</b></span>';
+
+  let out = '';
+  if (age != null) {
+    // Over ~90 days without delivery is worth flagging
+    const col = delivered ? 'var(--green)'
+              : age > 90  ? 'var(--red)'
+              : age > 45  ? 'var(--gold)' : 'var(--text1)';
+    out += pill(delivered ? '✅ Completed in' : '⏳ Age since supply',
+                age + ' days', col);
+  }
+  if (toStart != null && toStart >= 0) out += pill('🚚 Supply → start', toStart + 'd', 'var(--text2)');
+  if (delivered && toDone != null && toDone >= 0) out += pill('🛠 Start → delivered', toDone + 'd', 'var(--text2)');
+  if (!delivered && startInst) {
+    const sinceStart = days(startInst, today);
+    if (sinceStart != null) out += pill('🔧 On site since start', sinceStart + 'd',
+                                        sinceStart > 60 ? 'var(--red)' : 'var(--text2)');
+  }
+  if (!out) return '';
+  return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;'
+    + 'border-top:1px dashed var(--border)">' + out + '</div>';
+}
+
 function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
   const sortByKey = (arr, key) => [...arr].sort((a, b) => String(a[key]||'').localeCompare(String(b[key]||'')));
   const vSorted = sortByKey(visits, 'visitDate');
@@ -6724,6 +6781,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
     + '<div>📆 Install Days: <b style="color:var(--text)">' + (r['إجمالي ايام التركيب'] || '—') + '</b></div>'
     + '<div>✅ Delivered: <b style="color:var(--text)">' + (r['تاريخ التسليم'] || '—') + '</b></div>'
     + '</div>'
+    + _journeyAging(r)
     + '</div>'
     // ── Right column: note panel ──
     + _journeyNotePanel(r['رقم المشروع'], r['العميل'] || name)
@@ -10962,6 +11020,86 @@ function _instOrderDurations(rows) {
   return Object.keys(byProject).map(function (k) { return byProject[k]; }).concat(loose);
 }
 
+// ── Supply → installation-start lag ───────────────────────────────────────
+// How long materials wait after leaving the warehouse before installation
+// actually begins. Distinct from install DURATION: this is dead time, and a
+// long tail here usually means scheduling or site-readiness problems.
+function _instLagDays(r) {
+  var sup = _journeyParseDate(r['تاريخ التوريد']);
+  var st  = _journeyParseDate(r['تاريخ بداية التركيب']);
+  if (!sup || !st) return null;
+  var d = Math.round((st - sup) / 86400000);
+  // A start before supply is a data-entry error, not a negative wait
+  return d < 0 ? null : d;
+}
+
+function _instRenderLag(rows) {
+  var el = document.getElementById('inst-lag-days');
+  var sub = document.getElementById('inst-lag-days-sub');
+  var box = document.getElementById('inst-lag-dist');
+
+  var gaps = [];
+  rows.forEach(function (r) { var d = _instLagDays(r); if (d !== null) gaps.push(d); });
+
+  if (!gaps.length) {
+    if (el) el.textContent = '—';
+    if (sub) sub.textContent = 'no supply/start dates';
+    if (box) box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No records with both a supply date and an installation start date</div>';
+    return;
+  }
+
+  var med  = _median(gaps);
+  var mean = gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length;
+  var within7 = gaps.filter(function (d) { return d <= 7; }).length;
+
+  if (el) el.innerHTML = Math.round(med) + '<span style="font-size:13px;font-weight:600;opacity:.75"> days</span>';
+  if (sub) sub.innerHTML = 'median · ' + Math.round(within7 / gaps.length * 100) + '% within a week'
+    + '<span style="opacity:.7"> · avg ' + Math.round(mean) + 'd</span>';
+
+  if (!box) return;
+
+  // Buckets chosen around the operational thresholds rather than even splits
+  var buckets = [
+    { label: 'Same day',      test: function (d) { return d === 0; },            colour: '#10b981' },
+    { label: '1–7 days',      test: function (d) { return d >= 1 && d <= 7; },   colour: '#22c55e' },
+    { label: '8–14 days',     test: function (d) { return d >= 8 && d <= 14; },  colour: '#eab308' },
+    { label: '15–30 days',    test: function (d) { return d >= 15 && d <= 30; }, colour: '#f59e0b' },
+    { label: '31–60 days',    test: function (d) { return d >= 31 && d <= 60; }, colour: '#f97316' },
+    { label: 'Over 60 days',  test: function (d) { return d > 60; },             colour: '#ef4444' }
+  ];
+  var counts = buckets.map(function (b) { return gaps.filter(b.test).length; });
+  var max = Math.max.apply(null, counts);
+
+  var html = buckets.map(function (b, i) {
+    var n = counts[i], pct = gaps.length ? (n / gaps.length * 100) : 0;
+    var w = max ? (n / max * 100) : 0;
+    return '<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="flex:0 0 110px;font-size:12px;color:var(--text1)">' + b.label + '</div>'
+      + '<div style="flex:1;min-width:70px;height:20px;background:rgba(148,163,184,0.12);border-radius:5px;overflow:hidden">'
+      +   '<div style="width:' + w.toFixed(1) + '%;height:100%;background:' + b.colour + ';border-radius:5px;opacity:.85"></div>'
+      + '</div>'
+      + '<div style="flex:0 0 92px;text-align:right"><span style="font-size:15px;font-weight:800;color:' + b.colour + '">'
+      +   pct.toFixed(1) + '%</span></div>'
+      + '<div style="flex:0 0 76px;text-align:right;font-size:11px;color:var(--text3)">' + n + ' orders</div>'
+      + '</div>';
+  }).join('');
+
+  var slow = counts[4] + counts[5];
+  html += '<div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">'
+    + 'Median wait <b style="color:var(--text1)">' + Math.round(med) + ' days</b> · '
+    + 'average <b style="color:var(--text1)">' + Math.round(mean) + ' days</b> '
+    + '(pulled up by a small number of very long waits)<br>'
+    + '<b style="color:var(--red)">' + slow + ' orders</b> waited more than a month'
+    + (gaps.length ? ' (' + Math.round(slow / gaps.length * 100) + '% of ' + gaps.length + ' measured)' : '')
+    + ' · records missing either date are excluded'
+    + '</div>';
+  box.innerHTML = html;
+
+  var s2 = document.getElementById('inst-lag-sub');
+  if (s2) s2.textContent = 'How long materials wait before installation begins · '
+    + gaps.length + ' of ' + rows.length + ' records have both dates';
+}
+
 function _instRenderAvgDays(rows) {
   var el = document.getElementById('inst-avg-days');
   if (!el) return;
@@ -11154,6 +11292,7 @@ function _instRender(allRows) {
   _s('inst-total-sub',     total + ' installation records');
 
   _instRenderAvgDays(rows);
+  _instRenderLag(rows);
   _instRenderByProduct();
   _instRenderTechByProduct();
 
