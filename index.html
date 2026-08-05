@@ -6657,49 +6657,73 @@ function _journeyNotePanel(projectNo, customerName) {
     + '</div>';
 }
 
-// Aging for a single installation record. Measures elapsed time from the
-// supply date — when materials left the warehouse — which is when the clock
-// that matters operationally starts. The journey-duration card above covers
-// the whole lifecycle from first visit; this isolates the installation phase.
-function _journeyAging(r) {
-  const supply    = _journeyParseDate(r['تاريخ التوريد']);
-  const startInst = _journeyParseDate(r['تاريخ بداية التركيب']);
-  const delivered = _journeyParseDate(r['تاريخ التسليم']);
-  if (!supply && !startInst) return '';
+// Installation timing scorecards, shown ABOVE the installation records.
+// Three separate clocks, which get conflated if you only look at one number:
+//   Supply → Start : dead time waiting for installation to begin
+//   On Site        : how long the crew has been / was working
+//   Total          : supply through to delivery (or to today if unfinished)
+function _journeyInstallScorecards(installs) {
+  if (!installs || !installs.length) return '';
+  const DAY = 86400000, today = new Date();
+  const diff = (a, b) => (a && b) ? Math.round((b - a) / DAY) : null;
 
-  const DAY = 86400000;
-  const today = new Date();
-  const days = (a, b) => (a && b) ? Math.round((b - a) / DAY) : null;
+  const lags = [], onsite = [], totals = [];
+  let anyOpen = false, allDone = true;
 
-  const toStart = days(supply, startInst);          // supply → install start
-  const toDone  = days(startInst || supply, delivered);
-  const age     = days(supply || startInst, delivered || today);
+  installs.forEach(r => {
+    const sup = _journeyParseDate(r['تاريخ التوريد']);
+    const st  = _journeyParseDate(r['تاريخ بداية التركيب']);
+    const dl  = _journeyParseDate(r['تاريخ التسليم']);
+    if (!dl) { anyOpen = true; allDone = false; }
 
-  const pill = (label, val, colour) =>
-    '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(148,163,184,0.10);'
-    + 'border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:11px;white-space:nowrap">'
-    + '<span style="color:var(--text3)">' + label + '</span>'
-    + '<b style="color:' + colour + '">' + val + '</b></span>';
+    const lag = diff(sup, st);
+    if (lag != null && lag >= 0) lags.push(lag);
 
-  let out = '';
-  if (age != null) {
-    // Over ~90 days without delivery is worth flagging
-    const col = delivered ? 'var(--green)'
-              : age > 90  ? 'var(--red)'
-              : age > 45  ? 'var(--gold)' : 'var(--text1)';
-    out += pill(delivered ? '✅ Completed in' : '⏳ Age since supply',
-                age + ' days', col);
+    const os = diff(st, dl || today);
+    if (os != null && os >= 0) onsite.push(os);
+
+    const tot = diff(sup || st, dl || today);
+    if (tot != null && tot >= 0) totals.push(tot);
+  });
+
+  if (!lags.length && !onsite.length && !totals.length) return '';
+
+  // With several items on one order, the order isn't finished until the last
+  // one is — so take the longest rather than an average.
+  const pick = a => a.length ? Math.max.apply(null, a) : null;
+  const lag = lags.length ? Math.round(lags.reduce((x, y) => x + y, 0) / lags.length) : null;
+  const os  = pick(onsite);
+  const tot = pick(totals);
+
+  const card = (label, value, note, colour) =>
+    '<div style="flex:1;min-width:150px;background:var(--bg2);border:1px solid var(--border);'
+    + 'border-left:3px solid ' + colour + ';border-radius:10px;padding:13px 15px">'
+    + '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">' + label + '</div>'
+    + '<div style="font-size:26px;font-weight:900;color:' + colour + ';line-height:1.05">' + value
+    + '<span style="font-size:12px;font-weight:600;opacity:.7"> days</span></div>'
+    + '<div style="font-size:11px;color:var(--text3);margin-top:4px">' + note + '</div>'
+    + '</div>';
+
+  let out = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">';
+
+  if (lag != null) {
+    // Beyond a month of waiting is the tail worth chasing
+    const c = lag <= 7 ? 'var(--green)' : lag <= 30 ? 'var(--gold)' : 'var(--red)';
+    out += card('🚚 Supply → Install Start', lag,
+      lag <= 7 ? 'started promptly' : lag <= 30 ? 'moderate wait' : 'long wait before starting', c);
   }
-  if (toStart != null && toStart >= 0) out += pill('🚚 Supply → start', toStart + 'd', 'var(--text2)');
-  if (delivered && toDone != null && toDone >= 0) out += pill('🛠 Start → delivered', toDone + 'd', 'var(--text2)');
-  if (!delivered && startInst) {
-    const sinceStart = days(startInst, today);
-    if (sinceStart != null) out += pill('🔧 On site since start', sinceStart + 'd',
-                                        sinceStart > 60 ? 'var(--red)' : 'var(--text2)');
+  if (os != null) {
+    const c = allDone ? 'var(--teal)' : os > 60 ? 'var(--red)' : 'var(--text1)';
+    out += card(allDone ? '🛠 Time On Site' : '🔧 On Site Since Start', os,
+      allDone ? 'start to delivery' : 'still in progress', c);
   }
-  if (!out) return '';
-  return '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;'
-    + 'border-top:1px dashed var(--border)">' + out + '</div>';
+  if (tot != null) {
+    const c = allDone ? 'var(--green)' : tot > 90 ? 'var(--red)' : 'var(--blue)';
+    out += card(allDone ? '✅ Supply → Delivered' : '⏳ Age Since Supply', tot,
+      allDone ? 'total installation time' : 'not yet delivered', c);
+  }
+  out += '</div>';
+  return out;
 }
 
 function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
@@ -6781,7 +6805,6 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
     + '<div>📆 Install Days: <b style="color:var(--text)">' + (r['إجمالي ايام التركيب'] || '—') + '</b></div>'
     + '<div>✅ Delivered: <b style="color:var(--text)">' + (r['تاريخ التسليم'] || '—') + '</b></div>'
     + '</div>'
-    + _journeyAging(r)
     + '</div>'
     // ── Right column: note panel ──
     + _journeyNotePanel(r['رقم المشروع'], r['العميل'] || name)
@@ -6833,7 +6856,9 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
       statusedVisits.length ? statusedVisits.map(measuresStageCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">No contract yet — still in the visit/discussion stage</div>');
   }
   out += section('🔧', 'Installation', iSorted.length,
-    iSorted.length ? iSorted.map(installCard).join('') : '<div style="color:var(--text3);font-size:12px;padding:8px 0">Not yet in installation</div>');
+    iSorted.length
+      ? _journeyInstallScorecards(iSorted) + iSorted.map(installCard).join('')
+      : '<div style="color:var(--text3);font-size:12px;padding:8px 0">Not yet in installation</div>');
 
   return out;
 }
