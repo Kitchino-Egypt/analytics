@@ -2877,7 +2877,7 @@ let MONTHS    = [];  // populated dynamically from ENGINE_CLEAN_ROWS after load
 let CONTRACTS_DATA   = [];   // populated by _fetchContracts() from ContractsConnector.gs
 let _contractsLoadedAt = null; // timestamp of last successful contracts fetch
 let CONTRACT_NOTES   = {};   // orderId -> {note, reminderDate, reminderSent, lastUpdated} — from ContractNotes.gs
-const NOTES_SCRIPT_URL = localStorage.getItem('kitchino_notes_url') || '';
+const NOTES_SCRIPT_URL = localStorage.getItem('kitchino_notes_url') || 'https://script.google.com/macros/s/AKfycbyibecnoUwNPub6JkHJLP2YGBuKiXPHsOahmRFw0n8ZN8sQvV6t895n_iW3NPDyc7FG/exec';
 // ════════════════════════════════════════════════════════════════════════════
 // KITCHINO BI ENGINE — Row-level aggregation (mirrors Google Data Studio)
 // ════════════════════════════════════════════════════════════════════════════
@@ -3461,10 +3461,96 @@ function gradientGreen(ctx, area) {
 
 const chartInstances = {};
 
+// ════════════════════════════════════════════════════════════════════════════
+// BAR VALUE LABELS — draws each bar's value at the end of the bar
+// ════════════════════════════════════════════════════════════════════════════
+// Written inline rather than pulling in chartjs-plugin-datalabels: one less
+// CDN dependency, and the placement rules below are specific to these charts.
+// Labels are suppressed automatically where they would be unreadable — too
+// many bars, bars too thin, or zero values.
+const BarValueLabels = {
+  id: 'barValueLabels',
+  afterDatasetsDraw(chart) {
+    if (chart.options && chart.options.plugins &&
+        chart.options.plugins.barValueLabels === false) return;
+
+    const ctx  = chart.ctx;
+    const area = chart.chartArea;
+    if (!area) return;
+
+    // Count visible bar points — a dense chart becomes unreadable with labels
+    let barPoints = 0;
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (!meta.hidden && meta.type === 'bar') barPoints += meta.data.length;
+    });
+    if (barPoints > 48) return;
+
+    const css = getComputedStyle(document.body);
+    const dim = (css.getPropertyValue('--text2') || '#94a3b8').trim();
+
+    chart.data.datasets.forEach((ds, di) => {
+      const meta = chart.getDatasetMeta(di);
+      if (meta.hidden || meta.type !== 'bar') return;
+
+      const horizontal = (chart.options.indexAxis === 'y');
+
+      meta.data.forEach((el, i) => {
+        const raw = ds.data[i];
+        const v = (raw && typeof raw === 'object') ? (horizontal ? raw.x : raw.y) : raw;
+        if (v == null || v === 0 || isNaN(v)) return;
+
+        // Skip when the bar is too thin to sit a number against
+        const thickness = horizontal ? (el.height || 0) : (el.width || 0);
+        if (thickness && thickness < 11) return;
+
+        const txt = (Math.abs(v) >= 1000)
+          ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })
+          : (Number.isInteger(v) ? String(v) : Number(v).toFixed(1));
+
+        ctx.save();
+        ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
+        ctx.fillStyle = dim;
+        ctx.textAlign = horizontal ? 'left' : 'center';
+        ctx.textBaseline = horizontal ? 'middle' : 'bottom';
+
+        let x = el.x, y = el.y;
+        if (horizontal) {
+          x = el.x + 5;
+          // Flip inside the bar if the label would overflow the plot area
+          if (x + ctx.measureText(txt).width > area.right) {
+            x = el.x - 5; ctx.textAlign = 'right'; ctx.fillStyle = '#fff';
+          }
+        } else {
+          y = el.y - 4;
+          if (y < area.top + 10) {          // tall bar — sit the label inside
+            y = el.y + 13; ctx.fillStyle = '#fff';
+          }
+        }
+        ctx.fillText(txt, x, y);
+        ctx.restore();
+      });
+    });
+  }
+};
+if (typeof Chart !== 'undefined') Chart.register(BarValueLabels);
+
 function makeChart(id, config) {
   const canvas = document.getElementById(id);
   if(!canvas) return;
   if(chartInstances[id]) { chartInstances[id].destroy(); }
+  // Extra top padding so value labels above the tallest bar aren't clipped
+  try {
+    const hasBar = (config.type === 'bar') ||
+      (config.data && config.data.datasets || []).some(d => d.type === 'bar');
+    if (hasBar) {
+      config.options = config.options || {};
+      config.options.layout = config.options.layout || {};
+      const p = config.options.layout.padding;
+      if (p == null) config.options.layout.padding = { top: 18 };
+      else if (typeof p === 'object' && p.top == null) p.top = 18;
+    }
+  } catch (e) {}
   chartInstances[id] = new Chart(canvas, config);
   return chartInstances[id];
 }
