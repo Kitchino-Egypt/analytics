@@ -2118,6 +2118,13 @@ if (_checkSession()) {
         <div class="kpi-sub" id="inst-notinst-customers-sub">not started</div>
       </div>
     </div>
+    <div style="margin:-8px 0 16px">
+      <button onclick="_instReconcilePrompt()"
+        style="background:none;border:1px dashed var(--border);color:var(--text3);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px">
+        🔍 Reconcile with sheet figures
+      </button>
+      <span style="font-size:11px;color:var(--text3);margin-left:8px">Tests every definition against all records to find which one matches your sheet</span>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card">
         <div class="chart-title">By Product Type</div>
@@ -2738,7 +2745,8 @@ if (_checkSession()) {
     </div>
     <!-- Table -->
     <div style="overflow-y:auto;flex:1;padding:0 24px 20px">
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
+      <div id="inst-modal-custom" style="display:none;padding-top:12px"></div>
+      <table id="inst-modal-table" style="width:100%;border-collapse:collapse;font-size:13px;margin-top:12px">
         <thead style="position:sticky;top:0;background:var(--card);z-index:1">
           <tr style="color:var(--text2);border-bottom:1px solid var(--border)">
             <th style="padding:8px 10px;text-align:left;font-weight:600">#</th>
@@ -10502,6 +10510,7 @@ function _instOpenModal(status) {
   document.getElementById('inst-modal-sub').textContent   = rows.length + ' project' + (rows.length !== 1 ? 's' : '') + ' with this status';
   document.getElementById('inst-modal-search').value      = '';
 
+  _instModalMode(false);
   _instModalRenderTable(rows);
 
   const modal = document.getElementById('inst-status-modal');
@@ -11441,14 +11450,27 @@ function _instWorkStarted(r) {
       || st.includes('ملاحظات التسليم');
 }
 
+// OPEN — per Nabila's rule (Aug 2026). An order is open if EITHER:
+//   (a) installation has started (تاريخ بداية التركيب filled) but has not been
+//       handed over (تاريخ التسليم still blank)  → work in progress, or
+//   (b) its status is موعد تركيب                  → booked, not yet started.
+// Note (b) is included even though it has no install date, because a scheduled
+// job is committed work. Anything handed over is closed regardless of status.
 function _instIsOpen(r) {
-  return !_instIsComplete(r) && !(r['تاريخ التسليم'] || '').trim();
+  const started  = !!(r['تاريخ بداية التركيب'] || '').trim();
+  const handed   = !!(r['تاريخ التسليم']       || '').trim();
+  const booked   = /موعد تركيب/.test((r['الحالة'] || '').trim());
+  return (started && !handed) || booked;
 }
 
+// NOT INSTALLED — per Nabila's rule (Aug 2026): material has been supplied
+// (تاريخ التوريد filled) but installation never started (تاريخ بداية التركيب blank).
+// NOTE this is deliberately NOT a subset of OPEN — the two sets overlap rather
+// than nest, so "not installed" can exceed or sit outside the open count.
+// It answers a different question: what has been delivered and is sitting idle.
 function _instNotInstalled(r) {
-  return _instIsOpen(r)
-      && !(r['تاريخ بداية التركيب'] || '').trim()
-      && !_instWorkStarted(r);
+  return !!(r['تاريخ التوريد'] || '').trim()
+      &&  !(r['تاريخ بداية التركيب'] || '').trim();
 }
 
 // Normalised customer key so spacing/case variants collapse to one customer
@@ -11469,12 +11491,11 @@ function _instRenderBacklog(rows) {
   const pct = n => total > 0 ? ' · ' + (n / total * 100).toFixed(0) + '% of ' + total : '';
 
   _s('inst-open-orders',        openRows.length.toLocaleString());
-  _s('inst-open-orders-sub',    'still open' + pct(openRows.length));
+  _s('inst-open-orders-sub',    'in progress or booked' + pct(openRows.length));
   _s('inst-open-customers',     openCust.toLocaleString());
   _s('inst-open-customers-sub', 'distinct customers');
   _s('inst-notinst-orders',     notInstRows.length.toLocaleString());
-  _s('inst-notinst-orders-sub', 'install not started' +
-      (openRows.length ? ' · ' + (notInstRows.length / openRows.length * 100).toFixed(0) + '% of open' : ''));
+  _s('inst-notinst-orders-sub', 'supplied, not started' + pct(notInstRows.length));
   _s('inst-notinst-customers',     notInstCust.toLocaleString());
   _s('inst-notinst-customers-sub', 'distinct customers waiting');
 }
@@ -11520,9 +11541,177 @@ function _instOpenBacklogModal(kind) {
   const search = document.getElementById('inst-modal-search');
   if (search) search.value = '';
 
+  _instModalMode(false);
   _instModalRenderTable(rows);
   const modal = document.getElementById('inst-status-modal');
   if (modal) modal.style.display = 'flex';
+}
+
+// Switches the installation modal between its normal row table and a free-form
+// panel (used by the reconciliation report).
+function _instModalMode(custom) {
+  const tbl  = document.getElementById('inst-modal-table');
+  const cus  = document.getElementById('inst-modal-custom');
+  const srch = document.getElementById('inst-modal-search');
+  if (tbl)  tbl.style.display = custom ? 'none' : '';
+  if (cus)  cus.style.display = custom ? 'block' : 'none';
+  if (srch && srch.parentElement) srch.parentElement.style.display = custom ? 'none' : '';
+}
+
+// ── RECONCILIATION TOOL ──────────────────────────────────────────────────────
+// Purpose: find which definition of "open" / "not installed" reproduces the
+// numbers from the sheet's own cards. Rather than guessing, this evaluates
+// every plausible combination against the real data and reports what matches.
+// Safe to leave in place — it only reads data and renders into a modal.
+
+function _instReconcile(tOpenOrd, tOpenCust, tNotOrd, tNotCust) {
+  if (!_INST_DATA) { alert('Installation data not loaded yet.'); return; }
+  const all = _INST_DATA;                       // ALL rows, filters ignored
+  const st  = r => (r['الحالة'] || '').trim();
+  const blank = v => !String(v || '').trim();
+  const hand  = r => r['تاريخ التسليم'];
+  const start = r => r['تاريخ بداية التركيب'];
+
+  // ── Candidate sets for what counts as a COMPLETED status ──────────────────
+  const COMPLETE = {
+    'C1 received-only': r => /تم الاس[تل]?لام|تم التسليم/.test(st(r)),
+    'C2 + customer receipt': r => /تم الاس[تل]?لام|تم التسليم|استلام\s*ال?عميل/.test(st(r)),
+    'C3 + admin warranty': r => /تم الاس[تل]?لام|تم التسليم|استلام\s*ال?عميل|تفعيل ضمان/.test(st(r)),
+    'C4 + inspection/notes': r => /تم الاس[تل]?لام|تم التسليم|استلام\s*ال?عميل|تفعيل ضمان|فتش|ملاحظات التسليم/.test(st(r))
+  };
+
+  // ── Candidate rules for OPEN ──────────────────────────────────────────────
+  const OPEN = {
+    'O1 status not complete':      (r, C) => !C(r),
+    'O2 handover date blank':      (r)    => blank(hand(r)),
+    'O3 both':                     (r, C) => !C(r) && blank(hand(r)),
+    'O4 either':                   (r, C) => !C(r) || blank(hand(r)),
+    // Nabila's stated rule: in-progress work plus booked jobs
+    'O5 (started & no handover) OR موعد تركيب':
+      (r) => (!blank(start(r)) && blank(hand(r))) || /موعد تركيب/.test(st(r)),
+    'O6 O5 but also excluding completed statuses':
+      (r, C) => ((!blank(start(r)) && blank(hand(r))) || /موعد تركيب/.test(st(r))) && !C(r)
+  };
+
+  // ── Candidate rules for NOT INSTALLED (evaluated inside the open set) ─────
+  const WORK = r => /تركيب رخام|استكمال تركيب|فتش|ملاحظات التسليم/.test(st(r));
+  const supp = r => r['تاريخ التوريد'];
+  const NOTINST = {
+    // Nabila's stated rule — evaluated across ALL rows, not just open ones
+    'N1 supplied & no start (all rows)':  r => !blank(supp(r)) && blank(start(r)),
+    'N2 same, but open only':             r => !blank(supp(r)) && blank(start(r)),
+    'N3 same, excluding handed over':     r => !blank(supp(r)) && blank(start(r)) && blank(hand(r)),
+    'N4 same, excl. handed over + work':  r => !blank(supp(r)) && blank(start(r)) && blank(hand(r)) && !WORK(r),
+    'N5 no start date only':              r => blank(start(r)),
+    'N6 status = موعد تركيب':              r => /موعد تركيب/.test(st(r))
+  };
+
+  const custKey = r => (r['العميل'] || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const uniq = rows => new Set(rows.map(custKey).filter(Boolean)).size;
+
+  const results = [];
+  Object.entries(COMPLETE).forEach(([cName, C]) => {
+    Object.entries(OPEN).forEach(([oName, O]) => {
+      const openRows = all.filter(r => O(r, C));
+      Object.entries(NOTINST).forEach(([nName, N]) => {
+        const base = (nName === 'N2 same, but open only') ? openRows : all;
+        const notRows = base.filter(N);
+        const v = [openRows.length, uniq(openRows), notRows.length, uniq(notRows)];
+        const t = [tOpenOrd, tOpenCust, tNotOrd, tNotCust];
+        const diff = v.map((x, i) => x - t[i]);
+        results.push({
+          combo: cName + ' | ' + oName + ' | ' + nName,
+          v: v, diff: diff,
+          err: diff.reduce((a, b) => a + Math.abs(b), 0)
+        });
+      });
+    });
+  });
+  results.sort((a, b) => a.err - b.err);
+
+  // ── Data profile: the raw facts needed to reason about any mismatch ───────
+  const statCounts = {};
+  all.forEach(r => { const k = st(r) || '(blank)'; statCounts[k] = (statCounts[k] || 0) + 1; });
+  const profile = {
+    'Total rows':                    all.length,
+    'Distinct customers':            uniq(all),
+    'Blank تاريخ التسليم':          all.filter(r => blank(hand(r))).length,
+    'Blank تاريخ بداية التركيب':    all.filter(r => blank(start(r))).length,
+    'Blank both dates':              all.filter(r => blank(hand(r)) && blank(start(r))).length,
+    'Has start but no handover':     all.filter(r => !blank(start(r)) && blank(hand(r))).length,
+    'Has handover but no start':     all.filter(r => !blank(start(r)) === false && !blank(hand(r))).length
+  };
+
+  const esc = x => String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const cell = 'padding:6px 9px;border-bottom:1px solid var(--border)';
+  const dcell = d => '<td style="' + cell + ';text-align:right;color:' +
+      (d === 0 ? 'var(--teal)' : Math.abs(d) <= 3 ? '#f59e0b' : 'var(--red)') + '">' +
+      (d > 0 ? '+' : '') + d + '</td>';
+
+  const exact = results.filter(r => r.err === 0);
+  let html = '<div style="font-size:13px;line-height:1.6;margin-bottom:14px">'
+    + '<b>Target:</b> ' + tOpenOrd + ' open orders · ' + tOpenCust + ' open customers · '
+    + tNotOrd + ' not-installed orders · ' + tNotCust + ' not-installed customers<br>'
+    + (exact.length
+        ? '<span style="color:var(--teal)"><b>' + exact.length + ' exact match' + (exact.length>1?'es':'') + ' found.</b></span>'
+        : '<span style="color:#f59e0b"><b>No exact match.</b> Closest combinations below — the diff columns show where each one drifts.</span>')
+    + '</div>';
+
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px">'
+    + '<thead><tr style="background:var(--card2)">'
+    + '<th style="' + cell + ';text-align:left">Definition (complete | open | not-installed)</th>'
+    + '<th style="' + cell + '">Open ord</th><th style="' + cell + '">Open cust</th>'
+    + '<th style="' + cell + '">NotInst ord</th><th style="' + cell + '">NotInst cust</th>'
+    + '<th style="' + cell + '">Δ total</th></tr></thead><tbody>';
+  results.slice(0, 15).forEach(r => {
+    html += '<tr' + (r.err === 0 ? ' style="background:rgba(20,184,166,.10)"' : '') + '>'
+      + '<td style="' + cell + '">' + esc(r.combo) + '</td>'
+      + '<td style="' + cell + ';text-align:right">' + r.v[0] + ' ' + (r.diff[0]?'<span style="color:var(--text3)">('+(r.diff[0]>0?'+':'')+r.diff[0]+')</span>':'') + '</td>'
+      + '<td style="' + cell + ';text-align:right">' + r.v[1] + ' ' + (r.diff[1]?'<span style="color:var(--text3)">('+(r.diff[1]>0?'+':'')+r.diff[1]+')</span>':'') + '</td>'
+      + '<td style="' + cell + ';text-align:right">' + r.v[2] + ' ' + (r.diff[2]?'<span style="color:var(--text3)">('+(r.diff[2]>0?'+':'')+r.diff[2]+')</span>':'') + '</td>'
+      + '<td style="' + cell + ';text-align:right">' + r.v[3] + ' ' + (r.diff[3]?'<span style="color:var(--text3)">('+(r.diff[3]>0?'+':'')+r.diff[3]+')</span>':'') + '</td>'
+      + dcell(r.err) + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  html += '<div style="font-weight:600;margin-bottom:8px">Data profile</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px"><tbody>';
+  Object.entries(profile).forEach(([k, v]) => {
+    html += '<tr><td style="' + cell + ';direction:rtl;text-align:right">' + esc(k) + '</td>'
+         +  '<td style="' + cell + ';text-align:right;font-weight:600">' + v + '</td></tr>';
+  });
+  html += '</tbody></table>';
+
+  html += '<div style="font-weight:600;margin-bottom:8px">Status distribution (all rows)</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>';
+  Object.entries(statCounts).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
+    html += '<tr><td style="' + cell + ';direction:rtl;text-align:right">' + esc(k) + '</td>'
+         +  '<td style="' + cell + ';text-align:right;font-weight:600">' + v + '</td></tr>';
+  });
+  html += '</tbody></table>';
+
+  const t = document.getElementById('inst-modal-title');
+  if (t) { t.textContent = '🔍  Reconciliation — matching the sheet\'s figures'; t.style.color = 'var(--teal)'; }
+  const sub = document.getElementById('inst-modal-sub');
+  if (sub) sub.textContent = results.length + ' definition combinations tested against ' + all.length + ' records (filters ignored)';
+  _instModalMode(true);
+  const body = document.getElementById('inst-modal-custom');
+  if (body) body.innerHTML = html;
+  const modal = document.getElementById('inst-status-modal');
+  if (modal) modal.style.display = 'flex';
+
+  console.table(results.slice(0, 15).map(r => ({
+    combo: r.combo, openOrd: r.v[0], openCust: r.v[1], notOrd: r.v[2], notCust: r.v[3], err: r.err
+  })));
+  return results;
+}
+
+function _instReconcilePrompt() {
+  const a = prompt('Target OPEN ORDERS (اوردرات مفتوحة):', '126'); if (a === null) return;
+  const b = prompt('Target OPEN CUSTOMERS (عملاء مفتوحة):', '83'); if (b === null) return;
+  const c = prompt('Target NOT-INSTALLED ORDERS (اوردرات لم يتم تركيب):', '75'); if (c === null) return;
+  const d = prompt('Target NOT-INSTALLED CUSTOMERS (عملاء لم يتم تركيب):', '36'); if (d === null) return;
+  _instReconcile(+a, +b, +c, +d);
 }
 
 function _instRender(allRows) {
