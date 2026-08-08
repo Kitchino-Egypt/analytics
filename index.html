@@ -2095,6 +2095,29 @@ if (_checkSession()) {
       </div>
       <div id="inst-status-cards" style="display:flex;gap:10px;flex-wrap:wrap;flex:1"></div>
     </div>
+    <!-- Open / Not-installed backlog cards -->
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div class="kpi-card blue" onclick="_instOpenBacklogModal('openOrders')" style="min-width:180px;flex:1 1 180px;cursor:pointer" title="Click for the full list">
+        <div class="kpi-label" style="direction:rtl">اوردرات مفتوحة</div>
+        <div class="kpi-value" id="inst-open-orders">—</div>
+        <div class="kpi-sub" id="inst-open-orders-sub">open orders</div>
+      </div>
+      <div class="kpi-card teal" onclick="_instOpenBacklogModal('openCustomers')" style="min-width:180px;flex:1 1 180px;cursor:pointer" title="Click for the full list">
+        <div class="kpi-label" style="direction:rtl">عملاء مفتوحة</div>
+        <div class="kpi-value" id="inst-open-customers">—</div>
+        <div class="kpi-sub" id="inst-open-customers-sub">open customers</div>
+      </div>
+      <div class="kpi-card gold" onclick="_instOpenBacklogModal('notInstOrders')" style="min-width:180px;flex:1 1 180px;cursor:pointer" title="Click for the full list">
+        <div class="kpi-label" style="direction:rtl">اوردرات لم يتم تركيب</div>
+        <div class="kpi-value" id="inst-notinst-orders">—</div>
+        <div class="kpi-sub" id="inst-notinst-orders-sub">not started</div>
+      </div>
+      <div class="kpi-card red" onclick="_instOpenBacklogModal('notInstCustomers')" style="min-width:180px;flex:1 1 180px;cursor:pointer" title="Click for the full list">
+        <div class="kpi-label" style="direction:rtl">عملاء لم يتم تركيب</div>
+        <div class="kpi-value" id="inst-notinst-customers">—</div>
+        <div class="kpi-sub" id="inst-notinst-customers-sub">not started</div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="chart-card">
         <div class="chart-title">By Product Type</div>
@@ -11388,6 +11411,120 @@ function _instSetProdTab(p) {
   _instRenderTechByProduct();
 }
 
+// ── Open / not-installed backlog definitions ─────────────────────────────────
+// Agreed with Nabila (Aug 2026):
+//   OPEN          = status is not a completion status AND تاريخ التسليم is blank.
+//                   Both conditions must hold — a status can lag the paperwork
+//                   and vice versa, so an order is only closed when both agree.
+//   NOT INSTALLED = OPEN, and installation has not begun: no تاريخ بداية التركيب
+//                   and no status implying work already started.
+// Customer counts are DISTINCT customers, so one customer with 3 open orders
+// counts once — that is why the customer figures are lower than the order ones.
+
+function _instIsComplete(r) {
+  const st = (r['الحالة'] || '').trim();
+  return st.includes('تم الاسلام')   // note: misspelling present in the sheet
+      || st.includes('تم الاستلام')
+      || st.includes('تم التسليم')
+      || st.includes('استلام العميل')
+      || st.includes('استلام عميل')
+      || st.includes('تفعيل ضمان');
+}
+
+// Statuses that mean installation work is already under way or past — these are
+// excluded from "not installed" even if the start-date cell was left empty.
+function _instWorkStarted(r) {
+  const st = (r['الحالة'] || '').trim();
+  return st.includes('تركيب رخام')
+      || st.includes('استكمال تركيب')
+      || st.includes('فتش')
+      || st.includes('ملاحظات التسليم');
+}
+
+function _instIsOpen(r) {
+  return !_instIsComplete(r) && !(r['تاريخ التسليم'] || '').trim();
+}
+
+function _instNotInstalled(r) {
+  return _instIsOpen(r)
+      && !(r['تاريخ بداية التركيب'] || '').trim()
+      && !_instWorkStarted(r);
+}
+
+// Normalised customer key so spacing/case variants collapse to one customer
+function _instCustKey(r) {
+  return (r['العميل'] || '').trim().replace(/\s+/g, ' ').toLowerCase();
+}
+function _instUniqueCustomers(rows) {
+  return new Set(rows.map(_instCustKey).filter(Boolean)).size;
+}
+
+function _instRenderBacklog(rows) {
+  const _s = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  const openRows    = rows.filter(_instIsOpen);
+  const notInstRows = rows.filter(_instNotInstalled);
+  const openCust    = _instUniqueCustomers(openRows);
+  const notInstCust = _instUniqueCustomers(notInstRows);
+  const total       = rows.length;
+  const pct = n => total > 0 ? ' · ' + (n / total * 100).toFixed(0) + '% of ' + total : '';
+
+  _s('inst-open-orders',        openRows.length.toLocaleString());
+  _s('inst-open-orders-sub',    'still open' + pct(openRows.length));
+  _s('inst-open-customers',     openCust.toLocaleString());
+  _s('inst-open-customers-sub', 'distinct customers');
+  _s('inst-notinst-orders',     notInstRows.length.toLocaleString());
+  _s('inst-notinst-orders-sub', 'install not started' +
+      (openRows.length ? ' · ' + (notInstRows.length / openRows.length * 100).toFixed(0) + '% of open' : ''));
+  _s('inst-notinst-customers',     notInstCust.toLocaleString());
+  _s('inst-notinst-customers-sub', 'distinct customers waiting');
+}
+
+// Reuses the existing status modal shell to list the rows behind each card.
+function _instOpenBacklogModal(kind) {
+  if (!_INST_DATA) return;
+  const all = _instMainFiltered(_INST_DATA);
+  const CFG = {
+    openOrders:       { rows: all.filter(_instIsOpen),        icon:'📂', color:'#3b82f6',
+                        title:'اوردرات مفتوحة — Open Orders',
+                        sub:'Status not complete and no تاريخ التسليم' },
+    openCustomers:    { rows: all.filter(_instIsOpen),        icon:'👥', color:'#14b8a6',
+                        title:'عملاء مفتوحة — Open Customers', byCustomer:true,
+                        sub:'Distinct customers with at least one open order' },
+    notInstOrders:    { rows: all.filter(_instNotInstalled),  icon:'⏳', color:'#f59e0b',
+                        title:'اوردرات لم يتم تركيب — Not Installed',
+                        sub:'Open, no installation start date, work not begun' },
+    notInstCustomers: { rows: all.filter(_instNotInstalled),  icon:'🚧', color:'#ef4444',
+                        title:'عملاء لم يتم تركيب — Customers Not Installed', byCustomer:true,
+                        sub:'Distinct customers with nothing installed yet' }
+  }[kind];
+  if (!CFG) return;
+
+  // For the customer cards, keep one representative row per customer so the
+  // table row count matches the number shown on the card.
+  let rows = CFG.rows;
+  if (CFG.byCustomer) {
+    const seen = new Set();
+    rows = rows.filter(r => {
+      const k = _instCustKey(r);
+      if (!k || seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+  }
+  _instModalRows = rows;
+
+  const t = document.getElementById('inst-modal-title');
+  if (t) { t.textContent = CFG.icon + '  ' + CFG.title; t.style.color = CFG.color; }
+  const sub = document.getElementById('inst-modal-sub');
+  if (sub) sub.textContent = rows.length + (CFG.byCustomer ? ' customer' : ' project')
+                           + (rows.length !== 1 ? 's' : '') + ' · ' + CFG.sub;
+  const search = document.getElementById('inst-modal-search');
+  if (search) search.value = '';
+
+  _instModalRenderTable(rows);
+  const modal = document.getElementById('inst-status-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
 function _instRender(allRows) {
   // Apply main portal filters first
   const rows = _instMainFiltered(allRows);
@@ -11402,6 +11539,7 @@ function _instRender(allRows) {
   _s('inst-total',         total.toLocaleString());
   _s('inst-total-sub',     total + ' installation records');
 
+  _instRenderBacklog(rows);
   _instRenderAvgDays(rows);
   _instRenderLag(rows);
   _instRenderByProduct();
