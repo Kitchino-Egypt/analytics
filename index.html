@@ -1353,7 +1353,8 @@ if (_checkSession()) {
       <div class="chart-card">
         <div class="chart-title">Order Type Mix by Unit</div>
         <div class="chart-subtitle" id="exec-unit-mix-sub">Share of each unit type's measures — reveals what apartments buy vs villas</div>
-        <div class="chart-wrap"><canvas id="chart-unit-mix" height="260"></canvas></div>
+        <div id="exec-unit-donuts" style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"></div>
+        <div id="exec-unit-donut-note" style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center"></div>
       </div>
       <div class="chart-card">
         <div class="chart-title">Area × Unit Type</div>
@@ -5991,8 +5992,29 @@ function _execNoData(el) {
 // always sent this field; it was previously dropped in engine_cleanRows.
 // Blank values are grouped as "غير محدد" rather than silently discarded, so the
 // unit totals always reconcile to the overall measure count.
-const _UNIT_COLORS = { 'شقة': BLUE, 'فيلا': GOLD, 'غير محدد': '#94a3b8' };
-const _UNIT_EN     = { 'شقة': 'Apartment', 'فيلا': 'Villa', 'غير محدد': 'Unspecified' };
+// Column M turned out to hold more than شقة/فيلا — مكتب, شاليه, شركة,
+// وحدة فندقية and كابينه also appear. Each gets its own colour so the
+// Area × Unit bars stay readable; anything unforeseen falls back to grey.
+const _UNIT_COLORS = {
+  'شقة':          BLUE,
+  'فيلا':         GOLD,
+  'مكتب':         '#8b5cf6',
+  'شاليه':        TEAL,
+  'شركة':         '#ef4444',
+  'وحدة فندقية':  '#10b981',
+  'كابينه':       '#f97316',
+  'غير محدد':     '#94a3b8'
+};
+const _UNIT_EN = {
+  'شقة':          'Apartment',
+  'فيلا':         'Villa',
+  'مكتب':         'Office',
+  'شاليه':        'Chalet',
+  'شركة':         'Company',
+  'وحدة فندقية':  'Hotel unit',
+  'كابينه':       'Cabin',
+  'غير محدد':     'Unspecified'
+};
 
 function _unitKey(r) {
   const u = (r.unit || '').trim();
@@ -6064,38 +6086,81 @@ function renderExecUnitCard() {
   // ── Order type mix per unit (percentage within each unit type) ───────────
   // Percentages, not raw counts: apartments vastly outnumber villas, so raw
   // bars would only restate that. Shares answer "what does each segment buy".
-  const typeTotals = {};
-  rows.forEach(r => { const t = (r.orderType || '').trim() || '—'; typeTotals[t] = (typeTotals[t] || 0) + 1; });
-  const topTypes = Object.entries(typeTotals).sort((a, b) => b[1] - a[1]).slice(0, 7).map(e => e[0]);
+  // ── Order type mix per unit — one donut per unit type ────────────────────
+  // Only unit types with enough volume get a donut. A segment with 2 measures
+  // produces a 100% slice that looks like a finding but is noise, so anything
+  // below the threshold is summarised in a footnote instead of charted.
+  const MIN_MEASURES = 10;
+  const MAX_DONUTS   = 4;
+  const shown   = units.filter(u => u.total >= MIN_MEASURES).slice(0, MAX_DONUTS);
+  const omitted = units.filter(u => !shown.includes(u));
 
-  const mixSub = document.getElementById('exec-unit-mix-sub');
-  if (mixSub) mixSub.textContent = '% of each unit type\'s measures · top ' + topTypes.length + ' order types';
+  const donutsEl = document.getElementById('exec-unit-donuts');
+  const noteEl   = document.getElementById('exec-unit-donut-note');
+  const mixSub   = document.getElementById('exec-unit-mix-sub');
+  if (mixSub) mixSub.textContent = 'Share of each unit type\'s measures · ' + shown.length + ' unit type' + (shown.length !== 1 ? 's' : '') + ' with ' + MIN_MEASURES + '+ measures';
 
-  makeChart('chart-unit-mix', {
-    type: 'bar',
-    data: {
-      labels: topTypes,
-      datasets: units.map(u => ({
-        label: u.unit,
-        data: topTypes.map(t => u.total > 0 ? +((u.types[t] || 0) / u.total * 100).toFixed(1) : 0),
-        backgroundColor: (_UNIT_COLORS[u.unit] || TEAL) + 'cc',
-        borderColor: _UNIT_COLORS[u.unit] || TEAL,
-        borderWidth: 1.5, borderRadius: 3
-      }))
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: true, labels: { boxWidth: 12, font: { size: 11 } } },
-        tooltip: { callbacks: { label: c => c.dataset.label + ': ' + c.parsed.y + '%' } }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.06)' },
-             ticks: { callback: v => v + '%', font: { size: 10 } } }
-      }
-    }
-  });
+  if (donutsEl) {
+    const w = shown.length >= 3 ? 150 : 190;
+    donutsEl.innerHTML = shown.map((u, i) =>
+      '<div style="flex:0 0 auto;text-align:center">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text);direction:rtl">' + u.unit + '</div>'
+      + '<div style="font-size:10px;color:var(--text3);margin-bottom:4px">' + u.total.toLocaleString() + ' measures</div>'
+      + '<canvas id="chart-unit-donut-' + i + '" width="' + w + '" height="' + w + '" style="max-width:' + w + 'px"></canvas>'
+      + '</div>'
+    ).join('');
+
+    // Shared colour scale so the same order type is the same colour in every
+    // donut — otherwise the charts cannot be compared at a glance.
+    const PALETTE = [BLUE, GOLD, TEAL, '#8b5cf6', '#ef4444', '#10b981', '#f97316', '#64748b'];
+    const typeTotals = {};
+    rows.forEach(r => { const t = (r.orderType || '').trim() || '—'; typeTotals[t] = (typeTotals[t] || 0) + 1; });
+    const topTypes = Object.entries(typeTotals).sort((a, b) => b[1] - a[1]).slice(0, 7).map(e => e[0]);
+    const colourOf = {};
+    topTypes.forEach((t, i) => { colourOf[t] = PALETTE[i % PALETTE.length]; });
+    colourOf['Other'] = '#94a3b8';
+
+    shown.forEach((u, i) => {
+      const slices = topTypes.map(t => ({ label: t, val: u.types[t] || 0 }));
+      const otherVal = Object.entries(u.types)
+        .filter(([t]) => topTypes.indexOf(t) === -1)
+        .reduce((sum, [, v]) => sum + v, 0);
+      if (otherVal > 0) slices.push({ label: 'Other', val: otherVal });
+      const live = slices.filter(x => x.val > 0);
+
+      makeChart('chart-unit-donut-' + i, {
+        type: 'doughnut',
+        data: {
+          labels: live.map(x => x.label),
+          datasets: [{
+            data: live.map(x => x.val),
+            backgroundColor: live.map(x => colourOf[x.label] || '#94a3b8'),
+            borderColor: 'rgba(0,0,0,0.15)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: false,
+          cutout: '58%',
+          plugins: {
+            legend: { display: i === shown.length - 1, position: 'bottom',
+                      labels: { boxWidth: 9, font: { size: 9 }, padding: 6 } },
+            tooltip: { callbacks: { label: c => {
+              const pct = u.total > 0 ? (c.parsed / u.total * 100).toFixed(1) : 0;
+              return c.label + ': ' + c.parsed + ' (' + pct + '%)';
+            } } }
+          }
+        }
+      });
+    });
+  }
+
+  if (noteEl) {
+    noteEl.textContent = omitted.length
+      ? 'Not charted (under ' + MIN_MEASURES + ' measures): ' +
+        omitted.map(u => u.unit + ' (' + u.total + ')').join(' · ')
+      : '';
+  }
 
   // ── Area × unit type ─────────────────────────────────────────────────────
   if (areasEl) {
@@ -6111,7 +6176,14 @@ function renderExecUnitCard() {
     const sub = document.getElementById('exec-unit-area-sub');
     if (sub) sub.textContent = 'Top ' + areaList.length + ' areas · bar shows unit-type split';
 
-    areasEl.innerHTML = areaList.map(a => {
+    // Colour key — without it the stacked bars are unreadable beyond two types
+    const keyHtml = '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px;color:var(--text2)">'
+      + units.map(u => '<span style="display:inline-flex;align-items:center;gap:4px">'
+          + '<span style="width:9px;height:9px;border-radius:2px;background:' + (_UNIT_COLORS[u.unit] || '#94a3b8') + '"></span>'
+          + '<span style="direction:rtl">' + u.unit + '</span></span>').join('')
+      + '</div>';
+
+    areasEl.innerHTML = keyHtml + areaList.map(a => {
       const segs = units.map(u => {
         const c = a.byUnit[u.unit] || 0;
         const pct = a.total > 0 ? (c / a.total * 100) : 0;
