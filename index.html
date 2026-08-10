@@ -11295,7 +11295,41 @@ function _instMainFiltered(rows) {
     return null;
   };
 
+  // Full-date variant of the parser above, for range comparisons.
+  const _instTime = d => {
+    if (!d || d === '0') return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+      return new Date(+d.substring(0,4), +d.substring(5,7) - 1, +d.substring(8,10)).getTime();
+    }
+    const dm = d.match(/^(\d{1,2})-([A-Za-z]{3})-?(\d{4})$/);
+    if (dm) { const m = _MABB[dm[2].toLowerCase()]; if (m) return new Date(+dm[3], m - 1, +dm[1]).getTime(); }
+    const ds = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ds) return new Date(+ds[3], +ds[2] - 1, +ds[1]).getTime();
+    const p = new Date(d);
+    return isNaN(p) ? null : p.getTime();
+  };
+
   let out = rows;
+
+  // ── Period range ─────────────────────────────────────────────────────────
+  // Uses the same date column precedence as the Year/Month filters above
+  // (توريد, falling back to بداية التركيب) and the same rule for undated rows:
+  // they are kept, because an undated record is in-progress work rather than
+  // something that belongs to another period.
+  const _instPer = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
+  if (_instPer.from || _instPer.to) {
+    const lo = _instPer.from ? new Date(_instPer.from + 'T00:00:00').getTime() : null;
+    const hi = _instPer.to   ? new Date(_instPer.to   + 'T23:59:59').getTime() : null;
+    out = out.filter(r => {
+      const raw = (r['تاريخ التوريد'] || r['تاريخ بداية التركيب'] || '').trim();
+      if (!raw) return true;                 // undated → in progress, keep
+      const t = _instTime(raw);
+      if (t == null) return true;            // unparseable → keep, same as above
+      if (lo !== null && t < lo) return false;
+      if (hi !== null && t > hi) return false;
+      return true;
+    });
+  }
 
   if (yearF && yearF !== 'all') {
     out = out.filter(r => {
