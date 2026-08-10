@@ -130,7 +130,9 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .topbar-filters .refresh-btn, .topbar-filters #period-btn { flex:0 0 auto; }
 .period-preset { background:var(--card2); border:1px solid var(--border); color:var(--text2);
   font-size:10px; padding:4px 7px; border-radius:5px; cursor:pointer; }
-.period-preset:hover { border-color:var(--teal); color:var(--teal); }
+.period-preset:hover:not(:disabled) { border-color:var(--teal); color:var(--teal); }
+.period-preset:disabled { opacity:.35; cursor:not-allowed; }
+.period-preset.preset-active { background:var(--teal); border-color:var(--teal); color:#fff; font-weight:700; }
 .filter-select {
   background:var(--card); border:1px solid var(--border); color:var(--text);
   padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer;
@@ -1114,20 +1116,27 @@ if (_checkSession()) {
         <button id="period-btn" class="filter-select" onclick="togglePeriodPanel(event)" title="Filter this page by a date range"
           style="white-space:nowrap">📅 Period</button>
         <div id="period-panel" style="display:none;position:absolute;top:34px;right:0;z-index:400;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.28);width:250px">
-          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px">Filter this page by period</div>
-          <div style="font-size:10px;color:var(--text3);margin-bottom:10px">Applies to this page only</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:10px">Filter this page by period</div>
           <label style="display:block;font-size:10px;color:var(--text3);margin-bottom:3px">From</label>
-          <input type="date" id="filter-from" onchange="onPeriodChange()"
+          <input type="date" id="filter-from" onchange="onPeriodChange(true)"
             style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 7px;border-radius:6px;margin-bottom:8px">
           <label style="display:block;font-size:10px;color:var(--text3);margin-bottom:3px">To</label>
-          <input type="date" id="filter-to" onchange="onPeriodChange()"
+          <input type="date" id="filter-to" onchange="onPeriodChange(true)"
             style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 7px;border-radius:6px;margin-bottom:10px">
-          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
-            <button onclick="setPeriodPreset('mtd')"  class="period-preset">This month</button>
-            <button onclick="setPeriodPreset('last')" class="period-preset">Last month</button>
-            <button onclick="setPeriodPreset('q')"    class="period-preset">This quarter</button>
-            <button onclick="setPeriodPreset('ytd')"  class="period-preset">YTD</button>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <span style="font-size:10px;color:var(--text3)">Year</span>
+            <select id="period-year" onchange="onPeriodYearChange()"
+              style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:11px;padding:4px 6px;border-radius:6px"></select>
           </div>
+          <div id="period-presets" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+            <button onclick="setPeriodPreset('year')" class="period-preset" data-preset="year">This Year</button>
+            <button onclick="setPeriodPreset('q1')"   class="period-preset" data-preset="q1">Q1</button>
+            <button onclick="setPeriodPreset('q2')"   class="period-preset" data-preset="q2">Q2</button>
+            <button onclick="setPeriodPreset('q3')"   class="period-preset" data-preset="q3">Q3</button>
+            <button onclick="setPeriodPreset('q4')"   class="period-preset" data-preset="q4">Q4</button>
+            <button onclick="setPeriodPreset('ytd')"  class="period-preset" data-preset="ytd">YTD</button>
+          </div>
+          <div id="period-preset-hint" style="font-size:10px;color:var(--text3);margin-bottom:10px"></div>
           <div style="display:flex;gap:6px">
             <button id="period-clear" onclick="clearPeriod()"
               style="flex:1;background:none;border:1px solid var(--border);color:var(--text2);padding:5px;border-radius:6px;cursor:pointer;font-size:11px">Clear</button>
@@ -3297,7 +3306,28 @@ function _syncPeriodUI() {
     btn.style.color       = active ? 'var(--teal)' : 'var(--text)';
     btn.style.fontWeight  = active ? '700' : '400';
   }
-  if (clr) clr.style.display = active ? 'block' : 'block';
+  if (clr) clr.style.display = 'block';
+
+  // Presets are always usable: they follow the main Year filter when one is
+  // set, otherwise the year chosen inside this panel.
+  const year    = (typeof _selectedYear === 'function') ? _selectedYear() : null;
+  const curPage = (typeof _activePageName === 'function') ? _activePageName() : '';
+  const preset  = curPage ? _ACTIVE_PRESET[curPage] : null;
+  const mainY   = document.getElementById('filter-year')?.value;
+  const pySel   = document.getElementById('period-year');
+  if (pySel && mainY && mainY !== 'all' && pySel.value !== mainY) pySel.value = mainY;
+  if (pySel) pySel.disabled = !!(mainY && mainY !== 'all');
+
+  document.querySelectorAll('#period-presets .period-preset').forEach(b => {
+    b.disabled = false;
+    b.classList.toggle('preset-active', b.dataset.preset === preset);
+  });
+  const hint = document.getElementById('period-preset-hint');
+  if (hint) {
+    hint.textContent = (mainY && mainY !== 'all')
+      ? 'Following the Year filter: ' + mainY
+      : 'Using ' + year + ' — change it above, or set the Year filter.';
+  }
 
   const badge = document.getElementById('period-badge');
   if (badge) {
@@ -3310,8 +3340,10 @@ function _syncPeriodUI() {
 
 // Setting a period supersedes Year/Month — they are reset and disabled so the
 // two time controls can never disagree and silently produce an empty result.
-function onPeriodChange() {
+function onPeriodChange(manualEdit) {
   const { from, to } = _periodFilter();
+  // Typing dates by hand means the range is no longer one of the presets.
+  if (manualEdit) { const p0 = _activePageName(); if (p0) delete _ACTIVE_PRESET[p0]; }
 
   // Guard against an inverted range, which would otherwise return nothing
   // with no explanation.
@@ -3340,14 +3372,34 @@ function onPeriodChange() {
 function onYearMonthChange() {
   const page = _activePageName();
   const { from, to } = _periodFilter();
-  if (from || to) {
+  const preset = page ? _ACTIVE_PRESET[page] : null;
+  const year   = _selectedYear();
+
+  if (preset && year) {
+    // A preset follows the Year filter: switch 2026 → 2025 with Q2 active and
+    // you get Q2 2025, rather than an empty page from a mismatched range.
+    const r = _presetRange(preset, year);
+    if (r) {
+      const f = document.getElementById('filter-from');
+      const t = document.getElementById('filter-to');
+      if (f) f.value = r.from;
+      if (t) t.value = r.to;
+      if (page) {
+        PAGE_PERIODS[page]    = { from: r.from, to: r.to };
+        BUILT_PERIOD_SIG[page] = r.from + '|' + r.to;
+      }
+    }
+  } else if (from || to) {
+    // A hand-typed range is tied to specific years, so it cannot survive a
+    // Year change without contradicting it — drop it.
     const f = document.getElementById('filter-from');
     const t = document.getElementById('filter-to');
     if (f) f.value = '';
     if (t) t.value = '';
-    if (page) { delete PAGE_PERIODS[page]; BUILT_PERIOD_SIG[page] = ''; }
-    _syncPeriodUI();
+    if (page) { delete PAGE_PERIODS[page]; delete _ACTIVE_PRESET[page]; BUILT_PERIOD_SIG[page] = ''; }
   }
+
+  _syncPeriodUI();
   applyFilters();
 }
 
@@ -3355,6 +3407,8 @@ function togglePeriodPanel(ev) {
   if (ev) ev.stopPropagation();
   const p = document.getElementById('period-panel');
   if (!p) return;
+  _initPeriodYears();   // years may have loaded since the last open
+  _syncPeriodUI();
   p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
 }
 
@@ -3365,25 +3419,77 @@ document.addEventListener('click', function (e) {
   if (p && wrap && p.style.display === 'block' && !wrap.contains(e.target)) p.style.display = 'none';
 });
 
-function setPeriodPreset(kind) {
+// Presets are anchored to whichever year the main Year filter is on, so Q2
+// means Q2 of the selected year, not of today's year. With "All Years" there
+// is no year to anchor to, so the buttons stay disabled.
+let _ACTIVE_PRESET = {};   // page -> preset key that produced the current range
+
+// Presets need a year. Use the main Year filter when a specific year is
+// chosen there; otherwise fall back to the year picked inside the panel, so
+// the presets stay usable even with "All Years" selected.
+function _selectedYear() {
+  const v = document.getElementById('filter-year')?.value;
+  if (v && v !== 'all') return parseInt(v, 10);
+  const pv = document.getElementById('period-year')?.value;
+  if (pv) return parseInt(pv, 10);
+  return new Date().getFullYear();
+}
+
+// Fills the panel's year list from the main Year filter's options, so both
+// controls always offer the same years without a second hard-coded list.
+function _initPeriodYears() {
+  const sel = document.getElementById('period-year');
+  const main = document.getElementById('filter-year');
+  if (!sel || !main) return;
+  const years = Array.from(main.options)
+    .map(o => o.value).filter(v => v && v !== 'all');
+  const cur = new Date().getFullYear().toString();
+  if (!years.includes(cur)) years.push(cur);
+  const keep = sel.value;
+  sel.innerHTML = years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
+  const mv = main.value;
+  sel.value = (mv && mv !== 'all') ? mv : (keep || (years.includes(cur) ? cur : years[years.length - 1]));
+}
+
+// Changing the year inside the panel re-applies the active preset for it.
+function onPeriodYearChange() {
+  const page = _activePageName();
+  const preset = page ? _ACTIVE_PRESET[page] : null;
+  if (preset) setPeriodPreset(preset);
+  else _syncPeriodUI();
+}
+
+function _presetRange(kind, year) {
+  const iso = (y, m, d) => y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
   const now = new Date();
-  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-  let from, to;
-  if (kind === 'mtd') {
-    from = new Date(now.getFullYear(), now.getMonth(), 1); to = now;
-  } else if (kind === 'last') {
-    from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    to   = new Date(now.getFullYear(), now.getMonth(), 0);
-  } else if (kind === 'q') {
-    const q = Math.floor(now.getMonth() / 3);
-    from = new Date(now.getFullYear(), q * 3, 1); to = now;
-  } else { // ytd
-    from = new Date(now.getFullYear(), 0, 1); to = now;
+  switch (kind) {
+    case 'year': return { from: iso(year, 1, 1),  to: iso(year, 12, 31) };
+    case 'q1':   return { from: iso(year, 1, 1),  to: iso(year, 3, 31) };
+    case 'q2':   return { from: iso(year, 4, 1),  to: iso(year, 6, 30) };
+    case 'q3':   return { from: iso(year, 7, 1),  to: iso(year, 9, 30) };
+    case 'q4':   return { from: iso(year, 10, 1), to: iso(year, 12, 31) };
+    case 'ytd': {
+      // For a past year "to date" means the same calendar day in that year —
+      // the like-for-like span, not the whole finished year.
+      const m = now.getMonth() + 1, d = now.getDate();
+      const lastDay = new Date(year, m, 0).getDate();   // clamp e.g. 31 Feb
+      return { from: iso(year, 1, 1), to: iso(year, m, Math.min(d, lastDay)) };
+    }
+    default: return null;
   }
+}
+
+function setPeriodPreset(kind) {
+  const year = _selectedYear();      // main Year filter, else the panel's year
+  if (!year) return;
+  const r = _presetRange(kind, year);
+  if (!r) return;
   const f = document.getElementById('filter-from');
   const t = document.getElementById('filter-to');
-  if (f) f.value = iso(from);
-  if (t) t.value = iso(to);
+  if (f) f.value = r.from;
+  if (t) t.value = r.to;
+  const page = _activePageName();
+  if (page) _ACTIVE_PRESET[page] = kind;   // so a Year change can re-apply it
   onPeriodChange();
 }
 
@@ -3392,6 +3498,8 @@ function clearPeriod() {
   const t = document.getElementById('filter-to');
   if (f) f.value = '';
   if (t) t.value = '';
+  const page = _activePageName();
+  if (page) delete _ACTIVE_PRESET[page];
   onPeriodChange();
 }
 
