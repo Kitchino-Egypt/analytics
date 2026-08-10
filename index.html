@@ -116,7 +116,7 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 }
 .page-title { font-size:16px; font-weight:700; color:var(--text); flex:1; }
 .page-subtitle { font-size:13px; color:var(--text2); }
-.topbar-filters { display:flex; gap:8px; align-items:center; }
+.topbar-filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .filter-select {
   background:var(--card); border:1px solid var(--border); color:var(--text);
   padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer;
@@ -1070,6 +1070,7 @@ if (_checkSession()) {
     <div>
       <div class="page-title" id="page-title">Executive Summary</div>
       <div class="page-subtitle" id="page-subtitle">Kitchino — High-End Kitchens & Furniture, Egypt</div>
+      <span id="period-badge" style="display:none;background:rgba(0,172,193,0.15);border:1px solid rgba(0,172,193,0.45);color:var(--teal);font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;white-space:nowrap;margin-left:8px"></span>
     </div>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark / light mode"
       style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:15px;cursor:pointer;line-height:1;transition:all .2s;margin-right:4px">🌙</button>
@@ -1089,6 +1090,19 @@ if (_checkSession()) {
       <select class="filter-select" id="filter-month" onchange="applyFilters()" style="min-width:120px">
         <option value="all">All Months</option>
       </select>
+      <!-- Period range. Setting either date takes over from Year/Month, which
+           are cleared and disabled to avoid contradictory combinations
+           (e.g. Year 2025 with a 2026 range, which returns nothing). -->
+      <div id="period-filter" style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:3px 6px">
+        <span style="font-size:10px;color:var(--text3);white-space:nowrap">From</span>
+        <input type="date" id="filter-from" onchange="onPeriodChange()" title="Period start"
+          style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;width:118px;cursor:pointer">
+        <span style="font-size:10px;color:var(--text3)">To</span>
+        <input type="date" id="filter-to" onchange="onPeriodChange()" title="Period end"
+          style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;width:118px;cursor:pointer">
+        <button id="period-clear" onclick="clearPeriod()" title="Clear period"
+          style="display:none;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px">×</button>
+      </div>
       <input type="text" class="search-box" id="global-search" placeholder="🔍 Search customer, location, designer, source…" oninput="applyFilters()">
       <div class="live-dot" title="Live"></div>
       <button class="refresh-btn" onclick="refreshData()">↻ Refresh</button>
@@ -3172,14 +3186,119 @@ function engine_cleanRows(rawRows) {
 
 // ── Filter rows — identical logic to Data Studio dimension filters ────────────
 function engine_filterRows(rows, filters) {
-  const { year, designer, area, month } = filters || {};
+  const { year, designer, area, month, from, to } = filters || {};
+  // Range bounds are inclusive and compared on calendar day, so a row dated
+  // on the "to" date is included regardless of any time component.
+  const fromT = from ? new Date(from + 'T00:00:00').getTime() : null;
+  const toT   = to   ? new Date(to   + 'T23:59:59').getTime() : null;
   return rows.filter(r => {
     if (year     && year     !== 'all' && r._year      !== year)     return false;
     if (designer && designer !== 'all' && r.designer   !== designer) return false;
     if (area     && area     !== 'all' && r.area !== area && r.location !== area) return false;
     if (month    && month    !== 'all' && r._monthName !== month)    return false;
+    if (fromT !== null || toT !== null) {
+      const t = r._date instanceof Date ? r._date.getTime() : NaN;
+      if (isNaN(t)) return false;
+      if (fromT !== null && t < fromT) return false;
+      if (toT   !== null && t > toT)   return false;
+    }
     return true;
   });
+}
+
+// ── PER-PAGE PERIOD ─────────────────────────────────────────────────────────
+// The period range belongs to the page it was set on, not to the whole portal.
+// Setting Jan–Mar on Executive Summary must not silently narrow Designers or
+// Installation when you navigate there. Each page keeps its own range; the
+// inputs are swapped to match whichever page is active.
+let PAGE_PERIODS = {};      // pageName -> { from, to }
+let BUILT_PERIOD_SIG = {};  // pageName -> period signature it was last built with
+
+function _activePageName() {
+  const el = document.querySelector('.page.active');
+  return el ? el.id.replace('page-', '') : '';
+}
+
+// Reads the period inputs. Returns nulls when unset so callers can ignore it.
+function _periodFilter() {
+  const f = document.getElementById('filter-from');
+  const t = document.getElementById('filter-to');
+  return { from: (f && f.value) || null, to: (t && t.value) || null };
+}
+
+// Loads the stored range for a page into the inputs and syncs the UI state.
+// Called on every navigation so the controls always describe the page in view.
+function _restorePeriodForPage(name) {
+  const saved = PAGE_PERIODS[name] || { from: '', to: '' };
+  const f = document.getElementById('filter-from');
+  const t = document.getElementById('filter-to');
+  if (f) f.value = saved.from || '';
+  if (t) t.value = saved.to   || '';
+  _syncPeriodUI();
+}
+
+// Applies the enabled/disabled + badge state implied by the current inputs,
+// without triggering a re-filter (callers decide when to recompute).
+function _syncPeriodUI() {
+  const { from, to } = _periodFilter();
+  const active = !!(from || to);
+  const yEl = document.getElementById('filter-year');
+  const mEl = document.getElementById('filter-month');
+  const clr = document.getElementById('period-clear');
+  const box = document.getElementById('period-filter');
+
+  if (active) {
+    if (yEl) { yEl.value = 'all'; yEl.disabled = true; yEl.style.opacity = .45; }
+    if (mEl) { mEl.value = 'all'; mEl.disabled = true; mEl.style.opacity = .45; }
+  } else {
+    if (yEl) { yEl.disabled = false; yEl.style.opacity = 1; }
+    if (mEl) { mEl.disabled = false; mEl.style.opacity = 1; }
+  }
+  if (clr) clr.style.display = active ? 'inline' : 'none';
+  if (box) box.style.borderColor = active ? 'var(--teal)' : 'var(--border)';
+
+  const badge = document.getElementById('period-badge');
+  if (badge) {
+    badge.textContent = active
+      ? ('📅 ' + (from || 'start') + '  →  ' + (to || 'today') + '  · this page only')
+      : '';
+    badge.style.display = active ? 'inline-block' : 'none';
+  }
+}
+
+// Setting a period supersedes Year/Month — they are reset and disabled so the
+// two time controls can never disagree and silently produce an empty result.
+function onPeriodChange() {
+  const { from, to } = _periodFilter();
+
+  // Guard against an inverted range, which would otherwise return nothing
+  // with no explanation.
+  if (from && to && from > to) {
+    alert('The "From" date is after the "To" date — please correct the range.');
+    return;
+  }
+
+  // Store against the page in view, so the range travels with that page only.
+  const page = _activePageName();
+  if (page) {
+    if (from || to) PAGE_PERIODS[page] = { from: from || '', to: to || '' };
+    else            delete PAGE_PERIODS[page];
+  }
+
+  // Mark this page's cached build as belonging to the new window, so the
+  // rebuild that applyFilters triggers is not undone by the navigation check.
+  if (page) BUILT_PERIOD_SIG[page] = (from || '') + '|' + (to || '');
+
+  _syncPeriodUI();
+  applyFilters();
+}
+
+function clearPeriod() {
+  const f = document.getElementById('filter-from');
+  const t = document.getElementById('filter-to');
+  if (f) f.value = '';
+  if (t) t.value = '';
+  onPeriodChange();
 }
 
 // ── Aggregators ───────────────────────────────────────────────────────────────
@@ -3318,8 +3437,12 @@ function engine_compute() {
   const designerF = _fv('designer', 'filter-designer');
   const areaF     = _fv('area',     'filter-area');
   const monthF    = _fv('month',    'filter-month');
-  const filtered  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, designer:designerF, area:areaF, month:monthF});
-  const yearOnly  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF});
+  const _per      = _periodFilter();
+  const filtered  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, designer:designerF, area:areaF, month:monthF, from:_per.from, to:_per.to});
+  // yearOnly drives the "all designers" comparison set — it must sit in the
+  // same time window as `filtered`, otherwise a period selection would compare
+  // the chosen range against the whole history.
+  const yearOnly  = engine_filterRows(ENGINE_CLEAN_ROWS, {year:yearF, from:_per.from, to:_per.to});
   // Published so section renderers (e.g. the unit analysis) can reuse exactly
   // the same filtered set instead of re-deriving it and risking divergence.
   KITCHINO_STATE.filteredRows = filtered;
@@ -6095,6 +6218,16 @@ function renderExecUnitCard() {
   const shown   = units.filter(u => u.total >= MIN_MEASURES).slice(0, MAX_DONUTS);
   const omitted = units.filter(u => !shown.includes(u));
 
+  // Destroy any donut charts from a previous render that this one won't reuse,
+  // otherwise filtering to fewer unit types leaves detached Chart instances.
+  for (let k = 0; k < 8; k++) {
+    const cid = 'chart-unit-donut-' + k;
+    if (k >= shown.length && chartInstances[cid]) {
+      try { chartInstances[cid].destroy(); } catch (e) {}
+      delete chartInstances[cid];
+    }
+  }
+
   const donutsEl = document.getElementById('exec-unit-donuts');
   const noteEl   = document.getElementById('exec-unit-donut-note');
   const mixSub   = document.getElementById('exec-unit-mix-sub');
@@ -7281,6 +7414,23 @@ function showPage(name) {
   if(nav) nav.classList.add('active');
   document.getElementById('page-title').textContent = PAGE_TITLES[name] || name;
 
+  // Swap the period inputs to this page's own range BEFORE computing, so the
+  // figures below are built from the right window. A range set elsewhere must
+  // not leak into this page.
+  _restorePeriodForPage(name);
+
+  // Only rebuild if THIS page's period changed since it was last built.
+  // Unconditionally clearing the cache would re-render every chart on every
+  // navigation, which is noticeably slower on the chart-heavy pages.
+  const _perSig = (function () {
+    const p = PAGE_PERIODS[name];
+    return p ? (p.from || '') + '|' + (p.to || '') : '';
+  })();
+  if (BUILT_PERIOD_SIG[name] !== _perSig) {
+    builtPages.delete(name);
+    BUILT_PERIOD_SIG[name] = _perSig;
+  }
+
   // Always recompute KPIs when showing any page — ensures executive cards
   // stay in sync with current filter state regardless of navigation order
   computeFilteredState();
@@ -7749,15 +7899,25 @@ async function _postContractNote(orderId, customer, note, reminderDate) {
   const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
   if (!url) { alert('⚠ Notes script not configured yet. Add the URL via Connect Google Sheets.'); return false; }
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       body: JSON.stringify({ orderId, customer, note, reminderDate: reminderDate || '' })
     });
+    // Previously the result was never inspected, so a server-side failure
+    // (bad permissions, storage error) still cached the note locally and the
+    // UI reported success. The note looked saved but no reminder could ever
+    // fire, because nothing reached the sheet. Verify before trusting it.
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    let payload = null;
+    try { payload = JSON.parse(await res.text()); } catch (_) { /* non-JSON — treat as ok below */ }
+    if (payload && payload.status === 'error') throw new Error(payload.message || 'server rejected the note');
+
     CONTRACT_NOTES[orderId] = { orderId, customer, note, reminderDate: reminderDate || '', reminderSent: false, lastUpdated: new Date().toISOString() };
     return true;
   } catch (e) {
     console.warn('[Notes] save failed:', e.message);
-    alert('⚠ Could not save note: ' + e.message);
+    alert('⚠ Could not save note: ' + e.message +
+          '\n\nThe note was NOT stored. Check the notes script deployment.');
     return false;
   }
 }
@@ -11696,25 +11856,10 @@ function _instSetProdTab(p) {
 // Customer counts are DISTINCT customers, so one customer with 3 open orders
 // counts once — that is why the customer figures are lower than the order ones.
 
-function _instIsComplete(r) {
-  const st = (r['الحالة'] || '').trim();
-  return st.includes('تم الاسلام')   // note: misspelling present in the sheet
-      || st.includes('تم الاستلام')
-      || st.includes('تم التسليم')
-      || st.includes('استلام العميل')
-      || st.includes('استلام عميل')
-      || st.includes('تفعيل ضمان');
-}
-
-// Statuses that mean installation work is already under way or past — these are
-// excluded from "not installed" even if the start-date cell was left empty.
-function _instWorkStarted(r) {
-  const st = (r['الحالة'] || '').trim();
-  return st.includes('تركيب رخام')
-      || st.includes('استكمال تركيب')
-      || st.includes('فتش')
-      || st.includes('ملاحظات التسليم');
-}
+// NOTE: the agreed rules below are purely date-driven — neither consults the
+// status text except for موعد تركيب. Status-based helpers were removed rather
+// than left dangling, so nobody assumes completion status is being considered.
+// See the caveats noted with each definition.
 
 // OPEN — per Nabila's rule (Aug 2026). An order is open if EITHER:
 //   (a) installation has started (تاريخ بداية التركيب filled) but has not been
