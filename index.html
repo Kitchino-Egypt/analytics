@@ -1155,12 +1155,13 @@ if (_checkSession()) {
     </div>
   </div>
 
-  <!-- LAST UPDATED BAR -->
-  <div id="last-updated-bar" style="background:rgba(26,115,232,0.10);border-bottom:2px solid rgba(26,115,232,0.22);padding:6px 24px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text)">
-    <span style="font-size:15px">🕐</span>
-    <span style="color:var(--text2)">Sheet last updated:</span>
-    <span id="sheet-last-updated" style="color:var(--blue);font-weight:700">Loading…</span>
-    <span id="sheet-last-updated-ago" style="color:var(--text3);font-size:12px"></span>
+  <!-- LAST UPDATED — slim line. Was a full-width tinted ribbon with its own
+       border, which took vertical space on every page for one date. -->
+  <div id="last-updated-bar" style="padding:3px 16px;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);border-bottom:1px solid var(--border)">
+    <span>🕐</span>
+    <span>Last update:</span>
+    <span id="sheet-last-updated" style="color:var(--text2);font-weight:600">Loading…</span>
+    <span id="sheet-last-updated-ago" style="display:none"></span>
   </div>
 
   <!-- MOBILE FILTER PANEL -->
@@ -7766,7 +7767,9 @@ function _updateSheetTimestamp(isoOrNull) {
   const ago = document.getElementById('sheet-last-updated-ago');
   if (!el) return;
   const dt = isoOrNull ? new Date(isoOrNull) : new Date();
-  const fmt = dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'})
+  // Date and hour only — the weekday and the relative "(x min ago)" suffix
+  // were dropped to keep this to a single short line.
+  const fmt = dt.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
              + ' · ' + dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   el.textContent = fmt;
   // Relative time
