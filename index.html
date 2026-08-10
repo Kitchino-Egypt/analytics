@@ -111,12 +111,23 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 /* TOP BAR */
 .topbar {
   background:var(--card); border-bottom:1px solid var(--border); box-shadow:0 1px 6px rgba(0,0,60,0.06);
-  padding:0 24px; height:58px; display:flex; align-items:center; gap:16px;
+  padding:0 16px; min-height:58px; display:flex; align-items:center; gap:10px;
   position:sticky; top:0; z-index:50;
+  /* Flex children refuse to shrink below their content by default, so adding
+     any control pushed the right-hand buttons off-screen. min-width:0 lets
+     the title and the filter group give way instead of overflowing. */
+  overflow:visible;
 }
-.page-title { font-size:16px; font-weight:700; color:var(--text); flex:1; }
+.topbar > div:first-of-type, .topbar > div:nth-of-type(2) { min-width:0; }
+.page-title { font-size:16px; font-weight:700; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:230px; }
 .page-subtitle { font-size:13px; color:var(--text2); }
-.topbar-filters { display:flex; gap:8px; align-items:center; }
+.topbar-filters { display:flex; gap:6px; align-items:center;
+  flex:1 1 auto; min-width:0; justify-content:flex-end; }
+/* Selects shrink before the action buttons do */
+.topbar-filters .filter-select { min-width:0; flex:0 1 auto; }
+/* Action buttons must never be clipped — they are the way out of any state */
+.topbar-filters .refresh-btn, .topbar-filters #period-btn { flex:0 0 auto; }
 .period-preset { background:var(--card2); border:1px solid var(--border); color:var(--text2);
   font-size:10px; padding:4px 7px; border-radius:5px; cursor:pointer; }
 .period-preset:hover { border-color:var(--teal); color:var(--teal); }
@@ -128,7 +139,8 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .filter-select:focus { border-color:var(--green); }
 .search-box {
   background:var(--card); border:1px solid var(--border); color:var(--text);
-  padding:6px 12px; border-radius:6px; font-size:11px; width:180px;
+  padding:6px 10px; border-radius:6px; font-size:11px;
+  flex:1 1 110px; min-width:80px; max-width:180px;
   outline:none; transition:.2s;
 }
 .search-box:focus { border-color:var(--green); }
@@ -3289,9 +3301,9 @@ function _syncPeriodUI() {
 
   const badge = document.getElementById('period-badge');
   if (badge) {
-    badge.textContent = active
-      ? ('📅 ' + (from || 'start') + '  →  ' + (to || 'today') + '  · this page only')
-      : '';
+    // Kept short — the Period button already spells out the dates, and a long
+    // badge was widening the title block and squeezing the toolbar.
+    badge.textContent = active ? 'Period active · this page only' : '';
     badge.style.display = active ? 'inline-block' : 'none';
   }
 }
@@ -7013,6 +7025,12 @@ function applyFilters() {
     if (activePage === 'followup')   renderFollowupTable();
     if (activePage === 'daily')      renderFollowupTable();
     if (activePage === 'instfollowup' && _INST_DATA) { _instRender(_INST_DATA); }
+    // yearcompare has no PAGE_BUILDERS entry — it renders through its own
+    // functions, so without this it never reacted to a filter or period change.
+    if (activePage === 'yearcompare') {
+      if (typeof renderYearCompare === 'function') renderYearCompare();
+      if (typeof renderLongRunTrend === 'function') renderLongRunTrend();
+    }
   }
 
   // ── 6. Mark all other built pages as stale — they will rebuild on next visit
@@ -10596,8 +10614,32 @@ function renderYearCompare() {
     return document.getElementById('filter-month')?.value || 'all';
   })();
 
-  let H1, _winLabel;
-  if (_mSel !== 'all' && MONTHS.indexOf(_mSel) > -1) {
+  // A period set on this page defines the window compared in BOTH years.
+  // Applying the range literally would be meaningless here: a range like
+  // 2025-01-01 → 2026-01-31 is not a "2025 vs 2026" comparison at all. So the
+  // YEAR part of the dates is ignored and only the day-and-month span is used,
+  // e.g. 01/03 → 30/06 compares Mar 1–Jun 30 in 2025 against the same days in
+  // 2026. That is the only reading that keeps the comparison like-for-like.
+  const _ycPeriod = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
+  const _ycHasPeriod = !!(_ycPeriod.from && _ycPeriod.to);
+
+  let H1, _winLabel, _ycDayFilter = null;
+  if (_ycHasPeriod) {
+    const md = d => ({ m: parseInt(d.slice(5, 7), 10), d: parseInt(d.slice(8, 10), 10) });
+    const a = md(_ycPeriod.from), b = md(_ycPeriod.to);
+    const key = x => x.m * 100 + x.d;
+    const lo = key(a), hi = key(b);
+    // Day-accurate rather than whole-month, so a part-month range is honest.
+    _ycDayFilter = r => {
+      if (!(r._date instanceof Date)) return false;
+      const k = (r._date.getMonth() + 1) * 100 + r._date.getDate();
+      return lo <= hi ? (k >= lo && k <= hi) : (k >= lo || k <= hi); // wraps year-end
+    };
+    const mLo = Math.min(a.m, b.m), mHi = Math.max(a.m, b.m);
+    H1 = MONTHS.slice(mLo - 1, mHi);              // months touched, for the charts
+    const pad = n => String(n).padStart(2, '0');
+    _winLabel = pad(a.d) + ' ' + MONTHS[a.m - 1].slice(0, 3) + ' – ' + pad(b.d) + ' ' + MONTHS[b.m - 1].slice(0, 3);
+  } else if (_mSel !== 'all' && MONTHS.indexOf(_mSel) > -1) {
     H1 = [_mSel];
     _winLabel = _mSel.slice(0, 3);
   } else {
@@ -10609,11 +10651,16 @@ function renderYearCompare() {
                                 : 'Jan–' + MONTHS[lastIdx].slice(0, 3);
   }
 
+  // One predicate used by every KPI below, so the period and the month
+  // fallback can never diverge.
+  const _inWindow = _ycDayFilter ? _ycDayFilter : (r => H1.includes(r._monthName));
+
   // Keep the page subtitle honest about which window is being compared
   (function () {
     var sub = document.querySelector('#page-yearcompare .yc-subtitle');
     if (sub) sub.textContent = 'Side-by-side KPI comparison · ' + _winLabel
-      + (H1.length === 1 ? ' only' : ' for both years');
+      + (H1.length === 1 && !_ycHasPeriod ? ' only' : ' for both years')
+      + (_ycHasPeriod ? '  ·  from your period (year ignored — same days compared in each year)' : '');
   })();
 
   function kpis(rows) {
@@ -10628,8 +10675,8 @@ function renderYearCompare() {
   }
 
   const k25 = kpis(rows25);
-  const k26 = kpis(rows26.filter(r => H1.includes(r._monthName))); // H1 only for fair compare
-  const k25h1 = kpis(rows25.filter(r => H1.includes(r._monthName))); // H1 2025 for fair compare
+  const k26   = kpis(rows26.filter(_inWindow)); // same window in both years
+  const k25h1 = kpis(rows25.filter(_inWindow)); // ditto, for a fair comparison
 
   function delta(a, b, pct) {
     const d = b - a;
