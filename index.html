@@ -116,7 +116,10 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 }
 .page-title { font-size:16px; font-weight:700; color:var(--text); flex:1; }
 .page-subtitle { font-size:13px; color:var(--text2); }
-.topbar-filters { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.topbar-filters { display:flex; gap:8px; align-items:center; }
+.period-preset { background:var(--card2); border:1px solid var(--border); color:var(--text2);
+  font-size:10px; padding:4px 7px; border-radius:5px; cursor:pointer; }
+.period-preset:hover { border-color:var(--teal); color:var(--teal); }
 .filter-select {
   background:var(--card); border:1px solid var(--border); color:var(--text);
   padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer;
@@ -1069,13 +1072,16 @@ if (_checkSession()) {
     </div>
     <div>
       <div class="page-title" id="page-title">Executive Summary</div>
-      <div class="page-subtitle" id="page-subtitle">Kitchino — High-End Kitchens & Furniture, Egypt</div>
+      <!-- Subtitle removed at Nabila's request (Aug 2026). The element is kept
+           but empty and hidden, so any future code that targets #page-subtitle
+           still finds it rather than throwing. -->
+      <div class="page-subtitle" id="page-subtitle" style="display:none"></div>
       <span id="period-badge" style="display:none;background:rgba(0,172,193,0.15);border:1px solid rgba(0,172,193,0.45);color:var(--teal);font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;white-space:nowrap;margin-left:8px"></span>
     </div>
     <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark / light mode"
       style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:15px;cursor:pointer;line-height:1;transition:all .2s;margin-right:4px">🌙</button>
     <div class="topbar-filters">
-      <select class="filter-select" id="filter-year" onchange="applyFilters()">
+      <select class="filter-select" id="filter-year" onchange="onYearMonthChange()">
         <option value="all" selected>All Years</option>
         <option value="2024">2024</option>
         <option value="2025">2025</option>
@@ -1087,21 +1093,36 @@ if (_checkSession()) {
       <select class="filter-select" id="filter-area" onchange="applyFilters()">
         <option value="all">All Areas</option>
       </select>
-      <select class="filter-select" id="filter-month" onchange="applyFilters()" style="min-width:120px">
+      <select class="filter-select" id="filter-month" onchange="onYearMonthChange()" style="min-width:120px">
         <option value="all">All Months</option>
       </select>
-      <!-- Period range. Setting either date takes over from Year/Month, which
-           are cleared and disabled to avoid contradictory combinations
-           (e.g. Year 2025 with a 2026 range, which returns nothing). -->
-      <div id="period-filter" style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:3px 6px">
-        <span style="font-size:10px;color:var(--text3);white-space:nowrap">From</span>
-        <input type="date" id="filter-from" onchange="onPeriodChange()" title="Period start"
-          style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;width:118px;cursor:pointer">
-        <span style="font-size:10px;color:var(--text3)">To</span>
-        <input type="date" id="filter-to" onchange="onPeriodChange()" title="Period end"
-          style="background:transparent;border:none;color:var(--text);font-size:11px;outline:none;width:118px;cursor:pointer">
-        <button id="period-clear" onclick="clearPeriod()" title="Clear period"
-          style="display:none;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px">×</button>
+      <!-- Period range, in a popover so the fixed-height topbar stays one row.
+           Two inline date inputs made the bar wrap and clipped the header. -->
+      <div id="period-filter" style="position:relative">
+        <button id="period-btn" class="filter-select" onclick="togglePeriodPanel(event)" title="Filter this page by a date range"
+          style="white-space:nowrap">📅 Period</button>
+        <div id="period-panel" style="display:none;position:absolute;top:34px;right:0;z-index:400;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.28);width:250px">
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px">Filter this page by period</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:10px">Applies to this page only</div>
+          <label style="display:block;font-size:10px;color:var(--text3);margin-bottom:3px">From</label>
+          <input type="date" id="filter-from" onchange="onPeriodChange()"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 7px;border-radius:6px;margin-bottom:8px">
+          <label style="display:block;font-size:10px;color:var(--text3);margin-bottom:3px">To</label>
+          <input type="date" id="filter-to" onchange="onPeriodChange()"
+            style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:12px;padding:5px 7px;border-radius:6px;margin-bottom:10px">
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
+            <button onclick="setPeriodPreset('mtd')"  class="period-preset">This month</button>
+            <button onclick="setPeriodPreset('last')" class="period-preset">Last month</button>
+            <button onclick="setPeriodPreset('q')"    class="period-preset">This quarter</button>
+            <button onclick="setPeriodPreset('ytd')"  class="period-preset">YTD</button>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button id="period-clear" onclick="clearPeriod()"
+              style="flex:1;background:none;border:1px solid var(--border);color:var(--text2);padding:5px;border-radius:6px;cursor:pointer;font-size:11px">Clear</button>
+            <button onclick="togglePeriodPanel()"
+              style="flex:1;background:var(--teal);border:none;color:#fff;padding:5px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700">Done</button>
+          </div>
+        </div>
       </div>
       <input type="text" class="search-box" id="global-search" placeholder="🔍 Search customer, location, designer, source…" oninput="applyFilters()">
       <div class="live-dot" title="Live"></div>
@@ -3247,15 +3268,24 @@ function _syncPeriodUI() {
   const clr = document.getElementById('period-clear');
   const box = document.getElementById('period-filter');
 
-  if (active) {
-    if (yEl) { yEl.value = 'all'; yEl.disabled = true; yEl.style.opacity = .45; }
-    if (mEl) { mEl.value = 'all'; mEl.disabled = true; mEl.style.opacity = .45; }
-  } else {
-    if (yEl) { yEl.disabled = false; yEl.style.opacity = 1; }
-    if (mEl) { mEl.disabled = false; mEl.style.opacity = 1; }
+  // Year/Month stay fully usable. Disabling them made the portal look broken;
+  // instead, touching either one clears the period (see onYearMonthChange).
+  if (yEl) { yEl.disabled = false; yEl.style.opacity = 1; }
+  if (mEl) { mEl.disabled = false; mEl.style.opacity = 1; }
+
+  // The button itself reports the active range, so the state is visible even
+  // when the panel is closed.
+  const btn = document.getElementById('period-btn');
+  if (btn) {
+    const fmt = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
+    btn.textContent = active
+      ? '📅 ' + (from ? fmt(from) : '…') + ' – ' + (to ? fmt(to) : '…')
+      : '📅 Period';
+    btn.style.borderColor = active ? 'var(--teal)' : 'var(--border)';
+    btn.style.color       = active ? 'var(--teal)' : 'var(--text)';
+    btn.style.fontWeight  = active ? '700' : '400';
   }
-  if (clr) clr.style.display = active ? 'inline' : 'none';
-  if (box) box.style.borderColor = active ? 'var(--teal)' : 'var(--border)';
+  if (clr) clr.style.display = active ? 'block' : 'block';
 
   const badge = document.getElementById('period-badge');
   if (badge) {
@@ -3291,6 +3321,58 @@ function onPeriodChange() {
 
   _syncPeriodUI();
   applyFilters();
+}
+
+// Year and Month describe the same axis as the period, so the two cannot both
+// apply. Choosing a Year/Month drops any period rather than fighting with it.
+function onYearMonthChange() {
+  const page = _activePageName();
+  const { from, to } = _periodFilter();
+  if (from || to) {
+    const f = document.getElementById('filter-from');
+    const t = document.getElementById('filter-to');
+    if (f) f.value = '';
+    if (t) t.value = '';
+    if (page) { delete PAGE_PERIODS[page]; BUILT_PERIOD_SIG[page] = ''; }
+    _syncPeriodUI();
+  }
+  applyFilters();
+}
+
+function togglePeriodPanel(ev) {
+  if (ev) ev.stopPropagation();
+  const p = document.getElementById('period-panel');
+  if (!p) return;
+  p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
+}
+
+// Close the panel when clicking elsewhere, so it doesn't sit over the page.
+document.addEventListener('click', function (e) {
+  const wrap = document.getElementById('period-filter');
+  const p    = document.getElementById('period-panel');
+  if (p && wrap && p.style.display === 'block' && !wrap.contains(e.target)) p.style.display = 'none';
+});
+
+function setPeriodPreset(kind) {
+  const now = new Date();
+  const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  let from, to;
+  if (kind === 'mtd') {
+    from = new Date(now.getFullYear(), now.getMonth(), 1); to = now;
+  } else if (kind === 'last') {
+    from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    to   = new Date(now.getFullYear(), now.getMonth(), 0);
+  } else if (kind === 'q') {
+    const q = Math.floor(now.getMonth() / 3);
+    from = new Date(now.getFullYear(), q * 3, 1); to = now;
+  } else { // ytd
+    from = new Date(now.getFullYear(), 0, 1); to = now;
+  }
+  const f = document.getElementById('filter-from');
+  const t = document.getElementById('filter-to');
+  if (f) f.value = iso(from);
+  if (t) t.value = iso(to);
+  onPeriodChange();
 }
 
 function clearPeriod() {
@@ -3939,7 +4021,13 @@ function updateKPICards() {
     var labelEl=document.getElementById('current-month-label');
     var vsEl=document.getElementById('current-month-vs-prev');
     if(heroEl) heroEl.textContent=curCount.toLocaleString();
-    if(labelEl) labelEl.textContent=MN[curMo-1]+' '+curY;
+    // This card is deliberately live — it always reports the real current
+    // month from the full dataset, ignoring filters. Without saying so, it
+    // looks like a filter that failed to apply (e.g. August showing while a
+    // Jan–Jul period is active).
+    var _pp = (typeof _periodFilter === 'function') ? _periodFilter() : {from:null,to:null};
+    var _filtersOn = (_pp.from || _pp.to);
+    if(labelEl) labelEl.textContent = MN[curMo-1]+' '+curY + (_filtersOn ? '  ·  live, ignores period' : '');
     if(vsEl){
       if(prevCount>0){
         var diff=curCount-prevCount, pct=Math.abs(Math.round(diff/prevCount*100));
@@ -3975,9 +4063,19 @@ function updateKPICards() {
       var cvrN  = s.total > 0 ? (s.contracted / s.total * 100).toFixed(1) : '0.0';
       var discN = s.total > 0 ? (s.discussion / s.total * 100).toFixed(1) : '0.0';
       var canN  = s.total > 0 ? (s.cancelled  / s.total * 100).toFixed(1) : '0.0';
-      var baseNote = yr === '2025'
-        ? '<span style="color:var(--text3);font-size:10px">2025 data · no prior year in system</span>'
-        : '<span style="color:var(--text3);font-size:10px">All available data</span>';
+      // A period narrows the data without touching the Year select, so this
+      // label previously read "All available data" while a range was active —
+      // directly contradicting the figure above it.
+      var _p = _periodFilter();
+      var baseNote;
+      if (_p.from || _p.to) {
+        baseNote = '<span style="color:var(--teal);font-size:10px">'
+                 + (_p.from || 'start') + ' → ' + (_p.to || 'today') + '</span>';
+      } else if (yr === '2025') {
+        baseNote = '<span style="color:var(--text3);font-size:10px">2025 data · no prior year in system</span>';
+      } else {
+        baseNote = '<span style="color:var(--text3);font-size:10px">All available data</span>';
+      }
       subHtml('kpi-sub-total',      baseNote);
       subHtml('kpi-sub-customers',  '<span style="color:var(--text3)">unique clients</span>');
       subHtml('kpi-sub-contracted', '<span style="color:var(--teal)">' + cvrN + '% conv. rate</span>');
