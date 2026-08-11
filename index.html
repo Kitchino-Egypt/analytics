@@ -1107,7 +1107,7 @@ if (_checkSession()) {
       <select class="filter-select" id="filter-area" onchange="applyFilters()">
         <option value="all">All Areas</option>
       </select>
-      <select class="filter-select" id="filter-month" onchange="onYearMonthChange()" style="min-width:120px">
+      <select class="filter-select" id="filter-month" onchange="onMonthChange()" style="min-width:120px">
         <option value="all">All Months</option>
       </select>
       <!-- Period range, in a popover so the fixed-height topbar stays one row.
@@ -1325,7 +1325,7 @@ if (_checkSession()) {
   <div class="kpi-grid kpi-4" id="exec-kpis" style="margin-bottom:10px">
     <div class="kpi-card green"><div class="kpi-icon">📏</div><div class="kpi-label">Total Measures</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub" id="kpi-sub-total">—</div></div>
     <div class="kpi-card"><div class="kpi-icon">👤</div><div class="kpi-label">Unique Customers</div><div class="kpi-value" id="kpi-customers">—</div><div class="kpi-sub" id="kpi-sub-customers">—</div></div>
-    <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub" id="kpi-sub-contracted">—</div></div>
+    <div class="kpi-card teal"><div class="kpi-icon">✅</div><div class="kpi-label">Contracted (Measures)</div><div class="kpi-value" id="kpi-contracted">—</div><div class="kpi-sub" id="kpi-sub-contracted">—</div></div>
     <div class="kpi-card blue"><div class="kpi-icon">🤝</div><div class="kpi-label">Contracted Customers</div><div class="kpi-value" id="kpi-exec-contr-custs">—</div><div class="kpi-sub" id="kpi-exec-contr-custs-sub">unique contracted clients</div></div>
   </div>
   <!-- Exec KPIs — Row 2: Performance -->
@@ -3370,6 +3370,24 @@ function onPeriodChange(manualEdit) {
 
 // Year and Month describe the same axis as the period, so the two cannot both
 // apply. Choosing a Year/Month drops any period rather than fighting with it.
+// Month and period both narrow the same axis, and a month outside the active
+// range yields an empty page. Choosing a month therefore drops the period,
+// rather than intersecting the two.
+function onMonthChange() {
+  const page = _activePageName();
+  const { from, to } = _periodFilter();
+  const mv = document.getElementById('filter-month')?.value;
+  if (mv && mv !== 'all' && (from || to)) {
+    const f = document.getElementById('filter-from');
+    const t = document.getElementById('filter-to');
+    if (f) f.value = '';
+    if (t) t.value = '';
+    if (page) { delete PAGE_PERIODS[page]; delete _ACTIVE_PRESET[page]; BUILT_PERIOD_SIG[page] = ''; }
+  }
+  _syncPeriodUI();
+  applyFilters();
+}
+
 function onYearMonthChange() {
   const page = _activePageName();
   const { from, to } = _periodFilter();
@@ -5867,11 +5885,26 @@ function renderFollowupTable() {
     if (!d) return null;
     const m4 = d.match(/(\d{4})/); return m4 ? m4[1] : null;
   };
+  // Period range, applied to the contract date — the same field the Year
+  // filter above uses. Without this the page silently ignored the period while
+  // the header badge said one was active.
+  const _fuPer = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
+  const _fuLo = _fuPer.from ? new Date(_fuPer.from + 'T00:00:00').getTime() : null;
+  const _fuHi = _fuPer.to   ? new Date(_fuPer.to   + 'T23:59:59').getTime() : null;
+
   const _mainFiltered = CONTRACTS_DATA.filter(c => {
     if (_mainDes  !== 'all' && c.designer !== _mainDes)  return false;
     if (_mainYear !== 'all') {
       const cy = _parseCYear(c.date);
       if (cy && cy !== _mainYear) return false;
+    }
+    if (_fuLo !== null || _fuHi !== null) {
+      const t = c.date ? new Date(c.date).getTime() : NaN;
+      // Undated contracts are kept, matching the Year filter's behaviour above.
+      if (!isNaN(t)) {
+        if (_fuLo !== null && t < _fuLo) return false;
+        if (_fuHi !== null && t > _fuHi) return false;
+      }
     }
     return true;
   });
