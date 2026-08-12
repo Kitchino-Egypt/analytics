@@ -5449,11 +5449,12 @@ function _mvcSubtitle(elId, statsId) {
 
   const custs      = Object.keys(perCust);
   const distinct   = custs.length;
-  const repeat     = custs.filter(c => perCust[c].n > 1).length;
-  const multiMonth = custs.filter(c => perCust[c].months.size > 1).length;
-  const repeatPct  = distinct > 0 ? (repeat / distinct * 100) : 0;
+  const multi      = custs.filter(c => perCust[c].n > 1).length;   // 2+ measures
+  const oneOff     = distinct - multi;                              // exactly 1
+  const returning  = custs.filter(c => perCust[c].months.size > 1).length;
   const perCustAvg = distinct > 0 ? (rows.length / distinct) : 0;
   const monthlySum = Object.values(perMonth).reduce((n, set) => n + set.size, 0);
+  const pct = n => distinct > 0 ? (n / distinct * 100).toFixed(1) + '%' : '0%';
 
   // Subtitle: reconciles the chart against the KPI card
   const el = document.getElementById(elId);
@@ -5462,28 +5463,46 @@ function _mvcSubtitle(elId, statsId) {
       + '<b>' + distinct.toLocaleString() + '</b> distinct customers overall'
       + (monthlySum > distinct
           ? ' — the monthly points total ' + monthlySum.toLocaleString()
-            + ', because ' + multiMonth.toLocaleString() + ' returned in another month'
+            + ', because ' + returning.toLocaleString() + ' returned in another month'
           : '');
   }
 
-  // Stat strip: the repeat-business figures, surfaced as KPIs
   const box = document.getElementById(statsId);
   if (!box) return;
-  const chip = (label, value, sub, colour) =>
+
+  // One-off + Multi-measure partition the customer base and therefore SUM to
+  // the distinct total. Returning is a SUBSET of multi-measure (anyone active
+  // in two months necessarily has 2+ measures), so it is labelled "of which"
+  // and visually separated — adding it to the others would double-count.
+  const chip = (label, value, sub, colour, subset) =>
       '<div style="flex:1 1 150px;min-width:140px;background:' + colour + '14;border:1px solid ' + colour
-    + '3a;border-left:3px solid ' + colour + ';border-radius:8px;padding:8px 10px">'
-    + '<div style="font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3)">' + label + '</div>'
+    + '3a;border-left:3px solid ' + colour + ';border-radius:8px;padding:8px 10px'
+    + (subset ? ';margin-left:10px' : '') + '">'
+    + '<div style="font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3)">'
+    + (subset ? '↳ ' : '') + label + '</div>'
     + '<div style="font-size:20px;font-weight:800;color:' + colour + ';line-height:1.15;margin:1px 0">' + value + '</div>'
     + '<div style="font-size:10px;color:var(--text3)">' + sub + '</div>'
     + '</div>';
 
   box.innerHTML =
-      chip('Repeat Customers', repeat.toLocaleString(),
-           repeatPct.toFixed(1) + '% of ' + distinct.toLocaleString() + ' · 2+ measures', TEAL)
+      chip('One-off Customers', oneOff.toLocaleString(),
+           pct(oneOff) + ' · exactly 1 measure', '#94a3b8')
+    + chip('Multi-Measure Customers', multi.toLocaleString(),
+           pct(multi) + ' · 2+ measures', TEAL)
+    + chip('Returning Customers', returning.toLocaleString(),
+           'came back in a later month', GOLD, true)
     + chip('Measures per Customer', perCustAvg.toFixed(2),
-           rows.length.toLocaleString() + ' measures ÷ ' + distinct.toLocaleString() + ' customers', BLUE)
-    + chip('Returned in Another Month', multiMonth.toLocaleString(),
-           'active across 2+ months', GOLD);
+           rows.length.toLocaleString() + ' ÷ ' + distinct.toLocaleString(), BLUE);
+
+  // Spell out the arithmetic, so nobody has to reverse-engineer which figures
+  // add up and which are nested.
+  box.insertAdjacentHTML('beforeend',
+      '<div style="flex:1 1 100%;font-size:10px;color:var(--text3);margin-top:2px">'
+    + oneOff.toLocaleString() + ' + ' + multi.toLocaleString() + ' = '
+    + distinct.toLocaleString() + ' customers. Returning ('
+    + returning.toLocaleString() + ') is part of Multi-Measure, not additional — '
+    + 'the other ' + (multi - returning).toLocaleString()
+    + ' took all their measures within a single month (multi-room orders).</div>');
 }
 
 function buildMTMeasuresCustomersChart() {
