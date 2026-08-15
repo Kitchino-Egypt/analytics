@@ -549,16 +549,19 @@ tbody td.muted { color:var(--text2); }
    ══════════════════════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════════════════════
    SIGN-IN  —  full-bleed split screen
-   A small centred card floating on an empty background reads as a utility
-   dialog. This uses the whole viewport: a brand panel carrying the identity,
-   and a work panel carrying the form. Standard for corporate platforms, and
-   it lets the wordmark be presented at proper scale.
-   Collapses to a single column under 860px, where the brand panel becomes a
-   slim header rather than stealing half the screen from the keyboard.
+   Palette locked to the brand: white, the wordmark's own grey (#404041,
+   sampled from the logo file), black, and gold as the single accent.
+   Gold is used sparingly — eyebrow, badge, list markers, focus ring — so it
+   reads as a considered detail rather than decoration. The action button is
+   grey→black; a gold button at that size would cheapen the whole screen.
    ══════════════════════════════════════════════════════════════════════════ */
 #kitchino-login-overlay {
+  --k-grey:  #404041;   /* sampled from the logo */
+  --k-black: #0d0d0e;
+  --k-gold:  #c2a15c;   /* on dark */
+  --k-gold-d:#9a7c3c;   /* on white — darker for contrast */
   position:fixed; inset:0; z-index:99999;
-  background:var(--card, #fff);
+  background:#ffffff;
   display:grid; grid-template-columns:minmax(0,0.95fr) minmax(0,1.05fr);
   font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
   overflow:auto;
@@ -568,140 +571,133 @@ tbody td.muted { color:var(--text2); }
 /* ── Brand panel ─────────────────────────────────────────────────────────── */
 .login-brand-panel {
   position:relative; overflow:hidden;
-  background:
-    radial-gradient(120% 90% at 12% 0%, #232e3b 0%, transparent 55%),
-    linear-gradient(158deg, #1b242f 0%, #141b24 100%);
+  background:linear-gradient(158deg, #1a1a1c 0%, var(--k-black) 100%);
   display:flex; flex-direction:column; justify-content:space-between;
   padding:60px 56px;
 }
-/* Oversized chevron lifted from the K in the wordmark — the brand's own
-   geometry, bled off the edge, rather than a generic gradient blob. */
+/* Oversized chevron lifted from the K in the wordmark, bled off the edge.
+   One line in logo grey, one in gold — the brand's own geometry. */
 .login-brand-panel::before {
   content:''; position:absolute; right:-90px; top:50%;
   width:340px; height:340px; transform:translateY(-50%) rotate(45deg);
-  border-right:1.5px solid rgba(255,255,255,0.07);
-  border-top:1.5px solid rgba(255,255,255,0.07);
+  border-right:1.5px solid rgba(255,255,255,0.10);
+  border-top:1.5px solid rgba(255,255,255,0.10);
 }
 .login-brand-panel::after {
   content:''; position:absolute; right:30px; top:50%;
   width:340px; height:340px; transform:translateY(-50%) rotate(45deg);
-  border-right:1.5px solid rgba(255,255,255,0.035);
-  border-top:1.5px solid rgba(255,255,255,0.035);
+  border-right:1.5px solid rgba(194,161,92,0.22);
+  border-top:1.5px solid rgba(194,161,92,0.22);
 }
 .login-brand-mark { position:relative; z-index:1; }
 .login-brand-mark img {
   width:210px; max-width:70%; height:auto; display:block;
-  filter:invert(1) brightness(2);          /* wordmark is dark; panel is dark */
+  filter:brightness(0) invert(1);          /* wordmark grey → pure white */
 }
-.login-brand-copy { position:relative; z-index:1; max-width:420px; }
+.login-brand-copy { position:relative; z-index:1; max-width:440px; }
 .login-badge {
   display:inline-block; font-size:10px; font-weight:700; letter-spacing:1.6px;
-  text-transform:uppercase; color:#8fa3b8;
-  border:1px solid rgba(255,255,255,0.13); border-radius:100px;
+  text-transform:uppercase; color:var(--k-gold);
+  border:1px solid rgba(194,161,92,0.38); border-radius:100px;
   padding:5px 13px; margin-bottom:22px;
 }
 .login-brand-copy h2 {
-  font-size:31px; line-height:1.28; font-weight:600; color:#f2f5f8;
-  letter-spacing:-0.7px; margin-bottom:15px; max-width:11ch;
+  font-size:31px; line-height:1.28; font-weight:600; color:#ffffff;
+  letter-spacing:-0.7px; margin-bottom:15px; max-width:12ch;
 }
-.login-brand-copy p { font-size:13.5px; line-height:1.7; color:#93a2b3; max-width:42ch; }
-/* Scope list — states what the platform actually covers. More useful to a
-   colleague signing in than a marketing slogan would be. */
+.login-brand-copy p { font-size:13.5px; line-height:1.7; color:#9a9a9c; max-width:42ch; }
 .login-scope { list-style:none; margin:26px 0 0; padding:0; }
 .login-scope li {
-  font-size:12.5px; color:#b6c2ce; padding:7px 0 7px 20px; position:relative;
-  border-top:1px solid rgba(255,255,255,0.055);
+  font-size:12.5px; color:#c4c4c6; padding:7px 0 7px 20px; position:relative;
+  border-top:1px solid rgba(255,255,255,0.07);
 }
-.login-scope li:last-child { border-bottom:1px solid rgba(255,255,255,0.055); }
+.login-scope li:last-child { border-bottom:1px solid rgba(255,255,255,0.07); }
 .login-scope li::before {
-  content:'›'; position:absolute; left:2px; top:6px; color:#5f7285; font-size:14px;
+  content:'›'; position:absolute; left:2px; top:6px; color:var(--k-gold); font-size:14px;
 }
 .login-brand-meta {
   position:relative; z-index:1;
   display:flex; gap:26px; flex-wrap:wrap;
-  font-size:11px; color:#7d8d9e; letter-spacing:.3px;
+  font-size:11px; color:#7d7d7f; letter-spacing:.3px;
 }
 .login-brand-meta div { display:flex; align-items:center; gap:7px; }
-.login-brand-meta span { opacity:.8; }
+.login-brand-meta span { opacity:.85; }
 
 /* ── Form panel ──────────────────────────────────────────────────────────── */
 .login-form-panel {
   display:flex; align-items:center; justify-content:center;
-  padding:48px 40px; background:var(--card, #fff);
+  padding:48px 40px; background:#ffffff;
 }
-.login-card {
-  width:100%; max-width:352px;
-}
-.login-brand { display:none; }              /* the panel carries the brand now */
+.login-card { width:100%; max-width:352px; }
+.login-brand { display:none; }
 
 .login-eyebrow {
   font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-  color:var(--accent, #2b4c7e); margin-bottom:12px;
+  color:var(--k-gold-d); margin-bottom:12px;
 }
 .login-title {
-  font-size:27px; font-weight:650; color:var(--text, #16191f);
+  font-size:27px; font-weight:650; color:var(--k-black);
   margin-bottom:8px; letter-spacing:-0.6px;
 }
 .login-subtitle {
-  font-size:13.5px; color:var(--text3, #79818f); margin-bottom:32px; line-height:1.6;
+  font-size:13.5px; color:#6e6e70; margin-bottom:32px; line-height:1.6;
 }
 .login-field { margin-bottom:18px; }
 .login-field label {
-  display:block; font-size:10px; font-weight:700; color:var(--text3, #79818f);
+  display:block; font-size:10px; font-weight:700; color:#7a7a7c;
   letter-spacing:.9px; text-transform:uppercase; margin-bottom:8px;
 }
 .login-input-wrap { position:relative; }
 .login-input-wrap input {
   width:100%; box-sizing:border-box; padding:13px 44px 13px 15px;
-  background:var(--bg, #f6f7f9); border:1px solid var(--border-strong, #cfd4db);
-  border-radius:8px;
-  color:var(--text, #16191f); font-size:14px; outline:none;
+  background:#fafafa; border:1px solid #d8d8d9; border-radius:8px;
+  color:var(--k-black); font-size:14px; outline:none;
   transition:border-color .18s, box-shadow .18s, background .18s;
   font-family:inherit;
 }
 .login-input-wrap input:focus {
-  border-color:var(--accent, #2b4c7e); background:var(--card, #fff);
-  box-shadow:0 0 0 3px var(--accent-soft, rgba(43,76,126,.12));
+  border-color:var(--k-gold-d); background:#ffffff;
+  box-shadow:0 0 0 3px rgba(154,124,60,0.14);
 }
-.login-input-wrap input::placeholder { color:var(--text3, #9aa0a6); }
+.login-input-wrap input::placeholder { color:#a5a5a7; }
 .login-eye {
   position:absolute; right:11px; top:50%; transform:translateY(-50%);
   background:none; border:none; cursor:pointer;
-  color:var(--text3, #79818f); font-size:15px; padding:2px 4px; transition:color .18s;
+  color:#9a9a9c; font-size:15px; padding:2px 4px; transition:color .18s;
 }
-.login-eye:hover { color:var(--text, #16191f); }
+.login-eye:hover { color:var(--k-black); }
 
 .login-error {
-  background:var(--negative-soft, #fbeceb); border:1px solid var(--negative, #b0271f);
+  background:#faf4ea; border:1px solid rgba(154,124,60,0.5);
   border-radius:8px; padding:10px 13px;
-  font-size:12px; color:var(--negative, #b0271f); margin-bottom:16px;
+  font-size:12px; color:#7d5f27; margin-bottom:16px;
   display:none; align-items:center; gap:8px;
 }
 .login-error.visible { display:flex; }
 
 .login-btn {
   width:100%; padding:13px;
-  background:var(--accent, #2b4c7e); border:1px solid var(--accent, #2b4c7e);
-  border-radius:8px; color:#fff; font-size:14px; font-weight:600;
+  background:var(--k-grey); border:1px solid var(--k-grey);
+  border-radius:8px; color:#ffffff; font-size:14px; font-weight:600;
   cursor:pointer; letter-spacing:.2px; transition:background .18s, border-color .18s;
 }
 .login-btn:hover:not(:disabled) {
-  background:var(--accent-hover, #1f3a63); border-color:var(--accent-hover, #1f3a63);
+  background:var(--k-black); border-color:var(--k-black);
 }
 .login-btn:disabled { opacity:.5; cursor:not-allowed; }
 
 .login-footer {
-  margin-top:30px; padding-top:20px; border-top:1px solid var(--border, #e3e6ea);
-  font-size:10.5px; color:var(--text3, #79818f); letter-spacing:.4px;
+  margin-top:30px; padding-top:20px; border-top:1px solid #e8e8e9;
+  font-size:10.5px; color:#8e8e90; letter-spacing:.4px;
 }
-.login-footer span { color:var(--text2, #4a5260); font-weight:600; }
+.login-footer span { color:var(--k-grey); font-weight:600; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
   #kitchino-login-overlay { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
   .login-brand-panel { padding:26px 24px; }
   .login-brand-panel::before, .login-brand-panel::after { display:none; }
-  .login-brand-copy, .login-brand-meta { display:none; }   /* keep the mark, drop the prose */
+  .login-brand-copy, .login-brand-meta { display:none; }
   .login-brand-mark img { width:150px; }
   .login-form-panel { padding:32px 24px 48px; align-items:flex-start; }
   .login-title { font-size:23px; }
