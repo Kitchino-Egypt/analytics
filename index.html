@@ -6,61 +6,154 @@
 <title>Kitchino Analytics — Operations Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+/* ══════════════════════════════════════════════════════════════════════════
+   KITCHINO DESIGN SYSTEM  —  v2 (Aug 2026)
+   ─────────────────────────────────────────────────────────────────────────
+   Replaces an ad-hoc palette of 124 distinct hex values with one restrained
+   token set. Principles:
+     • Neutrals carry the interface. Colour must earn its place.
+     • ONE accent (deep slate blue) for primary metrics, active state, links.
+     • Semantic colour ONLY for status: positive / warning / negative.
+     • Both themes are defined together — dark is not an inversion of light.
+   The legacy aliases at the end of each block (--green, --gold, --red …) map
+   the old names onto the new system, so the ~1,545 inline styles that
+   reference them adopt the new palette without being rewritten individually.
+   ══════════════════════════════════════════════════════════════════════════ */
 :root {
-  --bg: #f5f6fa;
-  --bg2: #ececf2;
-  --card: #ffffff;
-  --card2: #f8f9fc;
-  --border: #e2e4ef;
-  --green: #34a853;
-  --green2: #46c060;
-  --green3: #2d8f40;
-  --teal: #00897b;
-  --text: #202124;
-  --text2: #5f6368;
-  --text3: #9aa0a6;
-  --gold: #f9ab00;
-  --red: #ea4335;
-  --blue: #4285f4;
-  --purple: #ce93d8;
+  /* ── Surfaces ─────────────────────────────────────────────────────── */
+  --bg:            #f6f7f9;   /* page */
+  --bg2:           #eceef2;   /* recessed areas */
+  --card:          #ffffff;   /* raised surface */
+  --card2:         #f4f6f8;   /* nested surface, table stripes */
+  --border:        #e3e6ea;   /* hairlines */
+  --border-strong: #cfd4db;   /* emphasis dividers, input outlines */
+
+  /* ── Text ─────────────────────────────────────────────────────────── */
+  --text:  #16191f;   /* primary  — headings, KPI values */
+  --text2: #4a5260;   /* secondary — labels, body */
+  --text3: #79818f;   /* tertiary — captions, hints */
+
+  /* ── Accent (single) ──────────────────────────────────────────────── */
+  --accent:          #2b4c7e;
+  --accent-hover:    #1f3a63;
+  --accent-soft:     #eaeff7;
+  --accent-border:   #c3d0e4;
+  --accent-contrast: #ffffff;
+
+  /* ── Semantic status ──────────────────────────────────────────────── */
+  --positive:      #2e7d55;
+  --positive-soft: #e9f2ed;
+  --warning:       #9a6516;
+  --warning-soft:  #fbf1e3;
+  --negative:      #b0271f;
+  --negative-soft: #fbeceb;
+
+  /* ── Type scale ───────────────────────────────────────────────────── */
+  --fs-xs: 11px;  --fs-sm: 12px;  --fs-md: 13px;
+  --fs-lg: 15px;  --fs-xl: 18px;  --fs-2xl: 24px;  --fs-3xl: 30px;
+
+  /* ── Spacing (4px grid) ───────────────────────────────────────────── */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+
+  /* ── Radius & elevation ───────────────────────────────────────────── */
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
+  --shadow-md: 0 2px 6px rgba(16,24,40,0.07);
+
+  /* ── Legacy aliases — keep old markup working on the new palette ──── */
+  --green:  var(--positive);
+  --green2: var(--positive);
+  --green3: var(--positive);
+  --teal:   var(--accent);
+  --gold:   var(--warning);
+  --red:    var(--negative);
+  --blue:   var(--accent);
+  --purple: var(--text2);
+
   --sidebar-w: 240px;
 }
+/* Chart sequence kept separate for readability */
+:root {
+  --c1: #2b4c7e;   /* accent      — primary series */
+  --c2: #7d99c0;   /* accent 40%  — secondary series */
+  --c3: #8c95a1;   /* slate       — tertiary / neutral */
+  --c4: #2e7d55;   /* green       — only where 'positive' is meant */
+  --c5: #9a6516;   /* amber       — only where 'caution' is meant */
+  --c6: #5a6270;   /* charcoal    — overflow / 'other' */
+}
 /* ── DARK MODE ───────────────────────────────────────────────────────────── */
+/* Dark theme — a designed counterpart, not an inversion. Every accent and
+   semantic colour is re-specified: the previous build redefined only the 8
+   neutral tokens, leaving light-mode accents sitting on dark backgrounds,
+   which is why some elements read as heavy or washed out. */
 body.dark {
-  --bg: #0f1117;
-  --bg2: #161b27;
-  --card: #1c2333;
-  --card2: #1e2740;
-  --border: #2d3748;
-  --text: #e2e8f0;
-  --text2: #94a3b8;
-  --text3: #64748b;
+  --bg:            #12151a;
+  --bg2:           #0d1014;
+  --card:          #1a1e25;
+  --card2:         #212630;
+  --border:        #2a3039;
+  --border-strong: #3b434f;
+
+  --text:  #e7eaef;
+  --text2: #a2abb8;
+  --text3: #7a8494;
+
+  --accent:          #7ba3e0;   /* lifted for contrast on dark surfaces */
+  --accent-hover:    #9abaeb;
+  --accent-soft:     rgba(123,163,224,0.13);
+  --accent-border:   rgba(123,163,224,0.34);
+  --accent-contrast: #0d1014;
+
+  --positive:      #5fb98b;
+  --positive-soft: rgba(95,185,139,0.14);
+  --warning:       #d8a05a;
+  --warning-soft:  rgba(216,160,90,0.14);
+  --negative:      #e2726a;
+  --negative-soft: rgba(226,114,106,0.14);
+
+  --c1: #7ba3e0; --c2: #4d6f9f; --c3: #98a2b0;
+  --c4: #5fb98b; --c5: #d8a05a; --c6: #6f7a89;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.45);
 }
 body.dark .sidebar {
-  background: #090c14 !important;
-  border-right-color: #1a1f2e !important;
+  background: var(--bg2);
+  border-right-color: var(--border);
 }
 body.dark .kpi-card { box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
 body.dark .chart-card, body.dark .table-card { box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
-body.dark table thead th { background: #1a2035; }
+body.dark table thead th { background: var(--card2); }
 body.dark table tbody tr:hover { background: rgba(255,255,255,0.04); }
 * { margin:0; padding:0; 
 
 /* Card elevation - Contracts Dashboard style */
 .page-content div[style*="border-radius:12px"] { box-shadow: 0 1px 8px rgba(0,0,60,0.07); }
 .page-content div[style*="border-radius:16px"] { box-shadow: 0 1px 8px rgba(0,0,60,0.07); }
-/* === DAYLIGHT MODE: dark sidebar + light content === */
+/* ── NAVIGATION ─────────────────────────────────────────────────────────────
+   Previously a hard-coded dark rail forced into BOTH themes with !important,
+   so "Light Mode" was never actually light. Now it uses tokens and follows the
+   active theme. The !important flags are gone — they existed only to beat the
+   base .sidebar rule, which these now override by source order instead. */
 .sidebar {
-  background: #1e1e30 !important;
-  border-right-color: #2d2d4a !important;
+  background: var(--card);
+  border-right: 1px solid var(--border);
 }
-.sidebar .logo-text { color: #e8e8f6 !important; }
-.sidebar .logo-sub  { color: #9090b8 !important; }
-.sidebar .nav-label { color: #5c5c8a !important; }
-.sidebar .nav-item  { color: #a0a0c0 !important; }
-.sidebar .nav-item:hover { background: rgba(0,200,83,.09) !important; color: #e0e0f0 !important; }
-.sidebar .nav-item.active { color: #34a853 !important; border-left-color: #34a853 !important; background: rgba(52,168,83,.15) !important; }
-.sidebar .nav-badge { background: var(--red) !important; color: #fff !important; }
+.sidebar .logo-text { color: var(--text); }
+.sidebar .logo-sub  { color: var(--text3); }
+.sidebar .nav-label {
+  color: var(--text3); font-size:var(--fs-xs); font-weight:700;
+  letter-spacing:.9px; text-transform:uppercase;
+}
+.sidebar .nav-item  { color: var(--text2); font-size:var(--fs-md); }
+.sidebar .nav-item:hover { background: var(--bg2); color: var(--text); }
+/* Active state carries the single accent — the one place navigation uses colour */
+.sidebar .nav-item.active {
+  color: var(--accent); border-left-color: var(--accent);
+  background: var(--accent-soft); font-weight:600;
+}
+.sidebar .nav-badge { background: var(--negative); color:#fff; }
 box-sizing:border-box; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
 
@@ -75,9 +168,9 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
   display:flex; align-items:center; gap:10px;
 }
 .logo-icon {
-  width:36px; height:36px; background:linear-gradient(135deg,var(--green),var(--teal));
-  border-radius:8px; display:flex; align-items:center; justify-content:center;
-  font-size:18px; font-weight:900; color:#000; flex-shrink:0;
+  width:36px; height:36px; background:var(--accent);
+  border-radius:var(--r-md); display:flex; align-items:center; justify-content:center;
+  font-size:var(--fs-xl); font-weight:800; color:var(--accent-contrast); flex-shrink:0;
 }
 .logo-text { font-size:15px; font-weight:700; color:var(--text); line-height:1.2; }
 .logo-sub { font-size:10px; color:var(--text2); }
@@ -173,22 +266,28 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 }
 .kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,60,0.10); }
 .kpi-card::before { display:none; }
-.kpi-label { font-size:12px; color:var(--text2); text-transform:uppercase; letter-spacing:.8px; margin-bottom:8px; }
-.kpi-value { font-size:30px; font-weight:800; color:var(--text); line-height:1; }
-.kpi-sub { font-size:13px; color:var(--text2); margin-top:6px; display:flex; align-items:center; gap:4px; }
+.kpi-label { font-size:var(--fs-xs); font-weight:600; color:var(--text3);
+  text-transform:uppercase; letter-spacing:.7px; margin-bottom:var(--sp-2); }
+.kpi-value { font-size:var(--fs-3xl); font-weight:700; color:var(--text); line-height:1.05;
+  letter-spacing:-0.5px; font-variant-numeric:tabular-nums; }
+.kpi-sub { font-size:var(--fs-sm); color:var(--text3); margin-top:var(--sp-2);
+  display:flex; align-items:center; gap:var(--sp-1); }
 .kpi-up { color:var(--green); }
 .kpi-down { color:var(--red); }
 .kpi-icon { position:absolute; top:14px; right:16px; font-size:22px; opacity:.18; }
-.kpi-card.green  { background:linear-gradient(135deg,rgba(52,168,83,0.09) 0%,rgba(52,168,83,0.03) 100%);  border-left-color:#34a853; }
-.kpi-card.teal   { background:linear-gradient(135deg,rgba(0,172,193,0.09) 0%,rgba(0,172,193,0.03) 100%);  border-left-color:#00acc1; }
-.kpi-card.gold   { background:linear-gradient(135deg,rgba(249,171,0,0.45) 0%,rgba(249,171,0,0.28) 100%);  border-left-color:#f9ab00; }
-.kpi-card.red    { background:linear-gradient(135deg,rgba(249,171,0,0.45) 0%,rgba(249,171,0,0.28) 100%);  border-left-color:#f9ab00; }
-.kpi-card.blue   { background:linear-gradient(135deg,rgba(66,133,244,0.09) 0%,rgba(66,133,244,0.03) 100%);border-left-color:#4285f4; }
-.kpi-card.purple { background:linear-gradient(135deg,rgba(156,39,176,0.09) 0%,rgba(156,39,176,0.03) 100%);border-left-color:#9c27b0; }
-.kpi-card.green:hover  { border-left-color:#34a853; }
-.kpi-card.teal:hover   { border-left-color:#00acc1; }
-.kpi-card.gold:hover   { border-left-color:#f9ab00; }
-.kpi-card.red:hover    { border-left-color:#f9ab00; }
+/* Variants now differ ONLY by a status rail. The tinted gradients were doing
+   decorative work: with six on one row, nothing read as more important than
+   anything else. A flat surface plus one accent edge keeps the grid calm and
+   lets the NUMBERS carry the hierarchy.
+   NOTE: .red was defined with gold values (rgba(249,171,0)) — every "red" card
+   had been rendering amber. Fixed here. */
+.kpi-card.green  { background:var(--card); border-left-color:var(--positive); }
+.kpi-card.teal   { background:var(--card); border-left-color:var(--accent);   }
+.kpi-card.gold   { background:var(--card); border-left-color:var(--warning);  }
+.kpi-card.red    { background:var(--card); border-left-color:var(--negative); }
+.kpi-card.blue   { background:var(--card); border-left-color:var(--accent);   }
+.kpi-card.purple { background:var(--card); border-left-color:var(--text3);    }
+.kpi-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-strong); }
 .kpi-card.gold .kpi-value,.kpi-card.gold .kpi-label,.kpi-card.gold .kpi-sub { color:#1e1e1e; }
 .kpi-card.red  .kpi-value,.kpi-card.red  .kpi-label,.kpi-card.red  .kpi-sub { color:#1e1e1e; }
 .kpi-card.blue:hover   { border-left-color:#4285f4; }
@@ -247,13 +346,15 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .chart-2 { grid-template-columns:1fr 1fr; }
 .chart-3 { grid-template-columns:2fr 1fr; }
 .chart-32 { grid-template-columns:3fr 2fr; }
+/* The 3px blue top bar appeared on EVERY chart card, so it signalled nothing
+   while adding a strong colour to every block on the page. Removed. */
 .chart-card {
-  background:var(--card); border:1px solid var(--border); border-radius:12px;
-  padding:18px; position:relative; box-shadow:0 1px 8px rgba(0,0,60,0.07);
-  border-top:3px solid #4285f4;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--r-lg);
+  padding:var(--sp-5); position:relative; box-shadow:var(--shadow-sm);
 }
-.chart-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
-.chart-subtitle { font-size:12px; color:var(--text2); margin-bottom:16px; }
+.chart-title { font-size:var(--fs-lg); font-weight:650; color:var(--text);
+  margin-bottom:var(--sp-1); letter-spacing:-0.2px; }
+.chart-subtitle { font-size:var(--fs-sm); color:var(--text3); margin-bottom:var(--sp-4); }
 .chart-wrap { position:relative; }
 canvas { max-width:100%; }
 
@@ -3923,10 +4024,47 @@ Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
 Chart.defaults.font.size = 11;
 
 const GREEN = '#34a853';
-const TEAL  = '#00acc1';
-const GOLD  = '#f9ab00';
-const RED   = '#ea4335';
-const BLUE  = '#4285f4';
+// Chart colours resolve from the CSS design tokens rather than being fixed
+// hexes, so a theme switch changes the charts too. Read live via _tok() —
+// getComputedStyle reflects whichever theme is active.
+function _tok(name, fallback) {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  } catch (e) { return fallback; }
+}
+// Kept as `let` (not const) so _refreshChartTheme() can re-resolve them.
+let TEAL  = _tok('--accent',   '#2b4c7e');
+let GOLD  = _tok('--warning',  '#9a6516');
+let RED   = _tok('--negative', '#b0271f');
+let BLUE  = _tok('--accent',   '#2b4c7e');
+// Ordered sequence for multi-series charts. Priority order, not rainbow order:
+// the first two carry the story, the rest recede.
+let CHART_SEQ = ['--c1','--c2','--c3','--c4','--c5','--c6'].map(t => _tok(t, '#2b4c7e'));
+
+// Chart.js global defaults — typography and grid follow the theme so every
+// chart in the portal inherits them without per-chart configuration.
+function _refreshChartTheme() {
+  TEAL  = _tok('--accent',   '#2b4c7e');
+  GOLD  = _tok('--warning',  '#9a6516');
+  RED   = _tok('--negative', '#b0271f');
+  BLUE  = _tok('--accent',   '#2b4c7e');
+  CHART_SEQ = ['--c1','--c2','--c3','--c4','--c5','--c6'].map(t => _tok(t, '#2b4c7e'));
+  if (typeof Chart === 'undefined') return;
+  Chart.defaults.color            = _tok('--text3', '#79818f');
+  Chart.defaults.font.family      = "'Segoe UI', system-ui, -apple-system, sans-serif";
+  Chart.defaults.font.size        = 11;
+  Chart.defaults.borderColor      = _tok('--border', '#e3e6ea');
+  Chart.defaults.plugins.legend.labels.boxWidth  = 10;
+  Chart.defaults.plugins.legend.labels.boxHeight = 10;
+  Chart.defaults.plugins.legend.labels.padding   = 12;
+  Chart.defaults.plugins.tooltip.backgroundColor = _tok('--text', '#16191f');
+  Chart.defaults.plugins.tooltip.padding         = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius    = 6;
+  Chart.defaults.plugins.tooltip.titleFont       = { size: 12, weight: '600' };
+  Chart.defaults.plugins.tooltip.bodyFont        = { size: 11 };
+}
+if (typeof Chart !== 'undefined') _refreshChartTheme();
 const PURPLE= '#9c27b0';
 
 function gradientGreen(ctx, area) {
@@ -8776,6 +8914,29 @@ function toggleTheme() {
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.textContent = dark ? '☀️' : '🌙';
   try { localStorage.setItem('kitchino-theme', dark ? 'dark' : 'light'); } catch(e){}
+
+  // Charts bake their colours in at construction time, so switching theme used
+  // to leave axis text and grid lines from the previous theme in place. Re-read
+  // the tokens, then rebuild the visible page.
+  if (typeof _refreshChartTheme === 'function') _refreshChartTheme();
+  try {
+    const active = document.querySelector('.page.active')?.id.replace('page-','');
+    if (active) {
+      builtPages.delete(active);
+      if (typeof PAGE_BUILDERS !== 'undefined' && PAGE_BUILDERS[active]) {
+        PAGE_BUILDERS[active]();
+        builtPages.add(active);
+      }
+      // Pages that render outside PAGE_BUILDERS
+      if (active === 'instfollowup' && typeof _INST_DATA !== 'undefined' && _INST_DATA) _instRender(_INST_DATA);
+      if (active === 'yearcompare') {
+        if (typeof renderYearCompare === 'function') renderYearCompare();
+        if (typeof renderLongRunTrend === 'function') renderLongRunTrend();
+      }
+    }
+    // Everything else rebuilds on next visit
+    builtPages.forEach(p => { if (p !== document.querySelector('.page.active')?.id.replace('page-','')) builtPages.delete(p); });
+  } catch (e) { console.warn('[Theme] redraw skipped:', e.message); }
 }
 
 function showNoPayList() {
