@@ -1955,11 +1955,16 @@ if (_checkSession()) {
 <!-- PAGE 8: CUSTOMER FOLLOW-UP -->
 <div class="page" id="page-followup">
   <!-- Row 1: Main KPIs -->
-  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px">
+  <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:12px">
     <div class="kpi-card blue">
       <div class="kpi-label">Total Sales Orders</div>
       <div class="kpi-value" id="fu-total">—</div>
       <div class="kpi-sub">active orders</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Individual Customers</div>
+      <div class="kpi-value" id="fu-customers">—</div>
+      <div class="kpi-sub" id="fu-customers-sub">distinct customers</div>
     </div>
     <div class="kpi-card green">
       <div class="kpi-label">عقد / CONTRACT</div>
@@ -2045,9 +2050,9 @@ if (_checkSession()) {
   </div>
 </div>
 <div id="fu-safe-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuSafeModal()">
-  <div style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px;position:relative">
+  <div id="fu-safe-modal-box" style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px;max-height:84vh;overflow-y:auto;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-size:16px;font-weight:700;color:var(--text)">✅ Safe Zone Breakdown</div>
+      <div id="fu-safe-modal-title" style="font-size:16px;font-weight:700;color:var(--text)">✅ Safe Zone Breakdown</div>
       <button onclick="closeFuSafeModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
     </div>
     <div id="fu-safe-modal-body" style="display:flex;flex-direction:column;gap:14px"></div>
@@ -6390,8 +6395,20 @@ function renderFollowupTable() {
   const _fuInvoice   = _mainFiltered.filter(c => _isInvFU(c)).length;
   const _fuSafe      = _fuND.filter(c => c.safe).length;  // safe = non-declined safe orders
   const _fuOverdue   = _fuND.filter(c => !c.safe).length; // active but not yet safe
+  // Distinct customers behind those orders. Names are normalised (case and
+  // internal spacing) before counting, otherwise "Ahmed  Ali" and "ahmed ali"
+  // would count twice. One customer with three orders counts once, which is
+  // why this number is lower than Total Sales Orders.
+  const _fuCustKey = c => (c.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  const _fuCustSet = new Set(_mainFiltered.map(_fuCustKey).filter(Boolean));
+  const _fuCustomers = _fuCustSet.size;
+
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
   _setFu('fu-total',         _fuTotal);
+  _setFu('fu-customers',     _fuCustomers);
+  _setFu('fu-customers-sub', _fuCustomers > 0
+      ? (_fuTotal / _fuCustomers).toFixed(2) + ' orders per customer'
+      : 'distinct customers');
   _setFu('fu-contracts',     _fuContracts);
   _setFu('fu-contracts-sub', _fuTotal > 0 ? Math.round(_fuContracts/_fuTotal*100)+'% of total' : 'of total');
   _setFu('fu-invoice',       _fuInvoice);
