@@ -3447,6 +3447,21 @@ function engine_cleanRows(rawRows) {
 }
 
 // ── Filter rows — identical logic to Data Studio dimension filters ────────────
+// ── CANONICAL CUSTOMER KEY ───────────────────────────────────────────────────
+// One definition of "the same customer", used by every count in the portal.
+// Previously six places each rolled their own: five did trim + lowercase, while
+// the Contracted Customers Follow-up card also collapsed internal whitespace.
+// The result was that "Ahmed  Ali" and "Ahmed Ali" merged on one page and
+// counted twice on another, so the two pages could never reconcile even in
+// principle. Collapsing runs of whitespace is the correct behaviour — a double
+// space is a typing slip, not a different customer.
+function _custKey(nameOrRow) {
+  const n = (typeof nameOrRow === 'string')
+    ? nameOrRow
+    : (nameOrRow && (nameOrRow.customer || nameOrRow.name)) || '';
+  return String(n).trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 function engine_filterRows(rows, filters) {
   const { year, designer, area, month, from, to } = filters || {};
   // Range bounds are inclusive and compared on calendar day, so a row dated
@@ -3942,7 +3957,7 @@ function engine_compute() {
   const cancelled  = filtered.filter(r=>r._cancelled).length;
   // Use customer name (normalised) as the unique customer identifier.
   // orderCode is a per-project code — unique per row — so it cannot deduplicate customers.
-  const custKey = r => (r.customer||'').trim().toLowerCase();
+  const custKey = _custKey;
   const allCustIds = new Set(filtered.map(custKey).filter(Boolean));
   const contractedCustIds = new Set(filtered.filter(r=>r._contracted).map(custKey).filter(Boolean));
   KITCHINO_STATE.year                = yearF;
@@ -4584,7 +4599,7 @@ function updateKPICards() {
     var cvr25  = t25 > 0 ? pct(c25/t25) : 0;
     var disc25 = t25 > 0 ? pct(d25/t25) : 0;
     var can25  = t25 > 0 ? pct(x25/t25) : 0;
-    var ck = function(r){ return (r.customer||'').trim().toLowerCase(); };
+    var ck = _custKey;
     var cu25 = new Set(comp25.map(ck).filter(Boolean)).size;
 
     var t26 = s.total, c26 = s.contracted, d26 = s.discussion, x26 = s.cancelled, cu26 = s.uniqueCustomers;
@@ -4802,7 +4817,7 @@ function buildExecutiveCharts() {
     (filteredMeasures||[]).forEach(r => {
       const k = r._year + '_' + r._monthOrder;
       if (!_custMo[k]) _custMo[k] = new Set();
-      const c = (r.customer||'').trim().toLowerCase();
+      const c = _custKey(r);
       if (c) _custMo[k].add(c);
     });
     const _ucData = _mData.map(m => (_custMo[m.year+'_'+m.order]||new Set()).size);
@@ -5767,7 +5782,7 @@ function _mvcSubtitle(elId, statsId) {
   const perCust = {};
   const perMonth = {};
   rows.forEach(r => {
-    const c = (r.customer || '').trim().toLowerCase();
+    const c = _custKey(r);
     if (!c) return;
     (perCust[c] = perCust[c] || { n: 0, months: new Set() });
     perCust[c].n++;
@@ -5847,7 +5862,7 @@ function buildMTMeasuresCustomersChart() {
   (filteredMeasures||[]).forEach(r => {
     const k = r._year + '_' + r._monthOrder;
     if (!_custMo[k]) _custMo[k] = new Set();
-    const c = (r.customer||'').trim().toLowerCase();
+    const c = _custKey(r);
     if (c) _custMo[k].add(c);
   });
   const _ucData = _mData.map(m => (_custMo[m.year+'_'+m.order]||new Set()).size);
@@ -6399,8 +6414,7 @@ function renderFollowupTable() {
   // internal spacing) before counting, otherwise "Ahmed  Ali" and "ahmed ali"
   // would count twice. One customer with three orders counts once, which is
   // why this number is lower than Total Sales Orders.
-  const _fuCustKey = c => (c.name || '').trim().replace(/\s+/g, ' ').toLowerCase();
-  const _fuCustSet = new Set(_mainFiltered.map(_fuCustKey).filter(Boolean));
+  const _fuCustSet = new Set(_mainFiltered.map(_custKey).filter(Boolean));
   const _fuCustomers = _fuCustSet.size;
 
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
@@ -6850,7 +6864,7 @@ function renderExecUnitCard() {
     if (r._contracted) m.contracted++;
     if (r._discussion) m.discussion++;
     if (r._cancelled)  m.cancelled++;
-    if (r.customer) m.customers.add(r.customer.trim().toLowerCase());
+    if (r.customer) m.customers.add(_custKey(r));
     const t = (r.orderType || '').trim() || '—';
     m.types[t] = (m.types[t] || 0) + 1;
   });
@@ -9684,7 +9698,7 @@ function buildPresentationSlides() {
   _set('pres-kpi-contracted-sub',  'out of ' + total25.toLocaleString() + ' measures');
   _set('pres-kpi-cvr',             cvr25 + '%');
   // Unique customers (deduplicated by name)
-  var uniqueCusts25 = new Set(rows25.map(function(r){return (r.customer||'').trim().toLowerCase();}).filter(Boolean)).size;
+  var uniqueCusts25 = new Set(rows25.map(_custKey).filter(Boolean)).size;
   _set('pres-kpi-customers',     uniqueCusts25.toLocaleString());
   _set('pres-kpi-customers-sub', 'unique in 2025');
   _set('pres-stat-designers', [...new Set(rows25.map(r=>r.designer).filter(d=>d&&!SKIP.includes((d||'').toLowerCase())))].length);
@@ -9695,7 +9709,7 @@ function buildPresentationSlides() {
     var contrMap = {};
     rows25.forEach(function(r){
       if (r._contracted) {
-        var k = (r.customer||'').trim().toLowerCase();
+        var k = _custKey(r);
         if (k) contrMap[k] = (contrMap[k]||0) + 1;
       }
     });
@@ -9740,13 +9754,13 @@ function buildPresentationSlides() {
   // % of designer's unique customers who appear >1 time across ALL years
   const _allCustOcc = {};
   ENGINE_CLEAN_ROWS.forEach(function(r){
-    var k=(r.customer||'').trim().toLowerCase();
+    var k=_custKey(r);
     if(k) _allCustOcc[k]=(_allCustOcc[k]||0)+1;
   });
   const _desCustMap = {};
   rows25.forEach(function(r){
     var des=r.designer||'Unknown';
-    var k=(r.customer||'').trim().toLowerCase();
+    var k=_custKey(r);
     if(!k) return;
     if(!_desCustMap[des]) _desCustMap[des]=new Set();
     _desCustMap[des].add(k);
@@ -9784,7 +9798,7 @@ function buildPresentationSlides() {
         var tc = tf.filter(function(r){return r._contracted;}).length;
         teamMonthly.push({month:mn.substr(0,3),cvr:Math.round(tc/tf.length*100)});
       });
-      var _cCusts=new Set();rows25.filter(function(r){return r.designer===d.name&&r._contracted;}).forEach(function(r){var k=(r.customer||'').trim().toLowerCase();if(k)_cCusts.add(k);});
+      var _cCusts=new Set();rows25.filter(function(r){return r.designer===d.name&&r._contracted;}).forEach(function(r){var k=_custKey(r);if(k)_cCusts.add(k);});
       _presDesignerData[d.name] = {name:d.name,total:d.total,contracted:d.contracted,rate:d.rate,ab:ab,monthly:monthlyArr,teamMonthly:teamMonthly,teamAvg:teamAvg,crossSales:_desCrossRate[d.name]||0,uniqueCustomers:(_desCustMap[d.name]?_desCustMap[d.name].size:0),contractedCustomers:_cCusts.size};
       var dSafe = d.name.replace(/'/g,"\\'");
       return '<div style="border-bottom:1px solid rgba(0,0,0,0.08)">'
@@ -11263,9 +11277,9 @@ function renderYearCompare() {
   function kpis(rows) {
     const total = rows.length;
     const contracted = rows.filter(r => r._contracted).length;
-    const custs = new Set(rows.map(r=>(r.customer||'').trim().toLowerCase()).filter(Boolean));
+    const custs = new Set(rows.map(_custKey).filter(Boolean));
     const cancelled = rows.filter(r => r._cancelled).length;
-    const contrCusts = new Set(rows.filter(r=>r._contracted).map(r=>(r.customer||'').trim().toLowerCase()).filter(Boolean));
+    const contrCusts = new Set(rows.filter(r=>r._contracted).map(_custKey).filter(Boolean));
     const cvr = total > 0 ? +(contracted/total*100).toFixed(1) : 0;
     const crossSales = contrCusts.size > 0 ? +(contracted/contrCusts.size).toFixed(2) : 0;
     return { total, contracted, custs: custs.size, cancelled, cvr, crossSales, contrCusts: contrCusts.size };
