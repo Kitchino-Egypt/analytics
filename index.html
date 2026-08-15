@@ -355,7 +355,9 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 .chart-title { font-size:var(--fs-lg); font-weight:650; color:var(--text);
   margin-bottom:var(--sp-1); letter-spacing:-0.2px; }
 .chart-subtitle { font-size:var(--fs-sm); color:var(--text3); margin-bottom:var(--sp-4); }
-.chart-wrap { position:relative; }
+/* Wrapper carries the height (set by makeChart from the canvas's height
+   attribute); Chart.js fills it because maintainAspectRatio is forced false. */
+.chart-wrap { position:relative; min-height:200px; }
 canvas { max-width:100%; }
 
 /* TABLES */
@@ -4154,6 +4156,31 @@ function makeChart(id, config) {
   const canvas = document.getElementById(id);
   if(!canvas) return;
   if(chartInstances[id]) { chartInstances[id].destroy(); }
+
+  // ── Height control ────────────────────────────────────────────────────────
+  // Most configs set responsive:true but leave maintainAspectRatio at its
+  // default (true). Chart.js then derives height from the canvas's intrinsic
+  // ratio — a canvas with height="200" and no width attribute is 300×200, so
+  // on a 1500px-wide card the chart renders ~1000px tall. Rather than editing
+  // 48 chart configs, pin the wrapper to the height the canvas asked for and
+  // let the chart fill it.
+  try {
+    const wantsResponsive = !config.options || config.options.responsive !== false;
+    if (wantsResponsive) {
+      const attrH = parseInt(canvas.getAttribute('height'), 10);
+      const h = Math.max(200, isNaN(attrH) ? 260 : attrH);
+      const wrap = canvas.parentElement;
+      if (wrap && wrap.classList.contains('chart-wrap')) {
+        wrap.style.height = h + 'px';
+      } else {
+        canvas.style.height = h + 'px';
+      }
+      config.options = config.options || {};
+      if (config.options.maintainAspectRatio === undefined) {
+        config.options.maintainAspectRatio = false;
+      }
+    }
+  } catch (e) { /* height hint is best-effort — never block the chart */ }
   // Extra top padding so value labels above the tallest bar aren't clipped
   try {
     const hasBar = (config.type === 'bar') ||
