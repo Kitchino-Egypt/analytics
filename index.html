@@ -1151,6 +1151,8 @@ if (_checkSession()) {
       <div id="auto-refresh-countdown" title="Auto-refresh countdown" style="font-size:10px;color:var(--text3);white-space:nowrap;min-width:52px;text-align:center">⏱ 3:00</div>
       <button class="refresh-btn" onclick="exportPDF()">⬇ Export</button>
       <button class="refresh-btn" onclick="showReconciliationPanel()" style="background:rgba(52,168,83,0.82);color:var(--teal);border-color:var(--teal)" title="Data Audit Report">⚙ Audit</button>
+      <button class="refresh-btn" id="fullscreen-btn" onclick="toggleFullscreen()" title="Full screen (F11)"
+        style="background:var(--card);color:var(--text2);border-color:var(--border)">⛶ Full</button>
       <button class="refresh-btn" id="logout-btn" onclick="kitchinoLogout()" style="background:rgba(239,68,68,0.12);color:#ef4444;border-color:rgba(239,68,68,0.45)" title="Sign out of the dashboard">⏻ Logout</button>
     </div>
   </div>
@@ -3423,6 +3425,56 @@ function onYearMonthChange() {
   _syncPeriodUI();
   applyFilters();
 }
+
+// ── FULL SCREEN ─────────────────────────────────────────────────────────────
+// Uses the browser Fullscreen API on the whole document. Vendor-prefixed
+// fallbacks are included for older Safari/IE, which still ship in some office
+// setups. Exiting via Esc is handled by the browser, so the icon is driven by
+// the fullscreenchange event rather than by our own click handler — otherwise
+// pressing Esc would leave the button showing the wrong state.
+function _isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+            document.mozFullScreenElement || document.msFullscreenElement);
+}
+
+function toggleFullscreen() {
+  const el = document.documentElement;
+  if (!_isFullscreen()) {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen ||
+                el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) {
+      const p = req.call(el);
+      if (p && p.catch) p.catch(err => console.warn('[Fullscreen] denied:', err.message));
+    } else {
+      alert('This browser does not support full screen. Press F11 instead.');
+    }
+  } else {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen ||
+                 document.mozCancelFullScreen || document.msExitFullscreen;
+    if (exit) exit.call(document);
+  }
+}
+
+function _syncFullscreenBtn() {
+  const b = document.getElementById('fullscreen-btn');
+  if (!b) return;
+  const on = _isFullscreen();
+  b.innerHTML = on ? '⤡ Exit' : '⛶ Full';
+  b.title     = on ? 'Exit full screen (Esc)' : 'Full screen (F11)';
+  b.style.background  = on ? 'rgba(0,172,193,0.15)' : 'var(--card)';
+  b.style.color       = on ? 'var(--teal)'          : 'var(--text2)';
+  b.style.borderColor = on ? 'var(--teal)'          : 'var(--border)';
+  // Charts size to their container, so they need a nudge after the viewport
+  // changes or they keep the old dimensions until the next filter change.
+  setTimeout(() => {
+    try {
+      Object.values(chartInstances || {}).forEach(c => { if (c && c.resize) c.resize(); });
+    } catch (e) {}
+  }, 250);
+}
+
+['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange']
+  .forEach(ev => document.addEventListener(ev, _syncFullscreenBtn));
 
 function togglePeriodPanel(ev) {
   if (ev) ev.stopPropagation();
