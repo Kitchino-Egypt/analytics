@@ -80,7 +80,7 @@
   --k-grey:  #404041;
   --k-black: #0d0d0e;
   --k-gold:  #c2a15c;
-  --k-gold-d:#9a7c3c;
+  --k-gold-d:#87692f;
 
   --sidebar-w: 240px;
 }
@@ -129,11 +129,9 @@ body.dark {
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
   --shadow-md: 0 2px 8px rgba(0,0,0,0.45);
 }
-/* The rail is black in both themes — the brand frame stays constant while the
-   data area switches. */
 body.dark .sidebar {
-  background: linear-gradient(180deg, #161618 0%, #000 100%);
-  border-right-color: rgba(255,255,255,0.07);
+  background: var(--card);
+  border-right-color: var(--border);
 }
 body.dark .kpi-card { box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
 body.dark .chart-card, body.dark .table-card { box-shadow: 0 1px 8px rgba(0,0,0,0.4); }
@@ -149,28 +147,37 @@ body.dark table tbody tr:hover { background: rgba(255,255,255,0.04); }
    so "Light Mode" was never actually light. Now it uses tokens and follows the
    active theme. The !important flags are gone — they existed only to beat the
    base .sidebar rule, which these now override by source order instead. */
+/* White rail, matching the topbar — one continuous light frame. Nav labels in
+   the wordmark's own grey (#404041) so the navigation and the logo share a
+   colour; gold is reserved for the current page. */
 .sidebar {
-  background: linear-gradient(180deg, #1a1a1c 0%, var(--k-black) 100%);
-  border-right: 1px solid rgba(255,255,255,0.07);
+  background: var(--card);
+  border-right: 1px solid var(--border);
 }
-.sidebar .sidebar-logo { border-bottom-color: rgba(255,255,255,0.09); }
-.sidebar .logo-text { color: var(--k-white); }
-.sidebar .logo-sub  { color: #8a8a8c; }
+.sidebar .sidebar-logo { border-bottom-color: var(--border); }
+.sidebar .logo-text { color: var(--k-grey); }
+.sidebar .logo-sub  { color: #6e6e70; }
 .sidebar .nav-label {
   color: #6e6e70; font-size:var(--fs-xs); font-weight:700;
   letter-spacing:1.1px; text-transform:uppercase;
 }
-.sidebar .nav-item  { color: #b4b4b6; font-size:var(--fs-md); }
-.sidebar .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--k-white); }
+.sidebar .nav-item  { color: var(--k-grey); font-size:var(--fs-md); font-weight:500; }
+.sidebar .nav-item:hover { background: var(--bg2); color: var(--k-black); }
 /* Gold marks the current page — the only place navigation uses colour */
 .sidebar .nav-item.active {
-  color: var(--k-gold); border-left-color: var(--k-gold);
-  background: rgba(194,161,92,0.10); font-weight:600;
+  color: var(--k-gold-d); border-left-color: var(--k-gold);
+  background: rgba(194,161,92,0.12); font-weight:600;
 }
-.sidebar .nav-icon { opacity:.85; }
-.sidebar .nav-badge { background: var(--k-gold); color: var(--k-black); font-weight:700; }
-/* Wordmark in the sidebar header, rendered white */
-.sidebar-logo-img { width:118px; height:auto; display:block; filter:brightness(0) invert(1); }
+.sidebar .nav-icon { opacity:1; }
+.sidebar .nav-badge { background: var(--k-gold-d); color: #fff; font-weight:700; }
+/* Wordmark sits on white, so it keeps its own grey — no inversion */
+.sidebar-logo-img { width:118px; height:auto; display:block; }
+/* Dark theme: rail follows the app, wordmark inverts to stay visible */
+body.dark .sidebar .nav-item { color:#d8d8da; }
+body.dark .sidebar .nav-item:hover { color:#fff; }
+body.dark .sidebar .logo-text { color:#fff; }
+body.dark .sidebar .nav-item.active { color:#d9b978; }
+body.dark .sidebar-logo-img { filter:brightness(0) invert(1); }
 box-sizing:border-box; }
 body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
 
@@ -581,7 +588,7 @@ tbody td.muted { color:var(--text2); }
   --k-grey:  #404041;   /* sampled from the logo */
   --k-black: #0d0d0e;
   --k-gold:  #c2a15c;   /* on dark */
-  --k-gold-d:#9a7c3c;   /* on white — darker for contrast */
+  --k-gold-d:#87692f;   /* on white — darker for contrast */
   position:fixed; inset:0; z-index:99999;
   background:#ffffff;
   display:grid; grid-template-columns:minmax(0,0.95fr) minmax(0,1.05fr);
