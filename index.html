@@ -429,6 +429,7 @@ tbody td.muted { color:var(--text2); }
 .badge-blue { background:rgba(26,115,232,0.82); color:#fff; }
 .badge-purple { background:rgba(120,40,180,0.82); color:#fff; }
 .badge-teal { background:rgba(52,168,83,0.82); color:#fff; }
+.badge-gray { background:var(--card2); color:var(--text3); border:1px solid var(--border); }
 
 /* PROGRESS BARS */
 .progress-bar { background:var(--border); border-radius:4px; height:5px; overflow:hidden; }
@@ -1701,7 +1702,7 @@ if (_checkSession()) {
     </div>
     <div style="overflow-x:auto">
       <table id="followup-table">
-        <thead><tr><th>#</th><th>Customer Name</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Contract Date</th><th>Age (Days)</th><th>Aging Category</th><th>Action</th><th>Notes</th></tr></thead>
+        <thead><tr><th>#</th><th>Customer Name</th><th>Order ID</th><th>Designer</th><th>CRM Status</th><th>Contract Date</th><th>Age (Days)</th><th>Aging Category</th><th>Action</th><th>Notes</th></tr></thead>
         <tbody id="followup-tbody"></tbody>
       </table>
     </div>
@@ -2028,7 +2029,7 @@ if (_checkSession()) {
     </div>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Contract Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th><th>Notes</th></tr></thead>
+        <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>CRM Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th><th>Notes</th></tr></thead>
         <tbody id="fu-tbody"></tbody>
       </table>
     </div>
@@ -6406,7 +6407,19 @@ function renderFollowupTable() {
                      : c.age > 60  ? 'badge-red'
                      : c.age >= 45 ? 'badge-gold'
                                    : 'badge-green';
-      const statusBadge = c.status === 'Contract Signed' ? 'badge-teal' : 'badge-gold';
+      // CRM stage replaces Contract Status here: priority is decided by stage,
+      // so showing the stage makes each row's flag self-explanatory.
+      const _CRM_LABEL = {
+        contracted:'Contracted', electromechanic:'Electromechanic', shablona:'Shablona',
+        'designer working':'Designer Work', oto:'Technical Office', auditing:'Auditing',
+        production:'Production', 'final qc':'Final QC', store:'Store', recheck:'Recheck',
+        shipping:'Shipping', installation:'Installation', delivered:'Delivered',
+        declined:'Declined', unknown:'No Stage'
+      };
+      const _crmLabel = _CRM_LABEL[_crmKey] || (c.crm || '').trim() || 'No Stage';
+      // Teal where the stage is exempt, grey where declined, gold where the
+      // order is still in an escalating stage — same three-way split as Priority.
+      const statusBadge = _isDeclined ? 'badge-gray' : (_exempt ? 'badge-teal' : 'badge-gold');
       const noteInfo    = CONTRACT_NOTES[c.orderId];
       const noteText    = noteInfo && noteInfo.note ? noteInfo.note : '';
       const hasReminder = !!(noteInfo && noteInfo.reminderDate && !noteInfo.reminderSent);
@@ -6420,7 +6433,7 @@ function renderFollowupTable() {
         <td>${c.name}</td>
         <td class="muted">${c.orderId}</td>
         <td>${c.designer}</td>
-        <td><span class="badge ${statusBadge}">${c.status}</span></td>
+        <td><span class="badge ${statusBadge}">${_crmLabel}</span></td>
         <td class="muted">${c.date}</td>
         <td><span class="badge ${ageClass}">${c.age} days</span></td>
         <td class="muted">${c.aging}</td>
