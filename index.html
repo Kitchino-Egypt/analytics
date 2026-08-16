@@ -429,7 +429,7 @@ tbody td.muted { color:var(--text2); }
 .badge-blue { background:rgba(26,115,232,0.82); color:#fff; }
 .badge-purple { background:rgba(120,40,180,0.82); color:#fff; }
 .badge-teal { background:rgba(52,168,83,0.82); color:#fff; }
-.badge-gray { background:var(--card2); color:var(--text3); border:1px solid var(--border); }
+.badge-gray { background:transparent; color:var(--text3); border:1px dashed var(--border-strong); }
 
 /* PROGRESS BARS */
 .progress-bar { background:var(--border); border-radius:4px; height:5px; overflow:hidden; }
@@ -6428,15 +6428,31 @@ function renderFollowupTable() {
       const escId   = String(c.orderId||'').replace(/'/g, "\\'");
       const escName = String(c.name||'').replace(/'/g, "\\'");
       const noteTitle = noteText ? noteText.replace(/"/g,'&quot;') : 'Add a follow-up note';
-      return `<tr>
+      // A declined order is closed: it stops ageing, and it should read as
+      // closed at a glance rather than sitting in the list looking live.
+      // Age and Aging Category are shown as "—" because a day count on a dead
+      // order is not just useless, it actively misleads — 216 days implies
+      // something has been neglected for seven months.
+      const _rowStyle = _isDeclined
+        ? ' style="opacity:.5"'
+        : '';
+      const _nameCell = _isDeclined
+        ? `<span style="text-decoration:line-through;text-decoration-thickness:1px">${c.name}</span>`
+        : c.name;
+      const _ageCell = _isDeclined
+        ? '<span class="muted">—</span>'
+        : `<span class="badge ${ageClass}">${c.age} days</span>`;
+      const _agingCell = _isDeclined ? '—' : c.aging;
+
+      return `<tr${_rowStyle}>
         <td class="muted">${i+1}</td>
-        <td>${c.name}</td>
+        <td>${_nameCell}</td>
         <td class="muted">${c.orderId}</td>
         <td>${c.designer}</td>
         <td><span class="badge ${statusBadge}">${_crmLabel}</span></td>
         <td class="muted">${c.date}</td>
-        <td><span class="badge ${ageClass}">${c.age} days</span></td>
-        <td class="muted">${c.aging}</td>
+        <td>${_ageCell}</td>
+        <td class="muted">${_agingCell}</td>
         <td>${priority}</td>
         <td>
           <div onclick="openNoteModal('${escId}','${escName}')" style="cursor:pointer;font-size:11px;white-space:nowrap;${noteText ? 'color:var(--text2)' : 'color:var(--green);font-weight:600'}" title="${noteTitle}">${hasReminder ? '⏰ ' : (noteText ? '🗒 ' : '')}${notePreview}</div>
