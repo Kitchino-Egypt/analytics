@@ -6308,6 +6308,10 @@ function buildCEOCharts() {
 // TABLE RENDERERS
 // ============================================================
 function renderFollowupTable() {
+  // Stage-name normalisation, hoisted so both the priority rule and the
+  // pipeline cards below use exactly the same mapping.
+  const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
+
   // ── Apply main topbar filters to CONTRACTS_DATA ─────────────────────────
   // Month filter is intentionally excluded: the follow-up page shows ALL active
   // contracts for a designer/year — filtering by contract-signed month would
@@ -6367,8 +6371,41 @@ function renderFollowupTable() {
     rowsHtml = `<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px;">No results found${search ? ' for <strong style=\'color:var(--green)\'>"' + search + '"</strong>' : ''}</td></tr>`;
   } else {
     rowsHtml = data.map((c,i) => {
-      const ageClass = c.age > 45 ? 'badge-red' : c.age >= 30 ? 'badge-gold' : 'badge-green';
-      const priority = c.age > 45 ? '🔴 Urgent' : c.age >= 30 ? '🟡 High' : '🟢 Normal';
+      // ── PRIORITY RULE (as specified by Nabila, Aug 2026) ────────────────
+      // Urgent = older than 60 days AND stuck in a stage that is NOT one of:
+      //   Technical Office · Production · Final QC · Store · Shipping
+      // Installation and Delivered are exempt too — an order that far along is
+      // not stuck. Declined orders never escalate.
+      // Previously this was age-only (>45 = Urgent), which flagged delivered
+      // orders and made the whole column unreliable.
+      // EXEMPT — the order is moving through production or is already out.
+      const _EXEMPT_STAGES = [
+        'oto', 'technical office', 'production', 'final qc',
+        'store', 'shipping', 'installation', 'delivered'
+      ];
+      // NOT exempt, deliberately: Contracted · Designer Work · Shablona ·
+      // Electromechanic · Auditing · Recheck · N/A · No Stage.
+      // Auditing and Recheck are quality gates, not progress — an order parked
+      // in either for two months IS stuck and must escalate. Confirmed with
+      // Nabila, Aug 2026. Do not add them to the exempt list.
+      // 'No Stage' (65 orders) also escalates: an unstaged order older than
+      // 60 days is the clearest case of something falling through.
+      const _crmRaw   = (c.crm || '').trim().toLowerCase();
+      const _crmKey   = (typeof _CRM_NORM !== 'undefined' && _CRM_NORM[_crmRaw]) || _crmRaw;
+      const _isDeclined = _crmKey === 'declined';
+      const _exempt   = _EXEMPT_STAGES.indexOf(_crmKey) > -1;
+
+      const priority = _isDeclined ? '⛔ Declined'
+                     : _exempt     ? '✅ On track'
+                     : c.age > 60  ? '🔴 Urgent'
+                     : c.age >= 45 ? '🟡 High'
+                                   : '🟢 Normal';
+      // Age badge follows the same rule — a red 124 days on a delivered order
+      // asserts that action is needed when none is.
+      const ageClass = (_exempt || _isDeclined) ? 'badge-teal'
+                     : c.age > 60  ? 'badge-red'
+                     : c.age >= 45 ? 'badge-gold'
+                                   : 'badge-green';
       const statusBadge = c.status === 'Contract Signed' ? 'badge-teal' : 'badge-gold';
       const noteInfo    = CONTRACT_NOTES[c.orderId];
       const noteText    = noteInfo && noteInfo.note ? noteInfo.note : '';
@@ -6433,7 +6470,6 @@ function renderFollowupTable() {
   _setFu('fu-safe-sub',      _fuTotal > 0 ? Math.round(_fuSafe/_fuTotal*100)+'% in safe stages' : 'Technical Office → Delivered');
   // CRM Status Pipeline
   const _crmMap = {};
-  const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
   _mainFiltered.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
   // Populate designer dropdown from live data
   const _fuDes = [...new Set(_mainFiltered.map(c=>c.designer).filter(Boolean))].sort();
