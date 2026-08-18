@@ -2058,6 +2058,29 @@ if (_checkSession()) {
     </div>
   </div>
 </div>
+<!-- WHATSAPP COMPOSE — choose recipient, edit text, then send -->
+<div id="wa-send-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:20px"
+     onclick="if(event.target===this)closeWaSend()">
+  <div style="background:var(--card);border-radius:14px;width:100%;max-width:460px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#0d0d0e;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="color:#fff;font-size:15px;font-weight:600">✆ Send on WhatsApp</div>
+        <div style="color:#c2a15c;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;margin-top:4px">Nothing sends until you press it in WhatsApp</div>
+      </div>
+      <button onclick="closeWaSend()" style="background:none;border:none;color:#9a9a9c;font-size:22px;cursor:pointer;line-height:1;padding:0">×</button>
+    </div>
+    <div style="overflow-y:auto;padding:14px 20px">
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Message</label>
+      <textarea id="wa-send-msg" rows="7" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);color:var(--text);font-size:12.5px;font-family:inherit;line-height:1.55;outline:none;resize:vertical"></textarea>
+      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin:14px 0 6px">Send to</label>
+      <div id="wa-send-list"></div>
+    </div>
+    <div style="padding:10px 20px;border-top:1px solid var(--border);text-align:right">
+      <button onclick="closeWaSend();openWaNumbers()" style="background:none;border:1px solid var(--border-strong);color:var(--text2);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:11px">Manage numbers</button>
+    </div>
+  </div>
+</div>
+
 <!-- WHATSAPP NUMBER BOOK — kept in this browser, never uploaded with the file -->
 <div id="wa-numbers-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:20px"
      onclick="if(event.target===this)closeWaNumbers()">
@@ -6427,15 +6450,13 @@ function _waLookup(designer) {
   return '';
 }
 
-// Composes the message for one order and opens WhatsApp with it.
+// Opens a compose step rather than firing straight at the assigned designer.
+// The assigned designer is offered first, but any saved contact can receive it
+// — the person who needs chasing is often production or a technician, not the
+// designer whose name is on the order. The message is editable before sending.
 function waSendOrder(orderId) {
   const c = (CONTRACTS_DATA || []).find(x => String(x.orderId) === String(orderId));
   if (!c) return;
-  const num = _waLookup(c.designer);
-  if (!num) {
-    if (confirm('No WhatsApp number saved for ' + (c.designer || 'this designer') + '.\n\nAdd one now?')) openWaNumbers();
-    return;
-  }
   const note = (CONTRACT_NOTES || {})[orderId];
   const stage = (typeof _CRM_NORM !== 'undefined' && _CRM_NORM[(c.crm||'').trim().toLowerCase()])
                 || (c.crm || '').trim() || 'No stage';
@@ -6449,34 +6470,115 @@ function waSendOrder(orderId) {
   if (note && note.note) lines.push('Note: ' + note.note);
   lines.push('', 'Could you share an update please?');
 
-  window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(lines.join('\n')), '_blank');
+  const msg = document.getElementById('wa-send-msg');
+  if (msg) msg.value = lines.join('\n');
+
+  const map = _waNumbers();
+  const names = Object.keys(map).sort((a, b) => {
+    const ad = a.trim().toLowerCase() === String(c.designer||'').trim().toLowerCase();
+    const bd = b.trim().toLowerCase() === String(c.designer||'').trim().toLowerCase();
+    return (bd ? 1 : 0) - (ad ? 1 : 0) || a.localeCompare(b);   // assigned designer first
+  });
+
+  const list = document.getElementById('wa-send-list');
+  if (list) {
+    list.innerHTML = names.length ? names.map(n => {
+      const assigned = n.trim().toLowerCase() === String(c.designer||'').trim().toLowerCase();
+      return '<button onclick="_waFire(\'' + _waEsc(n).replace(/'/g, "\\'") + '\')" '
+        + 'style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:10px;'
+        + 'background:' + (assigned ? 'var(--accent-soft)' : 'none') + ';border:1px solid '
+        + (assigned ? 'var(--k-gold)' : 'var(--border)') + ';border-radius:8px;padding:9px 12px;'
+        + 'margin-bottom:6px;cursor:pointer;text-align:left;font-size:13px;color:var(--text)">'
+        + '<span>' + _waEsc(n) + (assigned ? ' <span style="font-size:10px;color:var(--k-gold-d);font-weight:700">· assigned</span>' : '') + '</span>'
+        + '<span style="font-size:11px;color:var(--text3)">' + _waEsc(map[n]) + '</span></button>';
+    }).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:6px 0">No numbers saved yet. '
+      + '<a href="#" onclick="closeWaSend();openWaNumbers();return false" style="color:var(--k-gold-d)">Add people</a></div>';
+  }
+
+  const m = document.getElementById('wa-send-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function _waFire(name) {
+  const num = _waLookup(name);
+  if (!num) { alert('No usable number saved for ' + name); return; }
+  const msg = document.getElementById('wa-send-msg');
+  const text = msg ? msg.value : '';
+  closeWaSend();
+  window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank');
+}
+function closeWaSend() {
+  const m = document.getElementById('wa-send-modal');
+  if (m) m.style.display = 'none';
 }
 
 // ── Number book ────────────────────────────────────────────────────────────
-function openWaNumbers() {
-  const designers = [...new Set((CONTRACTS_DATA || []).map(c => (c.designer || '').trim()).filter(Boolean))].sort();
-  const map = _waNumbers();
-  const esc = t => String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// Designers come from the contracts data automatically. Anyone else —
+// technicians, production, admin, a supplier — is added by hand in the same
+// book, so the recipient list is not limited to people who appear in the sheet.
+function _waEsc(t) {
+  return String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function _waDesigners() {
+  return [...new Set((CONTRACTS_DATA || []).map(c => (c.designer || '').trim()).filter(Boolean))].sort();
+}
+function _waRow(name, number, custom) {
+  return '<div class="wa-row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'
+    + (custom
+        ? '<input data-wa-name value="' + _waEsc(name) + '" placeholder="Name / role"'
+          + ' style="flex:1;min-width:0;padding:6px 9px;border:1px solid var(--border-strong);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;outline:none">'
+        : '<div style="flex:1;min-width:0;font-size:13px;color:var(--text)">' + _waEsc(name)
+          + '<input type="hidden" data-wa-name value="' + _waEsc(name) + '"></div>')
+    + '<input data-wa-num value="' + _waEsc(number || '') + '" placeholder="01xxxxxxxxx"'
+    + ' style="width:150px;padding:6px 9px;border:1px solid var(--border-strong);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px;outline:none">'
+    + (custom ? '<button onclick="this.closest(\'.wa-row\').remove()" title="Remove"'
+        + ' style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:0 4px">×</button>'
+        : '<span style="width:20px"></span>')
+    + '</div>';
+}
 
-  const rows = designers.map(d =>
-      '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">'
-    + '<div style="flex:1;font-size:13px;color:var(--text)">' + esc(d) + '</div>'
-    + '<input data-wa-designer="' + esc(d) + '" value="' + esc(map[d] || '') + '" placeholder="01xxxxxxxxx"'
-    + ' style="width:170px;padding:6px 9px;border:1px solid var(--border-strong);border-radius:6px;'
-    + 'background:var(--bg);color:var(--text);font-size:12px;outline:none">'
-    + '</div>').join('');
+function openWaNumbers() {
+  const map = _waNumbers();
+  const designers = _waDesigners();
+  const others = Object.keys(map).filter(k => designers.indexOf(k) < 0).sort();
+
+  const head = t => '<div style="font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;'
+    + 'color:var(--text3);margin:14px 0 4px">' + t + '</div>';
+
+  let html = head('Designers');
+  html += designers.length
+    ? designers.map(d => _waRow(d, map[d], false)).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:4px 0">No designers loaded yet.</div>';
+
+  html += head('Other team members');
+  html += '<div id="wa-custom-rows">' + others.map(o => _waRow(o, map[o], true)).join('') + '</div>';
+  html += '<button onclick="_waAddRow()" style="margin-top:8px;background:none;border:1px dashed var(--border-strong);'
+    + 'color:var(--text2);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px">+ Add person</button>';
 
   const body = document.getElementById('wa-numbers-body');
-  if (body) body.innerHTML = rows || '<div style="color:var(--text3);font-size:12px">No designers loaded yet.</div>';
+  if (body) body.innerHTML = html;
   const m = document.getElementById('wa-numbers-modal');
   if (m) m.style.display = 'flex';
 }
 
+function _waAddRow() {
+  const wrap = document.getElementById('wa-custom-rows');
+  if (!wrap) return;
+  wrap.insertAdjacentHTML('beforeend', _waRow('', '', true));
+  const inputs = wrap.querySelectorAll('[data-wa-name]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
 function saveWaNumbers() {
   const out = {};
-  document.querySelectorAll('[data-wa-designer]').forEach(i => {
-    const v = i.value.trim();
-    if (v) out[i.getAttribute('data-wa-designer')] = v;
+  document.querySelectorAll('.wa-row').forEach(r => {
+    const n = r.querySelector('[data-wa-name]');
+    const v = r.querySelector('[data-wa-num]');
+    const name = n ? n.value.trim() : '';
+    const num  = v ? v.value.trim() : '';
+    if (name && num) out[name] = num;
   });
   _waSaveNumbers(out);
   closeWaNumbers();
