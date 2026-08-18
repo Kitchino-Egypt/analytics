@@ -1277,6 +1277,7 @@ if (_checkSession()) {
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
+    <div class="nav-item" data-page="signals"><span class="nav-icon">🛰</span>Signals &amp; Data Health<span class="nav-badge" id="nav-signals-badge" style="display:none"></span></div>
     <div class="nav-item" data-page="forecast"><span class="nav-icon">🔮</span>Forecast &amp; Pipeline</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
     <div class="nav-item" data-page="yearcompare"><span class="nav-icon">📊</span>2025 vs 2026</div>
@@ -2389,6 +2390,44 @@ if (_checkSession()) {
 </div>
 
 
+
+<!-- PAGE: SIGNALS & DATA HEALTH -->
+<div class="page" id="page-signals">
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Signals</div>
+      <div class="kpi-value" id="sig-count">—</div>
+      <div class="kpi-sub" id="sig-count-sub">deviations from baseline</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-label">Data Issues</div>
+      <div class="kpi-value" id="sig-issues">—</div>
+      <div class="kpi-sub" id="sig-issues-sub">rows needing a fix</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Data Health</div>
+      <div class="kpi-value" id="sig-health">—</div>
+      <div class="kpi-sub" id="sig-health-sub">of records clean</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Records Checked</div>
+      <div class="kpi-value" id="sig-checked">—</div>
+      <div class="kpi-sub" id="sig-checked-sub">across all sources</div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">🛰 Signals</div>
+    <div class="chart-subtitle" id="sig-anom-sub">Entities deviating from their own recent baseline — not a ranking</div>
+    <div id="sig-anomalies"></div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:16px">
+    <div class="chart-title">🩺 Data Health</div>
+    <div class="chart-subtitle">Specific rows to correct at source. Every KPI in the portal is computed over these records.</div>
+    <div id="sig-quality"></div>
+  </div>
+</div>
 
 <!-- PAGE: INSTALLATION FOLLOW-UP -->
 <div class="page" id="page-instfollowup">
@@ -7768,6 +7807,319 @@ function _journeyMatches(a, b) {
   return overlap >= Math.min(2, shorter.length) && (overlap / shorter.length) >= 0.6;
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// SIGNALS & DATA HEALTH
+// ══════════════════════════════════════════════════════════════════════════
+// Two jobs the rest of the portal cannot do:
+//   1. SIGNALS — flag entities that have moved away from THEIR OWN recent
+//      behaviour. A league table only tells you who is last, which punishes
+//      whoever handles the hardest areas; a baseline comparison tells you who
+//      CHANGED, which is what deserves a conversation.
+//   2. DATA HEALTH — list the exact rows that are wrong at source. Every KPI
+//      here is computed over these records, so this is upstream of everything.
+// Both are deterministic statistics, no model, so any figure can be traced.
+// ══════════════════════════════════════════════════════════════════════════
+
+// Median and MAD (median absolute deviation). MAD is used instead of standard
+// deviation because a single freak month would inflate SD and hide the very
+// anomalies we are looking for.
+function _sigMedian(a) {
+  if (!a.length) return 0;
+  const v = [...a].sort((x, y) => x - y), m = v.length >> 1;
+  return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2;
+}
+function _sigMAD(a, med) {
+  if (a.length < 2) return 0;
+  return _sigMedian(a.map(x => Math.abs(x - med)));
+}
+
+// Builds a monthly series per entity, then compares the latest COMPLETE month
+// against the median of the months before it.
+function _sigDetect(rows, keyFn, label, opts) {
+  opts = opts || {};
+  const minVol   = opts.minVol   || 8;   // ignore thin months — noise, not signal
+  const minMonths= opts.minMonths|| 3;   // need a baseline to deviate from
+  const out = [];
+
+  // month index -> entity -> {total, contracted}
+  const byMonth = {};
+  rows.forEach(r => {
+    if (!(r._date instanceof Date)) return;
+    const mk = r._year + '-' + String(r._monthOrder).padStart(2, '0');
+    const k  = keyFn(r);
+    if (!k) return;
+    (byMonth[mk] = byMonth[mk] || {});
+    (byMonth[mk][k] = byMonth[mk][k] || { total: 0, contracted: 0 });
+    byMonth[mk][k].total++;
+    if (r._contracted) byMonth[mk][k].contracted++;
+  });
+
+  const months = Object.keys(byMonth).sort();
+  if (months.length < minMonths + 1) return out;
+
+  // The current calendar month is still filling up, so comparing it to
+  // complete months would flag everything. Use the last COMPLETE month.
+  const now = new Date();
+  const curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const usable = months.filter(m => m < curKey);
+  if (usable.length < minMonths + 1) return out;
+
+  const latest = usable[usable.length - 1];
+  const prior  = usable.slice(Math.max(0, usable.length - 7), usable.length - 1);
+
+  const entities = new Set();
+  usable.forEach(m => Object.keys(byMonth[m]).forEach(k => entities.add(k)));
+
+  entities.forEach(k => {
+    const cur = byMonth[latest] && byMonth[latest][k];
+    if (!cur || cur.total < minVol) return;
+
+    const hist = prior.map(m => byMonth[m] && byMonth[m][k]).filter(x => x && x.total >= minVol);
+    if (hist.length < minMonths) return;
+
+    // ── Conversion rate deviation ─────────────────────────────────────────
+    const rates   = hist.map(h => h.contracted / h.total * 100);
+    const curRate = cur.contracted / cur.total * 100;
+    const med     = _sigMedian(rates);
+    const mad     = _sigMAD(rates, med);
+    // 1.4826 scales MAD to be comparable with a standard deviation.
+    const spread  = Math.max(mad * 1.4826, 3);   // floor: ignore sub-3pp wobble
+    const zRate   = (curRate - med) / spread;
+
+    // ── Volume deviation ──────────────────────────────────────────────────
+    const vols    = hist.map(h => h.total);
+    const vMed    = _sigMedian(vols);
+    const vSpread = Math.max(_sigMAD(vols, vMed) * 1.4826, Math.max(2, vMed * 0.15));
+    const zVol    = (cur.total - vMed) / vSpread;
+
+    if (Math.abs(zRate) >= 2) out.push({
+      type: label, name: k, metric: 'Conversion',
+      now: curRate, base: med, delta: curRate - med, z: zRate,
+      unit: 'pp', vol: cur.total, months: hist.length,
+      dir: zRate < 0 ? 'down' : 'up'
+    });
+    if (Math.abs(zVol) >= 2) out.push({
+      type: label, name: k, metric: 'Volume',
+      now: cur.total, base: vMed, delta: cur.total - vMed, z: zVol,
+      unit: '', vol: cur.total, months: hist.length,
+      dir: zVol < 0 ? 'down' : 'up'
+    });
+  });
+
+  return out;
+}
+
+function _sigRenderAnomalies() {
+  const el = document.getElementById('sig-anomalies');
+  const sub = document.getElementById('sig-anom-sub');
+  if (!el) return 0;
+  if (!ENGINE_READY || !ENGINE_CLEAN_ROWS.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">Waiting for data…</div>';
+    return 0;
+  }
+
+  const rows = ENGINE_CLEAN_ROWS;
+  let sig = []
+    .concat(_sigDetect(rows, r => r.designer,  'Designer'))
+    .concat(_sigDetect(rows, r => r.area,      'Area'))
+    .concat(_sigDetect(rows, r => r.orderType, 'Order type', { minVol: 6 }))
+    .concat(_sigDetect(rows, r => r.source,    'Lead source', { minVol: 6 }));
+
+  sig.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
+
+  const now = new Date();
+  const lastComplete = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const MN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  if (sub) sub.textContent = 'Latest complete month (' + MN[lastComplete.getMonth()] + ' '
+      + lastComplete.getFullYear() + ') vs each entity’s own median of up to 6 prior months. '
+      + 'Flagged beyond 2× its normal variation.';
+
+  if (!sig.length) {
+    el.innerHTML = '<div style="padding:14px;border:1px dashed var(--border-strong);border-radius:8px;'
+      + 'color:var(--text3);font-size:12px">Nothing outside normal variation. '
+      + 'Every designer, area, order type and lead source is tracking within its usual range.</div>';
+    return 0;
+  }
+
+  const esc = t => String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  el.innerHTML = sig.slice(0, 20).map(a => {
+    const bad  = a.dir === 'down';
+    const col  = bad ? 'var(--negative)' : 'var(--positive)';
+    const arrow= bad ? '▼' : '▲';
+    const fmt  = v => a.unit === 'pp' ? v.toFixed(1) + '%' : Math.round(v);
+    return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="width:3px;align-self:stretch;background:' + col + ';border-radius:2px"></div>'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div style="font-size:13px;font-weight:600;color:var(--text)">' + esc(a.name)
+      +     ' <span style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">· ' + a.type + '</span></div>'
+      +   '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + a.metric
+      +     ' ' + fmt(a.now) + ' vs baseline ' + fmt(a.base)
+      +     ' · ' + a.months + ' months of history · ' + a.vol + ' measures</div>'
+      + '</div>'
+      + '<div style="text-align:right;white-space:nowrap">'
+      +   '<div style="font-size:15px;font-weight:700;color:' + col + '">' + arrow + ' '
+      +     (a.delta > 0 ? '+' : '') + (a.unit === 'pp' ? a.delta.toFixed(1) + 'pp' : Math.round(a.delta)) + '</div>'
+      +   '<div style="font-size:10px;color:var(--text3)">' + Math.abs(a.z).toFixed(1) + '× normal swing</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  return sig.length;
+}
+
+// ── DATA HEALTH ─────────────────────────────────────────────────────────────
+// Lists the exact rows that are wrong at source. These are the faults found
+// repeatedly while building the portal — negative durations, duplicate project
+// rows, contracts with no CRM stage, Arabic/English name variants that split
+// one entity into two. Each is shown with the offending values so it can be
+// corrected in the sheet rather than worked around here.
+function _sigRenderQuality() {
+  const el = document.getElementById('sig-quality');
+  const groups = [];
+  let checked = 0, issues = 0;
+
+  const esc = t => String(t == null ? '' : t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // ── Measures ──────────────────────────────────────────────────────────────
+  if (ENGINE_READY && ENGINE_CLEAN_ROWS.length) {
+    const R = ENGINE_QUALITY_REPORT || {};
+    const f = R.flags || {}, x = R.exclusions || {};
+    checked += ENGINE_CLEAN_ROWS.length;
+    const items = [];
+    if (f.missingDesigner) items.push({ t:'Measures with no designer', n:f.missingDesigner,
+        d:'Excluded from every designer metric.' });
+    if (f.missingArea)     items.push({ t:'Measures with no area', n:f.missingArea,
+        d:'Missing from Geographic Analysis and area conversion.' });
+    if (f.missingSource)   items.push({ t:'Measures with no lead source', n:f.missingSource,
+        d:'Lead Sources understates by this amount.' });
+    if (f.blankStatus)     items.push({ t:'Measures with blank status', n:f.blankStatus,
+        d:'Counted in totals but in no status bucket, so conversion is diluted.' });
+    if ((f.invalidStatus||[]).length) items.push({ t:'Unrecognised status values', n:f.invalidStatus.length,
+        d:'Values: ' + f.invalidStatus.slice(0,6).map(v => esc(v.value)).join(', ') });
+    if (x.invalidDate)     items.push({ t:'Rows dropped — unreadable visit date', n:x.invalidDate,
+        d:'These never reach any chart.' });
+    if ((x.duplicateCodes||[]).length) items.push({ t:'Duplicate order codes', n:x.duplicateCodes.length,
+        d:'Codes: ' + x.duplicateCodes.slice(0,8).map(esc).join(', ') });
+    issues += items.reduce((a,i) => a + i.n, 0);
+    groups.push({ src:'Measures — Individual tab', rows:ENGINE_CLEAN_ROWS.length, items });
+  }
+
+  // ── Contracts ─────────────────────────────────────────────────────────────
+  if ((CONTRACTS_DATA || []).length) {
+    checked += CONTRACTS_DATA.length;
+    const noStage = CONTRACTS_DATA.filter(c => !(c.crm || '').trim()).length;
+    const noDate  = CONTRACTS_DATA.filter(c => !(c.date || '').trim()).length;
+    const noDes   = CONTRACTS_DATA.filter(c => !(c.designer || '').trim()).length;
+    const negAge  = CONTRACTS_DATA.filter(c => (c.age || 0) < 0).length;
+    const dupIds  = (() => {
+      const seen = {}, dup = [];
+      CONTRACTS_DATA.forEach(c => {
+        const id = String(c.orderId || '').trim();
+        if (!id) return;
+        if (seen[id] && dup.indexOf(id) < 0) dup.push(id);
+        seen[id] = 1;
+      });
+      return dup;
+    })();
+    const items = [];
+    if (noStage) items.push({ t:'Contracts with no CRM stage', n:noStage,
+        d:'They cannot be judged on-track or stuck, so they escalate to Urgent by age alone.' });
+    if (noDate)  items.push({ t:'Contracts with no date', n:noDate,
+        d:'Age cannot be computed; they bypass the year and period filters.' });
+    if (noDes)   items.push({ t:'Contracts with no designer', n:noDes,
+        d:'Absent from Follow-up by Designer.' });
+    if (negAge)  items.push({ t:'Negative contract age', n:negAge,
+        d:'Contract date is in the future — almost always a typing slip in the year.' });
+    if (dupIds.length) items.push({ t:'Duplicate order IDs', n:dupIds.length,
+        d:'IDs: ' + dupIds.slice(0,8).map(esc).join(', ') + ' — these double-count in every total.' });
+    issues += items.reduce((a,i) => a + i.n, 0);
+    groups.push({ src:'Contracts Follow-up', rows:CONTRACTS_DATA.length, items });
+  }
+
+  // ── Installation ──────────────────────────────────────────────────────────
+  if ((typeof _INST_DATA !== 'undefined') && _INST_DATA && _INST_DATA.length) {
+    checked += _INST_DATA.length;
+    const days = r => parseInt(r['إجمالي ايام التركيب'], 10);
+    const neg  = _INST_DATA.filter(r => { const d = days(r); return !isNaN(d) && d < 0; });
+    const huge = _INST_DATA.filter(r => { const d = days(r); return !isNaN(d) && d > 180; });
+    const noTech = _INST_DATA.filter(r => !_instTech(r) && (r['تاريخ بداية التركيب'] || '').trim()).length;
+    const dupProj = (() => {
+      const seen = {}, dup = [];
+      _INST_DATA.forEach(r => {
+        const p = String(r['رقم المشروع'] || '').trim();
+        if (!p) return;
+        if (seen[p] && dup.indexOf(p) < 0) dup.push(p);
+        seen[p] = 1;
+      });
+      return dup;
+    })();
+    // Install recorded as starting before the material was supplied.
+    const badSeq = _INST_DATA.filter(r => {
+      const a = Date.parse(r['تاريخ التوريد'] || ''), b = Date.parse(r['تاريخ بداية التركيب'] || '');
+      return !isNaN(a) && !isNaN(b) && b < a;
+    }).length;
+
+    const items = [];
+    if (neg.length)  items.push({ t:'Negative installation days', n:neg.length,
+        d:'Projects: ' + neg.slice(0,6).map(r => esc(r['رقم المشروع'] || '?')).join(', ')
+          + ' — end date precedes start date.' });
+    if (badSeq)      items.push({ t:'Installation starts before supply', n:badSeq,
+        d:'Makes the Supply → Install Start KPI negative for these rows.' });
+    if (huge.length) items.push({ t:'Installation over 180 days', n:huge.length,
+        d:'Either genuinely stalled or a mistyped year — both worth checking.' });
+    if (dupProj.length) items.push({ t:'Duplicate project numbers', n:dupProj.length,
+        d:'Projects: ' + dupProj.slice(0,8).map(esc).join(', ') + ' — inflate technician averages.' });
+    if (noTech)      items.push({ t:'Started with no technician recorded', n:noTech,
+        d:'Excluded from all technician performance figures.' });
+    issues += items.reduce((a,i) => a + i.n, 0);
+    groups.push({ src:'Installation Follow-up', rows:_INST_DATA.length, items });
+  } else {
+    groups.push({ src:'Installation Follow-up', rows:0, items:[],
+      note:'Open the Installation page once to load this data, then return here.' });
+  }
+
+  if (el) {
+    el.innerHTML = groups.map(g => {
+      const head = '<div style="display:flex;justify-content:space-between;align-items:baseline;'
+        + 'margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border)">'
+        + '<div style="font-size:12px;font-weight:700;color:var(--text)">' + esc(g.src) + '</div>'
+        + '<div style="font-size:10px;color:var(--text3)">' + g.rows.toLocaleString() + ' records</div></div>';
+      if (g.note) return head + '<div style="font-size:12px;color:var(--text3);padding:4px 0">' + esc(g.note) + '</div>';
+      if (!g.items.length) return head
+        + '<div style="font-size:12px;color:var(--positive);padding:4px 0">✓ No issues found</div>';
+      return head + g.items.map(i =>
+          '<div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0">'
+        + '<div style="min-width:44px;text-align:right;font-size:15px;font-weight:700;color:var(--warning)">' + i.n + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        +   '<div style="font-size:12.5px;color:var(--text);font-weight:600">' + esc(i.t) + '</div>'
+        +   '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + i.d + '</div>'
+        + '</div></div>').join('');
+    }).join('');
+  }
+
+  return { issues, checked };
+}
+
+function buildSignalsPage() {
+  const nSig = _sigRenderAnomalies();
+  const q    = _sigRenderQuality();
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('sig-count',  nSig);
+  set('sig-count-sub', nSig ? 'beyond normal variation' : 'all within normal range');
+  set('sig-issues', q.issues.toLocaleString());
+  set('sig-checked', q.checked.toLocaleString());
+  const health = q.checked ? ((q.checked - q.issues) / q.checked * 100) : 100;
+  set('sig-health', health.toFixed(1) + '%');
+  set('sig-health-sub', q.issues ? (q.issues.toLocaleString() + ' to fix') : 'no issues found');
+
+  const badge = document.getElementById('nav-signals-badge');
+  if (badge) {
+    const n = nSig + (q.issues > 0 ? 1 : 0);
+    badge.textContent = nSig || '';
+    badge.style.display = nSig ? 'inline-block' : 'none';
+  }
+}
+
 function buildJourneyPage() {
   _journeyPopulateList();
 }
@@ -8175,7 +8527,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery'
 };
 
 const PAGE_BUILDERS = {
@@ -8194,6 +8546,7 @@ const PAGE_BUILDERS = {
   instfollowup: buildInstFollowupPage,
   receivables: buildReceivablesPage,
   journey: buildJourneyPage,
+  signals: buildSignalsPage,
 };
 
 const builtPages = new Set();
