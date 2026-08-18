@@ -228,11 +228,14 @@ body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background
 /* TOP BAR */
 .topbar {
   background:var(--card); border-bottom:1px solid var(--border); box-shadow:var(--shadow-sm);
-  padding:0 16px; min-height:58px; display:flex; align-items:center; gap:10px;
+  padding:8px 16px; min-height:58px; display:flex; align-items:center; gap:10px;
   position:sticky; top:0; z-index:50;
-  /* Flex children refuse to shrink below their content by default, so adding
-     any control pushed the right-hand buttons off-screen. min-width:0 lets
-     the title and the filter group give way instead of overflowing. */
+  /* Shrinking alone was not enough: below roughly 1450px the controls still
+     ran past the right edge and Audit / Full / Logout became unreachable.
+     The bar now wraps to a second row instead. Safe because the height is
+     min-height, not a fixed 58px — a fixed height was what clipped the header
+     the first time this was attempted. */
+  flex-wrap:wrap;
   overflow:visible;
 }
 .topbar > div:first-of-type, .topbar > div:nth-of-type(2) { min-width:0; }
@@ -283,11 +286,11 @@ body.dark .refresh-btn:hover { color:var(--k-gold); }
 
 /* KPI CARDS */
 .kpi-grid { display:grid; gap:14px; margin-bottom:22px; }
-.kpi-4 { grid-template-columns:repeat(4,1fr); }
-.kpi-3 { grid-template-columns:repeat(3,1fr); }
-.kpi-6 { grid-template-columns:repeat(6,1fr); }
-.kpi-7 { grid-template-columns:repeat(7,1fr); }
-.kpi-8 { grid-template-columns:repeat(8,1fr); }
+.kpi-4 { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+.kpi-3 { grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); }
+.kpi-6 { grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); }
+.kpi-7 { grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); }
+.kpi-8 { grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); }
 .kpi-card {
   background:var(--card); border:1px solid var(--border); border-radius:12px;
   padding:16px 18px; position:relative; overflow:hidden; transition:.2s;
@@ -517,7 +520,7 @@ tbody td.muted { color:var(--text2); }
 ::-webkit-scrollbar-thumb:hover { background:var(--text3); }
 
 /* RESPONSIVE */
-@media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(3,1fr); } .kpi-7 { grid-template-columns:repeat(4,1fr); } .kpi-8 { grid-template-columns:repeat(4,1fr); } }
+@media(max-width:1200px) { .kpi-6 { grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); } .kpi-7 { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); } .kpi-8 { grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); } }
 @media(max-width:900px) {
   /* Hide sidebar completely — shown only when JS adds .open class */
   .sidebar { display:none !important; }
@@ -525,7 +528,7 @@ tbody td.muted { color:var(--text2); }
   /* Main takes full width */
   .main { margin-left:0 !important; width:100% !important; }
   /* Grid adjustments */
-  .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(2,1fr) !important; }
+  .kpi-4,.kpi-3,.kpi-6 { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) !important; }
   .chart-2,.chart-3,.chart-32,.row-2,.row-3 { grid-template-columns:1fr !important; }
   /* Topbar */
   .topbar { padding:0 12px !important; height:52px; }
@@ -560,7 +563,7 @@ tbody td.muted { color:var(--text2); }
 }
 
 /* HEATMAP GRID */
-.heatmap-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+.heatmap-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:3px; }
 .heatmap-cell {
   aspect-ratio:1; border-radius:3px; display:flex; align-items:center;
   justify-content:center; font-size:8px; color:rgba(255,255,255,.6);
@@ -747,10 +750,10 @@ tbody td.muted { color:var(--text2); }
 .login-card.fade-out { animation:loginFadeOut .3s ease forwards; }
 
 .patches-grid {
-  display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-top:4px;
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px; margin-top:4px;
 }
-@media(max-width:1100px){ .patches-grid { grid-template-columns:repeat(3,1fr); } }
-@media(max-width:700px) { .patches-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:1100px){ .patches-grid { grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); } }
+@media(max-width:700px) { .patches-grid { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); } }
 .perf-patch {
   border-radius:16px; border:2px solid; padding:18px 15px 14px;
   display:flex; flex-direction:column; gap:0;
@@ -968,7 +971,7 @@ tbody td.muted { color:var(--text2); }
   font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
   color:var(--text3); margin-bottom:18px;
 }
-.pres-kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+.pres-kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:20px; }
 .pres-kpi-box {
   background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
   border-radius:12px; padding:28px 20px; text-align:center;
@@ -998,7 +1001,7 @@ tbody td.muted { color:var(--text2); }
   font-size:15px; color:var(--text2); line-height:1.6;
 }
 @media(max-width:900px) {
-  .pres-kpi-grid { grid-template-columns:repeat(2,1fr); }
+  .pres-kpi-grid { grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
   .pres-row { grid-template-columns:1fr; }
   .pres-kpi-val { font-size:36px; }
   .pres-slide { padding:24px 20px; min-height:auto; }
@@ -1421,7 +1424,7 @@ if (_checkSession()) {
     </div>
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">OVERVIEW</div>
-    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:18px">
       <div onclick="showPage('executive')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px;cursor:pointer;active:opacity:.8">
         <div style="font-size:20px;margin-bottom:6px">📊</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Executive Summary</div>
@@ -1445,7 +1448,7 @@ if (_checkSession()) {
     </div>
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">TRACKING</div>
-    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:18px">
       <div onclick="showPage('measures')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px;cursor:pointer">
         <div style="font-size:20px;margin-bottom:6px">📋</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Measures Tracking</div>
@@ -1464,7 +1467,7 @@ if (_checkSession()) {
     </div>
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">PERFORMANCE</div>
-    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:18px">
       <div onclick="showPage('designers')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:10px;padding:14px;cursor:pointer">
         <div style="font-size:20px;margin-bottom:6px">🏆</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Designers</div>
@@ -1488,7 +1491,7 @@ if (_checkSession()) {
     </div>
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">INTELLIGENCE</div>
-    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin-bottom:18px">
       <div onclick="showPage('forecast')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:10px;padding:14px;cursor:pointer">
         <div style="font-size:20px;margin-bottom:6px">🔮</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">Forecast</div>
@@ -1497,7 +1500,7 @@ if (_checkSession()) {
     </div>
 
     <div style="font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px">ANALYSIS</div>
-    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+    <div class="mobile-home-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
       <div onclick="showPage('yearcompare')" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:10px;padding:14px;cursor:pointer">
         <div style="font-size:20px;margin-bottom:6px">📊</div>
         <div style="font-size:13px;font-weight:700;color:var(--text)">2025 vs 2026</div>
@@ -1711,7 +1714,7 @@ if (_checkSession()) {
 
 <!-- PAGE 3: MEASURES TRACKING -->
 <div class="page" id="page-measures">
-  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(165px,1fr))">
     <div class="kpi-card green"><div class="kpi-label">Total Records</div><div class="kpi-value" id="mt-total">1,767</div></div>
     <div class="kpi-card red" onclick="showNoPayList()" style="cursor:pointer" title="Click to see customers with no payment">
       <div class="kpi-label">No Pay Customers ↗</div>
@@ -1956,7 +1959,7 @@ if (_checkSession()) {
 <!-- PAGE 8: CUSTOMER FOLLOW-UP -->
 <div class="page" id="page-followup">
   <!-- Row 1: Main KPIs -->
-  <div class="kpi-grid" style="grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:12px">
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:12px">
     <div class="kpi-card blue">
       <div class="kpi-label">Total Sales Orders</div>
       <div class="kpi-value" id="fu-total">—</div>
@@ -2242,7 +2245,7 @@ if (_checkSession()) {
 <div class="page" id="page-ceo">
   <!-- CEO: 4 Primary KPI Cards -->
   <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px" id="ceo-year-label">All Time</div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px">
     <div class="kpi-card green" style="text-align:center;padding:22px 12px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Total Visits</div>
       <div style="font-size:40px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-total">—</div>
@@ -2265,7 +2268,7 @@ if (_checkSession()) {
     </div>
   </div>
   <!-- CEO: 3 Conversion / Rate Metrics -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px">
     <div class="chart-card" style="text-align:center;padding:18px 12px">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Customer Conversion Rate</div>
       <div style="font-size:38px;font-weight:900;color:var(--green);line-height:1" id="ceo-kpi-conv-rate">—</div>
@@ -2294,7 +2297,7 @@ if (_checkSession()) {
       <div class="chart-wrap"><canvas id="chart-ceo-trend" height="110"></canvas></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px">
     <div class="kpi-card" style="text-align:center;padding:18px 12px;border-color:var(--purple);background:linear-gradient(135deg,rgba(120,40,180,0.18),var(--card))">
       <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Busiest Designer This Month</div>
       <div style="font-size:15px;font-weight:800;color:var(--purple);min-height:24px" id="ceo-best-designer-name">—</div>
@@ -2350,7 +2353,7 @@ if (_checkSession()) {
   </div>
   <div class="chart-card">
     <div class="chart-title">Executive Intelligence — Key Findings</div>
-    <div style="margin-top:12px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px" id="exec-findings"></div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px" id="exec-findings"></div>
   </div>
 </div>
 
@@ -2690,7 +2693,7 @@ if (_checkSession()) {
     <div class="pres-tag">SLIDE 4 OF 9 — PERFORMANCE TIERS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
-    <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px"></div>
+    <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -2748,7 +2751,7 @@ if (_checkSession()) {
     <div style="font-size:16px;color:var(--text3);margin-bottom:28px">Same-period comparison · Jan 1 → <span id="pres-h1-asof">Jun 14, 2026</span> vs same window in 2025</div>
 
     <!-- Summary KPIs row -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px">
       <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:22px 16px;text-align:center">
         <div style="font-size:14px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">H1 Measures</div>
         <div style="display:flex;justify-content:space-evenly;align-items:flex-end">
@@ -2883,7 +2886,7 @@ if (_checkSession()) {
   </div>
 
   <!-- KPI Comparison Cards -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px" id="yc-kpi-grid"></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px" id="yc-kpi-grid"></div>
 
   <!-- Monthly trend comparison chart -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
@@ -2911,7 +2914,7 @@ if (_checkSession()) {
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px" id="lr-kpi-grid"></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px" id="lr-kpi-grid"></div>
 
   <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
     <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Measures by Year</div>
