@@ -2016,6 +2016,8 @@ if (_checkSession()) {
     <div class="table-header">
       <div class="table-title">Follow-up Dashboard</div>
       <div class="table-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="filter-select" id="fu-notes-bell" onclick="openNotesPopup(true)"
+          title="Show all notes and reminders" style="cursor:pointer;white-space:nowrap">🔔 Notes</button>
         <select class="filter-select" id="fu-designer-filter" onchange="renderFollowupTable()">
           <option value="all">All Designers</option>
         </select>
@@ -2050,6 +2052,27 @@ if (_checkSession()) {
     </div>
   </div>
 </div>
+<!-- NOTES POP-UP — shown on entering the Contracted Customers Follow-up page -->
+<div id="fu-notes-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9998;align-items:center;justify-content:center;padding:20px"
+     onclick="if(event.target===this)closeNotesPopup()">
+  <div style="background:var(--card);border-radius:14px;width:100%;max-width:760px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+    <div style="background:#0d0d0e;padding:18px 22px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <div style="color:#fff;font-size:16px;font-weight:600">🔔 Contract notes &amp; reminders</div>
+        <div id="fu-notes-popup-sub" style="color:#c2a15c;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;margin-top:5px">—</div>
+      </div>
+      <button onclick="closeNotesPopup()" style="background:none;border:none;color:#9a9a9c;font-size:24px;cursor:pointer;line-height:1;padding:0 2px">×</button>
+    </div>
+    <div id="fu-notes-popup-body" style="overflow-y:auto;padding:16px 22px 20px"></div>
+    <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="fu-notes-mute" onchange="_muteNotesPopup(this.checked)"> Don't show again today
+      </label>
+      <button onclick="closeNotesPopup()" style="background:var(--k-grey);border:none;color:#fff;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="fu-safe-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFuSafeModal()">
   <div id="fu-safe-modal-box" style="background:var(--card);border-radius:14px;padding:24px;width:92%;max-width:480px;max-height:84vh;overflow-y:auto;position:relative">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
@@ -8227,6 +8250,13 @@ function showPage(name) {
   }
   // Year comparison page: always re-render (data-driven, no caching needed)
   if(name==='yearcompare') setTimeout(function(){ renderYearCompare(); renderLongRunTrend(); }, 150);
+
+  // Notes pop-up: _fetchContractNotes only runs on the first build of the
+  // follow-up page, so on later visits the notes are already cached and the
+  // fetch callback never fires. Trigger from navigation as well.
+  if (name === 'followup') setTimeout(function () {
+    if (typeof _maybeShowNotesPopup === 'function') _maybeShowNotesPopup();
+  }, 400);
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
@@ -8648,6 +8678,107 @@ function _fmtNoteDate(v) {
 }
 
 // ── Notes & Reminders (ContractNotes.gs) — read via JSONP, write via fetch ──
+// ── NOTES POP-UP ────────────────────────────────────────────────────────────
+// Replaces the 9pm email. Shows on entering the Contracted Customers Follow-up
+// page: every note on file with its reminder, due ones first.
+// Appears once per session so navigating back and forth doesn't nag; the
+// "don't show again today" tick suppresses it until tomorrow. Reopen any time
+// from the 🔔 button on the page header.
+let _notesPopupShown = false;
+
+function _notesPopupMuted() {
+  try {
+    const until = localStorage.getItem('kitchino_notes_popup_mute');
+    return until === new Date().toISOString().slice(0, 10);
+  } catch (e) { return false; }
+}
+function _muteNotesPopup(on) {
+  try {
+    if (on) localStorage.setItem('kitchino_notes_popup_mute', new Date().toISOString().slice(0, 10));
+    else localStorage.removeItem('kitchino_notes_popup_mute');
+  } catch (e) {}
+}
+function closeNotesPopup() {
+  const m = document.getElementById('fu-notes-popup');
+  if (m) m.style.display = 'none';
+}
+
+function openNotesPopup(force) {
+  const notes = Object.values(CONTRACT_NOTES || {}).filter(n => n && n.note);
+  const body  = document.getElementById('fu-notes-popup-body');
+  const sub   = document.getElementById('fu-notes-popup-sub');
+  const modal = document.getElementById('fu-notes-popup');
+  if (!modal || !body) return;
+  if (!notes.length) { if (force) { body.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px">No notes recorded yet.</div>'; if (sub) sub.textContent = 'Nothing on file'; modal.style.display='flex'; } return; }
+
+  // Designer comes from the contracts data, joined on Order ID — the notes
+  // store doesn't hold it.
+  const desBy = {};
+  (CONTRACTS_DATA || []).forEach(c => { if (c.orderId) desBy[c.orderId] = c; });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const rank = n => {
+    if (!n.reminderDate) return 2;              // no reminder
+    return n.reminderDate <= today ? 0 : 1;     // due/overdue first, then upcoming
+  };
+  notes.sort((a, b) => rank(a) - rank(b)
+      || String(b.lastUpdated || '').localeCompare(String(a.lastUpdated || '')));
+
+  const due = notes.filter(n => n.reminderDate && n.reminderDate <= today).length;
+  if (sub) sub.textContent = notes.length + ' note' + (notes.length !== 1 ? 's' : '')
+      + (due ? '  ·  ' + due + ' reminder' + (due !== 1 ? 's' : '') + ' due' : '');
+
+  const esc = t => String(t == null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  body.innerHTML = notes.map(n => {
+    const c = desBy[n.orderId] || {};
+    const isDue = n.reminderDate && n.reminderDate <= today;
+    const rem = n.reminderDate
+      ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;'
+        + (isDue ? 'background:rgba(194,161,92,.18);color:var(--k-gold-d)' : 'background:var(--card2);color:var(--text3)')
+        + '">' + (isDue ? '⏰ due ' : 'reminder ') + esc(n.reminderDate) + '</span>'
+      : '';
+    return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap">'
+      +   '<div style="font-size:13px;font-weight:600;direction:rtl">' + esc(n.customer || c.name || '—') + '</div>'
+      +   '<div style="display:flex;gap:8px;align-items:center">' + rem
+      +     '<span style="font-size:11px;color:var(--text3)">' + esc(n.orderId) + '</span></div>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin:2px 0 6px">' + esc(c.designer || '—')
+      +   (n.lastUpdated ? '  ·  ' + esc(String(n.lastUpdated).slice(0, 10)) : '') + '</div>'
+      + '<div style="font-size:13px;color:var(--text2);direction:rtl;line-height:1.6">' + esc(n.note) + '</div>'
+      + '</div>';
+  }).join('');
+
+  const mute = document.getElementById('fu-notes-mute');
+  if (mute) mute.checked = _notesPopupMuted();
+  modal.style.display = 'flex';
+}
+
+// Called after notes load; respects the once-per-session and mute rules.
+// Marks the bell when reminders are due, so the button carries the signal
+// even after the pop-up has been dismissed for the day.
+function _updateNotesBell() {
+  const b = document.getElementById('fu-notes-bell');
+  if (!b) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const due = Object.values(CONTRACT_NOTES || {})
+      .filter(n => n && n.note && n.reminderDate && n.reminderDate <= today).length;
+  b.textContent = due ? ('🔔 Notes · ' + due + ' due') : '🔔 Notes';
+  b.style.borderColor = due ? 'var(--k-gold)' : '';
+  b.style.color       = due ? 'var(--k-gold-d)' : '';
+  b.style.fontWeight  = due ? '700' : '';
+}
+
+function _maybeShowNotesPopup() {
+  if (_notesPopupShown || _notesPopupMuted()) return;
+  const active = document.querySelector('.page.active')?.id.replace('page-', '');
+  if (active !== 'followup') return;
+  _notesPopupShown = true;
+  openNotesPopup(false);
+}
+
 async function _fetchContractNotes() {
   const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
   if (!url) return;
@@ -8657,6 +8788,8 @@ async function _fetchContractNotes() {
       CONTRACT_NOTES = {};
       data.data.forEach(n => { if (n.orderId) CONTRACT_NOTES[n.orderId] = n; });
       renderFollowupTable();
+      _updateNotesBell();
+      _maybeShowNotesPopup();
     }
   } catch (e) { console.warn('[Notes] fetch failed:', e.message); }
 }
