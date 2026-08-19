@@ -2058,6 +2058,24 @@ if (_checkSession()) {
     </div>
   </div>
 </div>
+<!-- ORDER HISTORY — notes and messages recorded against one order -->
+<div id="order-history-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:20px"
+     onclick="if(event.target===this)closeOrderHistory()">
+  <div style="background:var(--card);border-radius:14px;width:100%;max-width:620px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#0d0d0e;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div style="min-width:0">
+        <div id="order-history-title" style="color:#fff;font-size:15px;font-weight:600;direction:rtl;text-align:right">—</div>
+        <div id="order-history-sub" style="color:#c2a15c;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;margin-top:4px">—</div>
+      </div>
+      <button onclick="closeOrderHistory()" style="background:none;border:none;color:#9a9a9c;font-size:22px;cursor:pointer;line-height:1;padding:0">×</button>
+    </div>
+    <div id="order-history-body" style="overflow-y:auto;padding:8px 20px 18px"></div>
+    <div style="padding:10px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--text3)">
+      Records messages prepared from the portal — WhatsApp does not report delivery or replies back.
+    </div>
+  </div>
+</div>
+
 <!-- WHATSAPP COMPOSE — choose recipient, edit text, then send -->
 <div id="wa-send-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:20px"
      onclick="if(event.target===this)closeWaSend()">
@@ -2070,10 +2088,22 @@ if (_checkSession()) {
       <button onclick="closeWaSend()" style="background:none;border:none;color:#9a9a9c;font-size:22px;cursor:pointer;line-height:1;padding:0">×</button>
     </div>
     <div style="overflow-y:auto;padding:14px 20px">
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button id="wa-mode-team" onclick="waSetMode('team')"
+          style="flex:1;border:1px solid var(--border-strong);border-radius:8px;padding:8px;cursor:pointer;font-size:12px">👷 Team message</button>
+        <button id="wa-mode-customer" onclick="waSetMode('customer')"
+          style="flex:1;border:1px solid var(--border-strong);border-radius:8px;padding:8px;cursor:pointer;font-size:12px">👤 Customer message</button>
+      </div>
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Message</label>
       <textarea id="wa-send-msg" rows="7" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);color:var(--text);font-size:12.5px;font-family:inherit;line-height:1.55;outline:none;resize:vertical"></textarea>
-      <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin:14px 0 6px">Send to</label>
-      <div id="wa-send-list"></div>
+
+      <div id="wa-team-section">
+        <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin:14px 0 6px">Send to</label>
+        <div id="wa-send-list"></div>
+      </div>
+
+      <div style="display:none" id="wa-customer-label"></div>
+      <div id="wa-customer-section" style="display:none;margin-top:14px"></div>
     </div>
     <div style="padding:10px 20px;border-top:1px solid var(--border);text-align:right">
       <button onclick="closeWaSend();openWaNumbers()" style="background:none;border:1px solid var(--border-strong);color:var(--text2);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:11px">Manage numbers</button>
@@ -6443,6 +6473,37 @@ function _waNormalise(raw) {
   return d;
 }
 
+// ── Customer phone book ────────────────────────────────────────────────────
+// Keyed by the customer's normalised name, not by order ID, so a customer with
+// three orders is stored once and the number is there on all of them.
+// Filled in as you go: type it the first time you message someone, and it is
+// remembered. Held in this browser only, like the team numbers.
+function _waCustomers() {
+  try { return JSON.parse(localStorage.getItem('kitchino_wa_customers') || '{}'); }
+  catch (e) { return {}; }
+}
+function _waSaveCustomer(name, number) {
+  const all = _waCustomers();
+  all[_custKey(name)] = String(number || '').trim();
+  try { localStorage.setItem('kitchino_wa_customers', JSON.stringify(all)); } catch (e) {}
+}
+function _waCustomerNumber(name) {
+  return _waNormalise(_waCustomers()[_custKey(name)] || '');
+}
+
+// Internal stage names mean nothing to a customer and shouldn't be sent out.
+// This translates the CRM stage into something a client can act on.
+function _waStagePhrase(stageKey) {
+  const M = {
+    contracted:'قيد التجهيز', 'designer working':'قيد التصميم', shablona:'قيد التجهيز',
+    electromechanic:'قيد التجهيز', oto:'قيد المراجعة الفنية', auditing:'قيد المراجعة',
+    production:'قيد التصنيع', 'final qc':'في مرحلة الفحص النهائي',
+    store:'جاهز بالمخزن', recheck:'قيد المراجعة', shipping:'قيد الشحن',
+    installation:'قيد التركيب', delivered:'تم التسليم'
+  };
+  return M[stageKey] || 'قيد المتابعة';
+}
+
 function _waLookup(designer) {
   const map = _waNumbers();
   const key = String(designer || '').trim().toLowerCase();
@@ -6470,8 +6531,29 @@ function waSendOrder(orderId) {
   if (note && note.note) lines.push('Note: ' + note.note);
   lines.push('', 'Could you share an update please?');
 
+  // Two templates. The internal one names the stage and the age; the customer
+  // one does neither — a client should not be told their order is "88 days in
+  // Designer Work". Kept as separate drafts rather than one editable string,
+  // so the wrong one cannot be sent by forgetting to rewrite it.
+  const stageKey = (typeof _CRM_NORM !== 'undefined' && _CRM_NORM[(c.crm||'').trim().toLowerCase()])
+                   || (c.crm || '').trim().toLowerCase();
+  _WA_DRAFTS = {
+    team: lines.join('\n'),
+    customer: [
+      'مساء الخير' + (c.name ? ' أ/ ' + String(c.name).trim().split(' ').slice(0, 2).join(' ') : ''),
+      '',
+      'معكم فريق Kitchino بخصوص أوردر رقم ' + orderId + '.',
+      'حالة الأوردر حالياً: ' + _waStagePhrase(stageKey) + '.',
+      '',
+      'سنوافيكم بالتحديثات أولاً بأول. برجاء التواصل معنا لأي استفسار.'
+    ].join('\n')
+  };
+  _WA_MODE = 'team';
+  _WA_CUSTOMER = c.name || '';
+  _WA_ORDER = orderId;
   const msg = document.getElementById('wa-send-msg');
-  if (msg) msg.value = lines.join('\n');
+  if (msg) msg.value = _WA_DRAFTS.team;
+  _waRenderMode();
 
   const map = _waNumbers();
   const names = Object.keys(map).sort((a, b) => {
@@ -6500,11 +6582,157 @@ function waSendOrder(orderId) {
   if (m) m.style.display = 'flex';
 }
 
+let _WA_DRAFTS = { team: '', customer: '' };
+let _WA_MODE = 'team';
+let _WA_CUSTOMER = '';
+let _WA_ORDER = '';
+
+// Fire-and-forget write to the Activity tab. Never blocks the action that
+// triggered it — a failed log must not stop a message being sent.
+function _logActivity(orderId, customer, type, recipient, detail) {
+  const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
+  if (!url || !orderId) return;
+  try {
+    fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ kind:'activity', orderId, customer, type, recipient, detail })
+    }).catch(e => console.warn('[Activity] log failed:', e.message));
+  } catch (e) { console.warn('[Activity] log failed:', e.message); }
+}
+
+// Switching template replaces the draft. Any edit made to the current one is
+// kept, so toggling back and forth does not silently discard your wording.
+function waSetMode(mode) {
+  const msg = document.getElementById('wa-send-msg');
+  if (msg) _WA_DRAFTS[_WA_MODE] = msg.value;
+  _WA_MODE = mode;
+  if (msg) msg.value = _WA_DRAFTS[mode];
+  _waRenderMode();
+}
+
+function _waRenderMode() {
+  ['team','customer'].forEach(m => {
+    const b = document.getElementById('wa-mode-' + m);
+    if (!b) return;
+    const on = _WA_MODE === m;
+    b.style.background  = on ? 'var(--k-grey)' : 'none';
+    b.style.color       = on ? '#fff' : 'var(--text2)';
+    b.style.borderColor = on ? 'var(--k-grey)' : 'var(--border-strong)';
+    b.style.fontWeight  = on ? '600' : '400';
+  });
+  const sec = document.getElementById('wa-customer-section');
+  const tea = document.getElementById('wa-team-section');
+  if (sec) sec.style.display = _WA_MODE === 'customer' ? 'block' : 'none';
+  if (tea) tea.style.display = _WA_MODE === 'customer' ? 'none' : 'block';
+  if (_WA_MODE === 'customer') _waRenderCustomerRow();
+}
+
+function _waRenderCustomerRow() {
+  const el = document.getElementById('wa-customer-section');
+  if (!el) return;
+  const saved = _waCustomers()[_custKey(_WA_CUSTOMER)] || '';
+  el.innerHTML =
+      '<div style="font-size:13px;font-weight:600;direction:rtl;text-align:right;margin-bottom:8px">'
+    +   _waEsc(_WA_CUSTOMER || '—') + '</div>'
+    + '<div style="display:flex;gap:8px">'
+    +   '<input id="wa-cust-num" value="' + _waEsc(saved) + '" placeholder="01xxxxxxxxx"'
+    +     ' style="flex:1;min-width:0;padding:9px 11px;border:1px solid var(--border-strong);border-radius:8px;'
+    +     'background:var(--bg);color:var(--text);font-size:13px;outline:none">'
+    +   '<button onclick="_waFireCustomer()" style="background:var(--positive);border:none;color:#fff;'
+    +     'padding:9px 18px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">Send</button>'
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--text3);margin-top:6px">'
+    +   (saved ? 'Saved from a previous message. Edit to update it.'
+             : 'Type it once — it is remembered for this customer’s other orders too.')
+    + '</div>';
+}
+
+function _waFireCustomer() {
+  const inp = document.getElementById('wa-cust-num');
+  const raw = inp ? inp.value.trim() : '';
+  const num = _waNormalise(raw);
+  if (!num) { alert('Enter a WhatsApp number for this customer.'); if (inp) inp.focus(); return; }
+  _waSaveCustomer(_WA_CUSTOMER, raw);          // remembered for next time
+  const msg = document.getElementById('wa-send-msg');
+  const text = msg ? msg.value : '';
+  _logActivity(_WA_ORDER, _WA_CUSTOMER, 'WhatsApp → customer', raw, text);
+  closeWaSend();
+  window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank');
+}
+
+// ── ORDER HISTORY ───────────────────────────────────────────────────────────
+// Everything recorded against one order: every version of every note, and
+// every WhatsApp message prepared from the portal, newest first.
+// Note: this records what was COMPOSED and opened — WhatsApp does not report
+// delivery or replies back to a web page, so it is a record of contact made,
+// not proof of receipt.
+function openOrderHistory(orderId, customerName) {
+  const modal = document.getElementById('order-history-modal');
+  const body  = document.getElementById('order-history-body');
+  const title = document.getElementById('order-history-title');
+  const sub   = document.getElementById('order-history-sub');
+  if (!modal || !body) return;
+
+  if (title) title.textContent = customerName || orderId;
+  if (sub)   sub.textContent   = 'Order ' + orderId;
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:14px 0">Loading history…</div>';
+  modal.style.display = 'flex';
+
+  const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
+  if (!url) {
+    body.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:14px 0">Notes script not configured.</div>';
+    return;
+  }
+
+  jsonpFetch(url + '?action=activity&orderId=' + encodeURIComponent(orderId) + '&_t=' + Date.now(),
+             '_kitchinoActivity', 20000)
+    .then(d => {
+      const rows = (d && d.status === 'ok' && Array.isArray(d.data)) ? d.data : [];
+      if (sub) sub.textContent = 'Order ' + orderId + '  ·  ' + rows.length + ' event' + (rows.length !== 1 ? 's' : '');
+      if (!rows.length) {
+        body.innerHTML = '<div style="padding:16px;border:1px dashed var(--border-strong);border-radius:8px;'
+          + 'color:var(--text3);font-size:12px">Nothing recorded for this order yet. '
+          + 'Notes and WhatsApp messages will appear here from now on.</div>';
+        return;
+      }
+      const esc = t => String(t == null ? '' : t)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const style = t => t.indexOf('WhatsApp') === 0
+        ? { icon:'✆', col:'var(--positive)' }
+        : t.indexOf('Note') === 0 ? { icon:'🗒', col:'var(--accent)' }
+                                  : { icon:'•',  col:'var(--text3)' };
+      body.innerHTML = rows.map(r => {
+        const st = style(r.type || '');
+        return '<div style="display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--border)">'
+          + '<div style="width:22px;text-align:center;color:' + st.col + ';font-size:14px;flex-shrink:0">' + st.icon + '</div>'
+          + '<div style="flex:1;min-width:0">'
+          +   '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+          +     '<span style="font-size:11px;font-weight:700;color:' + st.col + '">' + esc(r.type)
+          +       (r.recipient ? ' <span style="color:var(--text3);font-weight:400">→ ' + esc(r.recipient) + '</span>' : '')
+          +     '</span>'
+          +     '<span style="font-size:10px;color:var(--text3);white-space:nowrap">' + esc(r.ts) + '</span>'
+          +   '</div>'
+          +   '<div style="font-size:12.5px;color:var(--text2);margin-top:4px;white-space:pre-wrap;'
+          +     'direction:rtl;text-align:right;line-height:1.55">' + esc(r.detail) + '</div>'
+          + '</div></div>';
+      }).join('');
+    })
+    .catch(e => {
+      body.innerHTML = '<div style="color:var(--negative);font-size:12px;padding:14px 0">'
+        + 'Could not load history: ' + esc(e.message) + '</div>';
+    });
+}
+function closeOrderHistory() {
+  const m = document.getElementById('order-history-modal');
+  if (m) m.style.display = 'none';
+}
+
 function _waFire(name) {
   const num = _waLookup(name);
   if (!num) { alert('No usable number saved for ' + name); return; }
   const msg = document.getElementById('wa-send-msg');
   const text = msg ? msg.value : '';
+  _logActivity(_WA_ORDER, _WA_CUSTOMER, 'WhatsApp → team', name, text);
   closeWaSend();
   window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank');
 }
@@ -6727,8 +6955,10 @@ function renderFollowupTable() {
 
       return `<tr${_rowStyle}>
         <td class="muted">${i+1}</td>
-        <td>${_nameCell}</td>
-        <td class="muted">${c.orderId}</td>
+        <td><span onclick="openOrderHistory('${escId}','${escName}')" title="History for this order"
+              style="cursor:pointer;border-bottom:1px dotted var(--border-strong)">${_nameCell}</span></td>
+        <td class="muted"><span onclick="openOrderHistory('${escId}','${escName}')" title="History for this order"
+              style="cursor:pointer;border-bottom:1px dotted var(--border-strong)">${c.orderId}</span></td>
         <td>${c.designer}</td>
         <td><span class="badge ${statusBadge}">${_crmLabel}</span></td>
         <td class="muted">${c.date}</td>
