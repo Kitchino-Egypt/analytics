@@ -2956,7 +2956,100 @@ if (_checkSession()) {
       Every visit, every conversation, every follow-up matters.<br>
       <strong style="color:var(--text1)">Thank you — and here's to 2026.</strong>
     </div>
+  </div>
 </div>
+
+<div class="page" id="page-yearcompare">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:var(--text1)">2025 vs 2026 — Year Comparison</div>
+      <div class="yc-subtitle" style="font-size:12px;color:var(--text3);margin-top:2px">Side-by-side KPI comparison</div>
+    </div>
+  </div>
+
+  <!-- KPI Comparison Cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px" id="yc-kpi-grid"></div>
+
+  <!-- Monthly trend comparison chart -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly Measures — 2025 vs 2026</div>
+      <div style="position:relative;height:220px"><canvas id="yc-chart-measures"></canvas></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Monthly CVR % — 2025 vs 2026</div>
+      <div style="position:relative;height:220px"><canvas id="yc-chart-cvr"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Designer comparison table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Designer Performance — 2025 vs 2026</div>
+    <div id="yc-designer-table" style="overflow-x:auto"></div>
+  </div>
+
+  <!-- ══════════════ LONG-RUN TREND 2021 → 2026 ══════════════ -->
+  <div style="margin:26px 0 14px;padding-top:18px;border-top:2px solid var(--border)">
+    <div style="font-size:19px;font-weight:800;color:var(--text1)">Long-Run Trend — 2021 → 2026</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:3px">
+      2021–2024 from historical records · 2025–2026 live from Google Sheets
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px" id="lr-kpi-grid"></div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Measures by Year</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Total measure volume per year across six years</div>
+    <div style="height:260px"><canvas id="lr-chart-years"></canvas></div>
+  </div>
+
+  <!-- ── YEAR-OVER-YEAR ANALYSIS ── -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Year-over-Year Analysis</div>
+      <div style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden">
+        <button id="lr-yoy-ytd"  onclick="_lrSetYoyMode('ytd')"  style="padding:4px 14px;font-size:11px;border:none;background:var(--blue);color:#fff;font-weight:700;cursor:pointer">Like-for-like</button>
+        <button id="lr-yoy-full" onclick="_lrSetYoyMode('full')" style="padding:4px 14px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer">Full year</button>
+      </div>
+    </div>
+    <div id="lr-yoy-note" style="font-size:11px;color:var(--text3);margin-bottom:12px"></div>
+    <div style="height:250px;margin-bottom:14px"><canvas id="lr-chart-yoy"></canvas></div>
+    <div id="lr-yoy-table" style="overflow-x:auto"></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Monthly Shape — All Years Overlaid</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Every year plotted on the same Jan–Dec axis, to see whether the pattern repeats</div>
+    <div style="height:270px"><canvas id="lr-chart-overlay"></canvas></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Seasonality — Month × Year</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Darker = busier. Reveals which months are reliably peak or slow.</div>
+    <div id="lr-heatmap" style="overflow-x:auto"></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Conversion &amp; Cancellation Trend</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Tracked from 2023 onward — earlier years recorded volume only</div>
+    <div style="height:240px"><canvas id="lr-chart-rates"></canvas></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Designer Performance</div>
+        <div id="lr-desyr-tabs" style="display:inline-flex;border:1px solid var(--border);border-radius:7px;overflow:hidden"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="lr-hide-former" onchange="_lrRenderDesigners()" style="cursor:pointer">
+        Hide former team members
+      </label>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Measures, declined count and achievement rate · former staff marked</div>
+    <div id="lr-designer-table" style="overflow-x:auto"></div>
+  </div>
 </div>
 
 <!-- PAGE: STORE PROJECTS -->
