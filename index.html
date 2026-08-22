@@ -1039,7 +1039,7 @@ tbody td.muted { color:var(--text2); }
 #page-presentation .pres-ctrl-btn {
   background: rgba(255,255,255,0.06);
   border-color: rgba(255,255,255,0.12);
-  color: #94a3b8;
+  color: #a8a8aa;
 }
 #page-presentation .pres-ctrl-btn:hover { background: rgba(194,161,92,0.16); border-color:#c2a15c; color:#fff; }
 #page-presentation .pres-ctrl-btn.active { background: rgba(194,161,92,0.22); border-color:#c2a15c; color:#fff; }
@@ -1068,7 +1068,7 @@ tbody td.muted { color:var(--text2); }
 #page-presentation .pres-des-name { color: #ffffff; }
 #page-presentation .pres-des-stats { color: #8a8a8c; }
 #page-presentation .pres-area-bar-wrap { background: rgba(255,255,255,0.07); }
-#page-presentation .pres-insight { border-color: rgba(255,255,255,0.06); color: #b0b0d0; }
+#page-presentation .pres-insight { border-color: rgba(255,255,255,0.06); color: #b0b0b2; }
 /* Text colors in slides */
 #page-presentation .pres-slide h1,
 #page-presentation .pres-slide h2,
@@ -2926,7 +2926,7 @@ if (_checkSession()) {
     <div style="background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,168,83,0.06));border:1px solid rgba(66,133,244,0.25);border-radius:14px;padding:18px 22px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <div style="width:3px;height:20px;background:linear-gradient(to bottom,var(--green),var(--teal));border-radius:2px"></div>
-        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">2026 Focus Areas</div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">Where We Lost Ground</div>
       </div>
       <div id="pres-outlook-list"></div>
     </div>
@@ -10933,11 +10933,11 @@ function buildPresentationSlides() {
   const listEl = document.getElementById('pres-designers-list');
   if (listEl) {
     listEl.innerHTML = designers.map(function(d,i) {
-      var rc   = d.rate >= 30 ? '#4ade80' : d.rate >= 20 ? '#fbbf24' : '#f87171';
+      var rc   = d.rate >= 30 ? '#c2a15c' : d.rate >= 20 ? '#c2a15c' : '#8e8e90';
       var ab   = d.rate >= teamAvg;
       var barW = Math.round(d.total / maxMeasures * 100);
       var rank = i < 3 ? rankMedals[i] : ('#'+(i+1));
-      var rankCol = i < 3 ? ['#fbbf24','#94a3b8','#f87171'][i] : 'var(--text3)';
+      var rankCol = i < 3 ? ['#c2a15c','#a8a8aa','#8e8e90'][i] : 'var(--text3)';
       // Monthly breakdown — store for modal popup
       var _ordMon = ['January','February','March','April','May','June','July','August','September','October','November','December'];
       var monthlyArr = [];
@@ -10993,7 +10993,7 @@ function buildPresentationSlides() {
     if (window._presRankChart) { window._presRankChart.destroy(); window._presRankChart = null; }
     var labels  = designers.map(function(d){return d.name.split(' ').pop();});
     var cvrVals = designers.map(function(d){return d.rate;});
-    var colors  = designers.map(function(d){return d.rate >= teamAvg ? 'rgba(6,182,212,0.75)' : 'rgba(248,113,113,0.82)';});
+    var colors  = designers.map(function(d){return d.rate >= teamAvg ? 'rgba(194, 161, 92,0.75)' : 'rgba(142, 142, 144,0.82)';});
     window._presRankChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -11012,8 +11012,8 @@ function buildPresentationSlides() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: '#ffffff', borderColor: '#c8c8e0', borderWidth: 1,
-            titleColor: '#1a1a3c', bodyColor: '#4a4a88',
+            backgroundColor: '#ffffff', borderColor: '#a8a8aa', borderWidth: 1,
+            titleColor: '#1a1a1c', bodyColor: '#6e6e70',
             callbacks: { label: function(c){ return '  CVR: ' + c.parsed.y + '%'; } }
           },
           annotation: {}
@@ -11021,12 +11021,12 @@ function buildPresentationSlides() {
         scales: {
           y: {
             min: 0, max: 100,
-            ticks: { color: '#94a3b8', font: {size:10}, callback: function(v){ return v+'%'; } },
+            ticks: { color: '#a8a8aa', font: {size:10}, callback: function(v){ return v+'%'; } },
             grid: { color: 'rgba(255,255,255,0.06)' },
             border: { color: 'rgba(255,255,255,0.08)' }
           },
           x: {
-            ticks: { color: '#94a3b8', font: {size:10} },
+            ticks: { color: '#a8a8aa', font: {size:10} },
             grid: { display: false },
             border: { color: 'rgba(255,255,255,0.08)' }
           }
@@ -11039,11 +11039,11 @@ function buildPresentationSlides() {
 
   // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
   var PRES_PATCHES = [
-    { tag:'Pinnacle', icon:'🏆', color:'#fbbf24', border:'rgba(251,191,36,0.82)',  bg:'rgba(251,191,36,0.15)',  tagline:'Masters of the craft',    designers:[] },
-    { tag:'Valor',    icon:'⚔️',  color:'#f87171', border:'rgba(248,113,113,0.35)', bg:'rgba(248,113,113,0.08)',  tagline:'Driven by excellence',     designers:[] },
-    { tag:'Stride',   icon:'💎', color:'#4ade80', border:'rgba(74,222,128,0.82)', bg:'rgba(74,222,128,0.15)', tagline:'Consistent momentum',      designers:[] },
-    { tag:'Spark',    icon:'⚡', color:'#06b6d4', border:'rgba(6,182,212,0.82)',  bg:'rgba(6,182,212,0.15)',  tagline:'Rising energy',             designers:[] },
-    { tag:'Dawn',     icon:'🌅', color:'#94a3b8', border:'rgba(148,163,184,0.25)',bg:'rgba(148,163,184,0.05)',tagline:'Building foundations',      designers:[] },
+    { tag:'Pinnacle', icon:'🏆', color:'#c2a15c', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Masters of the craft',    designers:[] },
+    { tag:'Valor',    icon:'⚔️',  color:'#8e8e90', border:'rgba(142, 142, 144,0.35)', bg:'rgba(142, 142, 144,0.08)',  tagline:'Driven by excellence',     designers:[] },
+    { tag:'Stride',   icon:'💎', color:'#c2a15c', border:'rgba(194, 161, 92,0.82)', bg:'rgba(194, 161, 92,0.15)', tagline:'Consistent momentum',      designers:[] },
+    { tag:'Spark',    icon:'⚡', color:'#c2a15c', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Rising energy',             designers:[] },
+    { tag:'Dawn',     icon:'🌅', color:'#a8a8aa', border:'rgba(148,163,184,0.25)',bg:'rgba(148,163,184,0.05)',tagline:'Building foundations',      designers:[] },
   ];
   var tiersGrid = document.getElementById('pres-tiers-grid');
   if (tiersGrid && designers.length >= 3) {
@@ -11057,7 +11057,7 @@ function buildPresentationSlides() {
       var avgM3= p.designers.length ? Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length) : 0;
       var shown3=p.designers.slice(0,4), extra3=p.designers.length-shown3.length;
       var desRows3=shown3.map(function(d){
-        var rc2=d.rate>=30?'#4ade80':d.rate>=20?'#fbbf24':'#f87171';
+        var rc2=d.rate>=30?'#c2a15c':d.rate>=20?'#c2a15c':'#8e8e90';
         var ini=d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
         return '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.82)">'
           +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+';flex-shrink:0">'+ini+'</div>'
@@ -11119,7 +11119,7 @@ function buildPresentationSlides() {
         + '<div style="font-size:19px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+a.area+'</div>'
         + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+areaColors[Math.min(i,areaColors.length-1)]+'"></div></div>'
         + '<div style="font-size:19px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+a.total+'</div>'
-        + '<div style="font-size:11px;color:'+(cvr>=30?'#4ade80':cvr>=20?'#fbbf24':'#f87171')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
+        + '<div style="font-size:11px;color:'+(cvr>=30?'#c2a15c':cvr>=20?'#c2a15c':'#8e8e90')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
     // "Others" row — remaining areas outside top 10
@@ -11152,7 +11152,7 @@ function buildPresentationSlides() {
         + '<div style="font-size:19px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(s.source||'Unknown')+'</div>'
         + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+srcColors[Math.min(i,srcColors.length-1)]+'"></div></div>'
         + '<div style="font-size:19px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+s.total+'</div>'
-        + '<div style="font-size:11px;color:'+(cvr>=30?'#4ade80':cvr>=20?'#fbbf24':'#f87171')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
+        + '<div style="font-size:11px;color:'+(cvr>=30?'#c2a15c':cvr>=20?'#c2a15c':'#8e8e90')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
     // "Others" row — remaining sources outside top 10
@@ -11197,16 +11197,61 @@ function buildPresentationSlides() {
       }).join('')
     + '</div>';
 
+  // ── Challenges ────────────────────────────────────────────────────────
+  // These were aspirational targets ("+15% growth", "push CVR above X"), which
+  // no one can act on. Replaced with what the 2025 data actually shows went
+  // wrong, each with the figure behind it — a challenge without a number is a
+  // slogan.
+  const cancelled25 = rows25.filter(r => r._cancelled).length;
+  const cancelRate  = total25 > 0 ? +(cancelled25 / total25 * 100).toFixed(1) : 0;
+
+  // Where effort was spent for the least return: areas with real volume but
+  // the weakest conversion.
+  const weakArea = areas.filter(a => a.total >= 20)
+    .map(a => ({ area: a.area, total: a.total, rate: a.total ? a.contracted / a.total * 100 : 0 }))
+    .sort((a, b) => a.rate - b.rate)[0];
+
+  // Same for lead sources — a channel that delivers volume but not contracts.
+  const weakSrc = sources.filter(x => x.total >= 20)
+    .map(x => ({ source: x.source, total: x.total, rate: x.total ? x.contracted / x.total * 100 : 0 }))
+    .sort((a, b) => a.rate - b.rate)[0];
+
+  // Repeat business: customers with more than one measure, and how many came
+  // back in a LATER month rather than buying several rooms in one visit.
+  const per25 = {};
+  rows25.forEach(r => {
+    const k = _custKey(r);
+    if (!k) return;
+    (per25[k] = per25[k] || { n: 0, months: new Set() });
+    per25[k].n++;
+    per25[k].months.add(r._monthOrder);
+  });
+  const custs25    = Object.keys(per25);
+  const returning  = custs25.filter(k => per25[k].months.size > 1).length;
+  const multiRoom  = custs25.filter(k => per25[k].n > 1 && per25[k].months.size === 1).length;
+
   const outlookItems = [];
-  if (yoy !== null && yoy < 0) outlookItems.push('↑ Recover measure volume — target ' + Math.round(total25 * 1.15).toLocaleString() + ' measures');
-  else outlookItems.push('↑ Target ' + Math.round(total25 * 1.15).toLocaleString() + ' measures (+15% growth goal)');
-  outlookItems.push('↑ Push team conversion rate above ' + Math.min(cvr25 + 5, 50) + '%');
-  if (topArea) outlookItems.push('↑ Deepen penetration in ' + topArea.area + ' and expand to new areas');
-  if (discuss > 0) outlookItems.push('↑ Structured follow-up protocol for ' + discuss.toLocaleString() + ' active discussions');
+  if (cancelled25 > 0) outlookItems.push(
+    '<strong>' + cancelled25.toLocaleString() + ' cancellations</strong> — '
+    + cancelRate + '% of all visits ended in الغاء');
+  if (discuss > 0) outlookItems.push(
+    '<strong>' + discuss.toLocaleString() + ' still in discussion</strong> — pipeline that was never closed either way');
+  if (weakArea) outlookItems.push(
+    '<strong>' + weakArea.area + '</strong> converted at just ' + weakArea.rate.toFixed(1)
+    + '% across ' + weakArea.total + ' visits');
+  if (weakSrc) outlookItems.push(
+    '<strong>' + weakSrc.source + '</strong> delivered ' + weakSrc.total
+    + ' leads at ' + weakSrc.rate.toFixed(1) + '% conversion');
+  if (custs25.length) outlookItems.push(
+    'Only <strong>' + returning.toLocaleString() + ' of ' + custs25.length.toLocaleString()
+    + ' customers</strong> returned in a later month — '
+    + multiRoom.toLocaleString() + ' bought multiple rooms in a single visit');
+  if (yoy !== null && yoy < 0) outlookItems.push(
+    '<strong>Volume fell ' + Math.abs(yoy) + '%</strong> against 2024');
 
   const outEl = document.getElementById('pres-outlook-list');
   if (outEl) outEl.innerHTML = outlookItems.map(function(o,i){
-    var icons = ['🎯','📈','🤝','⚡','🏆','💡'];
+    var icons = ['⚠️','⏳','📍','📡','🔁','📉'];
     return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
       +'<span style="font-size:22px;flex-shrink:0">'+(icons[i%icons.length])+'</span>'
       +'<span style="font-size:16px;color:var(--text2);line-height:1.5">'+o+'</span>'
@@ -11245,7 +11290,7 @@ function buildPresentationSlides() {
   const _delta = (a, b, suffix) => {
     if (!a) return '—';
     const d = b - a; const pct = +(d/a*100).toFixed(1);
-    const col = d >= 0 ? '#34a853' : '#ea4335';
+    const col = d >= 0 ? '#c2a15c' : '#8e8e90';
     return '<span style="color:'+col+'">' + (d>=0?'↑ +':'↓ ') + Math.abs(d) + suffix + ' (' + (pct>=0?'+':'') + pct + '% YOY)</span>';
   };
 
@@ -11262,7 +11307,7 @@ function buildPresentationSlides() {
   if (mdEl)   mdEl.innerHTML   = _delta(hm25, hm26, '');
   if (cdEl)   cdEl.innerHTML   = _delta(hc25, hc26, '');
   if (cvrDEl) cvrDEl.innerHTML = hm25 > 0
-    ? '<span style="color:' + (hcvr26>=hcvr25?'#4ade80':'#f87171') + '">'
+    ? '<span style="color:' + (hcvr26>=hcvr25?'#c2a15c':'#8e8e90') + '">'
       + (hcvr26>=hcvr25?'↑':'↓') + ' ' + Math.abs(+(hcvr26-hcvr25).toFixed(1)) + 'pp shift</span>'
     : '—';
 
@@ -11314,7 +11359,7 @@ function buildPresentationSlides() {
         + '<div style="font-size:14px;color:var(--green);min-width:28px;text-align:right">' + m26 + partialTag + '</div>'
         + '</div>';
 
-      const cvrColor = v26 > v25 ? '#4ade80' : v26 < v25 ? '#f87171' : 'var(--text2)';
+      const cvrColor = v26 > v25 ? '#c2a15c' : v26 < v25 ? '#8e8e90' : 'var(--text2)';
       rowsCVR += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05)">'
         + '<div style="font-size:14px;color:var(--text3);width:28px">' + mn + '</div>'
         + '<div style="font-size:16px;font-weight:700;color:rgba(180,180,180,0.6);min-width:44px">' + v25 + '%</div>'
@@ -11401,7 +11446,7 @@ function buildPresentationSlides() {
     if (listEl) {
       listEl.innerHTML = otData.map(function(d,i){
         var barW = totalOT > 0 ? Math.round((d.total/totalOT)*100) : 0;
-        var cvrCol = d.conversionRate >= 40 ? '#34a853' : d.conversionRate >= 20 ? '#f9ab00' : '#ff6b6b';
+        var cvrCol = d.conversionRate >= 40 ? '#c2a15c' : d.conversionRate >= 20 ? '#c2a15c' : '#8e8e90';
         var safeType = d.type.replace(/'/g,"\\'");
         var isOth = d.isOthers === true;
         var rowBg  = isOth ? 'rgba(0,0,0,0.05)' : '';
@@ -11439,19 +11484,19 @@ function buildPresentationSlides() {
           labels: otData.map(function(d){ return d.type; }),
           datasets: [
             { label: 'Measures',   data: otData.map(function(d){ return d.total; }),
-              backgroundColor: otData.map(function(d){ return d.isOthers ? 'rgba(148,163,184,0.45)' : 'rgba(6,182,212,0.75)'; }),
+              backgroundColor: otData.map(function(d){ return d.isOthers ? 'rgba(148,163,184,0.45)' : 'rgba(194, 161, 92,0.75)'; }),
               borderRadius: 6, yAxisID: 'y' },
             { label: 'Contracted', data: otData.map(function(d){ return d.contracted; }),
-              backgroundColor: otData.map(function(d){ return d.isOthers ? 'rgba(100,116,139,0.45)' : 'rgba(251,191,36,0.82)'; }),
+              backgroundColor: otData.map(function(d){ return d.isOthers ? 'rgba(100,116,139,0.45)' : 'rgba(194, 161, 92,0.82)'; }),
               borderRadius: 6, yAxisID: 'y' }
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: true, position: 'bottom', labels: { color: '#aaa', font: { size: 10 } } } },
+          plugins: { legend: { display: true, position: 'bottom', labels: { color: '#a8a8aa', font: { size: 10 } } } },
           scales: {
-            x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { display: false } },
-            y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            x: { ticks: { color: '#a8a8aa', font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#a8a8aa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
           }
         }
       });
@@ -11499,7 +11544,7 @@ window._presOTOthersDetail = function() {
     var pct  = totalAll > 0 ? Math.round(d.total/totalAll*100) : 0;
     var barW = maxT > 0 ? Math.round(d.total/maxT*100) : 0;
     var cvr  = d.total > 0 ? +(d.contracted/d.total*100).toFixed(1) : 0;
-    var cCol = cvr >= 40 ? '#4ade80' : cvr >= 20 ? '#fbbf24' : '#f87171';
+    var cCol = cvr >= 40 ? '#c2a15c' : cvr >= 20 ? '#c2a15c' : '#8e8e90';
     return '<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="window._presOTByIdx('+i+')">'
       +'<div style="width:20px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;flex-shrink:0">'+(i+1)+'</div>'
       +'<div style="flex:1;min-width:0">'
@@ -11568,7 +11613,7 @@ window._presOTDetail = function(typeName) {
     var pct   = total > 0 ? Math.round(a.total/total*100) : 0;
     var barW  = maxT > 0 ? Math.round(a.total/maxT*100) : 0;
     var aCvr  = a.total > 0 ? +(a.contracted/a.total*100).toFixed(1) : 0;
-    var cCol  = aCvr >= 40 ? '#4ade80' : aCvr >= 20 ? '#fbbf24' : '#f87171';
+    var cCol  = aCvr >= 40 ? '#c2a15c' : aCvr >= 20 ? '#c2a15c' : '#8e8e90';
     return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)">'
       +'<div style="width:20px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;flex-shrink:0">'+(i+1)+'</div>'
       +'<div style="flex:1;min-width:0">'
