@@ -2097,6 +2097,19 @@ if (_checkSession()) {
       <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Message</label>
       <textarea id="wa-send-msg" rows="7" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg);color:var(--text);font-size:12.5px;font-family:inherit;line-height:1.55;outline:none;resize:vertical"></textarea>
 
+      <!-- Attachment. WhatsApp links cannot carry files, so a file is sent
+           through the OS share sheet instead — which means the contact is
+           chosen there rather than pre-selected. Stated plainly below. -->
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Attachment (optional)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="file" id="wa-file" onchange="_waFileChosen()"
+            style="flex:1;min-width:0;font-size:11px;color:var(--text2)">
+          <button id="wa-file-clear" onclick="_waClearFile()" style="display:none;background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;cursor:pointer;font-size:11px;padding:5px 10px">Clear</button>
+        </div>
+        <div id="wa-file-note" style="font-size:10px;color:var(--text3);margin-top:6px"></div>
+      </div>
+
       <div id="wa-team-section">
         <label style="display:block;font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text3);margin:14px 0 6px">Send to</label>
         <div id="wa-send-list"></div>
@@ -6551,6 +6564,13 @@ function waSendOrder(orderId) {
   _WA_MODE = 'team';
   _WA_CUSTOMER = c.name || '';
   _WA_ORDER = orderId;
+  _WA_FILE = null;                       // never carry a file between orders
+  const _fi = document.getElementById('wa-file');
+  if (_fi) _fi.value = '';
+  const _fn = document.getElementById('wa-file-note');
+  if (_fn) _fn.textContent = '';
+  const _fc = document.getElementById('wa-file-clear');
+  if (_fc) _fc.style.display = 'none';
   const msg = document.getElementById('wa-send-msg');
   if (msg) msg.value = _WA_DRAFTS.team;
   _waRenderMode();
@@ -6620,6 +6640,15 @@ function _waRenderMode() {
     b.style.borderColor = on ? 'var(--k-grey)' : 'var(--border-strong)';
     b.style.fontWeight  = on ? '600' : '400';
   });
+  // With a file attached the recipient buttons no longer target a number, so
+  // relabel them rather than letting the UI imply precision it cannot deliver.
+  const withFile = !!_WA_FILE;
+  document.querySelectorAll('#wa-send-list button').forEach(b => {
+    if (withFile && b.dataset.waLabel === undefined) b.dataset.waLabel = b.innerHTML;
+    if (withFile) b.style.opacity = '.6';
+    else { b.style.opacity = '1'; }
+  });
+
   const sec = document.getElementById('wa-customer-section');
   const tea = document.getElementById('wa-team-section');
   if (sec) sec.style.display = _WA_MODE === 'customer' ? 'block' : 'none';
@@ -6647,7 +6676,7 @@ function _waRenderCustomerRow() {
     + '</div>';
 }
 
-function _waFireCustomer() {
+async function _waFireCustomer() {
   const inp = document.getElementById('wa-cust-num');
   const raw = inp ? inp.value.trim() : '';
   const num = _waNormalise(raw);
@@ -6655,6 +6684,14 @@ function _waFireCustomer() {
   _waSaveCustomer(_WA_CUSTOMER, raw);          // remembered for next time
   const msg = document.getElementById('wa-send-msg');
   const text = msg ? msg.value : '';
+
+  if (_WA_FILE) {
+    closeWaSend();
+    const shared = await _waShareWithFile(text, _WA_CUSTOMER);
+    if (!shared) window.open('https://wa.me/' + num, '_blank');
+    return;
+  }
+
   _logActivity(_WA_ORDER, _WA_CUSTOMER, 'WhatsApp → customer', raw, text);
   closeWaSend();
   window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank');
@@ -6727,11 +6764,85 @@ function closeOrderHistory() {
   if (m) m.style.display = 'none';
 }
 
-function _waFire(name) {
+// ── ATTACHMENTS ─────────────────────────────────────────────────────────────
+// A wa.me link can only carry text — there is no parameter for a file, and
+// WhatsApp does not let a web page put one into a chat. The only route from a
+// browser is the OS share sheet (navigator.share with files), which hands the
+// file to whichever app you pick. Consequence: with a file attached the
+// recipient is chosen in WhatsApp, not here. Said plainly in the UI rather
+// than discovered when a message goes to the wrong person.
+let _WA_FILE = null;
+
+function _waCanShareFiles(f) {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [f] })); }
+  catch (e) { return false; }
+}
+
+function _waFileChosen() {
+  const inp = document.getElementById('wa-file');
+  const note = document.getElementById('wa-file-note');
+  const clr = document.getElementById('wa-file-clear');
+  _WA_FILE = (inp && inp.files && inp.files[0]) ? inp.files[0] : null;
+  if (clr) clr.style.display = _WA_FILE ? 'inline-block' : 'none';
+  if (!note) return;
+
+  if (!_WA_FILE) { note.textContent = ''; _waRenderMode(); return; }
+
+  const kb = Math.round(_WA_FILE.size / 1024);
+  if (_waCanShareFiles(_WA_FILE)) {
+    note.innerHTML = '<b style="color:var(--k-gold-d)">' + _waEsc(_WA_FILE.name) + '</b> · ' + kb + ' KB<br>'
+      + 'Sending with a file opens the share sheet — <b>pick the contact there</b>, '
+      + 'the number below cannot be pre-selected.';
+  } else {
+    note.innerHTML = '<b>' + _waEsc(_WA_FILE.name) + '</b> · ' + kb + ' KB<br>'
+      + '<span style="color:var(--negative)">This browser cannot pass files to WhatsApp.</span> '
+      + 'The message will be copied to your clipboard and WhatsApp opened — paste it, then attach the file yourself.';
+  }
+  _waRenderMode();
+}
+
+function _waClearFile() {
+  const inp = document.getElementById('wa-file');
+  if (inp) inp.value = '';
+  _waFileChosen();
+}
+
+// Sends the message together with the file via the share sheet.
+async function _waShareWithFile(text, recipientLabel) {
+  try {
+    if (_waCanShareFiles(_WA_FILE)) {
+      await navigator.share({ files: [_WA_FILE], text: text, title: 'Kitchino' });
+      _logActivity(_WA_ORDER, _WA_CUSTOMER, 'WhatsApp + file',
+                   recipientLabel || '(chosen in share sheet)',
+                   text + '\n[attached: ' + _WA_FILE.name + ']');
+      return true;
+    }
+  } catch (e) {
+    // AbortError just means the share sheet was dismissed — not a failure.
+    if (e && e.name === 'AbortError') return true;
+    console.warn('[WhatsApp] share failed:', e.message);
+  }
+  // Fallback: clipboard + open WhatsApp, attach manually.
+  try { await navigator.clipboard.writeText(text); } catch (e) {}
+  _logActivity(_WA_ORDER, _WA_CUSTOMER, 'WhatsApp + file (manual)',
+               recipientLabel || '', text + '\n[file to attach: ' + _WA_FILE.name + ']');
+  alert('Message copied to your clipboard.\n\nWhatsApp will open — paste the message, then attach:\n' + _WA_FILE.name);
+  return false;
+}
+
+async function _waFire(name) {
   const num = _waLookup(name);
   if (!num) { alert('No usable number saved for ' + name); return; }
   const msg = document.getElementById('wa-send-msg');
   const text = msg ? msg.value : '';
+
+  if (_WA_FILE) {
+    closeWaSend();
+    const shared = await _waShareWithFile(text, name);
+    if (!shared) window.open('https://wa.me/' + num, '_blank');
+    return;
+  }
+
   _logActivity(_WA_ORDER, _WA_CUSTOMER, 'WhatsApp → team', name, text);
   closeWaSend();
   window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank');
