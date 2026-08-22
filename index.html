@@ -12479,12 +12479,25 @@ function renderYearCompare() {
     H1 = [_mSel];
     _winLabel = _mSel.slice(0, 3);
   } else {
-    let lastIdx = -1;
-    rows26.forEach(r => { const i = MONTHS.indexOf(r._monthName); if (i > lastIdx) lastIdx = i; });
-    if (lastIdx < 0) lastIdx = new Date().getMonth();   // no 2026 rows yet → current month
-    H1 = MONTHS.slice(0, lastIdx + 1);
-    _winLabel = H1.length === 1 ? MONTHS[0].slice(0, 3)
-                                : 'Jan–' + MONTHS[lastIdx].slice(0, 3);
+    // Default window: 1 January up to the SAME DAY in both years.
+    // This was month-granular — "Jan–Aug" meant Aug 1–31 for 2025 but only
+    // Aug 1–22 for 2026, because 2026 data stops at today. That compared 8 full
+    // months against 7 months and 22 days, inflating 2025 by the leftover days
+    // (26 measures on the current data) and overstating the year-on-year fall.
+    // The cutoff is the last date 2026 actually has data for, so a lag in data
+    // entry cannot hand 2025 extra days either.
+    let cutoff = null;
+    rows26.forEach(r => { if (r._date instanceof Date && (!cutoff || r._date > cutoff)) cutoff = r._date; });
+    if (!cutoff) cutoff = new Date();
+    const cM = cutoff.getMonth() + 1, cD = cutoff.getDate();
+
+    _ycDayFilter = r => {
+      if (!(r._date instanceof Date)) return false;
+      const m = r._date.getMonth() + 1, d = r._date.getDate();
+      return m < cM || (m === cM && d <= cD);          // 1 Jan → cutoff, same days both years
+    };
+    H1 = MONTHS.slice(0, cM);                           // months touched, for the charts
+    _winLabel = '1 Jan – ' + cD + ' ' + MONTHS[cM - 1].slice(0, 3);
   }
 
   // One predicate used by every KPI below, so the period and the month
@@ -12494,9 +12507,8 @@ function renderYearCompare() {
   // Keep the page subtitle honest about which window is being compared
   (function () {
     var sub = document.querySelector('#page-yearcompare .yc-subtitle');
-    if (sub) sub.textContent = 'Side-by-side KPI comparison · ' + _winLabel
-      + (H1.length === 1 && !_ycHasPeriod ? ' only' : ' for both years')
-      + (_ycHasPeriod ? '  ·  from your period (year ignored — same days compared in each year)' : '');
+    if (sub) sub.textContent = 'Like-for-like · ' + _winLabel + ' 2025  vs  ' + _winLabel + ' 2026'
+      + (_ycHasPeriod ? '  ·  window taken from your period' : '');
   })();
 
   function kpis(rows) {
