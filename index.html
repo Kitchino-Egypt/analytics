@@ -1013,7 +1013,9 @@ tbody td.muted { color:var(--text2); }
    gold as the single accent, matching the sign-in and the navigation rail.
    Direction is carried by ▲/▼ glyphs and by gold-vs-grey rather than by
    green-vs-red, since red sits outside the four brand colours. */
-#page-presentation {
+/* Dark values apply only when the portal is in dark mode; the light set below
+   mirrors them so the 🌙 toggle works on the slides too. */
+body.dark #page-presentation {
   --bg:   #0d0d0e;
   --bg2:  #151517;
   --card: #1a1a1c;
@@ -1029,9 +1031,50 @@ tbody td.muted { color:var(--text2); }
   --red:   #8e8e90;   /* de-emphasis → grey, not alarm */
   --blue:  #c2a15c;
 }
-#page-presentation .page-content {
-  background: #0d0d0e;
+body.dark #page-presentation .page-content { background: #0d0d0e; }
+
+/* ── Light (daylight) presentation ────────────────────────────────────────
+   Same four colours inverted: white surfaces, near-black type, gold accent,
+   grey for de-emphasis. Slides stay legible under room lighting, which is
+   usually better for a projector in a lit meeting room than a dark deck. */
+#page-presentation {
+  --bg:   #ffffff;
+  --bg2:  #f4f5f7;
+  --card: #ffffff;
+  --card2:#f4f5f7;
+  --border: rgba(0,0,0,0.10);
+  --text:  #16191f;
+  --text1: #0d0d0e;
+  --text2: #4a5260;
+  --text3: #79818f;
+  --green: #87692f;   /* gold, darkened for contrast on white */
+  --teal:  #87692f;
+  --gold:  #87692f;
+  --red:   #6e6e70;
+  --blue:  #87692f;
 }
+#page-presentation .page-content { background: #ffffff; }
+#page-presentation .pres-slide {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.10);
+  box-shadow: 0 2px 18px rgba(16,24,40,0.07);
+}
+#page-presentation .pres-slide::before { background: #87692f; }
+#page-presentation .pres-tag { color: #87692f; }
+#page-presentation .pres-section-title { color: #6e6e70; border-color: rgba(0,0,0,0.10); }
+#page-presentation .pres-des-name { color: #16191f; }
+#page-presentation .pres-des-stats { color: #79818f; }
+#page-presentation .pres-kpi-box { background: #f7f8fa; border-color: rgba(0,0,0,0.09); }
+#page-presentation .pres-des-card { border-color: rgba(0,0,0,0.08); }
+#page-presentation .pres-area-bar-wrap { background: rgba(0,0,0,0.07); }
+#page-presentation .pres-insight { border-color: rgba(0,0,0,0.08); color: #4a5260; }
+#page-presentation .pres-ctrl-btn { background: #fff; border-color: rgba(0,0,0,0.14); color: #4a5260; }
+#page-presentation .pres-ctrl-btn:hover,
+#page-presentation .pres-ctrl-btn.active { background: rgba(135,105,47,0.10); border-color:#87692f; color:#87692f; }
+#page-presentation #pres-counter { background: rgba(135,105,47,0.10); border-color: rgba(135,105,47,0.34); color:#16191f; }
+#page-presentation .pres-dot { background: rgba(0,0,0,0.18); }
+#page-presentation .pres-dot.pres-dot-active { background: #87692f; }
+#page-presentation.pres-fullscreen #pres-controls-bar { background: rgba(255,255,255,0.96); }
 /* Controls bar */
 #page-presentation #pres-controls-bar {
   background: transparent;
@@ -2768,21 +2811,21 @@ if (_checkSession()) {
       </div>
     </div>
     <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
-      <div style="background:rgba(52,168,83,0.15);border:1px solid rgba(66,133,244,0.22);border-radius:10px;padding:16px;text-align:center">
+      <div style="background:rgba(194,161,92,0.15);border:1px solid rgba(168,168,170,0.22);border-radius:10px;padding:16px;text-align:center">
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Active Designers</div>
         <div style="font-size:28px;font-weight:900;color:var(--green)" id="pres-stat-designers">—</div>
       </div>
-      <div style="background:rgba(26,115,232,0.18);border:1px solid rgba(26,115,232,0.82);border-radius:10px;padding:16px;text-align:center">
+      <div style="background:rgba(168,168,170,0.18);border:1px solid rgba(168,168,170,0.82);border-radius:10px;padding:16px;text-align:center">
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Areas Covered</div>
         <div style="font-size:28px;font-weight:900;color:var(--blue)" id="pres-stat-areas">—</div>
       </div>
-      <div style="background:rgba(120,40,180,0.18);border:1px solid rgba(120,40,180,0.82);border-radius:10px;padding:16px;text-align:center">
+      <div style="background:rgba(142,142,144,0.18);border:1px solid rgba(142,142,144,0.82);border-radius:10px;padding:16px;text-align:center">
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Lead Sources</div>
         <div style="font-size:28px;font-weight:900;color:var(--purple)" id="pres-stat-sources">—</div>
       </div>
-      <div style="background:rgba(255,149,0,0.06);border:1px solid rgba(255,149,0,0.2);border-radius:10px;padding:16px;text-align:center">
+      <div style="background:rgba(194,161,92,0.06);border:1px solid rgba(194,161,92,0.2);border-radius:10px;padding:16px;text-align:center">
         <div style="font-size:13px;color:var(--text3);margin-bottom:6px">Cross-Sales Ratio</div>
-        <div style="font-size:28px;font-weight:900;color:#ff9500" id="pres-stat-crosssales">—</div>
+        <div style="font-size:28px;font-weight:900;color:#c2a15c" id="pres-stat-crosssales">—</div>
       </div>
     </div>
   </div>
@@ -2844,17 +2887,17 @@ if (_checkSession()) {
     <div class="pres-tag">SLIDE 6 OF 9 — ORDER TYPES</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Order Types — 2025</div>
     <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="background:rgba(30,142,62,0.22);border:1px solid rgba(66,133,244,0.22);border-radius:10px;padding:10px 18px;min-width:130px">
-        <div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Top Type</div>
-        <div style="font-size:18px;font-weight:900;color:#00e676" id="pres-ot-top">—</div>
+      <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(168,168,170,0.22);border-radius:10px;padding:10px 18px;min-width:130px">
+        <div style="font-size:10px;color:#8a8a8c;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Top Type</div>
+        <div style="font-size:18px;font-weight:900;color:#c2a15c" id="pres-ot-top">—</div>
       </div>
-      <div style="background:rgba(0,184,255,0.08);border:1px solid rgba(0,184,255,0.2);border-radius:10px;padding:10px 18px;min-width:130px">
-        <div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Types Count</div>
-        <div style="font-size:28px;font-weight:900;color:#00b8ff" id="pres-ot-count">—</div>
+      <div style="background:rgba(168,168,170,0.08);border:1px solid rgba(168,168,170,0.2);border-radius:10px;padding:10px 18px;min-width:130px">
+        <div style="font-size:10px;color:#8a8a8c;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Types Count</div>
+        <div style="font-size:28px;font-weight:900;color:#a8a8aa" id="pres-ot-count">—</div>
       </div>
-      <div style="background:rgba(200,135,0,0.22);border:1px solid rgba(200,135,0,0.82);border-radius:10px;padding:10px 18px;min-width:130px">
-        <div style="font-size:10px;color:#9e9ec8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Best CVR Type</div>
-        <div style="font-size:18px;font-weight:900;color:#ffd740" id="pres-ot-best-cvr">—</div>
+      <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(194,161,92,0.82);border-radius:10px;padding:10px 18px;min-width:130px">
+        <div style="font-size:10px;color:#8a8a8c;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Best CVR Type</div>
+        <div style="font-size:18px;font-weight:900;color:#c2a15c" id="pres-ot-best-cvr">—</div>
       </div>
     </div>
     <div style="display:flex;gap:18px;flex:1;min-height:0">
@@ -2923,7 +2966,7 @@ if (_checkSession()) {
       <div style="font-size:13px;color:var(--text3)">What we achieved</div>
     </div>
     <div id="pres-insights-list" style="margin-bottom:18px"></div>
-    <div style="background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,168,83,0.06));border:1px solid rgba(66,133,244,0.25);border-radius:14px;padding:18px 22px">
+    <div style="background:linear-gradient(135deg,rgba(168,168,170,0.10),rgba(194,161,92,0.06));border:1px solid rgba(168,168,170,0.25);border-radius:14px;padding:18px 22px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <div style="width:3px;height:20px;background:linear-gradient(to bottom,var(--green),var(--teal));border-radius:2px"></div>
         <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">Where We Lost Ground</div>
@@ -2931,7 +2974,7 @@ if (_checkSession()) {
       <div id="pres-outlook-list"></div>
     </div>
   </div>
-  <div class="pres-slide" id="pres-slide-8" style="background:linear-gradient(135deg,#0a0e1a,#0d1117,#111827);justify-content:center;padding:36px 48px;">
+  <div class="pres-slide" id="pres-slide-8" style="background:linear-gradient(135deg,#0d0d0e,#0d0d0e,#151517);justify-content:center;padding:36px 48px;">
     <div class="pres-tag">SLIDE 9 OF 9 — CLOSING</div>
 
     <!-- Top row: year stats + title -->
@@ -2941,15 +2984,15 @@ if (_checkSession()) {
         <div style="font-size:14px;color:var(--green);font-weight:600;letter-spacing:2px;text-transform:uppercase">Thank You — Kitchino Team 2025</div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="background:rgba(30,142,62,0.22);border:1px solid rgba(66,133,244,0.22);border-radius:10px;padding:10px 20px;text-align:center">
+        <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(168,168,170,0.22);border-radius:10px;padding:10px 20px;text-align:center">
           <div style="font-size:22px;font-weight:900;color:var(--green)" id="pres-ty-total">—</div>
           <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Measures</div>
         </div>
-        <div style="background:rgba(200,135,0,0.22);border:1px solid rgba(200,135,0,0.82);border-radius:10px;padding:10px 20px;text-align:center">
+        <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(194,161,92,0.82);border-radius:10px;padding:10px 20px;text-align:center">
           <div style="font-size:22px;font-weight:900;color:var(--gold)" id="pres-ty-contracts">—</div>
           <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Contracts</div>
         </div>
-        <div style="background:rgba(26,115,232,0.22);border:1px solid rgba(26,115,232,0.82);border-radius:10px;padding:10px 20px;text-align:center">
+        <div style="background:rgba(168,168,170,0.22);border:1px solid rgba(168,168,170,0.82);border-radius:10px;padding:10px 20px;text-align:center">
           <div style="font-size:22px;font-weight:900;color:var(--blue)" id="pres-ty-cvr">—</div>
           <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">CVR%</div>
         </div>
@@ -2957,14 +3000,14 @@ if (_checkSession()) {
     </div>
 
     <!-- Best performer spotlight -->
-    <div style="background:linear-gradient(135deg,rgba(200,135,0,0.22),rgba(200,135,0,0.09));border:1px solid rgba(200,135,0,0.82);border-radius:14px;padding:20px 28px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+    <div style="background:linear-gradient(135deg,rgba(194,161,92,0.22),rgba(194,161,92,0.09));border:1px solid rgba(194,161,92,0.82);border-radius:14px;padding:20px 28px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
       <div style="font-size:40px">🥇</div>
       <div style="flex:1;min-width:180px">
         <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px">Star of the Year — Top Performer 2025</div>
         <div style="font-size:24px;font-weight:900;color:var(--text1);margin-bottom:4px" id="pres-ty-best-name">—</div>
         <div style="font-size:13px;color:var(--text2)" id="pres-ty-best-stats">—</div>
       </div>
-      <div style="background:rgba(200,135,0,0.22);border:1px solid rgba(200,135,0,0.82);border-radius:10px;padding:14px 22px;text-align:center;flex-shrink:0">
+      <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(194,161,92,0.82);border-radius:10px;padding:14px 22px;text-align:center;flex-shrink:0">
         <div style="font-size:32px;font-weight:900;color:var(--gold)" id="pres-ty-best-cvr">—</div>
         <div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-top:2px;opacity:0.8">Conversion Rate</div>
       </div>
@@ -2981,7 +3024,7 @@ if (_checkSession()) {
     </div>
 
     <!-- Call to action -->
-    <div style="background:linear-gradient(90deg,rgba(30,142,62,0.22),rgba(26,115,232,0.18));border:1px solid rgba(66,133,244,0.22);border-radius:12px;padding:14px 24px;display:flex;align-items:center;gap:16px">
+    <div style="background:linear-gradient(90deg,rgba(194,161,92,0.22),rgba(168,168,170,0.18));border:1px solid rgba(168,168,170,0.22);border-radius:12px;padding:14px 24px;display:flex;align-items:center;gap:16px">
       <div style="font-size:28px">🚀</div>
       <div>
         <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;letter-spacing:0.5px">The Best is Yet to Come</div>
