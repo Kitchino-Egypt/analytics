@@ -9621,7 +9621,16 @@ function closeNotesPopup() {
   if (m) m.style.display = 'none';
 }
 
-function openNotesPopup(force) {
+async function openNotesPopup(force) {
+  // The pop-up used to render whatever was cached at page load, so notes added
+  // since — or added on another device — were missing until a reload.
+  const _sub0 = document.getElementById('fu-notes-popup-sub');
+  const _m0 = document.getElementById('fu-notes-popup');
+  if (force && _m0) { _m0.style.display = 'flex'; if (_sub0) _sub0.textContent = 'Refreshing…'; }
+  await _refreshNotes();
+  if (typeof renderFollowupTable === 'function') renderFollowupTable();
+  if (typeof _updateNotesBell === 'function') _updateNotesBell();
+
   const notes = Object.values(CONTRACT_NOTES || {}).filter(n => n && n.note);
   const body  = document.getElementById('fu-notes-popup-body');
   const sub   = document.getElementById('fu-notes-popup-sub');
@@ -9695,6 +9704,23 @@ function _maybeShowNotesPopup() {
   if (active !== 'followup') return;
   _notesPopupShown = true;
   openNotesPopup(false);
+}
+
+// Pulls the latest notes into CONTRACT_NOTES. Kept separate from
+// _fetchContractNotes so callers can refresh without triggering a re-render
+// or the pop-up logic.
+async function _refreshNotes() {
+  const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
+  if (!url) return false;
+  try {
+    const data = await jsonpFetch(url + '?_t=' + Date.now(), '_kitchinoNotesR', 20000);
+    if (data && data.status === 'ok' && Array.isArray(data.data)) {
+      CONTRACT_NOTES = {};
+      data.data.forEach(n => { if (n.orderId) CONTRACT_NOTES[n.orderId] = n; });
+      return true;
+    }
+  } catch (e) { console.warn('[Notes] refresh failed:', e.message); }
+  return false;
 }
 
 async function _fetchContractNotes() {
