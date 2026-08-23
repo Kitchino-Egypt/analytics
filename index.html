@@ -4220,6 +4220,7 @@ async function _fetchAllRows() {
       ENGINE_RAW_ROWS   = data.data;
       ENGINE_CLEAN_ROWS = engine_cleanRows(data.data);
       ENGINE_READY      = true;
+      _cacheRows(data.data, data.lastUpdated || null);   // meeting safety net
       console.log('[ENGINE] Ready —',ENGINE_CLEAN_ROWS.length,'operational rows loaded');
       _updateSheetTimestamp(data.lastUpdated || null);
       // Populate filter dropdowns dynamically from live data
@@ -4243,8 +4244,89 @@ async function _fetchAllRows() {
       }, 200);
     }
   } catch(err) {
-    console.warn('[ENGINE] Row fetch failed — static fallback active:',err.message);
+    console.warn('[ENGINE] Row fetch failed:', err.message);
+    // The failure used to be silent: the page sat on "Loading…" with no
+    // message and no way to retry. Two changes — retry once (an Apps Script
+    // cold start routinely exceeds the first timeout), then fall back to the
+    // last dataset that loaded successfully so the portal still works when
+    // Google is slow or unreachable.
+    if (!_fetchRetried) {
+      _fetchRetried = true;
+      console.log('[ENGINE] Retrying once…');
+      setTimeout(_fetchAllRows, 1500);
+      return;
+    }
+    if (!_loadFromCache()) _showLoadError(err.message);
   }
+}
+
+// ── Offline / slow-connection safety net ────────────────────────────────────
+// Keeps the last successful dataset in this browser. If the sheet cannot be
+// reached the portal opens on that instead of showing nothing — with a banner
+// saying how old it is, so cached figures are never mistaken for live ones.
+let _fetchRetried = false;
+const _CACHE_KEY  = 'kitchino_rows_cache';
+
+function _cacheRows(rows, stamp) {
+  try {
+    localStorage.setItem(_CACHE_KEY, JSON.stringify({
+      at: Date.now(), stamp: stamp, rows: rows
+    }));
+  } catch (e) { console.warn('[Cache] not saved:', e.message); }
+}
+
+function _loadFromCache() {
+  try {
+    const raw = localStorage.getItem(_CACHE_KEY);
+    if (!raw) return false;
+    const c = JSON.parse(raw);
+    if (!c || !Array.isArray(c.rows) || !c.rows.length) return false;
+
+    ENGINE_RAW_ROWS   = c.rows;
+    ENGINE_CLEAN_ROWS = engine_cleanRows(c.rows);
+    ENGINE_READY      = true;
+    DESIGNERS = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r.designer||'').filter(Boolean))].sort();
+    AREAS     = [...new Set(ENGINE_CLEAN_ROWS.flatMap(r=>[r.area||'', r.location||'']).filter(Boolean))].sort();
+    MONTHS    = [...new Set(ENGINE_CLEAN_ROWS.map(r=>r._monthName||'').filter(Boolean))];
+    _refreshFilterDropdowns();
+    refreshYearDropdown();
+    computeFilteredState();
+    updateKPICards();
+    builtPages.clear();
+    showPage(document.querySelector('.page.active')?.id.replace('page-','') || 'executive');
+    setTimeout(function(){ if (ENGINE_READY) { buildExecutiveCharts(); builtPages.add('executive'); } }, 200);
+
+    const mins = Math.round((Date.now() - c.at) / 60000);
+    const age  = mins < 60 ? mins + ' min' : Math.round(mins/60) + ' hr';
+    _showLoadError('Showing saved data from ' + age + ' ago — live sheet unreachable.', true);
+    console.log('[ENGINE] Loaded', ENGINE_CLEAN_ROWS.length, 'rows from cache');
+    return true;
+  } catch (e) { console.warn('[Cache] load failed:', e.message); return false; }
+}
+
+function _showLoadError(msg, cached) {
+  let bar = document.getElementById('load-error-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'load-error-bar';
+    bar.style.cssText = 'padding:9px 16px;font-size:12px;display:flex;align-items:center;'
+      + 'gap:12px;border-bottom:1px solid var(--border)';
+    const host = document.getElementById('last-updated-bar');
+    if (host && host.parentNode) host.parentNode.insertBefore(bar, host.nextSibling);
+    else document.body.insertBefore(bar, document.body.firstChild);
+  }
+  bar.style.background = cached ? 'rgba(194,161,92,0.12)' : 'var(--negative-soft)';
+  bar.style.color      = cached ? 'var(--k-gold-d)'       : 'var(--negative)';
+  bar.innerHTML = '<span>' + (cached ? '⚠' : '✕') + '</span><span>' + msg + '</span>'
+    + '<button onclick="_retryLoad()" style="margin-left:auto;background:none;border:1px solid currentColor;'
+    + 'color:inherit;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px">Retry now</button>';
+}
+
+function _retryLoad() {
+  const bar = document.getElementById('load-error-bar');
+  if (bar) bar.remove();
+  _fetchRetried = false;
+  _fetchAllRows();
 }
 // ════════════════════════════════════════════════════════════════════════════
 // END KITCHINO BI ENGINE
