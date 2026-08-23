@@ -13406,20 +13406,26 @@ async function _instLoad() {
   };
 
   // Primary: CSV (no cold-start, no JSONP timeout issues)
+  // NOTE: fetch() has no built-in timeout — without the AbortController below
+  // a stalled Google response hangs here for minutes before failing over.
+  var _csvAbort = new AbortController();
+  var _csvTimer = setTimeout(function(){ _csvAbort.abort(); }, 12000);
   try {
-    const res = await fetch(_INSTALL_CSV_URL + '&t=' + Date.now());
+    const res = await fetch(_INSTALL_CSV_URL + '&t=' + Date.now(), { signal: _csvAbort.signal });
+    clearTimeout(_csvTimer);
     if (!res.ok) throw new Error('CSV HTTP ' + res.status);
     const csv = await res.text();
     const rows = _parseInstCSV(csv);  // uses smart header-row detection
     if (rows && rows.length > 10) { _applyRows(rows); return; }
     throw new Error('CSV returned too few rows: ' + (rows ? rows.length : 0));
   } catch(csvErr) {
+    clearTimeout(_csvTimer);
     console.warn('[Install] CSV failed, trying JSONP:', csvErr.message);
   }
 
   // Fallback: JSONP via Apps Script pre-computed Summary tab
   try {
-    const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 60000);
+    const data = await jsonpFetch(INSTALL_SCRIPT_URL + '?_t=' + Date.now(), '_instCb', 20000);
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data returned');
     _applyRows(Array.isArray(data) ? data : (data.data || []));
   } catch(e) {
@@ -13431,7 +13437,7 @@ async function _instLoad() {
 }
 
 function buildInstFollowupPage() {
-  const INST_STALE_MS = 1 * 60 * 1000; // 1 minute
+  const INST_STALE_MS = 10 * 60 * 1000; // 10 minutes — revisits render instantly from memory
   if (_INST_DATA && _instLoadedAt && (Date.now() - _instLoadedAt) < INST_STALE_MS) {
     _instRender(_INST_DATA); return;
   }
