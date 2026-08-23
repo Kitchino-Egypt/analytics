@@ -3163,7 +3163,12 @@ if (_checkSession()) {
         <div id="inst-modal-title" style="font-size:16px;font-weight:800;color:var(--text)">Status Details</div>
         <div id="inst-modal-sub" style="font-size:11px;color:var(--text3);margin-top:3px">—</div>
       </div>
-      <button onclick="_instCloseModal()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="_instExportModal()" title="Download these rows as a spreadsheet"
+          style="background:none;border:1px solid var(--border-strong);color:var(--text2);
+                 padding:6px 13px;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">⬇ Export Excel</button>
+        <button onclick="_instCloseModal()" style="background:none;border:none;color:var(--text2);font-size:26px;cursor:pointer;line-height:1;padding:0 4px">×</button>
+      </div>
     </div>
     <!-- Search inside modal -->
     <div style="padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0">
@@ -12541,7 +12546,7 @@ function renderYearCompare() {
   const _ycPeriod = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
   const _ycHasPeriod = !!(_ycPeriod.from && _ycPeriod.to);
 
-  let H1, _winLabel, _ycDayFilter = null;
+  let H1, _winLabel, _ycDayFilter = null, _ycLagDays = 0;
   if (_ycHasPeriod) {
     const md = d => ({ m: parseInt(d.slice(5, 7), 10), d: parseInt(d.slice(8, 10), 10) });
     const a = md(_ycPeriod.from), b = md(_ycPeriod.to);
@@ -12568,10 +12573,16 @@ function renderYearCompare() {
     // (26 measures on the current data) and overstating the year-on-year fall.
     // The cutoff is the last date 2026 actually has data for, so a lag in data
     // entry cannot hand 2025 extra days either.
-    let cutoff = null;
-    rows26.forEach(r => { if (r._date instanceof Date && (!cutoff || r._date > cutoff)) cutoff = r._date; });
-    if (!cutoff) cutoff = new Date();
+    // Cutoff is TODAY, so the window advances day by day on its own.
+    const cutoff = new Date();
     const cM = cutoff.getMonth() + 1, cD = cutoff.getDate();
+
+    // If 2026 has no data for the most recent days, those days count as zero
+    // against real 2025 days and the decline reads worse than it is. Noted in
+    // the subtitle rather than silently distorting the comparison.
+    let last26 = null;
+    rows26.forEach(r => { if (r._date instanceof Date && (!last26 || r._date > last26)) last26 = r._date; });
+    _ycLagDays = last26 ? Math.max(0, Math.round((cutoff - last26) / 86400000)) : 0;
 
     _ycDayFilter = r => {
       if (!(r._date instanceof Date)) return false;
@@ -12590,7 +12601,9 @@ function renderYearCompare() {
   (function () {
     var sub = document.querySelector('#page-yearcompare .yc-subtitle');
     if (sub) sub.textContent = 'Like-for-like · ' + _winLabel + ' 2025  vs  ' + _winLabel + ' 2026'
-      + (_ycHasPeriod ? '  ·  window taken from your period' : '');
+      + (_ycHasPeriod ? '  ·  window taken from your period' : '')
+      + (_ycLagDays > 1 ? '  ·  note: 2026 has no measures recorded for the last '
+                          + _ycLagDays + ' days, so the gap may be overstated' : '');
   })();
 
   function kpis(rows) {
@@ -13016,6 +13029,47 @@ function _instOpenModal(status) {
 
   const modal = document.getElementById('inst-status-modal');
   modal.style.display = 'flex';
+}
+
+// Exports whatever the modal is currently showing. Built from _instModalRows
+// rather than scraping the table, so it includes every field — including
+// columns the modal doesn't display — and isn't affected by the search filter
+// being open or the table being paginated.
+// A UTF-8 BOM is prepended: without it Excel opens Arabic names as mojibake,
+// which is the usual reason a working export looks broken.
+function _instExportModal() {
+  const rows = (typeof _instModalRows !== 'undefined' && _instModalRows) ? _instModalRows : [];
+  if (!rows.length) { alert('Nothing to export.'); return; }
+
+  const COLS = [
+    ['العميل',                'العميل'],
+    ['المنتج',                'المنتج'],
+    ['رقم المشروع',          'رقم المشروع'],
+    ['العنوان',               'العنوان'],
+    ['الحالة',                'الحالة'],
+    ['تاريخ التوريد',        'تاريخ التوريد'],
+    ['تاريخ بداية التركيب',  'تاريخ بداية التركيب'],
+    ['تاريخ التسليم',         'تاريخ التسليم'],
+    ['فني التركيب',       'فني التركيب'],
+    ['إجمالي عدد الزيارات',  'الزيارات'],
+    ['إجمالي ايام التركيب', 'أيام التركيب']
+  ];
+
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  let csv = COLS.map(c => esc(c[1])).join(',') + '\n';
+  rows.forEach(r => {
+    csv += COLS.map(c => esc(r[c[0]] !== undefined ? r[c[0]] : (r[c[0].replace('ي','ى')] || ''))).join(',') + '\n';
+  });
+
+  const title = (document.getElementById('inst-modal-title')?.textContent || 'installation')
+                  .replace(/[^\w\u0600-\u06FF]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+  const stamp = new Date().toISOString().slice(0, 10);
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kitchino_' + (title || 'installation') + '_' + stamp + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 function _instCloseModal() {
@@ -14070,6 +14124,10 @@ function _instOpenBacklogModal(kind) {
 // Switches the installation modal between its normal row table and a free-form
 // panel (used by the reconciliation report).
 function _instModalMode(custom) {
+  // The reconciliation report has no row list behind it, so exporting would
+  // produce an empty file — hide the button rather than offer a dead action.
+  const exp = document.querySelector('[onclick="_instExportModal()"]');
+  if (exp) exp.style.display = custom ? 'none' : '';
   const tbl  = document.getElementById('inst-modal-table');
   const cus  = document.getElementById('inst-modal-custom');
   const srch = document.getElementById('inst-modal-search');
