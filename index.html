@@ -700,6 +700,13 @@ tbody td.muted { color:var(--text2); }
 }
 .login-eye:hover { color:var(--k-black); }
 
+.login-remember {
+  display:flex; align-items:center; gap:9px; margin:-2px 0 16px;
+  font-size:13px; color:var(--text2); cursor:pointer; user-select:none;
+}
+.login-remember input { width:15px; height:15px; accent-color:var(--k-gold); cursor:pointer; margin:0; flex:none; }
+.login-remember:hover span { color:var(--text); }
+
 .login-error {
   background:#faf4ea; border:1px solid rgba(154,124,60,0.5);
   border-radius:8px; padding:10px 13px;
@@ -1108,6 +1115,7 @@ tbody td.muted { color:var(--text2); }
         <button class="login-eye" id="login-eye-btn" onclick="toggleLoginEye()" tabindex="-1">👁</button>
       </div>
     </div>
+    <label class="login-remember"><input type="checkbox" id="login-remember" checked /><span>Keep me signed in on this device</span></label>
     <div class="login-error" id="login-error">🔒 Incorrect password. Please try again.</div>
     <button class="login-btn" id="login-btn" onclick="attemptLogin()">Access Dashboard →</button>
     <div class="login-footer">Kitchino Operations · <span>Secured Access</span></div>
@@ -1122,8 +1130,10 @@ tbody td.muted { color:var(--text2); }
 //   1. Compute SHA-256 of your new password (e.g. at sha256.online or via Python)
 //   2. Replace the hash string below
 //   3. Re-upload the file
-const _KA_HASH = 'a68735303783660a4e389a15c01ba6f97c56b64025af96b0f5bfc59c62a5d641'; // Kitchino@2025
-const _KA_SESSION_HOURS = 8; // hours before re-login required
+const _KA_HASH = '26f70b1bbef096f0c14d80aeb8466bd4dc0899cc9ed027084b490097c411a13f'; // Kitchino_2025
+const _KA_SESSION_HOURS = 8;      // default session: 8 hours
+const _KA_REMEMBER_HOURS = 720;   // "Remember me" session: 30 days
+const _KA_EXP_KEY       = 'kitchino_auth_exp';
 const _KA_STORAGE_KEY   = 'kitchino_auth_ts';
 const _KA_ROLE_KEY      = 'kitchino_auth_role';
 
@@ -1144,6 +1154,7 @@ function kitchinoLogout() {
   try {
     localStorage.removeItem(_KA_STORAGE_KEY);
     localStorage.removeItem(_KA_ROLE_KEY);
+    localStorage.removeItem(_KA_EXP_KEY);
   } catch (e) {}
   // Drop any ?view= lock so the next person gets a clean login
   var url = window.location.origin + window.location.pathname;
@@ -1160,11 +1171,13 @@ function _checkSession() {
     const ts = localStorage.getItem(_KA_STORAGE_KEY);
     if (!ts) return false;
     const elapsed = (Date.now() - parseInt(ts)) / 3600000; // hours
-    return elapsed < _KA_SESSION_HOURS;
+    let limit = parseFloat(localStorage.getItem(_KA_EXP_KEY));
+    if (!isFinite(limit) || limit <= 0) limit = _KA_SESSION_HOURS;
+    return elapsed < limit;
   } catch(e) { return false; }
 }
 
-function _grantAccess(role) {
+function _grantAccess(role, fresh) {
   const card = document.getElementById('login-card');
   card.classList.add('fade-out');
   setTimeout(() => {
@@ -1172,11 +1185,23 @@ function _grantAccess(role) {
   }, 300);
   try {
     localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString());
+    if (fresh) {
+      var _rm = document.getElementById('login-remember');
+      localStorage.setItem(_KA_EXP_KEY, String((_rm && _rm.checked) ? _KA_REMEMBER_HOURS : _KA_SESSION_HOURS));
+    }
     if (role) localStorage.setItem(_KA_ROLE_KEY, role);
     else      localStorage.removeItem(_KA_ROLE_KEY);
   } catch(e) {}
-  // A role login is restricted to a single page
-  if (role && typeof window._kaApplyRole === 'function') window._kaApplyRole(role);
+  // A role login is restricted to a set of pages.
+  // NOTE: on a session restore this runs BEFORE the locked-view script at the
+  // bottom of the file has parsed, so _kaApplyRole may not exist yet. Stash the
+  // role on window and let that script pick it up when it loads.
+  if (role) {
+    window.__kaPendingRole = role;
+    if (typeof window._kaApplyRole === 'function') window._kaApplyRole(role);
+  } else {
+    window.__kaPendingRole = null;
+  }
 }
 
 async function attemptLogin() {
@@ -1192,7 +1217,7 @@ async function attemptLogin() {
     const role = _KA_ROLES[hash] || null;
     if (hash === _KA_HASH || role) {
       btn.textContent = '✓ Access Granted';
-      setTimeout(function(){ _grantAccess(role); }, 400);
+      setTimeout(function(){ _grantAccess(role, true); }, 400);
     } else {
       err.classList.add('visible');
       const card = document.getElementById('login-card');
@@ -1226,7 +1251,7 @@ document.getElementById('login-password').addEventListener('keydown', function(e
 if (_checkSession()) {
   var _savedRole = null;
   try { _savedRole = localStorage.getItem(_KA_ROLE_KEY); } catch(e) {}
-  _grantAccess(_savedRole);
+  _grantAccess(_savedRole, false);
 } else {
   // Focus the password input after a short delay
   setTimeout(() => {
@@ -14566,6 +14591,9 @@ function _instRenderPage() {
     window.__navLocked = false;   // re-wrap with the new allow-list
     boot(0);
   };
+
+  // A role login that happened before this script parsed (session restore).
+  if (window.__kaPendingRole) { window._kaApplyRole(window.__kaPendingRole); return; }
 
   if (!allowed.length) return;   // no ?view= parameter → full portal unless a role logs in
 
