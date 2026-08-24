@@ -943,6 +943,41 @@ tbody td.muted { color:var(--text2); }
 }
 .pres-ctrl-btn:hover { border-color:var(--green); color:var(--green); }
 .pres-ctrl-btn.active { background:rgba(30,142,62,0.22); border-color:var(--green); color:var(--green); }
+
+/* ── Presentation motion ────────────────────────────────────────────────
+   Slides rise and fade in; items inside a .pres-stagger container arrive in
+   sequence. Everything is CSS-only so nothing can stall mid-presentation.
+   Respects prefers-reduced-motion. */
+@keyframes presSlideIn { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:none } }
+@keyframes presPopIn   { from { opacity:0; transform:translateY(12px) scale(.97) } to { opacity:1; transform:none } }
+.pres-slide.pres-active { animation: presSlideIn .45s cubic-bezier(.22,.61,.36,1) both; }
+.pres-slide.pres-active .pres-stagger > * { animation: presPopIn .5s cubic-bezier(.22,.61,.36,1) both; }
+.pres-slide.pres-active .pres-stagger > *:nth-child(1){animation-delay:0.06s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(2){animation-delay:0.12s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(3){animation-delay:0.18s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(4){animation-delay:0.24s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(5){animation-delay:0.30s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(6){animation-delay:0.36s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(7){animation-delay:0.42s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(8){animation-delay:0.48s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(9){animation-delay:0.54s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(10){animation-delay:0.60s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(11){animation-delay:0.66s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(12){animation-delay:0.72s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(13){animation-delay:0.78s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(14){animation-delay:0.84s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(15){animation-delay:0.90s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(16){animation-delay:0.96s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(17){animation-delay:1.02s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(18){animation-delay:1.08s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(19){animation-delay:1.14s}
+.pres-slide.pres-active .pres-stagger > *:nth-child(20){animation-delay:1.20s}
+.pres-slide [onclick] { transition: transform .18s ease, box-shadow .18s ease; }
+.pres-slide [onclick]:hover { transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) {
+  .pres-slide.pres-active,
+  .pres-slide.pres-active .pres-stagger > * { animation: none !important; }
+}
 #pres-counter { font-size:14px; font-weight:800; color:var(--text1); min-width:60px; text-align:center;
   background:rgba(30,142,62,0.22); border:1px solid rgba(66,133,244,0.22); border-radius:7px; padding:5px 12px; }
 /* Dot navigation */
@@ -2758,7 +2793,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 2: Executive KPIs -->
   <div class="pres-slide" id="pres-slide-2">
-    <div class="pres-tag">SLIDE 2 OF 10 — EXECUTIVE PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 2 OF 9 — EXECUTIVE PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:24px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
       <div class="pres-kpi-box">
@@ -2806,32 +2841,19 @@ if (_checkSession()) {
   <!-- SLIDE 3: 2025 Monthly Measures Bar Chart -->
   
 
-  <!-- SLIDE 3: Designer Performance (all, clickable) -->
-  <div class="pres-slide" id="pres-slide-3">
-    <div class="pres-tag">SLIDE 3 OF 10 — TEAM PERFORMANCE</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Rankings — 2025</div>
-    <div style="display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-      <div style="font-size:13px;color:var(--text3)" id="pres-des-subtitle">All designers · ranked by CVR</div>
-      <div style="font-size:12px;color:var(--text3)">Team avg: <strong id="pres-team-avg" style="color:var(--text1)">—</strong></div>
-      <div style="font-size:12px;color:var(--text3)">Total: <strong id="pres-team-total" style="color:var(--text1)">—</strong> measures</div>
-    </div>
-    <div style="display:flex;gap:18px;flex:1;min-height:0">
-      <!-- Mini ranking bar chart -->
-      <div style="flex:0 0 38%;min-width:0;display:flex;flex-direction:column">
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">CVR% Ranking</div>
-        <div style="flex:1;position:relative"><canvas id="pres-ranking-chart"></canvas></div>
-      </div>
-      <!-- Clickable designer list -->
-      <div style="flex:1;min-width:0;overflow-y:auto;max-height:370px;padding-right:4px" id="pres-designers-list"></div>
-    </div>
+  <!-- SLIDE 3 (Designer Rankings) removed — the pop-up it fed now opens from
+       the group slide. These hidden nodes keep _presDesignerData populated. -->
+  <div style="display:none">
+    <div id="pres-designers-list"></div>
+    <div id="pres-des-subtitle"></div><div id="pres-team-avg"></div><div id="pres-team-total"></div>
   </div>
 
   <!-- SLIDE 4: Designer Groups -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 4 OF 10 — RECOGNITION</div>
+    <div class="pres-tag">SLIDE 3 OF 9 — RECOGNITION</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
     <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
-    <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
+    <div id="pres-tiers-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
   </div>
 
   <!-- SLIDE 5: Sales contribution by group -->
@@ -2843,7 +2865,7 @@ if (_checkSession()) {
     </svg>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:10px">
       <div>
-        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SALES CONTRIBUTION 2025</div>
+        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SLIDE 4 OF 9 — SALES CONTRIBUTION 2025</div>
         <div style="font-size:26px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
         <div style="font-size:26px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:4px">Carried It</div>
       </div>
@@ -2855,13 +2877,13 @@ if (_checkSession()) {
         <div style="font-size:13px;color:#3a3a3c;line-height:1.5">Every group contributes.<br><b>Together, we achieve more.</b></div>
       </div>
     </div>
-    <div id="pres-share-clusters" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:14px 46px"></div>
+    <div id="pres-share-clusters" class="pres-stagger" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:14px 46px"></div>
     <div id="pres-share-foot" style="margin-top:8px;display:flex;justify-content:center"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
   <div class="pres-slide" id="pres-slide-4b">
-    <div class="pres-tag">SLIDE 6 OF 10 — REACH &amp; CHANNELS</div>
+    <div class="pres-tag">SLIDE 5 OF 9 — REACH &amp; CHANNELS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">Geographic Reach &amp; Lead Sources</div>
     <div class="pres-row">
       <div>
@@ -2881,7 +2903,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 7: Order Types Analysis -->
   <div class="pres-slide" id="pres-slide-7">
-    <div class="pres-tag">SLIDE 7 OF 10 — ORDER TYPES</div>
+    <div class="pres-tag">SLIDE 6 OF 9 — ORDER TYPES</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Order Types — 2025</div>
     <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
       <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(168,168,170,0.22);border-radius:10px;padding:10px 18px;min-width:130px">
@@ -2909,7 +2931,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
-    <div class="pres-tag">SLIDE 8 OF 10 — PARTIAL YEAR COMPARISON</div>
+    <div class="pres-tag">SLIDE 7 OF 9 — 2025 VS 2026</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
     <div style="font-size:16px;color:var(--text3);margin-bottom:28px">Same-period comparison · Jan 1 → <span id="pres-h1-asof">Jun 14, 2026</span> vs same window in 2025</div>
 
@@ -2957,7 +2979,7 @@ if (_checkSession()) {
     </div>
   </div>
   <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 9 OF 10 — KEY TAKEAWAYS</div>
+    <div class="pres-tag">SLIDE 8 OF 9 — KEY TAKEAWAYS</div>
     <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
       <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
       <div style="font-size:13px;color:var(--text3)">What we achieved</div>
@@ -2972,7 +2994,7 @@ if (_checkSession()) {
     </div>
   </div>
   <div class="pres-slide" id="pres-slide-8" style="background:#ffffff;justify-content:center;padding:36px 48px;">
-    <div class="pres-tag">SLIDE 10 OF 10 — CLOSING</div>
+    <div class="pres-tag">SLIDE 9 OF 9 — THANK YOU</div>
 
     <!-- Top row: year stats + title -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:24px;flex-wrap:wrap">
@@ -2999,8 +3021,9 @@ if (_checkSession()) {
     <!-- Recognition wall — the year ends on the people, not on paragraphs.
          Photos come from DESIGNER_PHOTOS via _designerPhoto(), so they follow
          the canonical name map and cannot drift from the rankings. -->
-    <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:14px">Top Performers 2025</div>
-    <div id="pres-wall" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:22px"></div>
+    <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px">Every Designer · Their Strength · 2025</div>
+    <div id="pres-strengths" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-bottom:18px"></div>
+    <div id="pres-wall" style="display:none"></div>
 
     <div style="text-align:center;font-size:15px;color:var(--text2);line-height:1.7;padding-top:18px;border-top:1px solid rgba(0,0,0,0.10)">
       Every visit, every conversation, every follow-up matters.<br>
@@ -11272,6 +11295,104 @@ function buildPresentationSlides() {
     });
   }
 
+  // ── Closing slide: one distinct strength per designer ─────────────────
+  // Twelve KPIs, four from the sales sheet and eight computed live from the
+  // 2025 rows. Each designer is scored against the team on every KPI, then a
+  // greedy pass hands out the strongest UNCLAIMED strength first — so people
+  // get different headlines instead of four identical "top volume" badges.
+  var _PRES_SKIP_CLOSING = ['yasmin mansour', 'yasmin khalil'];   // Nabila, Aug 2026
+  var _PRES_SHEET_EXTRA = {
+    'Sherif Tarek':{avg:471322,disc:12.11,orders:61}, 'Amira Kasem':{avg:612027,disc:11.49,orders:46},
+    'Mohamed Fawzy':{avg:583914,disc:15.82,orders:43},'Basma Nosair':{avg:501864,disc:13.67,orders:39},
+    'Marwa Elfishawy':{avg:384050,disc:14.71,orders:46},'Amira Kafrawy':{avg:627870,disc:17.80,orders:26},
+    'Mohamed Atef':{avg:434195,disc:14.29,orders:36}, 'Monica Alfy':{avg:506247,disc:11.61,orders:22},
+    'Maryet Emad':{avg:246073,disc:8.69,orders:41},   'Esraa Ali':{avg:290977,disc:9.63,orders:33},
+    'Maryam Mohammad':{avg:363107,disc:12.66,orders:25},'Elham Fekry':{avg:293360,disc:7.69,orders:29},
+    'Amira Elaraby':{avg:375051,disc:13.63,orders:22},'Sara Eltoukhy':{avg:476591,disc:11.49,orders:7}
+  };
+  function _presSheetExtra(n) {
+    var k = _fixDesigner(n).toLowerCase(), out = null;
+    Object.keys(_PRES_SHEET_EXTRA).forEach(function (x) {
+      if (_fixDesigner(x).toLowerCase() === k) out = _PRES_SHEET_EXTRA[x];
+    });
+    return out || {avg:0, disc:0, orders:0};
+  }
+
+  // dir:  1 = higher is better, -1 = lower is better
+  var _PRES_KPIS = [
+    {key:'sales',   dir: 1, min:0,  label:'Top sales contribution', line:'Carried the biggest share of the year'},
+    {key:'measures',dir: 1, min:0,  label:'Most measures',          line:'Never stopped meeting clients'},
+    {key:'cvr',     dir: 1, min:15, label:'Best conversion',        line:'Turns meetings into contracts'},
+    {key:'cross',   dir: 1, min:10, label:'Best cross-selling',     line:'Grows every relationship'},
+    {key:'lowCancel',dir:-1, min:15,label:'Fewest cancellations',   line:'What starts, finishes'},
+    {key:'villa',   dir: 1, min:8,  label:'Villa specialist',       line:'Trusted with the largest homes'},
+    {key:'avg',     dir: 1, min:0,  label:'Highest value per order',line:'Every order carries weight'},
+    {key:'lowDisc', dir:-1, min:0,  label:'Best price discipline',  line:'Holds value without discounting'},
+    {key:'orders',  dir: 1, min:0,  label:'Most orders closed',     line:'Closed more than anyone'},
+    {key:'repeat',  dir: 1, min:8,  label:'Most returning clients', line:'Clients who come back'},
+    {key:'areas',   dir: 1, min:0,  label:'Widest reach',           line:'Sells across the whole map'},
+    {key:'products',dir: 1, min:0,  label:'Broadest product range', line:'Designs every room in the house'}
+  ];
+
+  function _presClosingStrengths(rows, list, crossMap) {
+    var stat = {};
+    list.forEach(function (d) {
+      var mine = rows.filter(function (r) { return _fixDesigner(r.designer) === _fixDesigner(d.name); });
+      var cust = {}, areas = {}, prods = {}, villa = 0, unitKnown = 0, canc = 0;
+      mine.forEach(function (r) {
+        var c = _custKey(r.customer); if (c) cust[c] = (cust[c] || 0) + 1;
+        if (r.area)      areas[r.area] = 1;
+        if (r.orderType) prods[r.orderType] = 1;
+        var u = String(r.unit || '');
+        if (u) { unitKnown++; if (u.indexOf('فيلا') !== -1 || /villa/i.test(u)) villa++; }
+        if (r._cancelled) canc++;
+      });
+      var custN = Object.keys(cust).length;
+      var rep   = Object.keys(cust).filter(function (k) { return cust[k] > 1; }).length;
+      var ex    = _presSheetExtra(d.name);
+      stat[d.name] = {
+        sales:     _designerSales(d.name),
+        measures:  d.total || mine.length,
+        cvr:       d.rate || 0,
+        cross:     (crossMap && crossMap[d.name]) || 0,
+        lowCancel: mine.length ? canc / mine.length * 100 : 100,
+        villa:     unitKnown ? villa / unitKnown * 100 : 0,
+        avg:       ex.avg,
+        lowDisc:   ex.disc || 99,
+        orders:    ex.orders,
+        repeat:    custN ? rep / custN * 100 : 0,
+        areas:     Object.keys(areas).length,
+        products:  Object.keys(prods).length,
+        _n:        mine.length
+      };
+    });
+
+    // Percentile of each designer on each KPI.
+    var trip = [];
+    _PRES_KPIS.forEach(function (k) {
+      var vals = list.map(function (d) { return stat[d.name][k.key] * k.dir; });
+      list.forEach(function (d) {
+        if (k.min && stat[d.name]._n < k.min) return;      // sample too small
+        var v = stat[d.name][k.key] * k.dir, c = 0;
+        vals.forEach(function (x) { if (x < v) c++; });
+        trip.push({ name:d.name, kpi:k, score: vals.length ? c / vals.length : 0, raw:stat[d.name][k.key] });
+      });
+    });
+    trip.sort(function (a, b) { return b.score - a.score; });
+
+    var takenName = {}, takenKpi = {}, out = {};
+    trip.forEach(function (t) {
+      if (takenName[t.name] || takenKpi[t.kpi.key]) return;
+      takenName[t.name] = 1; takenKpi[t.kpi.key] = 1; out[t.name] = t.kpi;
+    });
+    // Anyone still without a headline takes their own best, reuse allowed.
+    trip.forEach(function (t) { if (!out[t.name]) out[t.name] = t.kpi; });
+    list.forEach(function (d) {
+      if (!out[d.name]) out[d.name] = { label:'Steady contribution', line:'Dependable all year round' };
+    });
+    return { map: out, stat: stat };
+  }
+
   // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
   var PRES_PATCHES = [
     { tag:'Pinnacle', icon:'🏆', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Masters of the craft',    designers:[] },
@@ -11304,7 +11425,9 @@ function buildPresentationSlides() {
         var face=photo
           ? '<img src="'+photo+'" alt="" style="width:30px;height:30px;flex:none;border-radius:50%;object-fit:cover;border:1px solid '+p.border+'">'
           : '<div style="width:30px;height:30px;flex:none;border-radius:50%;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+'">'+ini+'</div>';
-        return '<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.10)">'
+        var dSafe = d.name.replace(/'/g, "\\'");
+        return '<div onclick="showPresDesignerModal(\'' + dSafe + '\')" title="Click for the full breakdown"'
+          +' style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.10);cursor:pointer">'
           +face
           +'<div style="flex:1;min-width:0">'
             +'<div style="font-size:15px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name.split(' ').slice(0,2).join(' ')+'</div>'
@@ -11325,7 +11448,39 @@ function buildPresentationSlides() {
         +'<div>'+desRows3+'</div>'
         +'</div>';
     }).join('');
-    _set('pres-tiers-subtitle','Grouped by share of 2025 sales · each designer badged with their strongest KPI · '+scored2.length+' designers');
+    var _placed = PRES_PATCHES.reduce(function(t,p){ return t + p.designers.length; }, 0);
+    _set('pres-tiers-subtitle','Grouped by share of 2025 sales · each designer badged with their strongest KPI · '+_placed+' designers');
+    var _dropped = scored2.filter(function(d){ return _presGroupOf(d.name) < 0; }).map(function(d){ return d.name; });
+    if (_dropped.length) console.warn('[Pres] Not in any sheet group, excluded:', _dropped.join(', '));
+
+    // ── Slide 10: every designer, one distinct strength ───────
+    (function () {
+      var box = document.getElementById('pres-strengths');
+      if (!box) return;
+      var team = honour.filter(function (d) {
+        if (_presGroupOf(d.name) < 0) return false;   // not in the sheet's groups
+        return _PRES_SKIP_CLOSING.indexOf(_fixDesigner(d.name).toLowerCase()) === -1;
+      });
+      if (!team.length) return;
+      var res = _presClosingStrengths(rows25, team, _desCrossRate);
+      // Alphabetical — the grid must not imply an order.
+      box.innerHTML = team.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
+        .map(function (d) {
+          var k = res.map[d.name] || {};
+          var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
+          var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+          var face  = photo
+            ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 6px">'
+            : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
+          var dSafe = d.name.replace(/'/g, "\\'");
+          return '<div onclick="showPresDesignerModal(\'' + dSafe + '\')" title="Click for the full breakdown"'
+            + ' style="background:rgba(0,0,0,0.03);border-radius:12px;padding:11px 8px;text-align:center;cursor:pointer">'
+            + face
+            + '<div style="font-size:12px;font-weight:800;color:var(--text1);line-height:1.2;margin-bottom:3px">' + d.name.split(' ').slice(0,2).join(' ') + '</div>'
+            + '<div style="font-size:11px;color:#87692f;line-height:1.3">' + (k.line || 'Dependable all year round') + '</div>'
+            + '</div>';
+        }).join('');
+    })();
 
     // ── Slide 5: share of 2025 sales by group ─────────────────
     // Five separate circular clusters, ordered by group sales share. Inside a
@@ -11377,7 +11532,9 @@ function buildPresentationSlides() {
           var face  = photo
             ? '<img src="' + photo + '" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
             : '<div style="width:40px;height:40px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:14px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
-          return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:74px;text-align:center">'
+          var dSafe = d.name.replace(/'/g, "\\'");
+          return '<div onclick="showPresDesignerModal(\'' + dSafe + '\')" title="Click for the full breakdown"'
+               + ' style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:74px;text-align:center;cursor:pointer">'
                + face
                + '<div style="font-size:10px;font-weight:700;color:#2f2f31;line-height:1.12">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
         }).join('');
