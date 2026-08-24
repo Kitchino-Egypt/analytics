@@ -11320,18 +11320,24 @@ function buildPresentationSlides() {
 
   // dir:  1 = higher is better, -1 = lower is better
   var _PRES_KPIS = [
-    {key:'sales',   dir: 1, min:0,  label:'Top sales contribution', line:'Carried the biggest share of the year', ar:'حمل النصيب الأكبر من العام'},
-    {key:'measures',dir: 1, min:0,  label:'Most measures',          line:'Never stopped meeting clients', ar:'لم يتوقف عن لقاء العملاء'},
-    {key:'cvr',     dir: 1, min:15, label:'Best conversion',        line:'Turns meetings into contracts', ar:'يحوّل اللقاءات إلى تعاقدات'},
-    {key:'cross',   dir: 1, min:10, label:'Best cross-selling',     line:'Grows every relationship', ar:'ينمّي كل علاقة مع العميل'},
-    {key:'lowCancel',dir:-1, min:15,label:'Fewest cancellations',   line:'What starts, finishes', ar:'ما يبدأ عنده، يكتمل'},
-    {key:'villa',   dir: 1, min:8,  label:'Villa specialist',       line:'Trusted with the largest homes', ar:'موضع ثقة في أكبر المنازل'},
-    {key:'avg',     dir: 1, min:0,  label:'Highest value per order',line:'Every order carries weight', ar:'كل أوردر له وزن'},
-    {key:'lowDisc', dir:-1, min:0,  label:'Best price discipline',  line:'Holds value without discounting', ar:'يحافظ على القيمة دون خصومات'},
-    {key:'orders',  dir: 1, min:0,  label:'Most orders closed',     line:'Closed more than anyone', ar:'أغلق صفقات أكثر من الجميع'},
-    {key:'repeat',  dir: 1, min:8,  label:'Most returning clients', line:'Clients who come back', ar:'عملاء يعودون إليه دائماً'},
-    {key:'areas',   dir: 1, min:0,  label:'Widest reach',           line:'Sells across the whole map', ar:'يبيع في كل المناطق'},
-    {key:'products',dir: 1, min:0,  label:'Broadest product range', line:'Designs every room in the house', ar:'يصمم كل غرفة في البيت'}
+    {key:'sales',    dir: 1, min:0,  label:'Share of the year',   line:'Carried a large share of the year',       ar:'نصيب كبير من العام مرّ من هنا'},
+    {key:'measures', dir: 1, min:0,  label:'Client meetings',     line:'Always out meeting clients',              ar:'حضور دائم مع العملاء'},
+    {key:'cvr',      dir: 1, min:15, label:'Conversion',          line:'Turns conversations into contracts',      ar:'من الحديث إلى التعاقد'},
+    {key:'cross',    dir: 1, min:10, label:'Cross-selling',       line:'Builds the relationship after the sale',  ar:'علاقة تدوم بعد البيع'},
+    {key:'lowCancel',dir:-1, min:15, label:'Follow-through',      line:'What starts here, finishes',              ar:'ما يبدأ هنا يكتمل'},
+    {key:'villa',    dir: 1, min:8,  label:'Villas',              line:'Trusted with the largest homes',          ar:'ثقة في أكبر المنازل'},
+    {key:'apartment',dir: 1, min:8,  label:'Apartments',          line:'Makes smaller spaces work beautifully',   ar:'إتقان في المساحات الأصغر'},
+    {key:'avg',      dir: 1, min:0,  label:'Order value',         line:'Every order carries weight',              ar:'لكل أوردر وزنه'},
+    {key:'lowDisc',  dir:-1, min:0,  label:'Price discipline',    line:'Holds value without discounting',         ar:'قيمة محفوظة بلا خصم'},
+    {key:'orders',   dir: 1, min:0,  label:'Steady closing',      line:'Closing steadily, all year',              ar:'إغلاق متواصل طوال العام'},
+    {key:'repeat',   dir: 1, min:8,  label:'Returning clients',   line:'Clients who come back',                   ar:'عملاء يعودون'},
+    {key:'areas',    dir: 1, min:0,  label:'Reach',               line:'Present across every area',               ar:'حضور في كل المناطق'},
+    {key:'products', dir: 1, min:0,  label:'Product range',       line:'Designs every room in the house',         ar:'تصميم لكل غرفة في البيت'},
+    {key:'fast',     dir: 1, min:8,  label:'Speed',               line:'Moves fast when it matters',              ar:'سرعة عند الحاجة'},
+    {key:'newCust',  dir: 1, min:8,  label:'New clients',         line:'New faces, month after month',            ar:'وجوه جديدة شهراً بعد شهر'},
+    {key:'months',   dir: 1, min:0,  label:'Consistency',         line:'Present in every month of the year',      ar:'حاضر في كل شهور السنة'},
+    {key:'peak',     dir: 1, min:0,  label:'Peak month',          line:'Strong when the pressure peaks',          ar:'قوة وقت الضغط'},
+    {key:'h2',       dir: 1, min:8,  label:'Finished strong',     line:'Finished the year stronger than it began',ar:'أنهى العام أقوى مما بدأه'}
   ];
 
   function _presClosingStrengths(rows, list, crossMap) {
@@ -11339,6 +11345,7 @@ function buildPresentationSlides() {
     list.forEach(function (d) {
       var mine = rows.filter(function (r) { return _fixDesigner(r.designer) === _fixDesigner(d.name); });
       var cust = {}, areas = {}, prods = {}, villa = 0, unitKnown = 0, canc = 0;
+      var fast = 0, months = {}, byMonth = {}, h1 = 0, h2 = 0;
       mine.forEach(function (r) {
         var c = _custKey(r.customer); if (c) cust[c] = (cust[c] || 0) + 1;
         if (r.area)      areas[r.area] = 1;
@@ -11346,7 +11353,14 @@ function buildPresentationSlides() {
         var u = String(r.unit || '');
         if (u) { unitKnown++; if (u.indexOf('فيلا') !== -1 || /villa/i.test(u)) villa++; }
         if (r._cancelled) canc++;
+        if (r.fastTrack)  fast++;
+        var m = r._month;
+        if (typeof m === 'number') {
+          months[m] = 1; byMonth[m] = (byMonth[m] || 0) + 1;
+          if (m < 6) h1++; else h2++;
+        }
       });
+      var peak = 0; Object.keys(byMonth).forEach(function (m) { if (byMonth[m] > peak) peak = byMonth[m]; });
       var custN = Object.keys(cust).length;
       var rep   = Object.keys(cust).filter(function (k) { return cust[k] > 1; }).length;
       var ex    = _presSheetExtra(d.name);
@@ -11363,6 +11377,12 @@ function buildPresentationSlides() {
         repeat:    custN ? rep / custN * 100 : 0,
         areas:     Object.keys(areas).length,
         products:  Object.keys(prods).length,
+        apartment: unitKnown ? (unitKnown - villa) / unitKnown * 100 : 0,
+        fast:      mine.length ? fast / mine.length * 100 : 0,
+        newCust:   custN - rep,
+        months:    Object.keys(months).length,
+        peak:      peak,
+        h2:        h1 > 0 ? h2 / h1 : (h2 > 0 ? 2 : 0),
         _n:        mine.length
       };
     });
@@ -11388,7 +11408,7 @@ function buildPresentationSlides() {
     // Anyone still without a headline takes their own best, reuse allowed.
     trip.forEach(function (t) { if (!out[t.name]) out[t.name] = t.kpi; });
     list.forEach(function (d) {
-      if (!out[d.name]) out[d.name] = { label:'Steady contribution', line:'Dependable all year round', ar:'اعتماد على مدار العام' };
+      if (!out[d.name]) out[d.name] = { label:'Steady contribution', line:'A steady part of every month', ar:'ركن ثابت في كل شهر' };
     });
     return { map: out, stat: stat };
   }
@@ -11469,15 +11489,17 @@ function buildPresentationSlides() {
           var k = res.map[d.name] || {};
           var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
           var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+          // Rounded portrait frame with object-fit:contain — a circle cropped
+          // the sides off every face; this shows the whole photo.
           var face  = photo
-            ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 6px">'
-            : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
+            ? '<div style="width:64px;height:82px;margin:0 auto 6px;border-radius:32px 32px 10px 10px;overflow:hidden;background:#efeae0;border:1px solid rgba(0,0,0,0.07)"><img src="' + photo + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>'
+            : '<div style="width:64px;height:82px;margin:0 auto 6px;border-radius:32px 32px 10px 10px;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:20px;font-weight:800">' + ini + '</div>';
           var dSafe = d.name.replace(/'/g, "\\'");
           return '<div onclick="showPresStrengthModal(\'' + dSafe + '\')" title="Click to celebrate"'
             + ' style="background:rgba(0,0,0,0.03);border-radius:12px;padding:11px 8px;text-align:center;cursor:pointer">'
             + face
             + '<div style="font-size:12px;font-weight:800;color:var(--text1);line-height:1.2;margin-bottom:3px">' + d.name.split(' ').slice(0,2).join(' ') + '</div>'
-            + '<div style="font-size:11px;color:#87692f;line-height:1.3">' + (k.line || 'Dependable all year round') + '</div>'
+            + '<div style="font-size:11px;color:#87692f;line-height:1.3">' + (k.line || 'A steady part of every month') + '</div>'
             + '</div>';
         }).join('');
     })();
@@ -12167,8 +12189,8 @@ function showPresStrengthModal(name) {
   var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(name) : '';
   var ini = name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
   var face = photo
-    ? '<img src="' + photo + '" alt="" style="width:190px;height:190px;border-radius:50%;object-fit:cover;display:block;margin:0 auto;border:6px solid #fff;box-shadow:0 10px 34px rgba(0,0,0,0.22)">'
-    : '<div style="width:190px;height:190px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:56px;font-weight:900;border:6px solid #fff;box-shadow:0 10px 34px rgba(0,0,0,0.22)">' + ini + '</div>';
+    ? '<div style="width:212px;height:272px;margin:0 auto;border-radius:106px 106px 18px 18px;overflow:hidden;background:#efeae0;border:6px solid #fff;box-shadow:0 12px 38px rgba(0,0,0,0.24)"><img src="' + photo + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block"></div>'
+    : '<div style="width:212px;height:272px;margin:0 auto;border-radius:106px 106px 18px 18px;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:64px;font-weight:900;border:6px solid #fff;box-shadow:0 12px 38px rgba(0,0,0,0.24)">' + ini + '</div>';
 
   var old = document.getElementById('pres-strength-modal');
   if (old) old.remove();
@@ -12183,7 +12205,7 @@ function showPresStrengthModal(name) {
     +   face
     +   '<div style="font-size:27px;font-weight:900;color:#1c1c1e;margin-top:16px">' + name + '</div>'
     +   '<div style="width:54px;height:3px;background:#c2a15c;margin:12px auto 14px;border-radius:2px"></div>'
-    +   '<div style="font-size:17px;font-weight:700;color:#87692f;line-height:1.45">' + (k.line || 'Dependable all year round') + '</div>'
+    +   '<div style="font-size:17px;font-weight:700;color:#87692f;line-height:1.45">' + (k.line || 'A steady part of every month') + '</div>'
     +   '<div dir="rtl" style="font-size:19px;font-weight:800;color:#1c1c1e;line-height:1.6;margin-top:8px">' + (k.ar || 'اعتماد على مدار العام') + '</div>'
     +   '<div style="font-size:12px;color:#8e8e90;margin-top:16px">Kitchino 2025</div>'
     + '</div>';
