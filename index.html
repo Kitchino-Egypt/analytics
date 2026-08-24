@@ -2846,7 +2846,6 @@ if (_checkSession()) {
         <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SALES CONTRIBUTION 2025</div>
         <div style="font-size:30px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
         <div style="font-size:30px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:6px">Carried It</div>
-        <div style="font-size:13px;color:#6e6e70;line-height:1.6" id="pres-share-subtitle">Ring size = share of achieved sales<br>no individual ranking</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e6e0d4;border-radius:14px;padding:11px 15px">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#a8894a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none">
@@ -10471,8 +10470,8 @@ const SALES_2025 = {
     'Marwa Elfishawy': 17666313,
     'Amira Kafrawy': 16324622,
     'Mohamed Atef': 15631010,
+    'Monica Alfy': 11726082,
     'Maryet Emad': 10089007,
-    'Monica Alfy': 20863510,   // 9,726,082 own + 11,137,428 reassigned from Amr Zidan (former)
     'Esraa Ali': 9602241,
     'Yasmin Mansour': 9566671,
     'Maryam Mohammad': 9077666,
@@ -11213,7 +11212,9 @@ function buildPresentationSlides() {
   var _PRES_RATE_FLOOR = 20;   // measures required before a rate counts
   // Former team members stay in the rankings and analytics — their 2025 work is
   // real — but they are not awarded at the 2026 meeting.
-  var _PRES_FORMER = ['mahmoud fouad','yasmin mansour','amr zidan','yasmin khalil'];
+  var _PRES_FORMER = ['mahmoud fouad','nabila shaker','mohamed sadat'];
+  // Shown as one unnamed contribution, never as individuals.
+  var _PRES_HEAD_OFFICE = ['Mahmoud Fouad', 'Nabila Shaker', 'Mohamed Sadat'];
   function _presIsFormer(n) {
     var k = String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
     return _PRES_FORMER.indexOf(k) !== -1;
@@ -11258,9 +11259,9 @@ function buildPresentationSlides() {
     { tag:'Pinnacle', icon:'🏆', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Masters of the craft',    designers:[] },
     { tag:'Valor',    icon:'⚔️',  color:'#6e6e70', border:'rgba(142, 142, 144,0.35)', bg:'rgba(142, 142, 144,0.08)',  tagline:'Driven by excellence',     designers:[] },
     { tag:'Stride',   icon:'💎', color:'#87692f', border:'rgba(194, 161, 92,0.82)', bg:'rgba(194, 161, 92,0.15)', tagline:'Consistent momentum',      designers:[] },
-    { tag:'Spark',    icon:'⚡', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Rising energy',             designers:[] },
-    { tag:'Dawn',     icon:'🌅', color:'#6e6e70', border:'rgba(148,163,184,0.25)',bg:'rgba(148,163,184,0.05)',tagline:'Building foundations',      designers:[] }
+    { tag:'Spark',    icon:'⚡', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Rising energy',             designers:[] }
   ];
+  var _PRES_GROUPS = PRES_PATCHES.length;   // 4 groups (Nabila, Aug 2026)
   var tiersGrid = document.getElementById('pres-tiers-grid');
   if (tiersGrid && designers.length >= 3) {
     // Former team members are not recognised at the meeting.
@@ -11271,9 +11272,9 @@ function buildPresentationSlides() {
       return _designerSales(b.name) - _designerSales(a.name);
     });
     _presAssignStrengths(scored2);
-    var tierSize2 = scored2.length/5;
+    var tierSize2 = scored2.length/_PRES_GROUPS;
     PRES_PATCHES.forEach(function(p){p.designers=[];});
-    scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),4)].designers.push(d);});
+    scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),_PRES_GROUPS-1)].designers.push(d);});
     tiersGrid.innerHTML = PRES_PATCHES.map(function(p){
       var avgC = p.designers.length ? +(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1) : 0;
       var avgM3= p.designers.length ? Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length) : 0;
@@ -11320,8 +11321,7 @@ function buildPresentationSlides() {
           return { tag:p.tag, members:p.designers.slice(),
                    sum:p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
         });
-      var mgmt = ['Nabila Shaker', 'Mohamed Sadat'];
-      var mSum = mgmt.reduce(function (t, n) { return t + _designerSales(n); }, 0);
+      var mSum = _PRES_HEAD_OFFICE.reduce(function (t, n) { return t + _designerSales(n); }, 0);
 
       var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0) + mSum;
       if (!grand) { host.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
@@ -11386,11 +11386,10 @@ function buildPresentationSlides() {
         });
         if (mSum > 0) items.push('<span style="display:inline-flex;align-items:center;gap:7px">'
                + '<span style="width:11px;height:11px;border-radius:50%;background:#e2d9c6"></span>'
-               + '<span style="font-size:13px;color:#3a3a3c">الإدارة ' + (mSum / grand * 100).toFixed(1) + '%</span></span>');
+               + '<span style="font-size:13px;color:#3a3a3c">Head Office ' + (mSum / grand * 100).toFixed(1) + '%</span></span>');
         ft.innerHTML = '<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;background:#fff;border:1px solid #e6e0d4;border-radius:999px;padding:9px 20px">'
                      + items.join('<span style="color:#d8d2c6">|</span>') + '</div>';
       }
-      _set('pres-share-subtitle', 'Ring size = share of achieved sales<br>' + scored2.length + ' designers · no individual ranking');
     })();
   } else if (tiersGrid) {
     tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
