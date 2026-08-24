@@ -11526,9 +11526,13 @@ function buildPresentationSlides() {
         return '<div onclick="showPresDesignerModal(\'' + dSafe + '\')" title="Click for the full breakdown"'
           +' style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.10);cursor:pointer">'
           +face
-          +'<div style="flex:1;min-width:0">'
-            +'<div style="font-size:15px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name.split(' ').slice(0,2).join(' ')+'</div>'
-            +'<div style="font-size:11px;font-weight:700;color:'+p.color+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(d._strength?d._strength.label+' · '+d._strength.text:'')+'</div>'
+          +'<div style="flex:1;min-width:0;font-size:15px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+            +d.name.split(' ').slice(0,2).join(' ')+'</div>'
+          // Same metric on every row — mixed badges made the groups look
+          // inconsistent, with one showing CVR and the next showing volume.
+          +'<div style="flex:none;text-align:right">'
+            +'<div style="font-size:15px;font-weight:800;color:'+p.color+';line-height:1.1">'+(d.total||0)+'</div>'
+            +'<div style="font-size:10px;color:var(--text3);letter-spacing:.4px">measures</div>'
           +'</div>'
           +'</div>';
       }).join('');
@@ -11612,7 +11616,7 @@ function buildPresentationSlides() {
       var RANK = ['#2f2f31', '#87692f', '#c2a15c', '#8e8e90', '#d9c9a3'];
       var LIGHT = { '#c2a15c':1, '#d9c9a3':1 };
 
-      var SZ = 262, C = SZ / 2, R = 87;
+      var SZ = 328, C = SZ / 2, R = 112;
       var CIRC = 2 * Math.PI * R;
       // Count only groups that actually draw a cluster. Head Office has no
       // members and renders nothing, but counting it forced the wrap to 2 x 2,
@@ -11634,13 +11638,13 @@ function buildPresentationSlides() {
           var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
           var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
           var face  = photo
-            ? '<img src="' + photo + '" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
-            : '<div style="width:40px;height:40px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:14px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
+            ? '<img src="' + photo + '" alt="" style="width:50px;height:50px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
+            : '<div style="width:50px;height:50px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:17px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
           var dSafe = d.name.replace(/'/g, "\\'");
           return '<div onclick="showPresDesignerModal(\'' + dSafe + '\')" title="Click for the full breakdown"'
-               + ' style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:74px;text-align:center;cursor:pointer">'
+               + ' style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:88px;text-align:center;cursor:pointer">'
                + face
-               + '<div style="font-size:10px;font-weight:700;color:#2f2f31;line-height:1.12">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+               + '<div style="font-size:11.5px;font-weight:700;color:#2f2f31;line-height:1.15">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
         }).join('');
 
         return '<div style="position:relative;width:' + SZ + 'px;height:' + SZ + 'px">'
@@ -11651,17 +11655,17 @@ function buildPresentationSlides() {
               + ' transform="rotate(-90 ' + C + ' ' + C + ')"></circle>'
             + '<circle cx="' + C + '" cy="' + C + '" r="' + (R - 14) + '" fill="none" stroke="' + col + '" stroke-width="1" stroke-dasharray="2 6" opacity="0.30"></circle>'
           + '</svg>'
-          + '<div style="position:absolute;left:50%;top:' + (C - R - 13) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:13px;font-weight:800;padding:5px 17px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
+          + '<div style="position:absolute;left:50%;top:' + (C - R - 15) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:15px;font-weight:800;padding:6px 21px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
           + '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:150px">'
-            + '<div style="font-size:26px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
-            + '<div style="font-size:12px;color:#6e6e70;margin-top:1px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
+            + '<div style="font-size:34px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
+            + '<div style="font-size:13px;color:#6e6e70;margin-top:2px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
           + '</div>'
           + faces
           + '</div>';
       }).filter(Boolean);
       // Single row: the 1-2-1 diamond ran two rows tall and pushed the header
       // and legend outside the slide frame at fullscreen.
-      host.innerHTML = '<div style="display:flex;justify-content:center;align-items:flex-start;gap:20px;flex-wrap:nowrap">'
+      host.innerHTML = '<div style="display:flex;justify-content:center;align-items:flex-start;gap:26px;flex-wrap:nowrap">'
                      + cards.join('') + '</div>';
 
       if (ft) {
