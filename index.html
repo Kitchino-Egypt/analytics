@@ -2999,7 +2999,7 @@ if (_checkSession()) {
     <!-- Top row: year stats + title -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:24px;flex-wrap:wrap">
       <div>
-        <div style="font-size:30px;font-weight:900;color:var(--text1);letter-spacing:-0.5px;margin-bottom:4px">شكراً للفريق المتميز 🏆</div>
+        <div style="font-size:30px;font-weight:900;color:var(--text1);letter-spacing:-0.5px;margin-bottom:4px">شكرا لكل الفريق</div>
         <div style="font-size:14px;color:var(--green);font-weight:600;letter-spacing:2px;text-transform:uppercase">Thank You — Kitchino Team 2025</div>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
@@ -11320,18 +11320,18 @@ function buildPresentationSlides() {
 
   // dir:  1 = higher is better, -1 = lower is better
   var _PRES_KPIS = [
-    {key:'sales',   dir: 1, min:0,  label:'Top sales contribution', line:'Carried the biggest share of the year'},
-    {key:'measures',dir: 1, min:0,  label:'Most measures',          line:'Never stopped meeting clients'},
-    {key:'cvr',     dir: 1, min:15, label:'Best conversion',        line:'Turns meetings into contracts'},
-    {key:'cross',   dir: 1, min:10, label:'Best cross-selling',     line:'Grows every relationship'},
-    {key:'lowCancel',dir:-1, min:15,label:'Fewest cancellations',   line:'What starts, finishes'},
-    {key:'villa',   dir: 1, min:8,  label:'Villa specialist',       line:'Trusted with the largest homes'},
-    {key:'avg',     dir: 1, min:0,  label:'Highest value per order',line:'Every order carries weight'},
-    {key:'lowDisc', dir:-1, min:0,  label:'Best price discipline',  line:'Holds value without discounting'},
-    {key:'orders',  dir: 1, min:0,  label:'Most orders closed',     line:'Closed more than anyone'},
-    {key:'repeat',  dir: 1, min:8,  label:'Most returning clients', line:'Clients who come back'},
-    {key:'areas',   dir: 1, min:0,  label:'Widest reach',           line:'Sells across the whole map'},
-    {key:'products',dir: 1, min:0,  label:'Broadest product range', line:'Designs every room in the house'}
+    {key:'sales',   dir: 1, min:0,  label:'Top sales contribution', line:'Carried the biggest share of the year', ar:'حمل النصيب الأكبر من العام'},
+    {key:'measures',dir: 1, min:0,  label:'Most measures',          line:'Never stopped meeting clients', ar:'لم يتوقف عن لقاء العملاء'},
+    {key:'cvr',     dir: 1, min:15, label:'Best conversion',        line:'Turns meetings into contracts', ar:'يحوّل اللقاءات إلى تعاقدات'},
+    {key:'cross',   dir: 1, min:10, label:'Best cross-selling',     line:'Grows every relationship', ar:'ينمّي كل علاقة مع العميل'},
+    {key:'lowCancel',dir:-1, min:15,label:'Fewest cancellations',   line:'What starts, finishes', ar:'ما يبدأ عنده، يكتمل'},
+    {key:'villa',   dir: 1, min:8,  label:'Villa specialist',       line:'Trusted with the largest homes', ar:'موضع ثقة في أكبر المنازل'},
+    {key:'avg',     dir: 1, min:0,  label:'Highest value per order',line:'Every order carries weight', ar:'كل أوردر له وزن'},
+    {key:'lowDisc', dir:-1, min:0,  label:'Best price discipline',  line:'Holds value without discounting', ar:'يحافظ على القيمة دون خصومات'},
+    {key:'orders',  dir: 1, min:0,  label:'Most orders closed',     line:'Closed more than anyone', ar:'أغلق صفقات أكثر من الجميع'},
+    {key:'repeat',  dir: 1, min:8,  label:'Most returning clients', line:'Clients who come back', ar:'عملاء يعودون إليه دائماً'},
+    {key:'areas',   dir: 1, min:0,  label:'Widest reach',           line:'Sells across the whole map', ar:'يبيع في كل المناطق'},
+    {key:'products',dir: 1, min:0,  label:'Broadest product range', line:'Designs every room in the house', ar:'يصمم كل غرفة في البيت'}
   ];
 
   function _presClosingStrengths(rows, list, crossMap) {
@@ -11388,17 +11388,17 @@ function buildPresentationSlides() {
     // Anyone still without a headline takes their own best, reuse allowed.
     trip.forEach(function (t) { if (!out[t.name]) out[t.name] = t.kpi; });
     list.forEach(function (d) {
-      if (!out[d.name]) out[d.name] = { label:'Steady contribution', line:'Dependable all year round' };
+      if (!out[d.name]) out[d.name] = { label:'Steady contribution', line:'Dependable all year round', ar:'اعتماد على مدار العام' };
     });
     return { map: out, stat: stat };
   }
 
   // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
   var PRES_PATCHES = [
-    { tag:'Pinnacle', icon:'🏆', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Masters of the craft',    designers:[] },
-    { tag:'Valor',    icon:'⚔️',  color:'#6e6e70', border:'rgba(142, 142, 144,0.35)', bg:'rgba(142, 142, 144,0.08)',  tagline:'Driven by excellence',     designers:[] },
-    { tag:'Stride',   icon:'💎', color:'#87692f', border:'rgba(194, 161, 92,0.82)', bg:'rgba(194, 161, 92,0.15)', tagline:'Consistent momentum',      designers:[] },
-    { tag:'Spark',    icon:'⚡', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Rising energy',             designers:[] }
+    { tag:'Group A', icon:'A', color:'#2f2f31', border:'rgba(47,47,49,0.55)',    bg:'rgba(47,47,49,0.06)',    tagline:'', designers:[] },
+    { tag:'Group B', icon:'B', color:'#87692f', border:'rgba(135,105,47,0.55)',  bg:'rgba(135,105,47,0.08)',  tagline:'', designers:[] },
+    { tag:'Group C', icon:'C', color:'#c2a15c', border:'rgba(194,161,92,0.60)',  bg:'rgba(194,161,92,0.10)',  tagline:'', designers:[] },
+    { tag:'Group D', icon:'D', color:'#6e6e70', border:'rgba(110,110,112,0.45)', bg:'rgba(110,110,112,0.06)', tagline:'', designers:[] }
   ];
   var _PRES_GROUPS = PRES_PATCHES.length;   // 4 groups (Nabila, Aug 2026)
   var tiersGrid = document.getElementById('pres-tiers-grid');
@@ -11436,10 +11436,9 @@ function buildPresentationSlides() {
           +'</div>';
       }).join('');
       return '<div style="background:'+p.bg+';border:1px solid '+p.border+';border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<span style="font-size:24px">'+p.icon+'</span>'
-          +'<div><div style="font-size:17px;font-weight:900;color:'+p.color+'">'+p.tag+'</div>'
-          +'<div style="font-size:13px;color:var(--text3)">'+p.tagline+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:9px">'
+          +'<span style="width:30px;height:30px;flex:none;border-radius:50%;background:'+p.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900">'+p.icon+'</span>'
+          +'<div style="font-size:17px;font-weight:900;color:'+p.color+'">'+p.tag+'</div>'
         +'</div>'
         +'<div style="display:flex;gap:6px">'
           +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgM3+'</div><div style="font-size:11px;color:var(--text3)">Avg Meas</div></div>'
@@ -11463,6 +11462,7 @@ function buildPresentationSlides() {
       });
       if (!team.length) return;
       var res = _presClosingStrengths(rows25, team, _desCrossRate);
+      window._presStrengthMap = res.map;
       // Alphabetical — the grid must not imply an order.
       box.innerHTML = team.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
         .map(function (d) {
@@ -11473,7 +11473,7 @@ function buildPresentationSlides() {
             ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 6px">'
             : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
           var dSafe = d.name.replace(/'/g, "\\'");
-          return '<div onclick="showPresDesignerModal(\'' + dSafe + '\')" title="Click for the full breakdown"'
+          return '<div onclick="showPresStrengthModal(\'' + dSafe + '\')" title="Click to celebrate"'
             + ' style="background:rgba(0,0,0,0.03);border-radius:12px;padding:11px 8px;text-align:center;cursor:pointer">'
             + face
             + '<div style="font-size:12px;font-weight:800;color:var(--text1);line-height:1.2;margin-bottom:3px">' + d.name.split(' ').slice(0,2).join(' ') + '</div>'
@@ -12158,6 +12158,40 @@ function _presShowSlide(n) {
   }
 }
 
+
+// ── Celebration pop-up for the closing slide ──────────────────────────────
+// Deliberately NOT the data breakdown: a large portrait, a trophy, and the
+// designer's strength in English and Arabic. No numbers, nothing to compare.
+function showPresStrengthModal(name) {
+  var k = (window._presStrengthMap && window._presStrengthMap[name]) || {};
+  var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(name) : '';
+  var ini = name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+  var face = photo
+    ? '<img src="' + photo + '" alt="" style="width:190px;height:190px;border-radius:50%;object-fit:cover;display:block;margin:0 auto;border:6px solid #fff;box-shadow:0 10px 34px rgba(0,0,0,0.22)">'
+    : '<div style="width:190px;height:190px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;background:#87692f;color:#fff;font-size:56px;font-weight:900;border:6px solid #fff;box-shadow:0 10px 34px rgba(0,0,0,0.22)">' + ini + '</div>';
+
+  var old = document.getElementById('pres-strength-modal');
+  if (old) old.remove();
+  var ov = document.createElement('div');
+  ov.id = 'pres-strength-modal';
+  ov.setAttribute('style','position:fixed;inset:0;z-index:99999;background:rgba(20,18,14,0.55);display:flex;align-items:center;justify-content:center;padding:24px');
+  ov.onclick = function (e) { if (e.target === ov) ov.remove(); };
+  ov.innerHTML =
+      '<div style="background:linear-gradient(160deg,#fbf9f5,#f2eee5);border-radius:22px;padding:34px 40px 30px;max-width:520px;width:100%;text-align:center;position:relative;box-shadow:0 24px 70px rgba(0,0,0,0.3)">'
+    +   '<button onclick="document.getElementById(\'pres-strength-modal\').remove()" style="position:absolute;top:14px;right:16px;border:none;background:rgba(0,0,0,0.06);width:34px;height:34px;border-radius:50%;font-size:17px;cursor:pointer;color:#3a3a3c">✕</button>'
+    +   '<div style="font-size:46px;line-height:1;margin-bottom:10px">🏆</div>'
+    +   face
+    +   '<div style="font-size:27px;font-weight:900;color:#1c1c1e;margin-top:16px">' + name + '</div>'
+    +   '<div style="width:54px;height:3px;background:#c2a15c;margin:12px auto 14px;border-radius:2px"></div>'
+    +   '<div style="font-size:17px;font-weight:700;color:#87692f;line-height:1.45">' + (k.line || 'Dependable all year round') + '</div>'
+    +   '<div dir="rtl" style="font-size:19px;font-weight:800;color:#1c1c1e;line-height:1.6;margin-top:8px">' + (k.ar || 'اعتماد على مدار العام') + '</div>'
+    +   '<div style="font-size:12px;color:#8e8e90;margin-top:16px">Kitchino 2025</div>'
+    + '</div>';
+  document.body.appendChild(ov);
+  var esc = function (e) { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', esc, true); } };
+  document.addEventListener('keydown', esc, true);
+}
+
 function presNav(dir) { _presShowSlide(_presCurrentSlide + dir); }
 
 // ── Keyboard control for Presentation View ────────────────────────────────
@@ -12168,6 +12202,7 @@ document.addEventListener('keydown', function (e) {
   var pg = document.getElementById('page-presentation');
   if (!pg || !pg.classList.contains('active')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (document.getElementById('pres-strength-modal')) return;   // modal owns the keys
   var t = e.target, tag = t && t.tagName ? t.tagName.toUpperCase() : '';
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
 
