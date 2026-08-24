@@ -10440,7 +10440,7 @@ function closePaymentBreakdown() {
 // PRESENTATION VIEW
 // ============================================================
 let _presCurrentSlide = 1;
-const _PRES_TOTAL = 9;
+const _PRES_TOTAL = document.querySelectorAll('.pres-slide').length || 9;  // derived, so adding a slide never desyncs the counter
 let _presFullscreen = false;
 let _presDesignerData = {};  // populated in buildPresentationSlides, keyed by designer name
 let _presAreaData     = {};  // keyed by area name
@@ -11932,6 +11932,28 @@ function _presShowSlide(n) {
 }
 
 function presNav(dir) { _presShowSlide(_presCurrentSlide + dir); }
+
+// ── Keyboard control for Presentation View ────────────────────────────────
+// The toolbar has always advertised "← → keys · F = fullscreen" but no handler
+// existed. Only active while the presentation page is on screen, and never
+// while the user is typing in a field.
+document.addEventListener('keydown', function (e) {
+  var pg = document.getElementById('page-presentation');
+  if (!pg || !pg.classList.contains('active')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  var t = e.target, tag = t && t.tagName ? t.tagName.toUpperCase() : '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+
+  switch (e.key) {
+    case 'ArrowRight': case 'PageDown': case ' ': presNav(1);  break;
+    case 'ArrowLeft':  case 'PageUp':          presNav(-1); break;
+    case 'Home':       _presShowSlide(1);            break;
+    case 'End':        _presShowSlide(_PRES_TOTAL);  break;
+    case 'f': case 'F': togglePresMode();            break;
+    default: return;
+  }
+  e.preventDefault();   // stop the page scrolling behind the deck
+});
 
 function togglePresMode() {
   _presFullscreen = !_presFullscreen;
