@@ -2837,18 +2837,14 @@ if (_checkSession()) {
   <!-- SLIDE 5: Sales contribution by group -->
   <div class="pres-slide" id="pres-slide-4c">
     <div class="pres-tag">SLIDE 5 OF 10 — SALES CONTRIBUTION 2025</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">How The Year Was Built</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-share-subtitle">Share of total achieved sales, by group · no individual figures</div>
-    <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
-      <div style="position:relative;width:260px;height:260px;flex:none">
-        <canvas id="pres-share-donut" width="260" height="260"></canvas>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
-          <div style="font-size:11px;letter-spacing:2px;color:var(--text3)">2025</div>
-          <div style="font-size:18px;font-weight:800;color:var(--text1)">achieved sales</div>
-        </div>
-      </div>
-      <div id="pres-share-legend" style="flex:1;min-width:280px"></div>
+    <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px;flex-wrap:wrap">
+      <div style="font-size:44px;font-weight:900;color:var(--text1);line-height:1">Every Group</div>
+      <div style="font-size:44px;font-weight:900;color:#c2a15c;line-height:1">Carried It</div>
     </div>
+    <div style="font-size:14px;color:var(--text3);margin-bottom:30px" id="pres-share-subtitle">Share of total achieved sales · no individual figures</div>
+    <div id="pres-share-ribbon" style="display:flex;height:70px;border-radius:8px;overflow:hidden;margin-bottom:10px"></div>
+    <div id="pres-share-ticks"  style="display:flex;margin-bottom:28px"></div>
+    <div id="pres-share-cols"   style="display:flex;gap:10px"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -10472,7 +10468,9 @@ const SALES_2025 = {
     'Amira Elaraby': 8251125,
     'Yasmin Khalil': 7073294,
     'Sara Eltoukhy': 3336136,
-    'Mahmoud Fouad': 2431208
+    'Mahmoud Fouad': 2431208,
+    'Nabila Shaker': 293334,
+    'Mohamed Sadat': 36004
   };
 let _SALES_INDEX = null;
 function _designerSales(name) {
@@ -11294,53 +11292,58 @@ function buildPresentationSlides() {
     _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
     // ── Slide 5: share of 2025 sales by group ─────────────────
-    // Individual sales values are deliberately never rendered. Only the
-    // group total reaches the screen, as a percentage of the company total.
+    // A proportional ribbon, not a chart: the band widths ARE the data, so the
+    // slide reads at projector distance without anyone hunting for a legend.
+    // Individual sales values are never rendered — group share only.
     (function () {
-      var cv = document.getElementById('pres-share-donut');
-      var lg = document.getElementById('pres-share-legend');
-      if (!cv || !lg || typeof Chart === 'undefined') return;
-      var sums = PRES_PATCHES.map(function (p) {
-        return p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0);
-      });
-      // Management sits outside the designer groups but still contributed sales,
-      // so it appears as its own segment rather than being dropped.
-      var MGMT = ['Nabila Shaker', 'Mohamed Sadat'];
-      var mgmtSum = MGMT.reduce(function (t, n) { return t + _designerSales(n); }, 0);
-      var SEGS = PRES_PATCHES.map(function (p) {
-        return { tag:p.tag, color:p.color, n:p.designers.length,
-                 names:p.designers.map(function(d){ return d.name.split(' ').slice(0,2).join(' '); }).join(' · ') };
-      });
-      if (mgmtSum > 0) {
-        sums.push(mgmtSum);
-        SEGS.push({ tag:'الإدارة', color:'#6e6e70', n:MGMT.length, names:'' });
-      }
-      var grand = sums.reduce(function (a, b) { return a + b; }, 0);
-      if (!grand) { lg.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
-      var pcts = sums.map(function (v) { return +(v / grand * 100).toFixed(1); });
-      if (window._presShareChart) { try { window._presShareChart.destroy(); } catch (e) {} }
-      window._presShareChart = new Chart(cv, {
-        type: 'doughnut',
-        data: { labels: SEGS.map(function (g) { return g.tag; }),
-                datasets: [{ data: pcts,
-                             backgroundColor: SEGS.map(function (g) { return g.color; }),
-                             borderWidth: 0 }] },
-        options: { cutout: '66%', maintainAspectRatio: false,
-                   plugins: { legend: { display: false },
-                              tooltip: { callbacks: { label: function (c) { return c.label + ': ' + c.parsed + '%'; } } } } }
-      });
-      lg.innerHTML = SEGS.map(function (g, i) {
-        if (!g.n) return '';
-        return '<div style="display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.10)">'
-          + '<div style="width:11px;height:11px;border-radius:50%;background:' + g.color + ';flex:none"></div>'
-          + '<div style="flex:1;min-width:0">'
-            + '<div style="font-size:15px;font-weight:800;color:var(--text1)">' + g.tag + '<span style="font-size:12px;font-weight:600;color:var(--text3)"> · ' + g.n + '</span></div>'
-            + (g.names ? '<div style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.names + '</div>' : '')
-          + '</div>'
-          + '<div style="font-size:19px;font-weight:900;color:' + g.color + '">' + pcts[i] + '%</div>'
+      var rib = document.getElementById('pres-share-ribbon');
+      var tk  = document.getElementById('pres-share-ticks');
+      var cl  = document.getElementById('pres-share-cols');
+      if (!rib || !tk || !cl) return;
+
+      var SEGS = PRES_PATCHES.filter(function (p) { return p.designers.length; })
+        .map(function (p) {
+          return { tag:p.tag, color:p.color, members:p.designers.slice(),
+                   sum:p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
+        });
+      // Management sits outside the designer groups but still sold.
+      var mgmt = ['Nabila Shaker', 'Mohamed Sadat'];
+      var mSum = mgmt.reduce(function (t, n) { return t + _designerSales(n); }, 0);
+      if (mSum > 0) SEGS.push({ tag:'الإدارة', color:'#b4b2a9', members:[], sum:mSum });
+
+      var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0);
+      if (!grand) { rib.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
+      SEGS.forEach(function (g) { g.pct = +(g.sum / grand * 100).toFixed(1); });
+
+      rib.innerHTML = SEGS.map(function (g) {
+        return '<div style="flex:' + Math.max(g.pct, 0.4) + ';background:' + g.color + ';display:flex;align-items:center;justify-content:center">'
+          + (g.pct > 7 ? '<span style="font-size:21px;font-weight:900;color:#fff">' + g.pct + '%</span>' : '')
           + '</div>';
       }).join('');
-      _set('pres-share-subtitle', 'Share of total achieved sales, by group · ' + scored2.length + ' designers · no individual figures');
+
+      tk.innerHTML = SEGS.map(function (g) {
+        return '<div style="flex:' + Math.max(g.pct, 0.4) + ';padding-right:8px;min-width:0">'
+          + '<div style="font-size:15px;font-weight:800;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.tag + '</div>'
+          + (g.pct <= 7 ? '<div style="font-size:12px;color:var(--text3)">' + g.pct + '%</div>'
+                        : '<div style="font-size:12px;color:var(--text3)">' + g.members.length + ' designers</div>')
+          + '</div>';
+      }).join('');
+
+      cl.innerHTML = SEGS.map(function (g) {
+        if (!g.members.length) return '<div style="flex:' + Math.max(g.pct, 0.4) + '"></div>';
+        var faces = g.members.map(function (d) {
+          var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
+          var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+          var face  = photo
+            ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 5px">'
+            : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 5px;display:flex;align-items:center;justify-content:center;background:' + g.color + ';color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
+          return '<div style="width:60px;text-align:center">' + face
+            + '<div style="font-size:11px;color:var(--text2);line-height:1.25">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+        }).join('');
+        return '<div style="flex:' + Math.max(g.pct, 0.4) + ';border-top:3px solid ' + g.color + ';padding-top:14px;display:flex;gap:4px;flex-wrap:wrap">' + faces + '</div>';
+      }).join('');
+
+      _set('pres-share-subtitle', scored2.length + ' designers · five groups · one result');
     })();
   } else if (tiersGrid) {
     tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
