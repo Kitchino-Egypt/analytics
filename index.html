@@ -2985,8 +2985,8 @@ if (_checkSession()) {
         <div style="font-size:13px;color:#3a3a3c;line-height:1.5">Every group contributes.<br><b>Together, we achieve more.</b></div>
       </div>
     </div>
-    <div id="pres-share-clusters" class="pres-stagger" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:14px 46px"></div>
-    <div id="pres-share-foot" style="margin-top:8px;display:flex;justify-content:center"></div>
+    <div id="pres-share-clusters" class="pres-stagger" style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0"></div>
+    <div id="pres-share-foot" style="margin:6px 0 10px;display:flex;justify-content:center"></div>
   </div>
 
   <!-- SLIDE 5: Key Takeaways -->
@@ -11615,7 +11615,7 @@ function buildPresentationSlides() {
       // which made the block tall and left it bunched in the middle.
       host.style.maxWidth = '100%';
       host.style.margin   = '0 auto';
-      host.style.display  = 'block';
+      // display is set in the markup (flex, centred) — do not override it here
       var cards = SEGS.map(function (g, gi) {
         var col = RANK[Math.min(gi, RANK.length - 1)];
         var onPill = LIGHT[col] ? '#2f2f31' : '#ffffff';
