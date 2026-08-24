@@ -2844,8 +2844,8 @@ if (_checkSession()) {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:10px">
       <div>
         <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SALES CONTRIBUTION 2025</div>
-        <div style="font-size:30px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
-        <div style="font-size:30px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:6px">Carried It</div>
+        <div style="font-size:26px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
+        <div style="font-size:26px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:4px">Carried It</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e6e0d4;border-radius:14px;padding:11px 15px">
         <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#a8894a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none">
@@ -2855,7 +2855,7 @@ if (_checkSession()) {
         <div style="font-size:13px;color:#3a3a3c;line-height:1.5">Every group contributes.<br><b>Together, we achieve more.</b></div>
       </div>
     </div>
-    <div id="pres-share-clusters" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:6px 10px"></div>
+    <div id="pres-share-clusters" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:14px 46px"></div>
     <div id="pres-share-foot" style="margin-top:8px;display:flex;justify-content:center"></div>
   </div>
 
@@ -11352,13 +11352,14 @@ function buildPresentationSlides() {
       var RANK = ['#2f2f31', '#87692f', '#c2a15c', '#8e8e90', '#d9c9a3'];
       var LIGHT = { '#c2a15c':1, '#d9c9a3':1 };
 
-      var SZ = 286, C = SZ / 2, R = 95;
-      // Wrap predictably: 5 groups read best as 3 + 2, four as a 2 x 2 block,
-      // three or fewer in a single row. Capping the container width forces the
-      // wrap instead of leaving it to whatever the screen happens to be.
+      var SZ = 262, C = SZ / 2, R = 87;
       var CIRC = 2 * Math.PI * R;
-      var perRow = SEGS.length >= 5 ? 3 : (SEGS.length === 4 ? 2 : SEGS.length);
-      host.style.maxWidth = (perRow * SZ + (perRow - 1) * 10) + 'px';
+      // Count only groups that actually draw a cluster. Head Office has no
+      // members and renders nothing, but counting it forced the wrap to 2 x 2,
+      // which made the block tall and left it bunched in the middle.
+      var drawn = SEGS.filter(function (g) { return g.members.length; }).length;
+      var perRow = drawn <= 4 ? drawn : 3;
+      host.style.maxWidth = (perRow * SZ + (perRow - 1) * 46) + 'px';
       host.style.margin   = '0 auto';
       host.innerHTML = SEGS.map(function (g, gi) {
         var col = RANK[Math.min(gi, RANK.length - 1)];
@@ -11374,9 +11375,9 @@ function buildPresentationSlides() {
           var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
           var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
           var face  = photo
-            ? '<img src="' + photo + '" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
-            : '<div style="width:44px;height:44px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:15px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
-          return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:78px;text-align:center">'
+            ? '<img src="' + photo + '" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
+            : '<div style="width:40px;height:40px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:14px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
+          return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:74px;text-align:center">'
                + face
                + '<div style="font-size:10px;font-weight:700;color:#2f2f31;line-height:1.12">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
         }).join('');
@@ -11391,7 +11392,7 @@ function buildPresentationSlides() {
           + '</svg>'
           + '<div style="position:absolute;left:50%;top:' + (C - R - 13) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:13px;font-weight:800;padding:5px 17px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
           + '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:150px">'
-            + '<div style="font-size:29px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
+            + '<div style="font-size:26px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
             + '<div style="font-size:12px;color:#6e6e70;margin-top:1px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
           + '</div>'
           + faces
