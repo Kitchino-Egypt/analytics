@@ -2735,7 +2735,7 @@ if (_checkSession()) {
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button class="pres-ctrl-btn" onclick="presNav(-1)">← Prev</button>
-      <span id="pres-counter">1 / 8</span>
+      <span id="pres-counter">1 / 10</span>
       <button class="pres-ctrl-btn" onclick="presNav(1)">Next →</button>
     </div>
     <div style="font-size:11px;color:var(--text3);opacity:0.6">← → keys · F = fullscreen</div>
@@ -2758,7 +2758,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 2: Executive KPIs -->
   <div class="pres-slide" id="pres-slide-2">
-    <div class="pres-tag">SLIDE 2 OF 9 — EXECUTIVE PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 2 OF 10 — EXECUTIVE PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:24px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
       <div class="pres-kpi-box">
@@ -2808,7 +2808,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 3: Designer Performance (all, clickable) -->
   <div class="pres-slide" id="pres-slide-3">
-    <div class="pres-tag">SLIDE 3 OF 9 — TEAM PERFORMANCE</div>
+    <div class="pres-tag">SLIDE 3 OF 10 — TEAM PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Rankings — 2025</div>
     <div style="display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
       <div style="font-size:13px;color:var(--text3)" id="pres-des-subtitle">All designers · ranked by CVR</div>
@@ -2828,15 +2828,32 @@ if (_checkSession()) {
 
   <!-- SLIDE 4: Designer Groups -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 4 OF 9 — RECOGNITION</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Every Designer, Every Strength</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Grouped by what each designer does best</div>
-    <div id="pres-tiers-grid"></div>
+    <div class="pres-tag">SLIDE 4 OF 10 — RECOGNITION</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
+    <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
+  </div>
+
+  <!-- SLIDE 5: Sales contribution by group -->
+  <div class="pres-slide" id="pres-slide-4c">
+    <div class="pres-tag">SLIDE 5 OF 10 — SALES CONTRIBUTION 2025</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">How The Year Was Built</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-share-subtitle">Share of total achieved sales, by group · no individual figures</div>
+    <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap">
+      <div style="position:relative;width:260px;height:260px;flex:none">
+        <canvas id="pres-share-donut" width="260" height="260"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none">
+          <div style="font-size:11px;letter-spacing:2px;color:var(--text3)">2025</div>
+          <div style="font-size:18px;font-weight:800;color:var(--text1)">achieved sales</div>
+        </div>
+      </div>
+      <div id="pres-share-legend" style="flex:1;min-width:280px"></div>
+    </div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
   <div class="pres-slide" id="pres-slide-4b">
-    <div class="pres-tag">SLIDE 5 OF 9 — REACH &amp; CHANNELS</div>
+    <div class="pres-tag">SLIDE 6 OF 10 — REACH &amp; CHANNELS</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:28px">Geographic Reach &amp; Lead Sources</div>
     <div class="pres-row">
       <div>
@@ -2856,7 +2873,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 7: Order Types Analysis -->
   <div class="pres-slide" id="pres-slide-7">
-    <div class="pres-tag">SLIDE 6 OF 9 — ORDER TYPES</div>
+    <div class="pres-tag">SLIDE 7 OF 10 — ORDER TYPES</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Order Types — 2025</div>
     <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
       <div style="background:rgba(194,161,92,0.22);border:1px solid rgba(168,168,170,0.22);border-radius:10px;padding:10px 18px;min-width:130px">
@@ -2884,7 +2901,7 @@ if (_checkSession()) {
 
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
-    <div class="pres-tag">SLIDE 7 OF 9 — PARTIAL YEAR COMPARISON</div>
+    <div class="pres-tag">SLIDE 8 OF 10 — PARTIAL YEAR COMPARISON</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">2025 vs 2026 — First Half Review</div>
     <div style="font-size:16px;color:var(--text3);margin-bottom:28px">Same-period comparison · Jan 1 → <span id="pres-h1-asof">Jun 14, 2026</span> vs same window in 2025</div>
 
@@ -2932,7 +2949,7 @@ if (_checkSession()) {
     </div>
   </div>
   <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 8 OF 9 — KEY TAKEAWAYS</div>
+    <div class="pres-tag">SLIDE 9 OF 10 — KEY TAKEAWAYS</div>
     <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
       <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
       <div style="font-size:13px;color:var(--text3)">What we achieved</div>
@@ -2947,7 +2964,7 @@ if (_checkSession()) {
     </div>
   </div>
   <div class="pres-slide" id="pres-slide-8" style="background:#ffffff;justify-content:center;padding:36px 48px;">
-    <div class="pres-tag">SLIDE 9 OF 9 — CLOSING</div>
+    <div class="pres-tag">SLIDE 10 OF 10 — CLOSING</div>
 
     <!-- Top row: year stats + title -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;gap:24px;flex-wrap:wrap">
@@ -10433,6 +10450,41 @@ let _presSelectedArea = null; // currently selected area (for source cross-filte
 
 
 // ── Presentation: Designer Monthly Chart Modal ───────────────────────────
+
+// ── 2025 NET SALES BY DESIGNER (from _Sales_data.xlsx, "Total Amount") ──────
+// Net of discount. Individual values are NEVER rendered — the presentation
+// shows group share of total only, per Nabila's instruction.
+const SALES_2025 = {
+    'Sherif Tarek': 28750623,
+    'Amira Kasem': 28153235,
+    'Mohamed Fawzy': 25108309,
+    'Basma Nosair': 19572689,
+    'Marwa Elfishawy': 17666313,
+    'Amira Kafrawy': 16324622,
+    'Mohamed Atef': 15631010,
+    'Amr Zidan': 11137428,
+    'Maryet Emad': 10089007,
+    'Monica Alfy': 9726082,
+    'Esraa Ali': 9602241,
+    'Yasmin Mansour': 9566671,
+    'Maryam Mohammad': 9077666,
+    'Elham Fekry': 8507428,
+    'Amira Elaraby': 8251125,
+    'Yasmin Khalil': 7073294,
+    'Sara Eltoukhy': 3336136,
+    'Mahmoud Fouad': 2431208
+  };
+let _SALES_INDEX = null;
+function _designerSales(name) {
+  if (!_SALES_INDEX) {
+    _SALES_INDEX = {};
+    Object.keys(SALES_2025).forEach(function (k) {
+      _SALES_INDEX[_fixDesigner(k).toLowerCase()] = SALES_2025[k];
+    });
+  }
+  return _SALES_INDEX[_fixDesigner(name).toLowerCase()] || 0;
+}
+
 // Designer headshot photos (base64 JPEG, 200x200)
 // Photos are keyed by name, which makes them fragile: canonicalising a
 // designer's spelling anywhere else silently breaks her picture, and nothing
@@ -11191,50 +11243,107 @@ function buildPresentationSlides() {
     });
   }
 
-  // ── Slide 4: Recognition wall ───────────────────────────────
-  // Deliberately NOT ranked. Slide 3 already ranks designers by conversion;
-  // repeating that here would undercut the point of the slide, which is that
-  // every designer has a strength worth naming.
+  // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
+  var PRES_PATCHES = [
+    { tag:'Pinnacle', icon:'🏆', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Masters of the craft',    designers:[] },
+    { tag:'Valor',    icon:'⚔️',  color:'#6e6e70', border:'rgba(142, 142, 144,0.35)', bg:'rgba(142, 142, 144,0.08)',  tagline:'Driven by excellence',     designers:[] },
+    { tag:'Stride',   icon:'💎', color:'#87692f', border:'rgba(194, 161, 92,0.82)', bg:'rgba(194, 161, 92,0.15)', tagline:'Consistent momentum',      designers:[] },
+    { tag:'Spark',    icon:'⚡', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Rising energy',             designers:[] },
+    { tag:'Dawn',     icon:'🌅', color:'#6e6e70', border:'rgba(148,163,184,0.25)',bg:'rgba(148,163,184,0.05)',tagline:'Building foundations',      designers:[] }
+  ];
   var tiersGrid = document.getElementById('pres-tiers-grid');
-  if (tiersGrid && designers.length) {
+  if (tiersGrid && designers.length >= 3) {
+    // Former team members are not recognised at the meeting.
     var honour = designers.filter(function (d) { return !_presIsFormer(d.name); });
-    _presAssignStrengths(honour);
+    // Sort by CVR only — same ranking as Slide 3 (Designer Rankings)
+    var scored2 = honour.slice().sort(function(a,b){ return b.rate - a.rate; });
+    _presAssignStrengths(scored2);
+    var tierSize2 = scored2.length/5;
+    PRES_PATCHES.forEach(function(p){p.designers=[];});
+    scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),4)].designers.push(d);});
+    tiersGrid.innerHTML = PRES_PATCHES.map(function(p){
+      var avgC = p.designers.length ? +(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1) : 0;
+      var avgM3= p.designers.length ? Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length) : 0;
+      var desRows3=p.designers.map(function(d){
+        var ini=d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+        var photo=(typeof _designerPhoto==='function')?_designerPhoto(d.name):'';
+        var face=photo
+          ? '<img src="'+photo+'" alt="" style="width:30px;height:30px;flex:none;border-radius:50%;object-fit:cover;border:1px solid '+p.border+'">'
+          : '<div style="width:30px;height:30px;flex:none;border-radius:50%;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+'">'+ini+'</div>';
+        return '<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.10)">'
+          +face
+          +'<div style="flex:1;min-width:0">'
+            +'<div style="font-size:15px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name.split(' ').slice(0,2).join(' ')+'</div>'
+            +'<div style="font-size:11px;font-weight:700;color:'+p.color+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(d._strength?d._strength.label+' · '+d._strength.text:'')+'</div>'
+          +'</div>'
+          +'</div>';
+      }).join('');
+      return '<div style="background:'+p.bg+';border:1px solid '+p.border+';border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<span style="font-size:24px">'+p.icon+'</span>'
+          +'<div><div style="font-size:17px;font-weight:900;color:'+p.color+'">'+p.tag+'</div>'
+          +'<div style="font-size:13px;color:var(--text3)">'+p.tagline+'</div></div>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px">'
+          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgM3+'</div><div style="font-size:11px;color:var(--text3)">Avg Meas</div></div>'
+          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgC+'%</div><div style="font-size:11px;color:var(--text3)">Avg CVR</div></div>'
+        +'</div>'
+        +'<div>'+desRows3+'</div>'
+        +'</div>';
+    }).join('');
+    _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
-    var GROUPS = [
-      { key:'Top volume',          h:'Volume drivers', s:'Kept the pipeline full',         c:'#87692f' },
-      { key:'Best conversion',     h:'Closers',        s:'Turned measures into contracts', c:'#6e6e70' },
-      { key:'Best cross-sales',    h:'Cross-sellers',  s:'Grew every customer they won',   c:'#87692f' },
-      { key:'Steady contribution', h:'Steady hands',   s:'Consistent delivery all year',   c:'#6e6e70' }
-    ];
-
-    var html = GROUPS.map(function (g) {
-      var mine = honour.filter(function (d) { return d._strength && d._strength.label === g.key; });
-      if (!mine.length) return '';
-      var cards = mine.map(function (d) {
-        var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
-        var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
-        var face  = photo
-          ? '<img src="' + photo + '" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 8px;border:2px solid ' + g.c + '">'
-          : '<div style="width:72px;height:72px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;border:2px dashed ' + g.c + ';font-size:20px;font-weight:800;color:' + g.c + '">' + ini + '</div>';
-        return '<div style="text-align:center;padding:12px 6px;background:rgba(0,0,0,0.03);border-radius:12px">'
-          + face
-          + '<div style="font-size:14px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + d.name.split(' ').slice(0,2).join(' ') + '</div>'
-          + '<div style="font-size:12px;font-weight:700;color:' + g.c + '">' + d._strength.text + '</div>'
+    // ── Slide 5: share of 2025 sales by group ─────────────────
+    // Individual sales values are deliberately never rendered. Only the
+    // group total reaches the screen, as a percentage of the company total.
+    (function () {
+      var cv = document.getElementById('pres-share-donut');
+      var lg = document.getElementById('pres-share-legend');
+      if (!cv || !lg || typeof Chart === 'undefined') return;
+      var sums = PRES_PATCHES.map(function (p) {
+        return p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0);
+      });
+      // Management sits outside the designer groups but still contributed sales,
+      // so it appears as its own segment rather than being dropped.
+      var MGMT = ['Nabila Shaker', 'Mohamed Sadat'];
+      var mgmtSum = MGMT.reduce(function (t, n) { return t + _designerSales(n); }, 0);
+      var SEGS = PRES_PATCHES.map(function (p) {
+        return { tag:p.tag, color:p.color, n:p.designers.length,
+                 names:p.designers.map(function(d){ return d.name.split(' ').slice(0,2).join(' '); }).join(' · ') };
+      });
+      if (mgmtSum > 0) {
+        sums.push(mgmtSum);
+        SEGS.push({ tag:'الإدارة', color:'#6e6e70', n:MGMT.length, names:'' });
+      }
+      var grand = sums.reduce(function (a, b) { return a + b; }, 0);
+      if (!grand) { lg.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
+      var pcts = sums.map(function (v) { return +(v / grand * 100).toFixed(1); });
+      if (window._presShareChart) { try { window._presShareChart.destroy(); } catch (e) {} }
+      window._presShareChart = new Chart(cv, {
+        type: 'doughnut',
+        data: { labels: SEGS.map(function (g) { return g.tag; }),
+                datasets: [{ data: pcts,
+                             backgroundColor: SEGS.map(function (g) { return g.color; }),
+                             borderWidth: 0 }] },
+        options: { cutout: '66%', maintainAspectRatio: false,
+                   plugins: { legend: { display: false },
+                              tooltip: { callbacks: { label: function (c) { return c.label + ': ' + c.parsed + '%'; } } } } }
+      });
+      lg.innerHTML = SEGS.map(function (g, i) {
+        if (!g.n) return '';
+        return '<div style="display:flex;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.10)">'
+          + '<div style="width:11px;height:11px;border-radius:50%;background:' + g.color + ';flex:none"></div>'
+          + '<div style="flex:1;min-width:0">'
+            + '<div style="font-size:15px;font-weight:800;color:var(--text1)">' + g.tag + '<span style="font-size:12px;font-weight:600;color:var(--text3)"> · ' + g.n + '</span></div>'
+            + (g.names ? '<div style="font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.names + '</div>' : '')
+          + '</div>'
+          + '<div style="font-size:19px;font-weight:900;color:' + g.color + '">' + pcts[i] + '%</div>'
           + '</div>';
       }).join('');
-      return '<div style="margin-bottom:22px">'
-        + '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">'
-          + '<div style="font-size:17px;font-weight:900;color:' + g.c + '">' + g.h + '</div>'
-          + '<div style="font-size:13px;color:var(--text3)">' + g.s + '</div>'
-        + '</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px">' + cards + '</div>'
-        + '</div>';
-    }).join('');
-
-    tiersGrid.innerHTML = html || '<div style="color:var(--text3);padding:20px;text-align:center">No designer data</div>';
-    _set('pres-tiers-subtitle', honour.length + ' designers · grouped by what each does best · 2025');
+      _set('pres-share-subtitle', 'Share of total achieved sales, by group · ' + scored2.length + ' designers · no individual figures');
+    })();
   } else if (tiersGrid) {
-    tiersGrid.innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center">No designer data</div>';
+    tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
   }
 
     // ── Slide 4: Areas + Sources ────────────────────────────────
