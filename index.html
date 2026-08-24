@@ -2828,10 +2828,10 @@ if (_checkSession()) {
 
   <!-- SLIDE 4: Designer Groups -->
   <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 4 OF 9 — PERFORMANCE TIERS</div>
-    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
-    <div id="pres-tiers-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
+    <div class="pres-tag">SLIDE 4 OF 9 — RECOGNITION</div>
+    <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:6px">Every Designer, Every Strength</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Grouped by what each designer does best</div>
+    <div id="pres-tiers-grid"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -11143,50 +11143,98 @@ function buildPresentationSlides() {
     window._presRankChart._teamAvg = teamAvg;
   })();
 
-  // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
-  var PRES_PATCHES = [
-    { tag:'Pinnacle', icon:'🏆', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Masters of the craft',    designers:[] },
-    { tag:'Valor',    icon:'⚔️',  color:'#6e6e70', border:'rgba(142, 142, 144,0.35)', bg:'rgba(142, 142, 144,0.08)',  tagline:'Driven by excellence',     designers:[] },
-    { tag:'Stride',   icon:'💎', color:'#87692f', border:'rgba(194, 161, 92,0.82)', bg:'rgba(194, 161, 92,0.15)', tagline:'Consistent momentum',      designers:[] },
-    { tag:'Spark',    icon:'⚡', color:'#87692f', border:'rgba(194, 161, 92,0.82)',  bg:'rgba(194, 161, 92,0.15)',  tagline:'Rising energy',             designers:[] },
-    { tag:'Dawn',     icon:'🌅', color:'#6e6e70', border:'rgba(148,163,184,0.25)',bg:'rgba(148,163,184,0.05)',tagline:'Building foundations',      designers:[] },
-  ];
+  // ── Recognition: each designer's single most distinctive KPI ──────────
+  // The 2026 meeting recognises every designer, so instead of one winner per
+  // metric we score each designer against the GROUP on each KPI and headline
+  // whichever gap is largest. Rate KPIs need a minimum sample or a designer
+  // with 4 measures and 3 contracts would outrank one who converted 60 of 150.
+  var _PRES_RATE_FLOOR = 20;   // measures required before a rate counts
+  // Former team members stay in the rankings and analytics — their 2025 work is
+  // real — but they are not awarded at the 2026 meeting.
+  var _PRES_FORMER = ['mahmoud fouad','yasmin mansour','amr zidan','yasmin khalil'];
+  function _presIsFormer(n) {
+    var k = String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    return _PRES_FORMER.indexOf(k) !== -1;
+  }
+  function _presAssignStrengths(list) {
+    var KPIS = [
+      { key:'total',      label:'Top volume',      floor:0,
+        fmt:function(v){ return v + ' measures'; } },
+      { key:'rate',       label:'Best conversion', floor:_PRES_RATE_FLOOR,
+        fmt:function(v){ return v + '% CVR'; } },
+      { key:'crossSales', label:'Best cross-sales',floor:_PRES_RATE_FLOOR,
+        fmt:function(v){ return v + '× per customer'; } }
+    ];
+    var sorted = {};
+    KPIS.forEach(function (k) {
+      sorted[k.key] = list.map(function (d) { return +d[k.key] || 0; })
+                          .sort(function (a, b) { return a - b; });
+    });
+    function pctRank(vals, v) {
+      var c = 0;
+      for (var i = 0; i < vals.length; i++) if (vals[i] < v) c++;
+      return vals.length ? c / vals.length : 0;
+    }
+    list.forEach(function (d) {
+      var best = null;
+      KPIS.forEach(function (k) {
+        var v = +d[k.key] || 0;
+        if (!v) return;
+        if (k.floor && (+d.total || 0) < k.floor) return;   // sample too small
+        var p = pctRank(sorted[k.key], v);
+        if (!best || p > best.p) best = { p:p, label:k.label, text:k.fmt(v) };
+      });
+      // Nobody is left without a headline — fall back to absolute output.
+      if (!best) best = { p:0, label:'Steady contribution',
+                          text:(+d.total || 0) + ' measures' };
+      d._strength = best;
+    });
+  }
+
+  // ── Slide 4: Recognition wall ───────────────────────────────
+  // Deliberately NOT ranked. Slide 3 already ranks designers by conversion;
+  // repeating that here would undercut the point of the slide, which is that
+  // every designer has a strength worth naming.
   var tiersGrid = document.getElementById('pres-tiers-grid');
-  if (tiersGrid && designers.length >= 3) {
-    // Sort by CVR only — same ranking as Slide 3 (Designer Rankings)
-    var scored2 = designers.slice().sort(function(a,b){ return b.rate - a.rate; });
-    var tierSize2 = scored2.length/5;
-    PRES_PATCHES.forEach(function(p){p.designers=[];});
-    scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),4)].designers.push(d);});
-    tiersGrid.innerHTML = PRES_PATCHES.map(function(p){
-      var avgC = p.designers.length ? +(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1) : 0;
-      var avgM3= p.designers.length ? Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length) : 0;
-      var shown3=p.designers.slice(0,4), extra3=p.designers.length-shown3.length;
-      var desRows3=shown3.map(function(d){
-        var rc2=d.rate>=30?'#87692f':d.rate>=20?'#87692f':'#6e6e70';
-        var ini=d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
-        return '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.10)">'
-          +'<div style="width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+p.color+';flex-shrink:0">'+ini+'</div>'
-          +'<div style="flex:1;font-size:15px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.name.split(' ').slice(0,2).join(' ')+'</div>'
-          +'<div style="font-size:15px;font-weight:700;color:'+rc2+'">'+d.rate+'%</div>'
-          +'</div>';
-      }).join('')+(extra3>0?'<div style="font-size:13px;color:var(--text3);padding-top:4px">+'+extra3+' more</div>':'');
-      return '<div style="background:'+p.bg+';border:1px solid '+p.border+';border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-          +'<span style="font-size:24px">'+p.icon+'</span>'
-          +'<div><div style="font-size:17px;font-weight:900;color:'+p.color+'">'+p.tag+'</div>'
-          +'<div style="font-size:13px;color:var(--text3)">'+p.tagline+'</div></div>'
-        +'</div>'
-        +'<div style="display:flex;gap:6px">'
-          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgM3+'</div><div style="font-size:12px;color:var(--text3)">Avg Meas</div></div>'
-          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgC+'%</div><div style="font-size:12px;color:var(--text3)">Avg CVR</div></div>'
-        +'</div>'
-        +'<div>'+desRows3+'</div>'
-        +'</div>';
+  if (tiersGrid && designers.length) {
+    var honour = designers.filter(function (d) { return !_presIsFormer(d.name); });
+    _presAssignStrengths(honour);
+
+    var GROUPS = [
+      { key:'Top volume',          h:'Volume drivers', s:'Kept the pipeline full',         c:'#87692f' },
+      { key:'Best conversion',     h:'Closers',        s:'Turned measures into contracts', c:'#6e6e70' },
+      { key:'Best cross-sales',    h:'Cross-sellers',  s:'Grew every customer they won',   c:'#87692f' },
+      { key:'Steady contribution', h:'Steady hands',   s:'Consistent delivery all year',   c:'#6e6e70' }
+    ];
+
+    var html = GROUPS.map(function (g) {
+      var mine = honour.filter(function (d) { return d._strength && d._strength.label === g.key; });
+      if (!mine.length) return '';
+      var cards = mine.map(function (d) {
+        var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
+        var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+        var face  = photo
+          ? '<img src="' + photo + '" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 8px;border:2px solid ' + g.c + '">'
+          : '<div style="width:72px;height:72px;border-radius:50%;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;border:2px dashed ' + g.c + ';font-size:20px;font-weight:800;color:' + g.c + '">' + ini + '</div>';
+        return '<div style="text-align:center;padding:12px 6px;background:rgba(0,0,0,0.03);border-radius:12px">'
+          + face
+          + '<div style="font-size:14px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + d.name.split(' ').slice(0,2).join(' ') + '</div>'
+          + '<div style="font-size:12px;font-weight:700;color:' + g.c + '">' + d._strength.text + '</div>'
+          + '</div>';
+      }).join('');
+      return '<div style="margin-bottom:22px">'
+        + '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">'
+          + '<div style="font-size:17px;font-weight:900;color:' + g.c + '">' + g.h + '</div>'
+          + '<div style="font-size:13px;color:var(--text3)">' + g.s + '</div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px">' + cards + '</div>'
+        + '</div>';
     }).join('');
-    _set('pres-tiers-subtitle','Composite score: 50% volume · 50% conversion rate · '+designers.length+' designers ranked');
+
+    tiersGrid.innerHTML = html || '<div style="color:var(--text3);padding:20px;text-align:center">No designer data</div>';
+    _set('pres-tiers-subtitle', honour.length + ' designers · grouped by what each does best · 2025');
   } else if (tiersGrid) {
-    tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
+    tiersGrid.innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center">No designer data</div>';
   }
 
     // ── Slide 4: Areas + Sources ────────────────────────────────
@@ -14117,11 +14165,11 @@ function _instRenderBacklog(rows) {
   const pct = n => total > 0 ? ' · ' + (n / total * 100).toFixed(0) + '% of ' + total : '';
 
   _s('inst-open-orders',        openRows.length.toLocaleString());
-  _s('inst-open-orders-sub',    'in progress or booked' + pct(openRows.length));
+  _s('inst-open-orders-sub',    'not finished, booked or under warranty' + pct(openRows.length));
   _s('inst-open-customers',     openCust.toLocaleString());
   _s('inst-open-customers-sub', 'distinct customers');
   _s('inst-notinst-orders',     notInstRows.length.toLocaleString());
-  _s('inst-notinst-orders-sub', 'supplied, not started' + pct(notInstRows.length));
+  _s('inst-notinst-orders-sub', 'installation appointment booked' + pct(notInstRows.length));
   _s('inst-notinst-customers',     notInstCust.toLocaleString());
   _s('inst-notinst-customers-sub', 'distinct customers waiting');
 }
