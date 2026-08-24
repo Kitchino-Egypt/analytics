@@ -2835,15 +2835,21 @@ if (_checkSession()) {
   </div>
 
   <!-- SLIDE 5: Sales contribution by group -->
-  <div class="pres-slide" id="pres-slide-4c">
-    <div class="pres-tag">SLIDE 5 OF 10 — SALES CONTRIBUTION 2025</div>
-    <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:2px;flex-wrap:wrap">
-      <div style="font-size:34px;font-weight:900;color:var(--text1);line-height:1">Every Group</div>
-      <div style="font-size:34px;font-weight:900;color:#c2a15c;line-height:1">Carried It</div>
+  <div class="pres-slide" id="pres-slide-4c" style="background:linear-gradient(160deg,#faf8f4 0%,#f4f1ea 100%)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:18px">
+      <div>
+        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:6px">SALES CONTRIBUTION 2025</div>
+        <div style="font-size:38px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
+        <div style="font-size:38px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:8px">Carried It</div>
+        <div style="font-size:13px;color:#6e6e70;line-height:1.6" id="pres-share-subtitle">Ring size = share of achieved sales<br>no individual ranking</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e6e0d4;border-radius:14px;padding:14px 18px">
+        <span style="font-size:26px">👥</span>
+        <div style="font-size:13px;color:#3a3a3c;line-height:1.5">Every group contributes.<br><b>Together, we achieve more.</b></div>
+      </div>
     </div>
-    <div style="font-size:13px;color:var(--text3)" id="pres-share-subtitle">Sector size = share of achieved sales · no individual figures</div>
-    <div id="pres-share-wheel" style="position:relative;width:560px;height:560px;margin:0 auto"></div>
-    <div id="pres-share-foot" style="font-size:12px;color:var(--text3);text-align:center;margin-top:-8px"></div>
+    <div id="pres-share-clusters" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;justify-items:center"></div>
+    <div id="pres-share-foot" style="margin-top:14px;display:flex;justify-content:center"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -11291,104 +11297,80 @@ function buildPresentationSlides() {
     _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
     // ── Slide 5: share of 2025 sales by group ─────────────────
-    // ONE circle, five sectors. Sector angle = share of 2025 sales. Each
-    // designer sits on the arc of their own group, spread evenly around it —
-    // never in a list, so no name comes before or after another.
-    // Individual sales values are never rendered.
+    // Five separate circular clusters, ordered by group sales share. Inside a
+    // cluster the designers are placed evenly around the ring — equal size,
+    // no sequence, no hierarchy. Individual sales values are never rendered.
     (function () {
-      var wl = document.getElementById('pres-share-wheel');
-      var ft = document.getElementById('pres-share-foot');
-      if (!wl) return;
+      var host = document.getElementById('pres-share-clusters');
+      var ft   = document.getElementById('pres-share-foot');
+      if (!host) return;
 
       var SEGS = PRES_PATCHES.filter(function (p) { return p.designers.length; })
         .map(function (p) {
-          return { tag:p.tag, color:p.color, members:p.designers.slice(),
+          return { tag:p.tag, members:p.designers.slice(),
                    sum:p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
         });
       var mgmt = ['Nabila Shaker', 'Mohamed Sadat'];
       var mSum = mgmt.reduce(function (t, n) { return t + _designerSales(n); }, 0);
-      if (mSum > 0) SEGS.push({ tag:'الإدارة', color:'#b4b2a9', members:[], sum:mSum });
 
-      var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0);
-      if (!grand) { wl.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
+      var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0) + mSum;
+      if (!grand) { host.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
       SEGS.forEach(function (g) { g.pct = +(g.sum / grand * 100).toFixed(1); });
-      SEGS.sort(function (x, y) { return y.pct - x.pct; });
+      SEGS.sort(function (x, y) { return y.pct - x.pct; });   // groups ARE ranked
 
-      var CX = 280, CY = 280, RIN = 104, ROUT = 172, RLAB = 138;
-      var HIN = 78, HOUT = 98;           // inner ring: share of headcount
-      function pt(r, a) { return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
-      function arc(r0, r1, a0, a1, fill, op) {
-        var lg = (a1 - a0) > Math.PI ? 1 : 0;
-        var p1 = pt(r1, a0), p2 = pt(r1, a1), p3 = pt(r0, a1), p4 = pt(r0, a0);
-        return '<path d="M' + p1[0] + ',' + p1[1]
-             + ' A' + r1 + ',' + r1 + ' 0 ' + lg + ',1 ' + p2[0] + ',' + p2[1]
-             + ' L' + p3[0] + ',' + p3[1]
-             + ' A' + r0 + ',' + r0 + ' 0 ' + lg + ',0 ' + p4[0] + ',' + p4[1]
-             + ' Z" fill="' + fill + '" fill-opacity="' + (op || 1) + '" stroke="#fff" stroke-width="2"></path>';
-      }
-      var heads = SEGS.reduce(function (t, g) { return t + g.members.length; }, 0) || 1;
-      var hAng = -Math.PI / 2;
-      var ang = -Math.PI / 2, svg = '', labels = '', faces = '';
-      // Inner ring drawn first so the outer ring reads as the headline.
-      SEGS.forEach(function (g) {
-        var hSpan = (g.members.length / heads) * 2 * Math.PI;
-        if (hSpan > 0) svg += arc(HIN, HOUT, hAng, hAng + hSpan, g.color, 0.32);
-        hAng += hSpan;
-      });
-      SEGS.forEach(function (g) {
-        var span = (g.sum / grand) * 2 * Math.PI;
-        var a0 = ang, a1 = ang + span; ang = a1;
-        svg += arc(RIN, ROUT, a0, a1, g.color, 1);
+      // Rank palette — charcoal through cream, all inside the portal identity.
+      var RANK = ['#2f2f31', '#87692f', '#c2a15c', '#8e8e90', '#d9c9a3'];
+      var LIGHT = { '#c2a15c':1, '#d9c9a3':1 };
 
-        var am = (a0 + a1) / 2;
-        if (span > 0.25) {
-          var lp = pt(RLAB, am);
-          labels += '<div style="position:absolute;left:' + lp[0] + 'px;top:' + lp[1] + 'px;transform:translate(-50%,-50%);text-align:center;color:#fff;pointer-events:none">'
-                 + '<div style="font-size:14px;font-weight:900;line-height:1.1;letter-spacing:.5px">' + g.tag + '</div>'
-                 + '<div style="font-size:20px;font-weight:900;line-height:1.1">' + g.pct + '%</div>'
-                 + '<div style="font-size:10px;opacity:.85">' + g.members.length + ' designers</div></div>';
-        }
-
-        // Spread this group's people across its own arc. If the arc is too
-        // tight, alternate two radii instead of letting the photos collide.
+      var SZ = 350, C = SZ / 2, R = 116;
+      host.innerHTML = SEGS.map(function (g, gi) {
+        var col = RANK[Math.min(gi, RANK.length - 1)];
+        var onPill = LIGHT[col] ? '#2f2f31' : '#ffffff';
         var n = g.members.length;
-        if (!n) return;
+        // Alphabetical only so the order is arbitrary, never performance.
         var mem = g.members.slice().sort(function (x, y) { return x.name.localeCompare(y.name); });
-        var baseR = 214, arcLen = span * baseR, tight = arcLen < n * 62;
-        mem.forEach(function (d, k) {
-          var aa = a0 + span * ((k + 0.5) / n);
-          var rr = baseR + (tight && (k % 2) ? 66 : 0);
-          var q  = pt(rr, aa);
+
+        var faces = mem.map(function (d, k) {
+          // Offset by half a step so the top of the ring stays clear for the pill.
+          var ang = (-90 + 360 * ((k + 0.5) / n)) * Math.PI / 180;
+          var x = C + R * Math.cos(ang), y = C + R * Math.sin(ang);
           var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
           var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
           var face  = photo
-            ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid ' + g.color + '">'
-            : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + g.color + ';color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
-          faces += '<div style="position:absolute;left:' + q[0] + 'px;top:' + q[1] + 'px;transform:translate(-50%,-50%);width:82px;text-align:center">'
-                 + face
-                 + '<div style="font-size:11px;font-weight:700;color:var(--text1);line-height:1.15">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+            ? '<img src="' + photo + '" alt="" style="width:54px;height:54px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
+            : '<div style="width:54px;height:54px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:17px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
+          return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:84px;text-align:center">'
+               + face
+               + '<div style="font-size:11px;font-weight:700;color:#2f2f31;line-height:1.15">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+        }).join('');
+
+        return '<div style="position:relative;width:' + SZ + 'px;height:' + SZ + 'px">'
+          + '<svg width="' + SZ + '" height="' + SZ + '" style="position:absolute;inset:0">'
+            + '<circle cx="' + C + '" cy="' + C + '" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-dasharray="14 7" stroke-linecap="round" opacity="0.9"></circle>'
+            + '<circle cx="' + C + '" cy="' + C + '" r="' + (R - 13) + '" fill="none" stroke="' + col + '" stroke-width="1" stroke-dasharray="2 6" opacity="0.35"></circle>'
+          + '</svg>'
+          + '<div style="position:absolute;left:50%;top:' + (C - R - 16) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:15px;font-weight:800;padding:7px 22px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
+          + '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:150px">'
+            + '<div style="font-size:36px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
+            + '<div style="font-size:13px;color:#6e6e70;margin-top:2px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
+          + '</div>'
+          + faces
+          + '</div>';
+      }).join('');
+
+      if (ft) {
+        var items = SEGS.map(function (g, gi) {
+          return '<span style="display:inline-flex;align-items:center;gap:7px">'
+               + '<span style="width:11px;height:11px;border-radius:50%;background:' + RANK[Math.min(gi, RANK.length-1)] + '"></span>'
+               + '<span style="font-size:13px;color:#3a3a3c">' + g.tag + ' ' + g.pct + '%</span></span>';
         });
-      });
-
-      wl.innerHTML = '<svg width="560" height="560" style="position:absolute;inset:0">' + svg + '</svg>'
-        + '<div style="position:absolute;left:' + CX + 'px;top:' + CY + 'px;transform:translate(-50%,-50%);text-align:center;width:130px">'
-          + '<div style="font-size:10px;letter-spacing:2px;color:var(--text3)">2025</div>'
-          + '<div style="font-size:17px;font-weight:900;color:var(--text1);line-height:1.2">achieved<br>sales</div>'
-          + '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + heads + ' designers</div>'
-        + '</div>'
-        + labels + faces;
-
-      var tiny = SEGS.filter(function (g) { return g.pct < 3; })
-                     .map(function (g) { return g.tag + ' ' + g.pct + '%'; }).join('  ·  ');
-      if (ft) ft.innerHTML =
-          '<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px">'
-        +   '<span style="width:10px;height:10px;border-radius:2px;background:#87692f"></span>outer ring · share of sales'
-        + '</span>'
-        + '<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px">'
-        +   '<span style="width:10px;height:10px;border-radius:2px;background:#87692f;opacity:.32"></span>inner ring · share of the team'
-        + '</span>'
-        + (tiny ? '<span style="opacity:.8">' + tiny + '</span>' : '');
-      _set('pres-share-subtitle', 'Sector size = share of achieved sales · ' + scored2.length + ' designers · no individual figures');
+        if (mSum > 0) items.push('<span style="display:inline-flex;align-items:center;gap:7px">'
+               + '<span style="width:11px;height:11px;border-radius:50%;background:#e2d9c6"></span>'
+               + '<span style="font-size:13px;color:#3a3a3c">الإدارة ' + (mSum / grand * 100).toFixed(1) + '%</span></span>');
+        ft.innerHTML = '<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;background:#fff;border:1px solid #e6e0d4;border-radius:999px;padding:12px 26px">'
+                     + items.join('<span style="color:#d8d2c6">|</span>') + '</div>';
+      }
+      _set('pres-share-subtitle', 'Ring size = share of achieved sales<br>' + scored2.length + ' designers · no individual ranking');
     })();
   } else if (tiersGrid) {
     tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
