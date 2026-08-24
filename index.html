@@ -2949,8 +2949,23 @@ if (_checkSession()) {
     <div id="pres-tiers-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
   </div>
 
+  <div class="pres-slide" id="pres-slide-5">
+    <div class="pres-tag">SLIDE 7 OF 9 — KEY TAKEAWAYS</div>
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
+      <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
+      <div style="font-size:13px;color:var(--text3)">What we achieved</div>
+    </div>
+    <div id="pres-insights-list" style="margin-bottom:18px"></div>
+    <div style="background:linear-gradient(135deg,rgba(168,168,170,0.10),rgba(194,161,92,0.06));border:1px solid rgba(168,168,170,0.25);border-radius:14px;padding:18px 22px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="width:3px;height:20px;background:linear-gradient(to bottom,var(--green),var(--teal));border-radius:2px"></div>
+        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">Where We Lost Ground</div>
+      </div>
+      <div id="pres-outlook-list"></div>
+    </div>
+  </div>
   <!-- SLIDE 5: Sales contribution by group -->
-  <div class="pres-slide" id="pres-slide-4c" style="background:linear-gradient(160deg,#faf8f4 0%,#f4f1ea 100%);position:relative;overflow:hidden">
+  <div class="pres-slide" id="pres-slide-4c" style="background:linear-gradient(160deg,#faf8f4 0%,#f4f1ea 100%);position:relative;overflow:hidden;justify-content:flex-start;padding:22px 34px">
     <svg viewBox="0 0 600 400" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:46%;height:52%;opacity:.5;pointer-events:none">
       <path d="M0,400 C140,330 90,215 240,150 C350,102 430,120 600,60" fill="none" stroke="#e0d6c2" stroke-width="1.4"></path>
       <path d="M0,400 C120,300 70,190 210,120 C320,66 420,86 600,20" fill="none" stroke="#e6ddcc" stroke-width="1.2"></path>
@@ -2958,7 +2973,7 @@ if (_checkSession()) {
     </svg>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:10px">
       <div>
-        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SLIDE 7 OF 9 — SALES CONTRIBUTION</div>
+        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SLIDE 8 OF 9 — SALES CONTRIBUTION</div>
         <div style="font-size:23px;font-weight:900;color:#1c1c1e;line-height:1.2">Designer Performance Groups</div>
         <div style="font-size:23px;font-weight:900;color:#a8894a;line-height:1.2;margin-bottom:4px">Sales Contribution 2025</div>
       </div>
@@ -2978,21 +2993,6 @@ if (_checkSession()) {
   
 
 
-  <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 8 OF 9 — KEY TAKEAWAYS</div>
-    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
-      <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
-      <div style="font-size:13px;color:var(--text3)">What we achieved</div>
-    </div>
-    <div id="pres-insights-list" style="margin-bottom:18px"></div>
-    <div style="background:linear-gradient(135deg,rgba(168,168,170,0.10),rgba(194,161,92,0.06));border:1px solid rgba(168,168,170,0.25);border-radius:14px;padding:18px 22px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <div style="width:3px;height:20px;background:linear-gradient(to bottom,var(--green),var(--teal));border-radius:2px"></div>
-        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--green)">Where We Lost Ground</div>
-      </div>
-      <div id="pres-outlook-list"></div>
-    </div>
-  </div>
   <div class="pres-slide" id="pres-slide-8" style="background:linear-gradient(165deg,#fbf9f5 0%,#f4f0e7 100%);padding:20px 32px;justify-content:flex-start">
     <div class="pres-tag">SLIDE 9 OF 9 — THANK YOU</div>
 
@@ -11023,7 +11023,13 @@ function buildPresentationSlides() {
   var uniqueCusts25 = new Set(rows25.map(_custKey).filter(Boolean)).size;
   _set('pres-kpi-customers',     uniqueCusts25.toLocaleString());
   _set('pres-kpi-customers-sub', 'unique in 2025');
-  _set('pres-stat-designers', [...new Set(rows25.map(r=>r.designer).filter(d=>d&&!SKIP.includes((d||'').toLowerCase())))].length);
+  const _desCount = {};
+  rows25.forEach(function (r) {
+    var n = _fixDesigner(r.designer || '');
+    if (!n || SKIP.includes(n.toLowerCase())) return;
+    _desCount[n] = (_desCount[n] || 0) + 1;
+  });
+  _set('pres-stat-designers', Object.keys(_desCount).filter(function (n) { return _desCount[n] >= 5; }).length);
   _set('pres-stat-areas',     [...new Set(rows25.map(r=>r.area).filter(Boolean))].length);
   _set('pres-stat-sources',   [...new Set(rows25.map(r=>r.source).filter(s=>s&&!SKIP.includes((s||'').toLowerCase())))].length);
   // Cross-Sales Ratio for 2025 — Contracted Orders ÷ Unique Contracted Customers (matches CEO page)
@@ -11493,16 +11499,15 @@ function buildPresentationSlides() {
   if (tiersGrid && designers.length >= 3) {
     // Former team members are not recognised at the meeting.
     var honour = designers.filter(function (d) { return !_presIsFormer(d.name); });
-    // Grouped by 2025 sales share (Nabila, Aug 2026) so the tiers on this slide
-    // and the contribution rings on slide 5 tell one consistent story.
-    var scored2 = honour.slice().sort(function (a, b) {
-      return _designerSales(b.name) - _designerSales(a.name);
-    });
+    // Slide 6 groups by CONVERSION RATE (Nabila, Aug 2026). Slide 7 groups by
+    // sales share from the sheet — two different lenses on purpose, which is
+    // why the two slides carry different titles.
+    var scored2 = honour.slice().sort(function (a, b) { return b.rate - a.rate; });
     _presAssignStrengths(scored2);
     PRES_PATCHES.forEach(function(p){p.designers=[];});
-    scored2.forEach(function (d) {
-      var gi = _presGroupOf(d.name);
-      if (gi >= 0 && gi < _PRES_GROUPS) PRES_PATCHES[gi].designers.push(d);
+    var _tierSz = scored2.length / _PRES_GROUPS;
+    scored2.forEach(function (d, i) {
+      PRES_PATCHES[Math.min(Math.floor(i / _tierSz), _PRES_GROUPS - 1)].designers.push(d);
     });
     tiersGrid.innerHTML = PRES_PATCHES.map(function(p){
       var avgC = p.designers.length ? +(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1) : 0;
@@ -11535,10 +11540,7 @@ function buildPresentationSlides() {
         +'<div>'+desRows3+'</div>'
         +'</div>';
     }).join('');
-    var _placed = PRES_PATCHES.reduce(function(t,p){ return t + p.designers.length; }, 0);
-    _set('pres-tiers-subtitle','Grouped by share of 2025 sales · each designer badged with their strongest KPI · '+_placed+' designers');
-    var _dropped = scored2.filter(function(d){ return _presGroupOf(d.name) < 0; }).map(function(d){ return d.name; });
-    if (_dropped.length) console.warn('[Pres] Not in any sheet group, excluded:', _dropped.join(', '));
+    _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
     // ── Slide 10: every designer, one distinct strength ───────
     (function () {
@@ -11582,11 +11584,19 @@ function buildPresentationSlides() {
       var ft   = document.getElementById('pres-share-foot');
       if (!host) return;
 
-      var SEGS = PRES_PATCHES.filter(function (p) { return p.designers.length; })
-        .map(function (p) {
-          return { tag:p.tag, members:p.designers.slice(),
-                   sum:p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
+      // Independent of slide 6: membership comes from the sheet's colour bands,
+      // so these groups are by SALES while slide 6's are by CVR.
+      var SEGS = _PRES_GROUP_MEMBERS.map(function (names, gi) {
+        var mem = names.map(function (n) {
+          var hit = null;
+          honour.forEach(function (d) {
+            if (_fixDesigner(d.name).toLowerCase() === _fixDesigner(n).toLowerCase()) hit = d;
+          });
+          return hit || { name:n, total:0, rate:0 };
         });
+        return { tag:PRES_PATCHES[gi].tag, color:PRES_PATCHES[gi].color, members:mem,
+                 sum:mem.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
+      }).filter(function (g) { return g.members.length; });
       var mSum = _PRES_HEAD_OFFICE.reduce(function (t, n) { return t + _designerSales(n); }, 0);
 
       var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0) + mSum;
@@ -11603,7 +11613,7 @@ function buildPresentationSlides() {
       // Count only groups that actually draw a cluster. Head Office has no
       // members and renders nothing, but counting it forced the wrap to 2 x 2,
       // which made the block tall and left it bunched in the middle.
-      host.style.maxWidth = (2 * SZ + 90) + 'px';
+      host.style.maxWidth = '100%';
       host.style.margin   = '0 auto';
       host.style.display  = 'block';
       var cards = SEGS.map(function (g, gi) {
@@ -11645,16 +11655,10 @@ function buildPresentationSlides() {
           + faces
           + '</div>';
       }).filter(Boolean);
-      // 1 - 2 - 1 rows, each centred.
-      function row(items) {
-        return '<div style="display:flex;justify-content:center;gap:46px">' + items.join('') + '</div>';
-      }
-      var rows = [];
-      if (cards[0]) rows.push(row([cards[0]]));
-      if (cards[1] || cards[2]) rows.push(row([cards[1], cards[2]].filter(Boolean)));
-      if (cards[3]) rows.push(row([cards[3]]));
-      cards.slice(4).forEach(function (c) { rows.push(row([c])); });
-      host.innerHTML = rows.join('');
+      // Single row: the 1-2-1 diamond ran two rows tall and pushed the header
+      // and legend outside the slide frame at fullscreen.
+      host.innerHTML = '<div style="display:flex;justify-content:center;align-items:flex-start;gap:20px;flex-wrap:nowrap">'
+                     + cards.join('') + '</div>';
 
       if (ft) {
         var items = SEGS.map(function (g, gi) {
