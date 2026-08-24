@@ -2837,15 +2837,13 @@ if (_checkSession()) {
   <!-- SLIDE 5: Sales contribution by group -->
   <div class="pres-slide" id="pres-slide-4c">
     <div class="pres-tag">SLIDE 5 OF 10 — SALES CONTRIBUTION 2025</div>
-    <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:4px;flex-wrap:wrap">
-      <div style="font-size:40px;font-weight:900;color:var(--text1);line-height:1">Every Group</div>
-      <div style="font-size:40px;font-weight:900;color:#c2a15c;line-height:1">Carried It</div>
+    <div style="display:flex;align-items:flex-end;gap:14px;margin-bottom:2px;flex-wrap:wrap">
+      <div style="font-size:34px;font-weight:900;color:var(--text1);line-height:1">Every Group</div>
+      <div style="font-size:34px;font-weight:900;color:#c2a15c;line-height:1">Carried It</div>
     </div>
-    <div style="font-size:14px;color:var(--text3);margin-bottom:22px" id="pres-share-subtitle">Share of total achieved sales · no individual figures</div>
-    <div id="pres-share-ribbon" style="display:flex;height:62px;border-radius:8px;overflow:hidden;margin-bottom:10px"></div>
-    <div id="pres-share-ticks"  style="display:flex;overflow:hidden;margin-bottom:4px"></div>
-    <div id="pres-share-foot"   style="font-size:12px;color:var(--text3);margin-bottom:14px"></div>
-    <div id="pres-share-ring"   style="position:relative;width:100%;height:330px"></div>
+    <div style="font-size:13px;color:var(--text3)" id="pres-share-subtitle">Sector size = share of achieved sales · no individual figures</div>
+    <div id="pres-share-wheel" style="position:relative;width:560px;height:560px;margin:0 auto"></div>
+    <div id="pres-share-foot" style="font-size:12px;color:var(--text3);text-align:center;margin-top:-8px"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -11293,15 +11291,14 @@ function buildPresentationSlides() {
     _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
     // ── Slide 5: share of 2025 sales by group ─────────────────
-    // Ribbon = group share (widths ARE the data). Ring = the people, arranged
-    // in a circle so there is no first and no last. Individual sales values are
-    // never rendered.
+    // ONE circle, five sectors. Sector angle = share of 2025 sales. Each
+    // designer sits on the arc of their own group, spread evenly around it —
+    // never in a list, so no name comes before or after another.
+    // Individual sales values are never rendered.
     (function () {
-      var rib = document.getElementById('pres-share-ribbon');
-      var tk  = document.getElementById('pres-share-ticks');
-      var ft  = document.getElementById('pres-share-foot');
-      var rg  = document.getElementById('pres-share-ring');
-      if (!rib || !tk || !rg) return;
+      var wl = document.getElementById('pres-share-wheel');
+      var ft = document.getElementById('pres-share-foot');
+      if (!wl) return;
 
       var SEGS = PRES_PATCHES.filter(function (p) { return p.designers.length; })
         .map(function (p) {
@@ -11313,58 +11310,85 @@ function buildPresentationSlides() {
       if (mSum > 0) SEGS.push({ tag:'الإدارة', color:'#b4b2a9', members:[], sum:mSum });
 
       var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0);
-      if (!grand) { rib.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
+      if (!grand) { wl.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
       SEGS.forEach(function (g) { g.pct = +(g.sum / grand * 100).toFixed(1); });
-      // Largest contribution first.
       SEGS.sort(function (x, y) { return y.pct - x.pct; });
 
-      var BIG = SEGS.filter(function (g) { return g.pct >= 3; });
-      var SML = SEGS.filter(function (g) { return g.pct <  3; });
-
-      rib.innerHTML = SEGS.map(function (g) {
-        return '<div style="flex:' + Math.max(g.pct, 0.5) + ';background:' + g.color + ';display:flex;align-items:center;justify-content:center">'
-          + (g.pct >= 7 ? '<span style="font-size:21px;font-weight:900;color:#fff">' + g.pct + '%</span>' : '')
-          + '</div>';
-      }).join('');
-
-      // Only wide-enough bands get an inline label; the rest go to a footnote,
-      // otherwise a 0.2% band pushes its text past the slide edge.
-      tk.innerHTML = SEGS.map(function (g) {
-        var lab = g.pct >= 3
-          ? '<div style="font-size:15px;font-weight:800;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.tag + '</div>'
-            + '<div style="font-size:12px;color:var(--text3)">' + g.pct + '%' + (g.members.length ? ' · ' + g.members.length + ' designers' : '') + '</div>'
-          : '';
-        return '<div style="flex:' + Math.max(g.pct, 0.5) + ';min-width:0;padding-right:8px">' + lab + '</div>';
-      }).join('');
-      ft.innerHTML = SML.map(function (g) { return g.tag + ' ' + g.pct + '%'; }).join(' · ');
-
-      // ── The ring: every designer, no order ──
-      var people = [];
-      SEGS.forEach(function (g) { g.members.forEach(function (d) { people.push({ d:d, c:g.color, tag:g.tag }); }); });
-      // Alphabetical, so ring position carries no performance meaning.
-      people.sort(function (x, y) { return x.d.name.localeCompare(y.d.name); });
-
-      var H = 330, R = 128, cy = H / 2, html = '';
-      html += '<div style="position:absolute;left:50%;top:' + cy + 'px;transform:translate(-50%,-50%);text-align:center;width:190px">'
-            + '<div style="font-size:11px;letter-spacing:2px;color:var(--text3)">2025</div>'
-            + '<div style="font-size:20px;font-weight:900;color:var(--text1)">achieved sales</div>'
-            + '<div style="font-size:12px;color:var(--text3)">' + people.length + ' designers</div></div>';
-      people.forEach(function (p, k) {
-        var ang = (k / people.length) * 2 * Math.PI - Math.PI / 2;
-        var x = 50 + Math.cos(ang) * 22;          // % of width — keeps it inside
-        var y = cy + Math.sin(ang) * R;
-        var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(p.d.name) : '';
-        var ini   = p.d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
-        var face  = photo
-          ? '<img src="' + photo + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px;border:3px solid ' + p.c + '">'
-          : '<div style="width:52px;height:52px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:' + p.c + ';color:#fff;font-size:16px;font-weight:800">' + ini + '</div>';
-        html += '<div style="position:absolute;left:calc(' + x + '% - 42px);top:' + (y - 40) + 'px;width:84px;text-align:center">'
-              + face
-              + '<div style="font-size:11px;color:var(--text2);line-height:1.2">' + p.d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+      var CX = 280, CY = 280, RIN = 104, ROUT = 172, RLAB = 138;
+      var HIN = 78, HOUT = 98;           // inner ring: share of headcount
+      function pt(r, a) { return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
+      function arc(r0, r1, a0, a1, fill, op) {
+        var lg = (a1 - a0) > Math.PI ? 1 : 0;
+        var p1 = pt(r1, a0), p2 = pt(r1, a1), p3 = pt(r0, a1), p4 = pt(r0, a0);
+        return '<path d="M' + p1[0] + ',' + p1[1]
+             + ' A' + r1 + ',' + r1 + ' 0 ' + lg + ',1 ' + p2[0] + ',' + p2[1]
+             + ' L' + p3[0] + ',' + p3[1]
+             + ' A' + r0 + ',' + r0 + ' 0 ' + lg + ',0 ' + p4[0] + ',' + p4[1]
+             + ' Z" fill="' + fill + '" fill-opacity="' + (op || 1) + '" stroke="#fff" stroke-width="2"></path>';
+      }
+      var heads = SEGS.reduce(function (t, g) { return t + g.members.length; }, 0) || 1;
+      var hAng = -Math.PI / 2;
+      var ang = -Math.PI / 2, svg = '', labels = '', faces = '';
+      // Inner ring drawn first so the outer ring reads as the headline.
+      SEGS.forEach(function (g) {
+        var hSpan = (g.members.length / heads) * 2 * Math.PI;
+        if (hSpan > 0) svg += arc(HIN, HOUT, hAng, hAng + hSpan, g.color, 0.32);
+        hAng += hSpan;
       });
-      rg.innerHTML = html;
+      SEGS.forEach(function (g) {
+        var span = (g.sum / grand) * 2 * Math.PI;
+        var a0 = ang, a1 = ang + span; ang = a1;
+        svg += arc(RIN, ROUT, a0, a1, g.color, 1);
 
-      _set('pres-share-subtitle', people.length + ' designers · ' + BIG.length + ' groups · one result');
+        var am = (a0 + a1) / 2;
+        if (span > 0.25) {
+          var lp = pt(RLAB, am);
+          labels += '<div style="position:absolute;left:' + lp[0] + 'px;top:' + lp[1] + 'px;transform:translate(-50%,-50%);text-align:center;color:#fff;pointer-events:none">'
+                 + '<div style="font-size:14px;font-weight:900;line-height:1.1;letter-spacing:.5px">' + g.tag + '</div>'
+                 + '<div style="font-size:20px;font-weight:900;line-height:1.1">' + g.pct + '%</div>'
+                 + '<div style="font-size:10px;opacity:.85">' + g.members.length + ' designers</div></div>';
+        }
+
+        // Spread this group's people across its own arc. If the arc is too
+        // tight, alternate two radii instead of letting the photos collide.
+        var n = g.members.length;
+        if (!n) return;
+        var mem = g.members.slice().sort(function (x, y) { return x.name.localeCompare(y.name); });
+        var baseR = 214, arcLen = span * baseR, tight = arcLen < n * 62;
+        mem.forEach(function (d, k) {
+          var aa = a0 + span * ((k + 0.5) / n);
+          var rr = baseR + (tight && (k % 2) ? 66 : 0);
+          var q  = pt(rr, aa);
+          var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
+          var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+          var face  = photo
+            ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid ' + g.color + '">'
+            : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + g.color + ';color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
+          faces += '<div style="position:absolute;left:' + q[0] + 'px;top:' + q[1] + 'px;transform:translate(-50%,-50%);width:82px;text-align:center">'
+                 + face
+                 + '<div style="font-size:11px;font-weight:700;color:var(--text1);line-height:1.15">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+        });
+      });
+
+      wl.innerHTML = '<svg width="560" height="560" style="position:absolute;inset:0">' + svg + '</svg>'
+        + '<div style="position:absolute;left:' + CX + 'px;top:' + CY + 'px;transform:translate(-50%,-50%);text-align:center;width:130px">'
+          + '<div style="font-size:10px;letter-spacing:2px;color:var(--text3)">2025</div>'
+          + '<div style="font-size:17px;font-weight:900;color:var(--text1);line-height:1.2">achieved<br>sales</div>'
+          + '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + heads + ' designers</div>'
+        + '</div>'
+        + labels + faces;
+
+      var tiny = SEGS.filter(function (g) { return g.pct < 3; })
+                     .map(function (g) { return g.tag + ' ' + g.pct + '%'; }).join('  ·  ');
+      if (ft) ft.innerHTML =
+          '<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px">'
+        +   '<span style="width:10px;height:10px;border-radius:2px;background:#87692f"></span>outer ring · share of sales'
+        + '</span>'
+        + '<span style="display:inline-flex;align-items:center;gap:6px;margin-right:16px">'
+        +   '<span style="width:10px;height:10px;border-radius:2px;background:#87692f;opacity:.32"></span>inner ring · share of the team'
+        + '</span>'
+        + (tiny ? '<span style="opacity:.8">' + tiny + '</span>' : '');
+      _set('pres-share-subtitle', 'Sector size = share of achieved sales · ' + scored2.length + ' designers · no individual figures');
     })();
   } else if (tiersGrid) {
     tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
