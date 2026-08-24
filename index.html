@@ -14061,10 +14061,40 @@ function _instSetProdTab(p) {
 //   (b) its status is موعد تركيب                  → booked, not yet started.
 // Note (b) is included even though it has no install date, because a scheduled
 // job is committed work. Anything handed over is closed regardless of status.
+// Arabic status text in the sheet is not spelled consistently — e.g. the sheet
+// writes "تفعيل ضمان إدارى" (alef maksura) where the rule was given as
+// "تفعيل ضمان إداري" (yaa). Exact string matching silently misses those rows,
+// so every status comparison below goes through this normaliser first.
+function _instStatusNorm(v) {
+  return String(v || '')
+    .replace(/[\u064B-\u0652\u0670\u0640]/g, '')  // harakat + tatweel
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function _instStatusIn(r, list) {
+  const st = _instStatusNorm(r['الحالة']);
+  // Normalise the search terms too, so the lists below can be written exactly
+  // as the sheet spells them and still match other spellings of the same word.
+  return list.some(function (t) { return st.indexOf(_instStatusNorm(t)) !== -1; });
+}
+
+// Statuses that must NOT count as an open order (Nabila, Aug 2026).
+const _INST_EXCL_OPEN     = ['تفعيل ضمان إدارى', 'موعد تسليم'];
+// Statuses that must NOT count as not-yet-installed (Nabila, Aug 2026).
+// A booked appointment already sits in the OPEN card; counting it here too
+// double-counted the same row across both cards.
+const _INST_EXCL_NOTINST  = ['موعد تركيب'];
+
 function _instIsOpen(r) {
+  if (_instStatusIn(r, _INST_EXCL_OPEN)) return false;
   const started  = !!(r['تاريخ بداية التركيب'] || '').trim();
   const handed   = !!(r['تاريخ التسليم']       || '').trim();
-  const booked   = /موعد تركيب/.test((r['الحالة'] || '').trim());
+  const booked   = _instStatusNorm(r['الحالة']).indexOf('موعد تركيب') !== -1;
   return (started && !handed) || booked;
 }
 
@@ -14074,6 +14104,7 @@ function _instIsOpen(r) {
 // than nest, so "not installed" can exceed or sit outside the open count.
 // It answers a different question: what has been delivered and is sitting idle.
 function _instNotInstalled(r) {
+  if (_instStatusIn(r, _INST_EXCL_NOTINST)) return false;
   return !!(r['تاريخ التوريد'] || '').trim()
       &&  !(r['تاريخ بداية التركيب'] || '').trim();
 }
