@@ -11215,6 +11215,24 @@ function buildPresentationSlides() {
   var _PRES_FORMER = ['mahmoud fouad','nabila shaker','mohamed sadat'];
   // Shown as one unnamed contribution, never as individuals.
   var _PRES_HEAD_OFFICE = ['Mahmoud Fouad', 'Nabila Shaker', 'Mohamed Sadat'];
+  // Group membership is taken VERBATIM from the colour bands in
+  // Kitchino_Sales_Four groups + others.xlsx — not recomputed here, so the
+  // slide always matches the sheet even if the numbers move.
+  var _PRES_GROUP_MEMBERS = [
+    ['Sherif Tarek',    'Amira Kasem',   'Mohamed Fawzy', 'Basma Nosair'],
+    ['Marwa Elfishawy', 'Amira Kafrawy', 'Mohamed Atef',  'Monica Alfy'],
+    ['Maryet Emad',     'Esraa Ali',     'Yasmin Mansour','Maryam Mohammad'],
+    ['Elham Fekry',     'Amira Elaraby', 'Yasmin Khalil', 'Sara Eltoukhy']
+  ];
+  function _presGroupOf(name) {
+    var k = _fixDesigner(name).toLowerCase();
+    for (var i = 0; i < _PRES_GROUP_MEMBERS.length; i++) {
+      for (var j = 0; j < _PRES_GROUP_MEMBERS[i].length; j++) {
+        if (_fixDesigner(_PRES_GROUP_MEMBERS[i][j]).toLowerCase() === k) return i;
+      }
+    }
+    return -1;
+  }
   function _presIsFormer(n) {
     var k = String(n || '').trim().toLowerCase().replace(/\s+/g, ' ');
     return _PRES_FORMER.indexOf(k) !== -1;
@@ -11272,9 +11290,11 @@ function buildPresentationSlides() {
       return _designerSales(b.name) - _designerSales(a.name);
     });
     _presAssignStrengths(scored2);
-    var tierSize2 = scored2.length/_PRES_GROUPS;
     PRES_PATCHES.forEach(function(p){p.designers=[];});
-    scored2.forEach(function(d,i){PRES_PATCHES[Math.min(Math.floor(i/tierSize2),_PRES_GROUPS-1)].designers.push(d);});
+    scored2.forEach(function (d) {
+      var gi = _presGroupOf(d.name);
+      if (gi >= 0 && gi < _PRES_GROUPS) PRES_PATCHES[gi].designers.push(d);
+    });
     tiersGrid.innerHTML = PRES_PATCHES.map(function(p){
       var avgC = p.designers.length ? +(p.designers.reduce(function(s,d){return s+d.rate;},0)/p.designers.length).toFixed(1) : 0;
       var avgM3= p.designers.length ? Math.round(p.designers.reduce(function(s,d){return s+d.total;},0)/p.designers.length) : 0;
