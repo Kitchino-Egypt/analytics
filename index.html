@@ -2941,16 +2941,8 @@ if (_checkSession()) {
       </div>
     </div>
   </div>
-  <!-- SLIDE 4: Designer Groups -->
-  <div class="pres-slide" id="pres-slide-4">
-    <div class="pres-tag">SLIDE 6 OF 9 — TEAM GROUPS</div>
-    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups — Measures &amp; CVR 2025</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
-    <div id="pres-tiers-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
-  </div>
-
   <div class="pres-slide" id="pres-slide-5">
-    <div class="pres-tag">SLIDE 7 OF 9 — KEY TAKEAWAYS</div>
+    <div class="pres-tag">SLIDE 6 OF 9 — KEY TAKEAWAYS</div>
     <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
       <div style="font-size:28px;font-weight:800;color:var(--text1)">2025 Highlights</div>
       <div style="font-size:13px;color:var(--text3)">What we achieved</div>
@@ -2964,6 +2956,14 @@ if (_checkSession()) {
       <div id="pres-outlook-list"></div>
     </div>
   </div>
+  <!-- SLIDE 4: Designer Groups -->
+  <div class="pres-slide" id="pres-slide-4">
+    <div class="pres-tag">SLIDE 7 OF 9 — CVR GROUPS</div>
+    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:6px">Designer Performance Groups — CVR 2025</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px" id="pres-tiers-subtitle">Composite score: 50% volume · 50% conversion rate</div>
+    <div id="pres-tiers-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px"></div>
+  </div>
+
   <!-- SLIDE 5: Sales contribution by group -->
   <div class="pres-slide" id="pres-slide-4c" style="background:linear-gradient(160deg,#faf8f4 0%,#f4f1ea 100%);position:relative;overflow:hidden;justify-content:flex-start;padding:22px 34px">
     <svg viewBox="0 0 600 400" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:46%;height:52%;opacity:.5;pointer-events:none">
@@ -11502,7 +11502,11 @@ function buildPresentationSlides() {
     // Slide 6 groups by CONVERSION RATE (Nabila, Aug 2026). Slide 7 groups by
     // sales share from the sheet — two different lenses on purpose, which is
     // why the two slides carry different titles.
-    var scored2 = honour.slice().sort(function (a, b) { return b.rate - a.rate; });
+    // Restricted to the 16 designers in the sheet's groups. With 17 the tier
+    // size became 4.25 and the fifth-highest CVR rounded down into group A —
+    // which is how Sherif ended up in the first group instead of the second.
+    var scored2 = honour.filter(function (d) { return _presGroupOf(d.name) >= 0; })
+                        .sort(function (a, b) { return b.rate - a.rate; });
     _presAssignStrengths(scored2);
     PRES_PATCHES.forEach(function(p){p.designers=[];});
     var _tierSz = scored2.length / _PRES_GROUPS;
