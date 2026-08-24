@@ -2835,21 +2835,29 @@ if (_checkSession()) {
   </div>
 
   <!-- SLIDE 5: Sales contribution by group -->
-  <div class="pres-slide" id="pres-slide-4c" style="background:linear-gradient(160deg,#faf8f4 0%,#f4f1ea 100%)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:18px">
+  <div class="pres-slide" id="pres-slide-4c" style="background:linear-gradient(160deg,#faf8f4 0%,#f4f1ea 100%);position:relative;overflow:hidden">
+    <svg viewBox="0 0 600 400" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:46%;height:52%;opacity:.5;pointer-events:none">
+      <path d="M0,400 C140,330 90,215 240,150 C350,102 430,120 600,60" fill="none" stroke="#e0d6c2" stroke-width="1.4"></path>
+      <path d="M0,400 C120,300 70,190 210,120 C320,66 420,86 600,20" fill="none" stroke="#e6ddcc" stroke-width="1.2"></path>
+      <path d="M0,400 C160,352 110,240 268,178 C378,134 442,152 600,98" fill="none" stroke="#e9e1d2" stroke-width="1.2"></path>
+    </svg>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:10px">
       <div>
-        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:6px">SALES CONTRIBUTION 2025</div>
-        <div style="font-size:38px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
-        <div style="font-size:38px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:8px">Carried It</div>
+        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SALES CONTRIBUTION 2025</div>
+        <div style="font-size:30px;font-weight:900;color:#1c1c1e;line-height:1.05">Every Group</div>
+        <div style="font-size:30px;font-weight:900;color:#a8894a;line-height:1.05;margin-bottom:6px">Carried It</div>
         <div style="font-size:13px;color:#6e6e70;line-height:1.6" id="pres-share-subtitle">Ring size = share of achieved sales<br>no individual ranking</div>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e6e0d4;border-radius:14px;padding:14px 18px">
-        <span style="font-size:26px">👥</span>
+      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #e6e0d4;border-radius:14px;padding:11px 15px">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#a8894a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
         <div style="font-size:13px;color:#3a3a3c;line-height:1.5">Every group contributes.<br><b>Together, we achieve more.</b></div>
       </div>
     </div>
-    <div id="pres-share-clusters" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;justify-items:center"></div>
-    <div id="pres-share-foot" style="margin-top:14px;display:flex;justify-content:center"></div>
+    <div id="pres-share-clusters" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:6px 10px"></div>
+    <div id="pres-share-foot" style="margin-top:8px;display:flex;justify-content:center"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -10463,9 +10471,8 @@ const SALES_2025 = {
     'Marwa Elfishawy': 17666313,
     'Amira Kafrawy': 16324622,
     'Mohamed Atef': 15631010,
-    'Amr Zidan': 11137428,
     'Maryet Emad': 10089007,
-    'Monica Alfy': 9726082,
+    'Monica Alfy': 20863510,   // 9,726,082 own + 11,137,428 reassigned from Amr Zidan (former)
     'Esraa Ali': 9602241,
     'Yasmin Mansour': 9566671,
     'Maryam Mohammad': 9077666,
@@ -11258,8 +11265,11 @@ function buildPresentationSlides() {
   if (tiersGrid && designers.length >= 3) {
     // Former team members are not recognised at the meeting.
     var honour = designers.filter(function (d) { return !_presIsFormer(d.name); });
-    // Sort by CVR only — same ranking as Slide 3 (Designer Rankings)
-    var scored2 = honour.slice().sort(function(a,b){ return b.rate - a.rate; });
+    // Grouped by 2025 sales share (Nabila, Aug 2026) so the tiers on this slide
+    // and the contribution rings on slide 5 tell one consistent story.
+    var scored2 = honour.slice().sort(function (a, b) {
+      return _designerSales(b.name) - _designerSales(a.name);
+    });
     _presAssignStrengths(scored2);
     var tierSize2 = scored2.length/5;
     PRES_PATCHES.forEach(function(p){p.designers=[];});
@@ -11294,7 +11304,7 @@ function buildPresentationSlides() {
         +'<div>'+desRows3+'</div>'
         +'</div>';
     }).join('');
-    _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
+    _set('pres-tiers-subtitle','Grouped by share of 2025 sales · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
     // ── Slide 5: share of 2025 sales by group ─────────────────
     // Five separate circular clusters, ordered by group sales share. Inside a
@@ -11322,7 +11332,14 @@ function buildPresentationSlides() {
       var RANK = ['#2f2f31', '#87692f', '#c2a15c', '#8e8e90', '#d9c9a3'];
       var LIGHT = { '#c2a15c':1, '#d9c9a3':1 };
 
-      var SZ = 350, C = SZ / 2, R = 116;
+      var SZ = 286, C = SZ / 2, R = 95;
+      // Wrap predictably: 5 groups read best as 3 + 2, four as a 2 x 2 block,
+      // three or fewer in a single row. Capping the container width forces the
+      // wrap instead of leaving it to whatever the screen happens to be.
+      var CIRC = 2 * Math.PI * R;
+      var perRow = SEGS.length >= 5 ? 3 : (SEGS.length === 4 ? 2 : SEGS.length);
+      host.style.maxWidth = (perRow * SZ + (perRow - 1) * 10) + 'px';
+      host.style.margin   = '0 auto';
       host.innerHTML = SEGS.map(function (g, gi) {
         var col = RANK[Math.min(gi, RANK.length - 1)];
         var onPill = LIGHT[col] ? '#2f2f31' : '#ffffff';
@@ -11337,22 +11354,25 @@ function buildPresentationSlides() {
           var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
           var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
           var face  = photo
-            ? '<img src="' + photo + '" alt="" style="width:54px;height:54px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
-            : '<div style="width:54px;height:54px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:17px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
-          return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:84px;text-align:center">'
+            ? '<img src="' + photo + '" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 3px;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">'
+            : '<div style="width:44px;height:44px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;background:' + col + ';color:#fff;font-size:15px;font-weight:800;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.16)">' + ini + '</div>';
+          return '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;transform:translate(-50%,-50%);width:78px;text-align:center">'
                + face
-               + '<div style="font-size:11px;font-weight:700;color:#2f2f31;line-height:1.15">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+               + '<div style="font-size:10px;font-weight:700;color:#2f2f31;line-height:1.12">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
         }).join('');
 
         return '<div style="position:relative;width:' + SZ + 'px;height:' + SZ + 'px">'
           + '<svg width="' + SZ + '" height="' + SZ + '" style="position:absolute;inset:0">'
-            + '<circle cx="' + C + '" cy="' + C + '" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-dasharray="14 7" stroke-linecap="round" opacity="0.9"></circle>'
-            + '<circle cx="' + C + '" cy="' + C + '" r="' + (R - 13) + '" fill="none" stroke="' + col + '" stroke-width="1" stroke-dasharray="2 6" opacity="0.35"></circle>'
+            + '<circle cx="' + C + '" cy="' + C + '" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="5" opacity="0.13"></circle>'
+            + '<circle cx="' + C + '" cy="' + C + '" r="' + R + '" fill="none" stroke="' + col + '" stroke-width="5" stroke-linecap="round"'
+              + ' stroke-dasharray="' + (g.pct / 100 * CIRC).toFixed(1) + ' ' + CIRC.toFixed(1) + '"'
+              + ' transform="rotate(-90 ' + C + ' ' + C + ')"></circle>'
+            + '<circle cx="' + C + '" cy="' + C + '" r="' + (R - 14) + '" fill="none" stroke="' + col + '" stroke-width="1" stroke-dasharray="2 6" opacity="0.30"></circle>'
           + '</svg>'
-          + '<div style="position:absolute;left:50%;top:' + (C - R - 16) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:15px;font-weight:800;padding:7px 22px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
+          + '<div style="position:absolute;left:50%;top:' + (C - R - 13) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:13px;font-weight:800;padding:5px 17px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
           + '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:150px">'
-            + '<div style="font-size:36px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
-            + '<div style="font-size:13px;color:#6e6e70;margin-top:2px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
+            + '<div style="font-size:29px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
+            + '<div style="font-size:12px;color:#6e6e70;margin-top:1px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
           + '</div>'
           + faces
           + '</div>';
@@ -11367,7 +11387,7 @@ function buildPresentationSlides() {
         if (mSum > 0) items.push('<span style="display:inline-flex;align-items:center;gap:7px">'
                + '<span style="width:11px;height:11px;border-radius:50%;background:#e2d9c6"></span>'
                + '<span style="font-size:13px;color:#3a3a3c">الإدارة ' + (mSum / grand * 100).toFixed(1) + '%</span></span>');
-        ft.innerHTML = '<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;background:#fff;border:1px solid #e6e0d4;border-radius:999px;padding:12px 26px">'
+        ft.innerHTML = '<div style="display:flex;gap:22px;flex-wrap:wrap;justify-content:center;background:#fff;border:1px solid #e6e0d4;border-radius:999px;padding:9px 20px">'
                      + items.join('<span style="color:#d8d2c6">|</span>') + '</div>';
       }
       _set('pres-share-subtitle', 'Ring size = share of achieved sales<br>' + scored2.length + ' designers · no individual ranking');
