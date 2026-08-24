@@ -2837,14 +2837,15 @@ if (_checkSession()) {
   <!-- SLIDE 5: Sales contribution by group -->
   <div class="pres-slide" id="pres-slide-4c">
     <div class="pres-tag">SLIDE 5 OF 10 — SALES CONTRIBUTION 2025</div>
-    <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:6px;flex-wrap:wrap">
-      <div style="font-size:44px;font-weight:900;color:var(--text1);line-height:1">Every Group</div>
-      <div style="font-size:44px;font-weight:900;color:#c2a15c;line-height:1">Carried It</div>
+    <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:4px;flex-wrap:wrap">
+      <div style="font-size:40px;font-weight:900;color:var(--text1);line-height:1">Every Group</div>
+      <div style="font-size:40px;font-weight:900;color:#c2a15c;line-height:1">Carried It</div>
     </div>
-    <div style="font-size:14px;color:var(--text3);margin-bottom:30px" id="pres-share-subtitle">Share of total achieved sales · no individual figures</div>
-    <div id="pres-share-ribbon" style="display:flex;height:70px;border-radius:8px;overflow:hidden;margin-bottom:10px"></div>
-    <div id="pres-share-ticks"  style="display:flex;margin-bottom:28px"></div>
-    <div id="pres-share-cols"   style="display:flex;gap:10px"></div>
+    <div style="font-size:14px;color:var(--text3);margin-bottom:22px" id="pres-share-subtitle">Share of total achieved sales · no individual figures</div>
+    <div id="pres-share-ribbon" style="display:flex;height:62px;border-radius:8px;overflow:hidden;margin-bottom:10px"></div>
+    <div id="pres-share-ticks"  style="display:flex;overflow:hidden;margin-bottom:4px"></div>
+    <div id="pres-share-foot"   style="font-size:12px;color:var(--text3);margin-bottom:14px"></div>
+    <div id="pres-share-ring"   style="position:relative;width:100%;height:330px"></div>
   </div>
 
   <!-- SLIDE 5: Geographic + Lead Sources -->
@@ -11292,21 +11293,21 @@ function buildPresentationSlides() {
     _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
     // ── Slide 5: share of 2025 sales by group ─────────────────
-    // A proportional ribbon, not a chart: the band widths ARE the data, so the
-    // slide reads at projector distance without anyone hunting for a legend.
-    // Individual sales values are never rendered — group share only.
+    // Ribbon = group share (widths ARE the data). Ring = the people, arranged
+    // in a circle so there is no first and no last. Individual sales values are
+    // never rendered.
     (function () {
       var rib = document.getElementById('pres-share-ribbon');
       var tk  = document.getElementById('pres-share-ticks');
-      var cl  = document.getElementById('pres-share-cols');
-      if (!rib || !tk || !cl) return;
+      var ft  = document.getElementById('pres-share-foot');
+      var rg  = document.getElementById('pres-share-ring');
+      if (!rib || !tk || !rg) return;
 
       var SEGS = PRES_PATCHES.filter(function (p) { return p.designers.length; })
         .map(function (p) {
           return { tag:p.tag, color:p.color, members:p.designers.slice(),
                    sum:p.designers.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
         });
-      // Management sits outside the designer groups but still sold.
       var mgmt = ['Nabila Shaker', 'Mohamed Sadat'];
       var mSum = mgmt.reduce(function (t, n) { return t + _designerSales(n); }, 0);
       if (mSum > 0) SEGS.push({ tag:'الإدارة', color:'#b4b2a9', members:[], sum:mSum });
@@ -11314,36 +11315,56 @@ function buildPresentationSlides() {
       var grand = SEGS.reduce(function (t, g) { return t + g.sum; }, 0);
       if (!grand) { rib.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
       SEGS.forEach(function (g) { g.pct = +(g.sum / grand * 100).toFixed(1); });
+      // Largest contribution first.
+      SEGS.sort(function (x, y) { return y.pct - x.pct; });
+
+      var BIG = SEGS.filter(function (g) { return g.pct >= 3; });
+      var SML = SEGS.filter(function (g) { return g.pct <  3; });
 
       rib.innerHTML = SEGS.map(function (g) {
-        return '<div style="flex:' + Math.max(g.pct, 0.4) + ';background:' + g.color + ';display:flex;align-items:center;justify-content:center">'
-          + (g.pct > 7 ? '<span style="font-size:21px;font-weight:900;color:#fff">' + g.pct + '%</span>' : '')
+        return '<div style="flex:' + Math.max(g.pct, 0.5) + ';background:' + g.color + ';display:flex;align-items:center;justify-content:center">'
+          + (g.pct >= 7 ? '<span style="font-size:21px;font-weight:900;color:#fff">' + g.pct + '%</span>' : '')
           + '</div>';
       }).join('');
 
+      // Only wide-enough bands get an inline label; the rest go to a footnote,
+      // otherwise a 0.2% band pushes its text past the slide edge.
       tk.innerHTML = SEGS.map(function (g) {
-        return '<div style="flex:' + Math.max(g.pct, 0.4) + ';padding-right:8px;min-width:0">'
-          + '<div style="font-size:15px;font-weight:800;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.tag + '</div>'
-          + (g.pct <= 7 ? '<div style="font-size:12px;color:var(--text3)">' + g.pct + '%</div>'
-                        : '<div style="font-size:12px;color:var(--text3)">' + g.members.length + ' designers</div>')
-          + '</div>';
+        var lab = g.pct >= 3
+          ? '<div style="font-size:15px;font-weight:800;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.tag + '</div>'
+            + '<div style="font-size:12px;color:var(--text3)">' + g.pct + '%' + (g.members.length ? ' · ' + g.members.length + ' designers' : '') + '</div>'
+          : '';
+        return '<div style="flex:' + Math.max(g.pct, 0.5) + ';min-width:0;padding-right:8px">' + lab + '</div>';
       }).join('');
+      ft.innerHTML = SML.map(function (g) { return g.tag + ' ' + g.pct + '%'; }).join(' · ');
 
-      cl.innerHTML = SEGS.map(function (g) {
-        if (!g.members.length) return '<div style="flex:' + Math.max(g.pct, 0.4) + '"></div>';
-        var faces = g.members.map(function (d) {
-          var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
-          var ini   = d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
-          var face  = photo
-            ? '<img src="' + photo + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 5px">'
-            : '<div style="width:46px;height:46px;border-radius:50%;margin:0 auto 5px;display:flex;align-items:center;justify-content:center;background:' + g.color + ';color:#fff;font-size:15px;font-weight:800">' + ini + '</div>';
-          return '<div style="width:60px;text-align:center">' + face
-            + '<div style="font-size:11px;color:var(--text2);line-height:1.25">' + d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
-        }).join('');
-        return '<div style="flex:' + Math.max(g.pct, 0.4) + ';border-top:3px solid ' + g.color + ';padding-top:14px;display:flex;gap:4px;flex-wrap:wrap">' + faces + '</div>';
-      }).join('');
+      // ── The ring: every designer, no order ──
+      var people = [];
+      SEGS.forEach(function (g) { g.members.forEach(function (d) { people.push({ d:d, c:g.color, tag:g.tag }); }); });
+      // Alphabetical, so ring position carries no performance meaning.
+      people.sort(function (x, y) { return x.d.name.localeCompare(y.d.name); });
 
-      _set('pres-share-subtitle', scored2.length + ' designers · five groups · one result');
+      var H = 330, R = 128, cy = H / 2, html = '';
+      html += '<div style="position:absolute;left:50%;top:' + cy + 'px;transform:translate(-50%,-50%);text-align:center;width:190px">'
+            + '<div style="font-size:11px;letter-spacing:2px;color:var(--text3)">2025</div>'
+            + '<div style="font-size:20px;font-weight:900;color:var(--text1)">achieved sales</div>'
+            + '<div style="font-size:12px;color:var(--text3)">' + people.length + ' designers</div></div>';
+      people.forEach(function (p, k) {
+        var ang = (k / people.length) * 2 * Math.PI - Math.PI / 2;
+        var x = 50 + Math.cos(ang) * 22;          // % of width — keeps it inside
+        var y = cy + Math.sin(ang) * R;
+        var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(p.d.name) : '';
+        var ini   = p.d.name.split(' ').slice(0,2).map(function(w){return w[0]||'';}).join('').toUpperCase();
+        var face  = photo
+          ? '<img src="' + photo + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px;border:3px solid ' + p.c + '">'
+          : '<div style="width:52px;height:52px;border-radius:50%;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;background:' + p.c + ';color:#fff;font-size:16px;font-weight:800">' + ini + '</div>';
+        html += '<div style="position:absolute;left:calc(' + x + '% - 42px);top:' + (y - 40) + 'px;width:84px;text-align:center">'
+              + face
+              + '<div style="font-size:11px;color:var(--text2);line-height:1.2">' + p.d.name.split(' ').slice(0,2).join('<br>') + '</div></div>';
+      });
+      rg.innerHTML = html;
+
+      _set('pres-share-subtitle', people.length + ' designers · ' + BIG.length + ' groups · one result');
     })();
   } else if (tiersGrid) {
     tiersGrid.innerHTML='<div style="color:var(--text3);grid-column:1/-1;padding:20px;text-align:center">Need ≥3 designers with ≥5 measures</div>';
