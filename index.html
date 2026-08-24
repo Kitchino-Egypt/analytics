@@ -14083,30 +14083,20 @@ function _instStatusIn(r, list) {
   return list.some(function (t) { return st.indexOf(_instStatusNorm(t)) !== -1; });
 }
 
-// Statuses that must NOT count as an open order (Nabila, Aug 2026).
-const _INST_EXCL_OPEN     = ['تفعيل ضمان إدارى', 'موعد تسليم'];
-// Statuses that must NOT count as not-yet-installed (Nabila, Aug 2026).
-// A booked appointment already sits in the OPEN card; counting it here too
-// double-counted the same row across both cards.
-const _INST_EXCL_NOTINST  = ['موعد تركيب'];
+// OPEN ORDERS — اوردرات مفتوحة (Nabila, Aug 2026, verified against the sheet).
+// Status-driven, NOT date-driven: an order is open unless its status says it is
+// finished (تم الاستلام بدون ملاحظات), merely booked (موعد تركيب), or closed out
+// under warranty (تفعيل ضمان إدارى). Verified: 1217 − 1004 − 58 − 20 = 135.
+const _INST_EXCL_OPEN = ['تم الاستلام بدون ملاحظات', 'موعد تركيب', 'تفعيل ضمان إدارى'];
 
 function _instIsOpen(r) {
-  if (_instStatusIn(r, _INST_EXCL_OPEN)) return false;
-  const started  = !!(r['تاريخ بداية التركيب'] || '').trim();
-  const handed   = !!(r['تاريخ التسليم']       || '').trim();
-  const booked   = _instStatusNorm(r['الحالة']).indexOf('موعد تركيب') !== -1;
-  return (started && !handed) || booked;
+  return !_instStatusIn(r, _INST_EXCL_OPEN);
 }
 
-// NOT INSTALLED — per Nabila's rule (Aug 2026): material has been supplied
-// (تاريخ التوريد filled) but installation never started (تاريخ بداية التركيب blank).
-// NOTE this is deliberately NOT a subset of OPEN — the two sets overlap rather
-// than nest, so "not installed" can exceed or sit outside the open count.
-// It answers a different question: what has been delivered and is sitting idle.
+// NOT INSTALLED — اوردرات لم يتم تركيب (Nabila, Aug 2026, verified = 58).
+// An installation appointment exists but the job has not been done yet.
 function _instNotInstalled(r) {
-  if (_instStatusIn(r, _INST_EXCL_NOTINST)) return false;
-  return !!(r['تاريخ التوريد'] || '').trim()
-      &&  !(r['تاريخ بداية التركيب'] || '').trim();
+  return _instStatusIn(r, ['موعد تركيب']);
 }
 
 // Normalised customer key so spacing/case variants collapse to one customer
