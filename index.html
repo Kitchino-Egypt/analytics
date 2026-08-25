@@ -2894,25 +2894,6 @@ if (_checkSession()) {
 
 
   <!-- SLIDE: Unit (property type) analysis -->
-  <!-- Hidden on request: kept in the DOM so the renderer and data stay
-       intact, but excluded from navigation by :not(.pres-hidden). -->
-  <div class="pres-slide pres-hidden" id="pres-slide-unit">
-    <div class="pres-tag">SLIDE — PROPERTY TYPE</div>
-    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:4px">What We Sold Into — 2025</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:18px" id="pres-unit-sub">Apartments, villas and everything else</div>
-    <div id="pres-unit-cards" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;min-height:0">
-      <div>
-        <div class="pres-section-title">Conversion by property type</div>
-        <div id="pres-unit-cvr"></div>
-      </div>
-      <div>
-        <div class="pres-section-title">Where each type sells</div>
-        <div id="pres-unit-areas" style="max-height:300px;overflow-y:auto"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
     <div class="pres-tag">SLIDE 5 OF 9 — 2025 VS 2026</div>
@@ -3022,6 +3003,14 @@ if (_checkSession()) {
     <div id="pres-xsell-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px"></div>
   </div>
 
+  <!-- SLIDE: Average order value by group -->
+  <div class="pres-slide" id="pres-slide-aov" style="justify-content:flex-start">
+    <div class="pres-tag">SLIDE — ORDER VALUE</div>
+    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:4px">Average Order Value — 2025</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:18px">Each designer measured against the company average &mdash; 100% is the company line</div>
+    <div id="pres-aov-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px"></div>
+  </div>
+
   <!-- SLIDE: 2026 goals -->
   <div class="pres-slide" id="pres-slide-goals" style="background:linear-gradient(165deg,#fbf9f5 0%,#f3efe6 100%);justify-content:flex-start;padding:24px 36px">
     <div class="pres-tag">SLIDE — THE REST OF 2026</div>
@@ -3044,20 +3033,6 @@ if (_checkSession()) {
         <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
           <span style="width:26px;height:2px;background:#c2a15c;display:inline-block"></span>
           <span style="font-size:13px;color:#6e6e70">Every designer · their strength · 2025</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <div style="background:#fdfaf4;border:1px solid #ece3d3;border-bottom:3px solid #c2a15c;border-radius:12px;padding:9px 14px;display:flex;align-items:center;gap:9px">
-          <span style="width:29px;height:29px;border-radius:50%;background:#f4ead7;display:flex;align-items:center;justify-content:center;color:#a8894a;font-size:16px">↗</span>
-          <div><div style="font-size:19px;font-weight:900;color:#1c1c1e" id="pres-ty-total">—</div><div style="font-size:10px;letter-spacing:1.3px;color:#8e8e90">MEASURES</div></div>
-        </div>
-        <div style="background:#fbfbfb;border:1px solid #e6e6e6;border-bottom:3px solid #9a9a9c;border-radius:12px;padding:9px 14px;display:flex;align-items:center;gap:9px">
-          <span style="width:29px;height:29px;border-radius:50%;background:#eeeeee;display:flex;align-items:center;justify-content:center;color:#6e6e70;font-size:16px">▦</span>
-          <div><div style="font-size:19px;font-weight:900;color:#1c1c1e" id="pres-ty-contracts">—</div><div style="font-size:10px;letter-spacing:1.3px;color:#8e8e90">CONTRACTS</div></div>
-        </div>
-        <div style="background:#fdfaf4;border:1px solid #ece3d3;border-bottom:3px solid #c2a15c;border-radius:12px;padding:9px 14px;display:flex;align-items:center;gap:9px">
-          <span style="width:29px;height:29px;border-radius:50%;background:#f4ead7;display:flex;align-items:center;justify-content:center;color:#a8894a;font-size:16px">◎</span>
-          <div><div style="font-size:19px;font-weight:900;color:#a8894a" id="pres-ty-cvr">—</div><div style="font-size:10px;letter-spacing:1.3px;color:#8e8e90">CVR%</div></div>
         </div>
       </div>
     </div>
@@ -4568,9 +4543,11 @@ const BarValueLabels = {
         const thickness = horizontal ? (el.height || 0) : (el.width || 0);
         if (thickness && thickness < 11) return;
 
-        const txt = (Math.abs(v) >= 1000)
+        // A chart can set plugins.barValueSuffix (e.g. '%') on its options.
+        const sfx = (chart.options.plugins && chart.options.plugins.barValueSuffix) || '';
+        const txt = ((Math.abs(v) >= 1000)
           ? Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 })
-          : (Number.isInteger(v) ? String(v) : Number(v).toFixed(1));
+          : (Number.isInteger(v) ? String(v) : Number(v).toFixed(1))) + sfx;
 
         ctx.save();
         ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
@@ -11601,6 +11578,56 @@ function buildPresentationSlides() {
     }).join('');
     _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
 
+    // ── Slide: average order value by group ───────────────────
+    // Indexed to the company average so the slide carries no currency figure:
+    // 100% is the company line, and everyone reads as a share of it.
+    (function () {
+      var box = document.getElementById('pres-aov-grid');
+      if (!box) return;
+      var sumV = 0, sumO = 0;
+      Object.keys(SALES_2025).forEach(function (n) {
+        var ex = _presSheetExtra(n);
+        if (!ex.orders) return;
+        sumV += SALES_2025[n]; sumO += ex.orders;
+      });
+      var company = sumO ? sumV / sumO : 0;
+      if (!company) { box.innerHTML = '<div style="color:var(--text3)">No sales data</div>'; return; }
+      var idx = function (n) { var a = _presSheetExtra(n).avg; return a ? Math.round(a / company * 100) : 0; };
+
+      box.innerHTML = PRES_PATCHES.map(function (p) {
+        if (!p.designers.length) return '';
+        var vals = p.designers.map(function (d) { return idx(d.name); }).filter(function (v) { return v > 0; });
+        var avg  = vals.length ? Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length) : 0;
+        var rows = p.designers.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
+          .map(function (d) {
+            var v = idx(d.name);
+            var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
+            var ini = d.name.split(' ').slice(0, 2).map(function (w) { return w[0] || ''; }).join('').toUpperCase();
+            var face = photo
+              ? '<img src="' + photo + '" alt="" style="width:28px;height:28px;flex:none;border-radius:50%;object-fit:cover">'
+              : '<div style="width:28px;height:28px;flex:none;border-radius:50%;background:rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:' + p.color + '">' + ini + '</div>';
+            return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.08)">'
+              + face
+              + '<div style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+                + d.name.split(' ').slice(0, 2).join(' ') + '</div>'
+              + '<div style="font-size:14px;font-weight:800;color:' + (v >= 100 ? p.color : 'var(--text3)') + '">' + v + '%</div>'
+              + '</div>';
+          }).join('');
+        return '<div style="background:' + p.bg + ';border:1px solid ' + p.border + ';border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
+          + '<div style="display:flex;align-items:center;gap:9px">'
+            + '<span style="width:36px;height:36px;flex:none;border-radius:50%;background:' + p.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900">' + p.icon + '</span>'
+            + '<div><div style="font-size:12px;font-weight:800;letter-spacing:1.2px;color:var(--text3)">' + p.tag + '</div>'
+              + '<div style="font-size:19px;font-weight:900;color:' + p.color + ';line-height:1.15">' + p.tagline + '</div></div>'
+          + '</div>'
+          + '<div style="background:rgba(0,0,0,0.06);border-radius:8px;padding:9px;text-align:center">'
+            + '<div style="font-size:24px;font-weight:900;color:' + p.color + '">' + avg + '%</div>'
+            + '<div style="font-size:11px;color:var(--text3)">of company average order</div>'
+          + '</div>'
+          + '<div>' + rows + '</div>'
+          + '</div>';
+      }).join('');
+    })();
+
     // ── Slide: cross-sales rate by group ──────────────────────
     // Same four groups as the CVR slide. Percentages only — the share of each
     // group's customers who came back for a second order.
@@ -11871,68 +11898,6 @@ function buildPresentationSlides() {
         + '</div>';
     }
   }
-
-
-  // ── Slide: property type (شقة / فيلا / …) ─────────────────
-  // Uses the same _unitKey / _UNIT_EN / _UNIT_COLORS the Executive page uses,
-  // so the presentation can never disagree with the dashboard.
-  (function () {
-    var host = document.getElementById('pres-unit-cards');
-    if (!host || typeof _unitKey !== 'function') return;
-    var uMap = {};
-    rows25.forEach(function (r) {
-      var k = _unitKey(r);
-      if (!uMap[k]) uMap[k] = { key:k, total:0, contracted:0, cancelled:0, areas:{} };
-      uMap[k].total++;
-      if (r._contracted) uMap[k].contracted++;
-      if (r._cancelled)  uMap[k].cancelled++;
-      if (r.area) uMap[k].areas[r.area] = (uMap[k].areas[r.area] || 0) + 1;
-    });
-    var arr = Object.values(uMap).sort(function (a, b) { return b.total - a.total; });
-    var grand = arr.reduce(function (t, u) { return t + u.total; }, 0) || 1;
-    arr.forEach(function (u) {
-      u.pct = +(u.total / grand * 100).toFixed(1);
-      u.cvr = u.total ? +(u.contracted / u.total * 100).toFixed(1) : 0;
-    });
-    var named = arr.filter(function (u) { return u.key !== 'غير محدد'; });
-    var top = named.slice(0, 5);
-
-    host.innerHTML = top.map(function (u) {
-      var col = (typeof _UNIT_COLORS === 'object' && _UNIT_COLORS[u.key]) || '#87692f';
-      var en  = (typeof _UNIT_EN === 'object' && _UNIT_EN[u.key]) || u.key;
-      return '<div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-left:4px solid ' + col + ';border-radius:12px;padding:14px 16px">'
-        + '<div style="font-size:13px;font-weight:800;color:var(--text1)">' + en + ' <span style="color:var(--text3);font-weight:600">' + u.key + '</span></div>'
-        + '<div style="font-size:28px;font-weight:900;color:' + col + ';line-height:1.1;margin-top:4px">' + u.total.toLocaleString() + '</div>'
-        + '<div style="font-size:11px;color:var(--text3)">' + u.pct + '% of measures · ' + u.cvr + '% CVR</div>'
-        + '</div>';
-    }).join('');
-
-    var maxCvr = Math.max.apply(null, named.map(function (u) { return u.cvr; }).concat([1]));
-    var cvrEl = document.getElementById('pres-unit-cvr');
-    if (cvrEl) cvrEl.innerHTML = named.slice(0, 6).map(function (u) {
-      var col = (typeof _UNIT_COLORS === 'object' && _UNIT_COLORS[u.key]) || '#87692f';
-      var en  = (typeof _UNIT_EN === 'object' && _UNIT_EN[u.key]) || u.key;
-      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">'
-        + '<div style="width:96px;font-size:12px;color:var(--text2);flex:none">' + en + '</div>'
-        + '<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:5px;height:16px;overflow:hidden">'
-          + '<div style="width:' + Math.round(u.cvr / maxCvr * 100) + '%;height:100%;background:' + col + '"></div></div>'
-        + '<div style="width:52px;text-align:right;font-size:13px;font-weight:800;color:' + col + '">' + u.cvr + '%</div>'
-        + '</div>';
-    }).join('');
-
-    var areasEl = document.getElementById('pres-unit-areas');
-    if (areasEl) areasEl.innerHTML = named.slice(0, 4).map(function (u) {
-      var col = (typeof _UNIT_COLORS === 'object' && _UNIT_COLORS[u.key]) || '#87692f';
-      var en  = (typeof _UNIT_EN === 'object' && _UNIT_EN[u.key]) || u.key;
-      var tops = Object.keys(u.areas).sort(function (a, b) { return u.areas[b] - u.areas[a]; }).slice(0, 3);
-      return '<div style="padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.07)">'
-        + '<div style="font-size:12px;font-weight:800;color:' + col + '">' + en + '</div>'
-        + '<div style="font-size:12px;color:var(--text3)">' + tops.map(function (a) { return a + ' (' + u.areas[a] + ')'; }).join(' · ') + '</div>'
-        + '</div>';
-    }).join('');
-
-    _set('pres-unit-sub', grand.toLocaleString() + ' measures · ' + named.length + ' property types recorded');
-  })();
 
 
   // ── Slide: five goals for the rest of 2026 ─────────────────
@@ -12376,17 +12341,18 @@ function buildPresentationSlides() {
         data: {
           labels: otData.map(function(d){ return d.type; }),
           datasets: [
-            { label: 'Measures',   data: otData.map(function(d){ return d.total; }),
+            // Shares of total measures — the deck shows no raw counts.
+            { label: 'Share of measures', data: otData.map(function(d){ return totalOT ? +(d.total/totalOT*100).toFixed(1) : 0; }),
               backgroundColor: otData.map(function(d){ return d.isOthers ? 'rgba(148,163,184,0.45)' : 'rgba(194, 161, 92,0.75)'; }),
               borderRadius: 6, yAxisID: 'y' },
-            { label: 'Contracted', data: otData.map(function(d){ return d.contracted; }),
+            { label: 'Share contracted', data: otData.map(function(d){ return totalOT ? +(d.contracted/totalOT*100).toFixed(1) : 0; }),
               backgroundColor: otData.map(function(d){ return d.isOthers ? 'rgba(100,116,139,0.45)' : 'rgba(194, 161, 92,0.82)'; }),
               borderRadius: 6, yAxisID: 'y' }
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: true, position: 'bottom', labels: { color: '#6e6e70', font: { size: 10 } } } },
+          plugins: { barValueSuffix: '%', legend: { display: true, position: 'bottom', labels: { color: '#6e6e70', font: { size: 10 } } } },
           scales: {
             x: { ticks: { color: '#6e6e70', font: { size: 10 } }, grid: { display: false } },
             // Value axis hidden — the deck shows shares, not counts.
