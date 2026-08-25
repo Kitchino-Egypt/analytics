@@ -11590,8 +11590,8 @@ function buildPresentationSlides() {
       return '<div style="background:'+p.bg+';border:1px solid '+p.border+';border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
         +'<div style="display:flex;align-items:center;gap:9px">'
           +'<span style="width:30px;height:30px;flex:none;border-radius:50%;background:'+p.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900">'+p.icon+'</span>'
-          +'<div><div style="font-size:17px;font-weight:900;color:'+p.color+';line-height:1.15">'+p.tag+'</div>'
-            +'<div style="font-size:12px;font-weight:700;color:var(--text3)">'+p.tagline+'</div></div>'
+          +'<div><div style="font-size:12px;font-weight:800;letter-spacing:1.2px;color:var(--text3)">'+p.tag+'</div>'
+            +'<div style="font-size:19px;font-weight:900;color:'+p.color+';line-height:1.15">'+p.tagline+'</div></div>'
         +'</div>'
         +'<div style="display:flex;gap:6px">'
           +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:8px;text-align:center"><div style="font-size:22px;font-weight:900;color:'+p.color+'">'+avgC+'%</div><div style="font-size:11px;color:var(--text3)">Group Avg CVR</div></div>'
@@ -12205,7 +12205,7 @@ function buildPresentationSlides() {
     : '—';
 
   // Monthly breakdown rows
-  const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun'];
+  const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   // Store H1 data globally for hover chart
   _presH1Data = {
     months: ['Jan','Feb','Mar','Apr','May','Jun'],
@@ -12238,8 +12238,8 @@ function buildPresentationSlides() {
       const c26 = h1_26.filter(r => r._monthOrder === mo && r._contracted).length;
       const v25 = m25 > 0 ? +(c25/m25*100).toFixed(1) : 0;
       const v26 = m26 > 0 ? +(c26/m26*100).toFixed(1) : 0;
-      const mn  = MONTH_NAMES_SHORT[idx];
-      const isPartial = (mo === 6 && m26 > 0 && m26 < m25 * 0.8); // likely incomplete
+      const mn  = MONTH_NAMES_SHORT[mo - 1] || '';   // index by month, not by loop position
+      const isPartial = (mo === H1_MONTHS[H1_MONTHS.length - 1] && m26 > 0 && m26 < m25 * 0.8);
       const partialTag = isPartial ? ' <span style="font-size:13px;color:var(--text3)">(partial)</span>' : '';
 
       rowsM += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.03)">'
@@ -12248,8 +12248,8 @@ function buildPresentationSlides() {
         + '<div style="height:5px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + Math.round(m25/maxM*100) + '%;background:rgba(180,180,180,0.4);border-radius:3px"></div></div>'
         + '<div style="height:5px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + Math.round(m26/maxM*100) + '%;background:var(--green);border-radius:3px"></div></div>'
         + '</div>'
-        + '<div style="font-size:14px;color:var(--text3);min-width:28px;text-align:right">' + m25 + '</div>'
-        + '<div style="font-size:14px;color:var(--green);min-width:28px;text-align:right">' + m26 + partialTag + '</div>'
+        + '<div style="font-size:13px;color:var(--text3);min-width:40px;text-align:right">' + (hm25 ? Math.round(m25/hm25*100) : 0) + '%</div>'
+        + '<div style="font-size:13px;color:var(--green);min-width:40px;text-align:right">' + (hm26 ? Math.round(m26/hm26*100) : 0) + '%' + partialTag + '</div>'
         + '</div>';
 
       const cvrColor = v26 > v25 ? '#87692f' : v26 < v25 ? '#6e6e70' : 'var(--text2)';
