@@ -3026,8 +3026,9 @@ if (_checkSession()) {
   <div class="pres-slide" id="pres-slide-goals" style="background:linear-gradient(165deg,#fbf9f5 0%,#f3efe6 100%);justify-content:flex-start;padding:24px 36px">
     <div class="pres-tag">SLIDE — THE REST OF 2026</div>
     <div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:4px">
-      <div style="font-size:28px;font-weight:900;color:#1c1c1e;line-height:1.1">Five Goals</div>
-      <div style="font-size:28px;font-weight:900;color:#a8894a;line-height:1.1">for the rest of 2026</div>
+      <div style="font-size:26px;font-weight:900;color:#1c1c1e;line-height:1.1">Five Goals</div>
+      <div style="font-size:26px;font-weight:900;color:#a8894a;line-height:1.1">for the rest of 2026</div>
+      <div dir="rtl" style="font-size:24px;font-weight:900;color:#1c1c1e;line-height:1.3;width:100%">خمسة أهداف لما تبقى من عام 2026</div>
     </div>
     <div style="font-size:13px;color:#6e6e70;margin-bottom:16px">Each one answers something 2025 told us — with the number to beat</div>
     <div id="pres-goals" class="pres-stagger" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch"></div>
@@ -10755,6 +10756,11 @@ function showPresAreaModal(areaName, rowEl) {
   }
 
   var cvr = d.total>0 ? (d.contracted/d.total*100).toFixed(1) : 0;
+  // Percentages only — shares of the 2025 totals rather than raw counts.
+  var _gT = 0, _gC = 0;
+  try { (ENGINE_CLEAN_ROWS||[]).forEach(function(r){ if(r._year==='2025'){ _gT++; if(r._contracted) _gC++; } }); } catch(e) {}
+  var shr  = _gT ? +(d.total/_gT*100).toFixed(1) : 0;
+  var cshr = _gC ? +(d.contracted/_gC*100).toFixed(1) : 0;
   var rc  = cvr >= 30 ? '#4ade80' : cvr >= 20 ? '#fbbf24' : '#f87171';
 
   // Top designers in this area
@@ -10776,18 +10782,18 @@ function showPresAreaModal(areaName, rowEl) {
         +'<button onclick="closePresentationModal(\'pres-area-modal\')" style="background:rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.12);color:#6b7280;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       +'</div>'
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
-        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+d.total+'</div></div>'
-        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+d.contracted+'</div></div>'
+        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Share of 2025</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+shr+'%</div></div>'
+        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contract Share</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+cshr+'%</div></div>'
         +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div><div style="font-size:22px;font-weight:900;color:'+rc+'">'+cvr+'%</div></div>'
       +'</div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0 24px 22px">'
         // Top designers
         +'<div><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Top Designers in Area</div>'
-        +topDes.map(function(d){ var bc=d.cvr>=30?'#4ade80':d.cvr>=20?'#fbbf24':'#f87171'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.08)"><span style="font-size:13px;color:var(--text)">'+d.name+'</span><span style="font-size:12px"><span style="color:#94a3b8">'+d.total+'</span> &nbsp;<span style="color:'+bc+'">'+d.cvr+'%</span></span></div>'; }).join('')
+        +topDes.map(function(d){ var bc=d.cvr>=30?'#4ade80':d.cvr>=20?'#fbbf24':'#f87171'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.08)"><span style="font-size:13px;color:var(--text)">'+d.name+'</span><span style="font-size:12px"><span style="color:'+bc+'">'+d.cvr+'%</span></span></div>'; }).join('')
         +'</div>'
         // Monthly mini table
         +'<div><div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Monthly Breakdown</div>'
-        +monthArr.map(function(m){ var bc=m.cvr>=30?'#4ade80':m.cvr>=20?'#fbbf24':'#f87171'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.08)"><span style="font-size:13px;color:#6b7280">'+m.month+'</span><span style="font-size:12px"><span style="color:var(--text)">'+m.total+'</span> &nbsp;<span style="color:'+bc+'">'+m.cvr+'%</span></span></div>'; }).join('')
+        +monthArr.map(function(m){ var bc=m.cvr>=30?'#4ade80':m.cvr>=20?'#fbbf24':'#f87171'; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.08)"><span style="font-size:13px;color:#6b7280">'+m.month+'</span><span style="font-size:12px"><span style="color:'+bc+'">'+m.cvr+'%</span></span></div>'; }).join('')
         +'</div>'
       +'</div>'
     +'</div>';
@@ -10835,13 +10841,18 @@ function showPresSourceModal(sourceName, rowEl) {
         +'<div style="font-size:12px;color:#6b7280;margin-top:3px">Lead Source Performance — 2025</div></div>'
         +'<button onclick="closePresentationModal(\'pres-source-modal\')" style="background:rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.12);color:#6b7280;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;flex-shrink:0">✕</button>'
       +'</div>'
+  // Percentages only — shares of the 2025 totals rather than raw counts.
+  var _sT = 0, _sC = 0;
+  try { (ENGINE_CLEAN_ROWS||[]).forEach(function(r){ if(r._year==='2025'){ _sT++; if(r._contracted) _sC++; } }); } catch(e) {}
+  var _sShr  = _sT ? +(baseTotal/_sT*100).toFixed(1) : 0;
+  var _sCshr = _sC ? +(baseContracted/_sC*100).toFixed(1) : 0;
       +'<div style="display:flex;gap:10px;padding:14px 24px 10px;flex-wrap:wrap">'
-        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Measures</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+baseTotal+'</div></div>'
-        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contracts</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+baseContracted+'</div></div>'
+        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Share of 2025</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+_sShr+'%</div></div>'
+        +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Contract Share</div><div style="font-size:22px;font-weight:900;color:var(--text)">'+_sCshr+'%</div></div>'
         +'<div style="background:rgba(0,0,0,0.06);border-radius:10px;padding:10px 16px;min-width:90px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">CVR</div><div style="font-size:22px;font-weight:900;color:'+rc+'">'+cvr+'%</div></div>'
       +'</div>'
       +'<div style="padding:0 24px 22px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Performance by Area</div>'
-      +byArea.map(function(a){ var bc=a.cvr>=30?'#4ade80':a.cvr>=20?'#fbbf24':'#f87171'; var hi=filterArea===a.area?'background:rgba(6,182,212,0.12);border-radius:6px;padding:0 6px;margin:0 -6px;':''; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.08);'+hi+'"><span style="font-size:13px;color:var(--text)">'+a.area+'</span><span><span style="font-size:12px;color:#6b7280">'+a.total+' measures &nbsp;</span><span style="font-size:13px;font-weight:700;color:'+bc+'">'+a.cvr+'%</span></span></div>'; }).join('')
+      +byArea.map(function(a){ var bc=a.cvr>=30?'#4ade80':a.cvr>=20?'#fbbf24':'#f87171'; var hi=filterArea===a.area?'background:rgba(6,182,212,0.12);border-radius:6px;padding:0 6px;margin:0 -6px;':''; return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.08);'+hi+'"><span style="font-size:13px;color:var(--text)">'+a.area+'</span><span><span style="font-size:13px;font-weight:700;color:'+bc+'">'+a.cvr+'%</span></span></div>'; }).join('')
       +'</div>'
     +'</div>';
   ov.style.display = 'flex';
@@ -11618,8 +11629,8 @@ function buildPresentationSlides() {
         return '<div style="background:' + p.bg + ';border:1px solid ' + p.border + ';border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
           + '<div style="display:flex;align-items:center;gap:9px">'
             + '<span style="width:36px;height:36px;flex:none;border-radius:50%;background:' + p.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900">' + p.icon + '</span>'
-            + '<div><div style="font-size:21px;font-weight:900;color:' + p.color + ';line-height:1.15">' + p.tag + '</div>'
-              + '<div style="font-size:13px;font-weight:700;color:var(--text3)">' + p.tagline + '</div></div>'
+            + '<div><div style="font-size:12px;font-weight:800;letter-spacing:1.2px;color:var(--text3)">' + p.tag + '</div>'
+              + '<div style="font-size:19px;font-weight:900;color:' + p.color + ';line-height:1.15">' + p.tagline + '</div></div>'
           + '</div>'
           + '<div style="background:rgba(0,0,0,0.06);border-radius:8px;padding:9px;text-align:center">'
             + '<div style="font-size:24px;font-weight:900;color:' + p.color + '">' + avg + '%</div>'
@@ -11747,9 +11758,9 @@ function buildPresentationSlides() {
               + ' transform="rotate(-90 ' + C + ' ' + C + ')"></circle>'
             + '<circle cx="' + C + '" cy="' + C + '" r="' + (R - 14) + '" fill="none" stroke="' + col + '" stroke-width="1" stroke-dasharray="2 6" opacity="0.30"></circle>'
           + '</svg>'
-          + '<div style="position:absolute;left:50%;top:' + (C - R - 20) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:20px;font-weight:900;letter-spacing:.3px;padding:8px 26px;border-radius:999px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.16)">' + g.tag + '</div>'
+          + '<div style="position:absolute;left:50%;top:' + (C - R - 20) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:13px;font-weight:800;letter-spacing:1.2px;padding:5px 18px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.14)">' + g.tag + '</div>'
           + '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:150px">'
-            + '<div style="font-size:22px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1.2">' + (g.sub || '') + '</div>'
+            + '<div style="font-size:27px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1.15">' + (g.sub || '') + '</div>'
             + '<div style="font-size:13px;color:#6e6e70;margin-top:4px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
           + '</div>'
           + faces
@@ -11996,24 +12007,29 @@ function buildPresentationSlides() {
     var xsNow  = xsVals.length ? +(xsVals.reduce(function (a, b) { return a + b; }, 0) / xsVals.length).toFixed(1) : 0;
 
     var GOALS = [
-      { n:'01', t:'Lift conversion',
+      { n:'01', t:'Lift conversion', ta:'رفع معدل التحويل',
+        wa:'أربع نقاط إضافية على حجم 2025 كانت ستضيف نحو ' + Math.round(tot * 0.04) + ' تعاقد.',
         now: cvrNow + '%', target: Math.min(100, +(cvrNow + 4).toFixed(1)) + '%',
         why: 'Four points on 2025 volume would have added about ' + Math.round(tot * 0.04) + ' contracts.' },
-      { n:'02', t:'Close the open pipeline',
+      { n:'02', t:'Close the open pipeline', ta:'إغلاق الفرص المفتوحة',
+        wa:'المقاسات التي انتهى العام دون حسمها هي أسهل مصدر لتعاقدات جديدة — نصفها يجب أن يُغلق.',
         now: (tot ? +(disc / tot * 100).toFixed(1) : 0) + '% left open',
         target: (tot ? +(disc / tot * 100 * 0.5).toFixed(1) : 0) + '%',
         why: 'Measures that end the year still in discussion are the cheapest revenue available — half of them should close.' },
-      { n:'03', t:'Move up-market',
+      { n:'03', t:'Move up-market', ta:'الارتقاء بقيمة الأوردر',
+        wa:'شريحة كيتشينو تبدأ من 700 ألف جنيه، ومتوسط الأوردر اليوم ما زال دونها.',
         now: 'EGP ' + Math.round(avgOrder / 1000) + 'K avg order',
         target: 'EGP ' + Math.round(avgTarget / 1000) + 'K',
         why: 'The Kitchino segment starts at EGP 700K. Today the average order is EGP '
              + Math.round(avgOrder / 1000) + 'K and only ' + above700 + ' of ' + desTotal
              + ' designers average above it'
              + (weakU ? '. ' + weakUEn + ' convert lowest at ' + weakU.cvr + '%' : '') + '.' },
-      { n:'04', t:'Sell the second room',
+      { n:'04', t:'Sell the second room', ta:'بيع الغرفة الثانية',
+        wa:'البيع الإضافي هو أرخص نمو ممكن — العميل معنا بالفعل.',
         now: xsNow + '%', target: (xsNow + 6).toFixed(1) + '%',
         why: 'Cross-sales is the cheapest growth there is — the customer is already won.' },
-      { n:'05', t:'Bring customers back',
+      { n:'05', t:'Bring customers back', ta:'عودة العملاء',
+        wa:'نصف عملائنا فقط عادوا للشراء مرة أخرى — الباقي فرصة قائمة.',
         now: repPct + '%', target: Math.min(100, +(repPct + 5).toFixed(1)) + '%',
         why: 'Only ' + rep.toLocaleString() + ' of ' + custN.toLocaleString() + ' customers ordered more than once.'
              + (weakA ? ' Weakest area: ' + weakA.a + ' at ' + weakA.cvr + '%.' : '') }
@@ -12027,13 +12043,15 @@ function buildPresentationSlides() {
         + '<div style="position:absolute;left:0;top:0;right:0;height:4px;background:' + accent + '"></div>'
         + '<div style="width:44px;height:44px;border-radius:14px;background:' + accent + ';display:flex;align-items:center;justify-content:center;margin:2px auto">' + icon + '</div>'
         + '<div style="font-size:10px;font-weight:900;letter-spacing:2.5px;color:' + accent + '">' + g.n + '</div>'
-        + '<div style="font-size:14.5px;font-weight:900;color:#1c1c1e;line-height:1.25">' + g.t + '</div>'
+        + '<div style="font-size:14px;font-weight:900;color:#1c1c1e;line-height:1.25">' + g.t + '</div>'
+        + '<div dir="rtl" style="font-size:15px;font-weight:900;color:' + accent + ';line-height:1.4">' + (g.ta || '') + '</div>'
         + '<div style="background:rgba(0,0,0,0.035);border-radius:9px;padding:7px 5px">'
           + '<div style="font-size:10.5px;color:#8e8e90;text-decoration:line-through;line-height:1.2">' + g.now + '</div>'
           + '<div style="font-size:12px;color:' + accent + ';line-height:1">&darr;</div>'
           + '<div style="font-size:16px;font-weight:900;color:#1c1c1e;line-height:1.15">' + g.target + '</div>'
         + '</div>'
-        + '<div style="font-size:10.5px;color:#5f5e5a;line-height:1.4">' + g.why + '</div>'
+        + '<div style="font-size:10px;color:#5f5e5a;line-height:1.35">' + g.why + '</div>'
+        + '<div dir="rtl" style="font-size:11px;color:#3a3a3c;line-height:1.55">' + (g.wa || '') + '</div>'
         + '</div>';
     }).join('');
   })();
@@ -12371,7 +12389,8 @@ function buildPresentationSlides() {
           plugins: { legend: { display: true, position: 'bottom', labels: { color: '#6e6e70', font: { size: 10 } } } },
           scales: {
             x: { ticks: { color: '#6e6e70', font: { size: 10 } }, grid: { display: false } },
-            y: { ticks: { color: '#6e6e70', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.03)' } }
+            // Value axis hidden — the deck shows shares, not counts.
+            y: { ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.03)' } }
           }
         }
       });
