@@ -2948,6 +2948,24 @@ if (_checkSession()) {
       </div>
     </div>
   </div>
+  <!-- SLIDE: Unit (property type) analysis -->
+  <div class="pres-slide" id="pres-slide-unit">
+    <div class="pres-tag">SLIDE — PROPERTY TYPE</div>
+    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:4px">What We Sold Into — 2025</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:18px" id="pres-unit-sub">Apartments, villas and everything else</div>
+    <div id="pres-unit-cards" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;min-height:0">
+      <div>
+        <div class="pres-section-title">Conversion by property type</div>
+        <div id="pres-unit-cvr"></div>
+      </div>
+      <div>
+        <div class="pres-section-title">Where each type sells</div>
+        <div id="pres-unit-areas" style="max-height:300px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="pres-slide" id="pres-slide-5">
     <div class="pres-tag">SLIDE 6 OF 9 — KEY TAKEAWAYS</div>
     <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
@@ -2980,7 +2998,7 @@ if (_checkSession()) {
     </svg>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:10px">
       <div>
-        <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SLIDE 8 OF 9 — SALES CONTRIBUTION</div>
+        <div class="pres-tag" style="font-size:12px;letter-spacing:2px;font-weight:800;color:#87692f;margin-bottom:4px">SLIDE — SALES CONTRIBUTION</div>
         <div style="font-size:23px;font-weight:900;color:#1c1c1e;line-height:1.2">Designer Performance Groups</div>
         <div style="font-size:23px;font-weight:900;color:#a8894a;line-height:1.2;margin-bottom:4px">Sales Contribution 2025</div>
       </div>
@@ -2999,6 +3017,17 @@ if (_checkSession()) {
   <!-- SLIDE 5: Key Takeaways -->
   
 
+
+  <!-- SLIDE: 2026 goals -->
+  <div class="pres-slide" id="pres-slide-goals" style="background:linear-gradient(165deg,#fbf9f5 0%,#f3efe6 100%);justify-content:flex-start;padding:24px 36px">
+    <div class="pres-tag">SLIDE — THE REST OF 2026</div>
+    <div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:4px">
+      <div style="font-size:28px;font-weight:900;color:#1c1c1e;line-height:1.1">Five Goals</div>
+      <div style="font-size:28px;font-weight:900;color:#a8894a;line-height:1.1">for the rest of 2026</div>
+    </div>
+    <div style="font-size:13px;color:#6e6e70;margin-bottom:16px">Each one answers something 2025 told us — with the number to beat</div>
+    <div id="pres-goals" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>
+  </div>
 
   <div class="pres-slide" id="pres-slide-8" style="background:linear-gradient(165deg,#fbf9f5 0%,#f4f0e7 100%);padding:20px 32px;justify-content:flex-start">
     <div class="pres-tag">SLIDE 9 OF 9 — THANK YOU</div>
@@ -11791,6 +11820,166 @@ function buildPresentationSlides() {
     }
   }
 
+
+  // ── Slide: property type (شقة / فيلا / …) ─────────────────
+  // Uses the same _unitKey / _UNIT_EN / _UNIT_COLORS the Executive page uses,
+  // so the presentation can never disagree with the dashboard.
+  (function () {
+    var host = document.getElementById('pres-unit-cards');
+    if (!host || typeof _unitKey !== 'function') return;
+    var uMap = {};
+    rows25.forEach(function (r) {
+      var k = _unitKey(r);
+      if (!uMap[k]) uMap[k] = { key:k, total:0, contracted:0, cancelled:0, areas:{} };
+      uMap[k].total++;
+      if (r._contracted) uMap[k].contracted++;
+      if (r._cancelled)  uMap[k].cancelled++;
+      if (r.area) uMap[k].areas[r.area] = (uMap[k].areas[r.area] || 0) + 1;
+    });
+    var arr = Object.values(uMap).sort(function (a, b) { return b.total - a.total; });
+    var grand = arr.reduce(function (t, u) { return t + u.total; }, 0) || 1;
+    arr.forEach(function (u) {
+      u.pct = +(u.total / grand * 100).toFixed(1);
+      u.cvr = u.total ? +(u.contracted / u.total * 100).toFixed(1) : 0;
+    });
+    var named = arr.filter(function (u) { return u.key !== 'غير محدد'; });
+    var top = named.slice(0, 5);
+
+    host.innerHTML = top.map(function (u) {
+      var col = (typeof _UNIT_COLORS === 'object' && _UNIT_COLORS[u.key]) || '#87692f';
+      var en  = (typeof _UNIT_EN === 'object' && _UNIT_EN[u.key]) || u.key;
+      return '<div style="background:rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.08);border-left:4px solid ' + col + ';border-radius:12px;padding:14px 16px">'
+        + '<div style="font-size:13px;font-weight:800;color:var(--text1)">' + en + ' <span style="color:var(--text3);font-weight:600">' + u.key + '</span></div>'
+        + '<div style="font-size:28px;font-weight:900;color:' + col + ';line-height:1.1;margin-top:4px">' + u.total.toLocaleString() + '</div>'
+        + '<div style="font-size:11px;color:var(--text3)">' + u.pct + '% of measures · ' + u.cvr + '% CVR</div>'
+        + '</div>';
+    }).join('');
+
+    var maxCvr = Math.max.apply(null, named.map(function (u) { return u.cvr; }).concat([1]));
+    var cvrEl = document.getElementById('pres-unit-cvr');
+    if (cvrEl) cvrEl.innerHTML = named.slice(0, 6).map(function (u) {
+      var col = (typeof _UNIT_COLORS === 'object' && _UNIT_COLORS[u.key]) || '#87692f';
+      var en  = (typeof _UNIT_EN === 'object' && _UNIT_EN[u.key]) || u.key;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">'
+        + '<div style="width:96px;font-size:12px;color:var(--text2);flex:none">' + en + '</div>'
+        + '<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:5px;height:16px;overflow:hidden">'
+          + '<div style="width:' + Math.round(u.cvr / maxCvr * 100) + '%;height:100%;background:' + col + '"></div></div>'
+        + '<div style="width:52px;text-align:right;font-size:13px;font-weight:800;color:' + col + '">' + u.cvr + '%</div>'
+        + '</div>';
+    }).join('');
+
+    var areasEl = document.getElementById('pres-unit-areas');
+    if (areasEl) areasEl.innerHTML = named.slice(0, 4).map(function (u) {
+      var col = (typeof _UNIT_COLORS === 'object' && _UNIT_COLORS[u.key]) || '#87692f';
+      var en  = (typeof _UNIT_EN === 'object' && _UNIT_EN[u.key]) || u.key;
+      var tops = Object.keys(u.areas).sort(function (a, b) { return u.areas[b] - u.areas[a]; }).slice(0, 3);
+      return '<div style="padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.07)">'
+        + '<div style="font-size:12px;font-weight:800;color:' + col + '">' + en + '</div>'
+        + '<div style="font-size:12px;color:var(--text3)">' + tops.map(function (a) { return a + ' (' + u.areas[a] + ')'; }).join(' · ') + '</div>'
+        + '</div>';
+    }).join('');
+
+    _set('pres-unit-sub', grand.toLocaleString() + ' measures · ' + named.length + ' property types recorded');
+  })();
+
+
+  // ── Slide: five goals for the rest of 2026 ─────────────────
+  // Every goal is derived from a measurable 2025 weakness, with the current
+  // number and a target. Nothing aspirational without a baseline.
+  (function () {
+    var box = document.getElementById('pres-goals');
+    if (!box) return;
+    var tot = rows25.length || 1;
+    var canc = rows25.filter(function (r) { return r._cancelled; }).length;
+    var disc = rows25.filter(function (r) { return r._discussion; }).length;
+    var cancPct = +(canc / tot * 100).toFixed(1);
+    var cvrNow  = +(rows25.filter(function (r) { return r._contracted; }).length / tot * 100).toFixed(1);
+
+    // Weakest converting property type with a real sample.
+    var uM = {};
+    rows25.forEach(function (r) {
+      var k = (typeof _unitKey === 'function') ? _unitKey(r) : 'غير محدد';
+      if (k === 'غير محدد') return;
+      if (!uM[k]) uM[k] = { k:k, t:0, c:0 };
+      uM[k].t++; if (r._contracted) uM[k].c++;
+    });
+    var uArr = Object.values(uM).filter(function (u) { return u.t >= 30; })
+      .map(function (u) { u.cvr = +(u.c / u.t * 100).toFixed(1); return u; })
+      .sort(function (a, b) { return a.cvr - b.cvr; });
+    var weakU = uArr[0];
+    var weakUEn = weakU ? ((typeof _UNIT_EN === 'object' && _UNIT_EN[weakU.k]) || weakU.k) : 'Apartments';
+
+    // Repeat-customer share.
+    var cust = {};
+    rows25.forEach(function (r) { var c = _custKey(r.customer); if (c) cust[c] = (cust[c] || 0) + 1; });
+    var custN = Object.keys(cust).length || 1;
+    var rep   = Object.keys(cust).filter(function (k) { return cust[k] > 1; }).length;
+    var repPct = +(rep / custN * 100).toFixed(1);
+
+    // Weakest converting area with a real sample.
+    var aM = {};
+    rows25.forEach(function (r) {
+      var a = r.area; if (!a) return;
+      if (!aM[a]) aM[a] = { a:a, t:0, c:0 };
+      aM[a].t++; if (r._contracted) aM[a].c++;
+    });
+    var aArr = Object.values(aM).filter(function (x) { return x.t >= 40; })
+      .map(function (x) { x.cvr = +(x.c / x.t * 100).toFixed(1); return x; })
+      .sort(function (a, b) { return a.cvr - b.cvr; });
+    var weakA = aArr[0];
+
+    // Average order value from the sales sheet (totals / order counts). The
+    // share of orders under 700K cannot be computed here — the sheet carries
+    // per-designer aggregates, not individual order values.
+    var sumSales = 0, sumOrders = 0, above700 = 0, desTotal = 0;
+    Object.keys(SALES_2025).forEach(function (n) {
+      var ex = _presSheetExtra(n);
+      if (!ex.orders) return;
+      desTotal++;
+      sumSales  += SALES_2025[n];
+      sumOrders += ex.orders;
+      if (ex.avg >= 700000) above700++;
+    });
+    var avgOrder  = sumOrders ? sumSales / sumOrders : 0;
+    var avgTarget = Math.round(avgOrder * 1.2 / 10000) * 10000;   // +20% as a first step
+
+    var GOALS = [
+      { n:'01', t:'Cut cancellations',
+        now: cancPct + '%', target: Math.max(0, +(cancPct * 0.75).toFixed(1)) + '%',
+        why: canc.toLocaleString() + ' measures were cancelled in 2025. A quarter fewer is ' + Math.round(canc * 0.25) + ' orders saved.' },
+      { n:'02', t:'Close the open pipeline',
+        now: disc.toLocaleString(), target: Math.round(disc * 0.4).toLocaleString() + ' converted',
+        why: disc.toLocaleString() + ' measures ended the year still in discussion — the cheapest revenue available.' },
+      { n:'03', t:'Lift conversion',
+        now: cvrNow + '%', target: (cvrNow + 4).toFixed(1) + '%',
+        why: 'Four points on 2025 volume would have added about ' + Math.round(tot * 0.04) + ' contracts.' },
+      { n:'04', t:'Move up-market',
+        now: 'EGP ' + Math.round(avgOrder / 1000) + 'K avg order',
+        target: 'EGP ' + Math.round(avgTarget / 1000) + 'K',
+        why: 'The Kitchino segment starts at EGP 700K. Today the average order is EGP '
+             + Math.round(avgOrder / 1000) + 'K and only ' + above700 + ' of ' + desTotal
+             + ' designers average above it'
+             + (weakU ? '. ' + weakUEn + ' convert lowest at ' + weakU.cvr + '%' : '') + '.' },
+      { n:'05', t:'Bring customers back',
+        now: repPct + '%', target: (repPct + 5).toFixed(1) + '%',
+        why: 'Only ' + rep.toLocaleString() + ' of ' + custN.toLocaleString() + ' customers ordered more than once.'
+             + (weakA ? ' Weakest area: ' + weakA.a + ' at ' + weakA.cvr + '%.' : '') }
+    ];
+
+    box.innerHTML = GOALS.map(function (g) {
+      return '<div style="background:#fdfcf9;border:1px solid #ece5d8;border-top:4px solid #c2a15c;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">'
+        + '<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:#c2a15c">' + g.n + '</div>'
+        + '<div style="font-size:16px;font-weight:900;color:#1c1c1e;line-height:1.2">' + g.t + '</div>'
+        + '<div style="display:flex;align-items:baseline;gap:8px">'
+          + '<span style="font-size:13px;color:#8e8e90;text-decoration:line-through">' + g.now + '</span>'
+          + '<span style="color:#c2a15c">&rarr;</span>'
+          + '<span style="font-size:19px;font-weight:900;color:#87692f">' + g.target + '</span>'
+        + '</div>'
+        + '<div style="font-size:11.5px;color:#5f5e5a;line-height:1.4">' + g.why + '</div>'
+        + '</div>';
+    }).join('');
+  })();
+
 // ── Slide 5: Insights ───────────────────────────────────────
   const topDes  = designers[0];
   const topArea = areas[0];
@@ -12276,6 +12465,7 @@ function _presShowSlide(n) {
   slides.forEach((s,i) => { s.classList.toggle('pres-active', i + 1 === _presCurrentSlide); });
   const ctr = document.getElementById('pres-counter');
   if (ctr) ctr.textContent = _presCurrentSlide + ' / ' + _PRES_TOTAL;
+  _presRenumber();
   setTimeout(_presFitScale, 0);
   // Build / update dots
   const dotsEl = document.getElementById('pres-dots');
@@ -12358,6 +12548,32 @@ function _presFitScale() {
 }
 window.addEventListener('resize', _presFitScale);
 document.addEventListener('fullscreenchange', function () { setTimeout(_presFitScale, 60); });
+
+
+// ── Number the slide tags from their DOM position ─────────────────────────
+// Hand-written "SLIDE 4 OF 9" strings drifted every time a slide moved. The
+// label after the em dash is authored; the numbers are derived.
+function _presRenumber() {
+  var slides = document.querySelectorAll('.pres-slide');
+  var n = slides.length;
+  slides.forEach(function (sl, i) {
+    var tag = sl.querySelector('.pres-tag');
+    if (!tag) return;
+    var txt   = tag.textContent || '';
+    var label = txt.indexOf('\u2014') >= 0 ? txt.split('\u2014').slice(1).join('\u2014').trim() : txt.trim();
+    tag.textContent = 'SLIDE ' + (i + 1) + ' OF ' + n + ' \u2014 ' + label;
+  });
+}
+
+// The Print button referenced a function that was never defined.
+function presPrint() {
+  var wasFull = _presFullscreen;
+  if (!wasFull && typeof togglePresMode === 'function') togglePresMode();
+  setTimeout(function () {
+    window.print();
+    if (!wasFull && typeof togglePresMode === 'function') setTimeout(togglePresMode, 300);
+  }, 250);
+}
 
 function presNav(dir) { _presShowSlide(_presCurrentSlide + dir); }
 
