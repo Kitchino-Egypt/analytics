@@ -992,6 +992,7 @@ tbody td.muted { color:var(--text2); }
   #page-presentation .pres-slide { padding:20px 16px; }
   .pres-kpi-grid { grid-template-columns:1fr; }
 }
+.pres-slide.pres-hidden { display:none !important; }
 #pres-counter { font-size:14px; font-weight:800; color:var(--text1); min-width:60px; text-align:center;
   background:rgba(30,142,62,0.22); border:1px solid rgba(66,133,244,0.22); border-radius:7px; padding:5px 12px; }
 /* Dot navigation */
@@ -1027,7 +1028,7 @@ tbody td.muted { color:var(--text2); }
   font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
   color:var(--text3); margin-bottom:18px;
 }
-.pres-kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.pres-kpi-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:24px; }
 .pres-kpi-box {
   background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
   border-radius:12px; padding:36px 26px; text-align:center;
@@ -2797,8 +2798,6 @@ if (_checkSession()) {
     <div style="font-size:32px;font-weight:700;color:var(--text1);margin-bottom:12px">Annual Performance Review</div>
     <div style="font-size:16px;color:var(--text3);max-width:480px;line-height:1.7">A full-year analysis of measure visits, conversion performance, designer rankings, and geographic reach.</div>
     <div style="margin-top:44px;display:flex;gap:56px;justify-content:center">
-      <div style="text-align:center"><div style="font-size:44px;font-weight:900;color:var(--green)" id="pres-cover-total">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:1px;text-transform:uppercase">Total Measures</div></div>
-      <div style="width:1px;background:var(--border)"></div>
       <div style="text-align:center"><div style="font-size:44px;font-weight:900;color:var(--teal)" id="pres-cover-cvr">—</div><div style="font-size:11px;color:var(--text3);margin-top:4px;letter-spacing:1px;text-transform:uppercase">Conversion Rate</div></div>
     </div>
   </div>
@@ -2808,11 +2807,6 @@ if (_checkSession()) {
     <div class="pres-tag">SLIDE 2 OF 9 — EXECUTIVE PERFORMANCE</div>
     <div style="font-size:28px;font-weight:800;color:var(--text1);margin-bottom:24px">2025 at a Glance</div>
     <div class="pres-kpi-grid">
-      <div class="pres-kpi-box">
-        <div class="pres-kpi-val" style="color:var(--green)" id="pres-kpi-total">—</div>
-        <div class="pres-kpi-lbl">Total Measures</div>
-        <div class="pres-kpi-sub" style="color:var(--text3)" id="pres-kpi-total-sub">—</div>
-      </div>
       <div class="pres-kpi-box">
         <div class="pres-kpi-val" style="color:var(--teal)" id="pres-kpi-cvr">—</div>
         <div class="pres-kpi-lbl">Conversion Rate</div>
@@ -2899,6 +2893,26 @@ if (_checkSession()) {
   </div>
 
 
+  <!-- SLIDE: Unit (property type) analysis -->
+  <!-- Hidden on request: kept in the DOM so the renderer and data stay
+       intact, but excluded from navigation by :not(.pres-hidden). -->
+  <div class="pres-slide pres-hidden" id="pres-slide-unit">
+    <div class="pres-tag">SLIDE — PROPERTY TYPE</div>
+    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:4px">What We Sold Into — 2025</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:18px" id="pres-unit-sub">Apartments, villas and everything else</div>
+    <div id="pres-unit-cards" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;min-height:0">
+      <div>
+        <div class="pres-section-title">Conversion by property type</div>
+        <div id="pres-unit-cvr"></div>
+      </div>
+      <div>
+        <div class="pres-section-title">Where each type sells</div>
+        <div id="pres-unit-areas" style="max-height:300px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- SLIDE 6: 2025 vs 2026 H1 Comparison -->
   <div class="pres-slide" id="pres-slide-6">
     <div class="pres-tag">SLIDE 5 OF 9 — 2025 VS 2026</div>
@@ -2948,24 +2962,6 @@ if (_checkSession()) {
       </div>
     </div>
   </div>
-  <!-- SLIDE: Unit (property type) analysis -->
-  <div class="pres-slide" id="pres-slide-unit">
-    <div class="pres-tag">SLIDE — PROPERTY TYPE</div>
-    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:4px">What We Sold Into — 2025</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:18px" id="pres-unit-sub">Apartments, villas and everything else</div>
-    <div id="pres-unit-cards" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1;min-height:0">
-      <div>
-        <div class="pres-section-title">Conversion by property type</div>
-        <div id="pres-unit-cvr"></div>
-      </div>
-      <div>
-        <div class="pres-section-title">Where each type sells</div>
-        <div id="pres-unit-areas" style="max-height:300px;overflow-y:auto"></div>
-      </div>
-    </div>
-  </div>
-
   <div class="pres-slide" id="pres-slide-5">
     <div class="pres-tag">SLIDE 6 OF 9 — KEY TAKEAWAYS</div>
     <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:6px">
@@ -3018,6 +3014,14 @@ if (_checkSession()) {
   
 
 
+  <!-- SLIDE: Cross-sales by group -->
+  <div class="pres-slide" id="pres-slide-xsell" style="justify-content:flex-start">
+    <div class="pres-tag">SLIDE — CROSS-SALES</div>
+    <div style="font-size:26px;font-weight:800;color:var(--text1);margin-bottom:4px">Growing The Customer — Cross-Sales 2025</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:18px">Share of each group&rsquo;s customers who came back for more than one order</div>
+    <div id="pres-xsell-grid" class="pres-stagger" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px"></div>
+  </div>
+
   <!-- SLIDE: 2026 goals -->
   <div class="pres-slide" id="pres-slide-goals" style="background:linear-gradient(165deg,#fbf9f5 0%,#f3efe6 100%);justify-content:flex-start;padding:24px 36px">
     <div class="pres-tag">SLIDE — THE REST OF 2026</div>
@@ -3026,7 +3030,7 @@ if (_checkSession()) {
       <div style="font-size:28px;font-weight:900;color:#a8894a;line-height:1.1">for the rest of 2026</div>
     </div>
     <div style="font-size:13px;color:#6e6e70;margin-bottom:16px">Each one answers something 2025 told us — with the number to beat</div>
-    <div id="pres-goals" class="pres-stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px"></div>
+    <div id="pres-goals" class="pres-stagger" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;align-items:stretch"></div>
   </div>
 
   <div class="pres-slide" id="pres-slide-8" style="background:linear-gradient(165deg,#fbf9f5 0%,#f4f0e7 100%);padding:20px 32px;justify-content:flex-start">
@@ -10517,7 +10521,7 @@ function closePaymentBreakdown() {
 // PRESENTATION VIEW
 // ============================================================
 let _presCurrentSlide = 1;
-const _PRES_TOTAL = document.querySelectorAll('.pres-slide').length || 9;  // derived, so adding a slide never desyncs the counter
+const _PRES_TOTAL = document.querySelectorAll('.pres-slide:not(.pres-hidden)').length || 9;  // derived, so adding a slide never desyncs the counter
 let _presFullscreen = false;
 let _presDesignerData = {};  // populated in buildPresentationSlides, keyed by designer name
 let _presAreaData     = {};  // keyed by area name
@@ -11525,10 +11529,10 @@ function buildPresentationSlides() {
 
   // ── Slide 4: Designer Groups (5 Tiers) ──────────────────────
   var PRES_PATCHES = [
-    { tag:'Group A', icon:'A', color:'#2f2f31', border:'rgba(47,47,49,0.55)',    bg:'rgba(47,47,49,0.06)',    tagline:'', designers:[] },
-    { tag:'Group B', icon:'B', color:'#87692f', border:'rgba(135,105,47,0.55)',  bg:'rgba(135,105,47,0.08)',  tagline:'', designers:[] },
-    { tag:'Group C', icon:'C', color:'#c2a15c', border:'rgba(194,161,92,0.60)',  bg:'rgba(194,161,92,0.10)',  tagline:'', designers:[] },
-    { tag:'Group D', icon:'D', color:'#6e6e70', border:'rgba(110,110,112,0.45)', bg:'rgba(110,110,112,0.06)', tagline:'', designers:[] }
+    { tag:'Group A', icon:'A', color:'#2f2f31', border:'rgba(47,47,49,0.55)',    bg:'rgba(47,47,49,0.06)',    tagline:'Superior Sellers', designers:[] },
+    { tag:'Group B', icon:'B', color:'#87692f', border:'rgba(135,105,47,0.55)',  bg:'rgba(135,105,47,0.08)',  tagline:'Top Sellers',      designers:[] },
+    { tag:'Group C', icon:'C', color:'#c2a15c', border:'rgba(194,161,92,0.60)',  bg:'rgba(194,161,92,0.10)',  tagline:'Contributors',     designers:[] },
+    { tag:'Group D', icon:'D', color:'#6e6e70', border:'rgba(110,110,112,0.45)', bg:'rgba(110,110,112,0.06)', tagline:'Performers',       designers:[] }
   ];
   var _PRES_GROUPS = PRES_PATCHES.length;   // 4 groups (Nabila, Aug 2026)
   var tiersGrid = document.getElementById('pres-tiers-grid');
@@ -11567,24 +11571,64 @@ function buildPresentationSlides() {
           // Same metric on every row — mixed badges made the groups look
           // inconsistent, with one showing CVR and the next showing volume.
           +'<div style="flex:none;text-align:right">'
-            +'<div style="font-size:15px;font-weight:800;color:'+p.color+';line-height:1.1">'+(d.total||0)+'</div>'
-            +'<div style="font-size:10px;color:var(--text3);letter-spacing:.4px">measures</div>'
+            +'<div style="font-size:15px;font-weight:800;color:'+p.color+';line-height:1.1">'+(d.rate||0)+'%</div>'
+            +'<div style="font-size:10px;color:var(--text3);letter-spacing:.4px">CVR</div>'
           +'</div>'
           +'</div>';
       }).join('');
       return '<div style="background:'+p.bg+';border:1px solid '+p.border+';border-radius:12px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
         +'<div style="display:flex;align-items:center;gap:9px">'
           +'<span style="width:30px;height:30px;flex:none;border-radius:50%;background:'+p.color+';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900">'+p.icon+'</span>'
-          +'<div style="font-size:17px;font-weight:900;color:'+p.color+'">'+p.tag+'</div>'
+          +'<div><div style="font-size:17px;font-weight:900;color:'+p.color+';line-height:1.15">'+p.tag+'</div>'
+            +'<div style="font-size:12px;font-weight:700;color:var(--text3)">'+p.tagline+'</div></div>'
         +'</div>'
         +'<div style="display:flex;gap:6px">'
-          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgM3+'</div><div style="font-size:11px;color:var(--text3)">Avg Meas</div></div>'
-          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:6px;text-align:center"><div style="font-size:19px;font-weight:900;color:'+p.color+'">'+avgC+'%</div><div style="font-size:11px;color:var(--text3)">Avg CVR</div></div>'
+          +'<div style="flex:1;background:rgba(0,0,0,0.06);border-radius:6px;padding:8px;text-align:center"><div style="font-size:22px;font-weight:900;color:'+p.color+'">'+avgC+'%</div><div style="font-size:11px;color:var(--text3)">Group Avg CVR</div></div>'
         +'</div>'
         +'<div>'+desRows3+'</div>'
         +'</div>';
     }).join('');
     _set('pres-tiers-subtitle','Grouped by conversion rate · each designer badged with their strongest KPI · '+scored2.length+' designers');
+
+    // ── Slide: cross-sales rate by group ──────────────────────
+    // Same four groups as the CVR slide. Percentages only — the share of each
+    // group's customers who came back for a second order.
+    (function () {
+      var box = document.getElementById('pres-xsell-grid');
+      if (!box) return;
+      box.innerHTML = PRES_PATCHES.map(function (p) {
+        if (!p.designers.length) return '';
+        var vals = p.designers.map(function (d) { return (_desCrossRate && _desCrossRate[d.name]) || 0; });
+        var avg  = vals.length ? +(vals.reduce(function (a, b) { return a + b; }, 0) / vals.length).toFixed(1) : 0;
+        var rows = p.designers.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
+          .map(function (d) {
+            var v = (_desCrossRate && _desCrossRate[d.name]) || 0;
+            var photo = (typeof _designerPhoto === 'function') ? _designerPhoto(d.name) : '';
+            var ini = d.name.split(' ').slice(0, 2).map(function (w) { return w[0] || ''; }).join('').toUpperCase();
+            var face = photo
+              ? '<img src="' + photo + '" alt="" style="width:28px;height:28px;flex:none;border-radius:50%;object-fit:cover">'
+              : '<div style="width:28px;height:28px;flex:none;border-radius:50%;background:rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:' + p.color + '">' + ini + '</div>';
+            return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.08)">'
+              + face
+              + '<div style="flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+                + d.name.split(' ').slice(0, 2).join(' ') + '</div>'
+              + '<div style="font-size:14px;font-weight:800;color:' + p.color + '">' + v + '%</div>'
+              + '</div>';
+          }).join('');
+        return '<div style="background:' + p.bg + ';border:1px solid ' + p.border + ';border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:8px">'
+          + '<div style="display:flex;align-items:center;gap:9px">'
+            + '<span style="width:30px;height:30px;flex:none;border-radius:50%;background:' + p.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900">' + p.icon + '</span>'
+            + '<div><div style="font-size:16px;font-weight:900;color:' + p.color + ';line-height:1.15">' + p.tag + '</div>'
+              + '<div style="font-size:11px;font-weight:700;color:var(--text3)">' + p.tagline + '</div></div>'
+          + '</div>'
+          + '<div style="background:rgba(0,0,0,0.06);border-radius:8px;padding:9px;text-align:center">'
+            + '<div style="font-size:24px;font-weight:900;color:' + p.color + '">' + avg + '%</div>'
+            + '<div style="font-size:11px;color:var(--text3)">Group cross-sales rate</div>'
+          + '</div>'
+          + '<div>' + rows + '</div>'
+          + '</div>';
+      }).join('');
+    })();
 
     // ── Slide 10: every designer, one distinct strength ───────
     (function () {
@@ -11638,7 +11682,8 @@ function buildPresentationSlides() {
           });
           return hit || { name:n, total:0, rate:0 };
         });
-        return { tag:PRES_PATCHES[gi].tag, color:PRES_PATCHES[gi].color, members:mem,
+        return { tag:PRES_PATCHES[gi].tag, sub:PRES_PATCHES[gi].tagline,
+                 color:PRES_PATCHES[gi].color, members:mem,
                  sum:mem.reduce(function (t, d) { return t + _designerSales(d.name); }, 0) };
       }).filter(function (g) { return g.members.length; });
       var mSum = _PRES_HEAD_OFFICE.reduce(function (t, n) { return t + _designerSales(n); }, 0);
@@ -11704,8 +11749,8 @@ function buildPresentationSlides() {
           + '</svg>'
           + '<div style="position:absolute;left:50%;top:' + (C - R - 15) + 'px;transform:translateX(-50%);background:' + col + ';color:' + onPill + ';font-size:15px;font-weight:800;padding:6px 21px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.12)">' + g.tag + '</div>'
           + '<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:150px">'
-            + '<div style="font-size:34px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1">' + g.pct + '%</div>'
-            + '<div style="font-size:13px;color:#6e6e70;margin-top:2px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
+            + '<div style="font-size:19px;font-weight:900;color:' + (LIGHT[col] ? '#87692f' : col) + ';line-height:1.2">' + (g.sub || '') + '</div>'
+            + '<div style="font-size:13px;color:#6e6e70;margin-top:4px">' + n + ' designer' + (n === 1 ? '' : 's') + '</div>'
           + '</div>'
           + faces
           + '</div>';
@@ -11719,7 +11764,7 @@ function buildPresentationSlides() {
         var items = SEGS.map(function (g, gi) {
           return '<span style="display:inline-flex;align-items:center;gap:7px">'
                + '<span style="width:11px;height:11px;border-radius:50%;background:' + RANK[Math.min(gi, RANK.length-1)] + '"></span>'
-               + '<span style="font-size:13px;color:#3a3a3c">' + g.tag + ' ' + g.pct + '%</span></span>';
+               + '<span style="font-size:13px;color:#3a3a3c">' + g.tag + (g.sub ? ' · ' + g.sub : '') + ' <strong>' + g.pct + '%</strong></span></span>';
         });
         if (mSum > 0) items.push('<span style="display:inline-flex;align-items:center;gap:7px">'
                + '<span style="width:11px;height:11px;border-radius:50%;background:#e2d9c6"></span>'
@@ -11767,7 +11812,6 @@ function buildPresentationSlides() {
         + '<div style="font-size:14px;font-weight:700;color:var(--text3);width:18px;text-align:center">'+(i+1)+'</div>'
         + '<div style="font-size:19px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+a.area+'</div>'
         + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+areaColors[Math.min(i,areaColors.length-1)]+'"></div></div>'
-        + '<div style="font-size:19px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+a.total+'</div>'
         + '<div style="font-size:11px;color:'+(cvr>=30?'#87692f':cvr>=20?'#87692f':'#6e6e70')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
@@ -11781,7 +11825,6 @@ function buildPresentationSlides() {
         + '<div style="font-size:14px;font-weight:700;color:var(--text3);width:18px;text-align:center">…</div>'
         + '<div style="font-size:16px;font-weight:600;color:var(--text3);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Others ('+othersAreaCount+' areas)</div>'
         + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+Math.round(othersAreaTotal/maxArea*100)+'%;background:rgba(0,0,0,0.10)"></div></div>'
-        + '<div style="font-size:16px;font-weight:800;color:var(--text3);min-width:40px;text-align:right">'+othersAreaTotal+'</div>'
         + '<div style="font-size:11px;color:var(--text3);min-width:52px;text-align:right">'+oCVR+'% CVR</div>'
         + '</div>';
     }
@@ -11800,7 +11843,6 @@ function buildPresentationSlides() {
         + '<div style="font-size:14px;font-weight:700;color:var(--text3);width:18px;text-align:center">'+(i+1)+'</div>'
         + '<div style="font-size:19px;font-weight:700;color:var(--text1);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(s.source||'Unknown')+'</div>'
         + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+bw+'%;background:'+srcColors[Math.min(i,srcColors.length-1)]+'"></div></div>'
-        + '<div style="font-size:19px;font-weight:800;color:var(--text1);min-width:40px;text-align:right">'+s.total+'</div>'
         + '<div style="font-size:11px;color:'+(cvr>=30?'#87692f':cvr>=20?'#87692f':'#6e6e70')+';min-width:52px;text-align:right">'+cvr+'% CVR</div>'
         + '</div>';
     }).join('');
@@ -11814,7 +11856,6 @@ function buildPresentationSlides() {
         + '<div style="font-size:14px;font-weight:700;color:var(--text3);width:18px;text-align:center">…</div>'
         + '<div style="font-size:16px;font-weight:600;color:var(--text3);min-width:90px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Others ('+othersSrcCount+' sources)</div>'
         + '<div class="pres-area-bar-wrap"><div class="pres-area-bar" style="width:'+Math.round(othersSrcTotal/maxSrc*100)+'%;background:rgba(0,0,0,0.10)"></div></div>'
-        + '<div style="font-size:16px;font-weight:800;color:var(--text3);min-width:40px;text-align:right">'+othersSrcTotal+'</div>'
         + '<div style="font-size:11px;color:var(--text3);min-width:52px;text-align:right">'+oCVR2+'% CVR</div>'
         + '</div>';
     }
@@ -11884,6 +11925,13 @@ function buildPresentationSlides() {
 
 
   // ── Slide: five goals for the rest of 2026 ─────────────────
+  var _GOAL_ICONS = {
+    '01':'M3 17l6-6 4 4 7-7M14 8h7v7',
+    '02':'M3 4h18l-7 8v7l-4-2v-5z',
+    '03':'M12 3l2.2 4.9 5.3.6-4 3.6 1.1 5.2L12 14.7 7.4 17.3l1.1-5.2-4-3.6 5.3-.6zM12 19v3',
+    '04':'M8 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM16 20a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM10 10l4 4',
+    '05':'M20 12a8 8 0 1 1-3-6M20 4v5h-5M12 8v4l3 2'
+  };
   // Every goal is derived from a measurable 2025 weakness, with the current
   // number and a target. Nothing aspirational without a baseline.
   (function () {
@@ -11943,39 +11991,49 @@ function buildPresentationSlides() {
     var avgOrder  = sumOrders ? sumSales / sumOrders : 0;
     var avgTarget = Math.round(avgOrder * 1.2 / 10000) * 10000;   // +20% as a first step
 
+    // Company cross-sales rate: share of customers who bought more than once.
+    var xsVals = Object.keys(_desCrossRate || {}).map(function (k) { return _desCrossRate[k]; });
+    var xsNow  = xsVals.length ? +(xsVals.reduce(function (a, b) { return a + b; }, 0) / xsVals.length).toFixed(1) : 0;
+
     var GOALS = [
-      { n:'01', t:'Cut cancellations',
-        now: cancPct + '%', target: Math.max(0, +(cancPct * 0.75).toFixed(1)) + '%',
-        why: canc.toLocaleString() + ' measures were cancelled in 2025. A quarter fewer is ' + Math.round(canc * 0.25) + ' orders saved.' },
-      { n:'02', t:'Close the open pipeline',
-        now: disc.toLocaleString(), target: Math.round(disc * 0.4).toLocaleString() + ' converted',
-        why: disc.toLocaleString() + ' measures ended the year still in discussion — the cheapest revenue available.' },
-      { n:'03', t:'Lift conversion',
-        now: cvrNow + '%', target: (cvrNow + 4).toFixed(1) + '%',
+      { n:'01', t:'Lift conversion',
+        now: cvrNow + '%', target: Math.min(100, +(cvrNow + 4).toFixed(1)) + '%',
         why: 'Four points on 2025 volume would have added about ' + Math.round(tot * 0.04) + ' contracts.' },
-      { n:'04', t:'Move up-market',
+      { n:'02', t:'Close the open pipeline',
+        now: (tot ? +(disc / tot * 100).toFixed(1) : 0) + '% left open',
+        target: (tot ? +(disc / tot * 100 * 0.5).toFixed(1) : 0) + '%',
+        why: 'Measures that end the year still in discussion are the cheapest revenue available — half of them should close.' },
+      { n:'03', t:'Move up-market',
         now: 'EGP ' + Math.round(avgOrder / 1000) + 'K avg order',
         target: 'EGP ' + Math.round(avgTarget / 1000) + 'K',
         why: 'The Kitchino segment starts at EGP 700K. Today the average order is EGP '
              + Math.round(avgOrder / 1000) + 'K and only ' + above700 + ' of ' + desTotal
              + ' designers average above it'
              + (weakU ? '. ' + weakUEn + ' convert lowest at ' + weakU.cvr + '%' : '') + '.' },
+      { n:'04', t:'Sell the second room',
+        now: xsNow + '%', target: (xsNow + 6).toFixed(1) + '%',
+        why: 'Cross-sales is the cheapest growth there is — the customer is already won.' },
       { n:'05', t:'Bring customers back',
-        now: repPct + '%', target: (repPct + 5).toFixed(1) + '%',
+        now: repPct + '%', target: Math.min(100, +(repPct + 5).toFixed(1)) + '%',
         why: 'Only ' + rep.toLocaleString() + ' of ' + custN.toLocaleString() + ' customers ordered more than once.'
              + (weakA ? ' Weakest area: ' + weakA.a + ' at ' + weakA.cvr + '%.' : '') }
     ];
 
-    box.innerHTML = GOALS.map(function (g) {
-      return '<div style="background:#fdfcf9;border:1px solid #ece5d8;border-top:4px solid #c2a15c;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px">'
-        + '<div style="font-size:11px;font-weight:900;letter-spacing:2px;color:#c2a15c">' + g.n + '</div>'
-        + '<div style="font-size:16px;font-weight:900;color:#1c1c1e;line-height:1.2">' + g.t + '</div>'
-        + '<div style="display:flex;align-items:baseline;gap:8px">'
-          + '<span style="font-size:13px;color:#8e8e90;text-decoration:line-through">' + g.now + '</span>'
-          + '<span style="color:#c2a15c">&rarr;</span>'
-          + '<span style="font-size:19px;font-weight:900;color:#87692f">' + g.target + '</span>'
+    box.innerHTML = GOALS.map(function (g, gi) {
+      var accent = ['#2f2f31', '#87692f', '#c2a15c', '#a8894a', '#6e6e70', '#5f5e5a'][gi] || '#87692f';
+      var icon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"'
+               + ' stroke-linecap="round" stroke-linejoin="round"><path d="' + (_GOAL_ICONS[g.n] || _GOAL_ICONS['03']) + '"></path></svg>';
+      return '<div style="position:relative;background:#fdfcf9;border:1px solid #ece5d8;border-radius:16px;padding:16px 12px 13px;text-align:center;display:flex;flex-direction:column;gap:6px;overflow:hidden">'
+        + '<div style="position:absolute;left:0;top:0;right:0;height:4px;background:' + accent + '"></div>'
+        + '<div style="width:44px;height:44px;border-radius:14px;background:' + accent + ';display:flex;align-items:center;justify-content:center;margin:2px auto">' + icon + '</div>'
+        + '<div style="font-size:10px;font-weight:900;letter-spacing:2.5px;color:' + accent + '">' + g.n + '</div>'
+        + '<div style="font-size:14.5px;font-weight:900;color:#1c1c1e;line-height:1.25">' + g.t + '</div>'
+        + '<div style="background:rgba(0,0,0,0.035);border-radius:9px;padding:7px 5px">'
+          + '<div style="font-size:10.5px;color:#8e8e90;text-decoration:line-through;line-height:1.2">' + g.now + '</div>'
+          + '<div style="font-size:12px;color:' + accent + ';line-height:1">&darr;</div>'
+          + '<div style="font-size:16px;font-weight:900;color:#1c1c1e;line-height:1.15">' + g.target + '</div>'
         + '</div>'
-        + '<div style="font-size:11.5px;color:#5f5e5a;line-height:1.4">' + g.why + '</div>'
+        + '<div style="font-size:10.5px;color:#5f5e5a;line-height:1.4">' + g.why + '</div>'
         + '</div>';
     }).join('');
   })();
@@ -11985,14 +12043,15 @@ function buildPresentationSlides() {
   const topArea = areas[0];
   const bestSrc = sources.filter(s=>s.total>=5).sort((a,b) => (b.contracted/b.total)-(a.contracted/a.total))[0];
   const discuss = rows25.filter(r => r._discussion).length;
+  // Percentages only, and the measure-visits card removed entirely.
+  const _areaPct = topArea && total25 ? +(topArea.total / total25 * 100).toFixed(1) : 0;
+  const _discPct = total25 ? +(discuss / total25 * 100).toFixed(1) : 0;
   const insights = [
-    { icon:'📈', text: '<strong>' + total25.toLocaleString() + ' measure visits</strong> recorded in 2025'
-        + (yoy !== null ? ' — ' + (yoy>=0?'↑':'↓') + ' ' + Math.abs(yoy) + '% ' + (yoy>=0?'growth':'decline') + ' vs. 2024' : '') },
-    { icon:'🎯', text: 'Conversion rate of <strong>' + cvr25 + '%</strong> — ' + contr25.toLocaleString() + ' contracts signed out of ' + total25.toLocaleString() + ' visits' },
-    // (card removed — it named one designer as leading the team)
-    topArea ? { icon:'📍', text: '<strong>' + topArea.area + '</strong> is the top performing area with ' + topArea.total.toLocaleString() + ' measures' } : null,
-    bestSrc ? { icon:'📡', text: '<strong>' + bestSrc.source + '</strong> is the highest-converting source at ' + +(bestSrc.contracted/bestSrc.total*100).toFixed(1) + '% CVR' } : null,
-    discuss > 0 ? { icon:'⏳', text: '<strong>' + discuss.toLocaleString() + ' measures</strong> remain in discussion — active follow-up opportunity' } : null,
+    { icon:'🎯', text: 'Conversion rate of <strong>' + cvr25 + '%</strong> across the year'
+        + (yoy !== null ? ' — ' + (yoy>=0?'↑':'↓') + ' ' + Math.abs(yoy) + '% vs. 2024' : '') },
+    topArea ? { icon:'📍', text: '<strong>' + topArea.area + '</strong> is the strongest area — <strong>' + _areaPct + '%</strong> of all measures' } : null,
+    bestSrc ? { icon:'📡', text: '<strong>' + bestSrc.source + '</strong> is the highest-converting source at <strong>' + (+(bestSrc.contracted/bestSrc.total*100).toFixed(1)) + '%</strong>' } : null,
+    discuss > 0 ? { icon:'⏳', text: '<strong>' + _discPct + '%</strong> of measures ended the year still in discussion — active follow-up opportunity' } : null,
   ].filter(Boolean);
 
   const insEl = document.getElementById('pres-insights-list');
@@ -12044,17 +12103,14 @@ function buildPresentationSlides() {
     '<strong>' + cancelled25.toLocaleString() + ' cancellations</strong> — '
     + cancelRate + '% of all visits ended in الغاء');
   if (discuss > 0) outlookItems.push(
-    '<strong>' + discuss.toLocaleString() + ' still in discussion</strong> — pipeline that was never closed either way');
+    '<strong>' + (total25 ? +(discuss/total25*100).toFixed(1) : 0) + '% still in discussion</strong> — pipeline that was never closed either way');
   if (weakArea) outlookItems.push(
-    '<strong>' + weakArea.area + '</strong> converted at just ' + weakArea.rate.toFixed(1)
-    + '% across ' + weakArea.total + ' visits');
+    '<strong>' + weakArea.area + '</strong> converted at just ' + weakArea.rate.toFixed(1) + '%');
   if (weakSrc) outlookItems.push(
-    '<strong>' + weakSrc.source + '</strong> delivered ' + weakSrc.total
-    + ' leads at ' + weakSrc.rate.toFixed(1) + '% conversion');
+    '<strong>' + weakSrc.source + '</strong> converted at only ' + weakSrc.rate.toFixed(1) + '%');
   if (custs25.length) outlookItems.push(
-    'Only <strong>' + returning.toLocaleString() + ' of ' + custs25.length.toLocaleString()
-    + ' customers</strong> returned in a later month — '
-    + multiRoom.toLocaleString() + ' bought multiple rooms in a single visit');
+    'Only <strong>' + (+(returning / custs25.length * 100).toFixed(1))
+    + '% of customers</strong> returned in a later month');
   if (yoy !== null && yoy < 0) outlookItems.push(
     '<strong>Volume fell ' + Math.abs(yoy) + '%</strong> against 2024');
 
@@ -12108,13 +12164,15 @@ function buildPresentationSlides() {
     if (!a) return '—';
     const d = b - a; const pct = +(d/a*100).toFixed(1);
     const col = d >= 0 ? '#87692f' : '#6e6e70';
-    return '<span style="color:'+col+'">' + (d>=0?'↑ +':'↓ ') + Math.abs(d) + suffix + ' (' + (pct>=0?'+':'') + pct + '% YOY)</span>';
+    return '<span style="color:'+col+'">' + (d>=0?'↑ +':'↓ ') + Math.abs(pct) + '% YOY</span>';
   };
 
-  _set('pres-h1-m25',   hm25.toLocaleString());
-  _set('pres-h1-m26',   hm26.toLocaleString());
-  _set('pres-h1-c25',   hc25.toLocaleString());
-  _set('pres-h1-c26',   hc26.toLocaleString());
+  // Percentages only: 2025 indexed to 100% so the change reads without
+  // exposing raw volumes.
+  _set('pres-h1-m25',   '100%');
+  _set('pres-h1-m26',   hm25 ? Math.round(hm26 / hm25 * 100) + '%' : '—');
+  _set('pres-h1-c25',   '100%');
+  _set('pres-h1-c26',   hc25 ? Math.round(hc26 / hc25 * 100) + '%' : '—');
   _set('pres-h1-cvr25', hcvr25 + '%');
   _set('pres-h1-cvr26', hcvr26 + '%');
 
@@ -12278,7 +12336,7 @@ function buildPresentationSlides() {
           +'<div style="flex:1;min-width:0">'
             +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
               +'<span style="font-size:13px;font-weight:600;color:'+(isOth?'var(--text2)':'#fff')+'">'+d.type+(isOth?'':' <span style=\"font-size:9px;color:var(--green);opacity:0.6\">▼ click</span>')+'</span>'
-              +'<span style="font-size:12px;color:var(--text2);flex-shrink:0;margin-left:8px">'+d.total+' ('+barW+'%)</span>'
+              +'<span style="font-size:12px;color:var(--text2);flex-shrink:0;margin-left:8px">'+barW+'%</span>'
             +'</div>'
             +'<div style="height:4px;background:rgba(0,0,0,0.08);border-radius:2px">'
               +'<div style="height:100%;width:'+barW+'%;background:var(--green);border-radius:2px"></div>'
@@ -12461,7 +12519,7 @@ window._presOTDetail = function(typeName) {
 
 function _presShowSlide(n) {
   _presCurrentSlide = Math.max(1, Math.min(n, _PRES_TOTAL));
-  const slides = document.querySelectorAll('.pres-slide');
+  const slides = document.querySelectorAll('.pres-slide:not(.pres-hidden)');
   slides.forEach((s,i) => { s.classList.toggle('pres-active', i + 1 === _presCurrentSlide); });
   const ctr = document.getElementById('pres-counter');
   if (ctr) ctr.textContent = _presCurrentSlide + ' / ' + _PRES_TOTAL;
@@ -12554,7 +12612,7 @@ document.addEventListener('fullscreenchange', function () { setTimeout(_presFitS
 // Hand-written "SLIDE 4 OF 9" strings drifted every time a slide moved. The
 // label after the em dash is authored; the numbers are derived.
 function _presRenumber() {
-  var slides = document.querySelectorAll('.pres-slide');
+  var slides = document.querySelectorAll('.pres-slide:not(.pres-hidden)');
   var n = slides.length;
   slides.forEach(function (sl, i) {
     var tag = sl.querySelector('.pres-tag');
