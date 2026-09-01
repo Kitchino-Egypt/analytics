@@ -9452,8 +9452,8 @@ function buildGovernoratePage() {
     var cvr = g.total ? +(g.contracted / g.total * 100).toFixed(1) : 0;
     var w = Math.round(g.total / max * 100);
     var col = g.gov === 'غير محدد' ? 'var(--text3)' : 'var(--accent)';
-    return '<div onclick="_govDetail(\'' + g.gov.replace(/'/g, "\\'") + '\')" '
-      + 'style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">'
+    return '<div class="gov-row" data-gov="' + g.gov + '" onclick="_govDetail(\'' + g.gov.replace(/'/g, "\\'") + '\')" '
+      + 'style="display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--border);cursor:pointer;border-radius:6px;border-left:3px solid transparent;transition:background .15s">'
       + '<div style="width:20px;font-size:12px;color:var(--text3);text-align:center">' + (i + 1) + '</div>'
       + '<div dir="rtl" style="width:120px;font-size:14px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + g.gov + '</div>'
       + '<div style="flex:1;height:8px;background:rgba(0,0,0,0.07);border-radius:4px;overflow:hidden">'
@@ -9483,6 +9483,14 @@ function _govDetail(gov) {
   var el = document.getElementById('gov-detail');
   var m = (window._govMap || {})[gov];
   if (!el || !m) return;
+
+  // Keep the chosen governorate visibly selected in the left-hand list.
+  document.querySelectorAll('#gov-bars .gov-row').forEach(function (row) {
+    var on = row.getAttribute('data-gov') === gov;
+    row.style.background  = on ? 'rgba(80,184,73,0.16)' : '';
+    row.style.borderLeft  = '3px solid ' + (on ? '#50B849' : 'transparent');
+  });
+  window._govSelected = gov;
   var areas = Object.keys(m.areas).map(function (a) { return { a:a, n:m.areas[a] }; })
     .sort(function (x, y) { return y.n - x.n; });
   el.innerHTML = '<div dir="rtl" style="font-size:15px;font-weight:800;color:var(--text1);margin-bottom:8px">' + gov + '</div>'
