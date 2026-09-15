@@ -1162,7 +1162,7 @@ tbody td.muted { color:var(--text2); }
   <div class="login-form-panel">
   <div class="login-card" id="login-card">
     <div class="login-eyebrow">Kitchino Analytics</div><div class="login-title">Welcome back</div>
-    <div class="login-subtitle">Enter your access password to continue to the operations dashboard.</div>
+    <div class="login-subtitle">Enter your password and the team access code to continue to the operations dashboard.</div>
     <div class="login-field">
       <label>Access Password</label>
       <div class="login-input-wrap">
@@ -1170,8 +1170,16 @@ tbody td.muted { color:var(--text2); }
         <button class="login-eye" id="login-eye-btn" onclick="toggleLoginEye()" tabindex="-1">👁</button>
       </div>
     </div>
+    <div class="login-field">
+      <label>Team Access Code</label>
+      <div class="login-input-wrap">
+        <input type="text" id="login-code" placeholder="XXXX-XXXX-XXXX" autocomplete="off"
+               autocapitalize="characters" spellcheck="false"
+               style="text-transform:uppercase;letter-spacing:1px" />
+      </div>
+    </div>
     <label class="login-remember"><input type="checkbox" id="login-remember" checked /><span>Keep me signed in on this device</span></label>
-    <div class="login-error" id="login-error">🔒 Incorrect password. Please try again.</div>
+    <div class="login-error" id="login-error">🔒 Incorrect password or access code. Please try again.</div>
     <button class="login-btn" id="login-btn" onclick="attemptLogin()">Access Dashboard →</button>
     <div class="login-footer">Kitchino Operations · <span>Secured Access</span></div>
   </div>
@@ -1191,6 +1199,32 @@ const _KA_REMEMBER_HOURS = 720;   // "Remember me" session: 30 days
 const _KA_EXP_KEY       = 'kitchino_auth_exp';
 const _KA_STORAGE_KEY   = 'kitchino_auth_ts';
 const _KA_ROLE_KEY      = 'kitchino_auth_role';
+const _KA_EPOCH_KEY     = 'kitchino_auth_epoch';
+
+// ── SECOND STEP: SHARED ACCESS CODE ───────────────────────────────────────
+// One code, the same for everyone, handed out by Nabila to current staff. It
+// is entered after the password. Someone who knows the password but never
+// received the code cannot get in.
+//
+// WHY THE HASH IS SLOW, AND WHY THE CODE IS RANDOM:
+// this file is public, so the hash below is public too. A plain SHA-256 of a
+// memorable code could be recovered from the source in minutes with a word
+// list. PBKDF2 at 100,000 rounds makes every guess ~100,000x more expensive,
+// and a random code defeats word lists entirely. Do not replace the code with
+// a phrase — that would undo both protections.
+//
+// TO CHANGE THE CODE AND SIGN EVERYONE OUT:
+//   1. Generate a new random code + PBKDF2 hash (see CONTINUITY_AND_RECOVERY.md)
+//   2. Replace _KA_CODE_SALT and _KA_CODE_HASH below
+//   3. Increment _KA_EPOCH by 1   ← this is what kills every open session
+//   4. Re-upload the file, then send the new code to current staff only
+const _KA_CODE_SALT   = '3d4fcfbba0706bd24b9d5eb682fea39d';
+const _KA_CODE_HASH   = '9dd749766a7deb0dfbdf1dcf88150a32d444b91603100bd603b36317c0f36c95';
+const _KA_CODE_ROUNDS = 100000;
+
+// Every stored session records the epoch it was created under. Raising this
+// number makes all existing sessions invalid at once, on every device.
+const _KA_EPOCH = 1;
 
 // ── ROLE PASSWORDS ────────────────────────────────────────────────────────
 // Each entry logs in with access to ONE page only. The master password above
@@ -1210,6 +1244,7 @@ function kitchinoLogout() {
     localStorage.removeItem(_KA_STORAGE_KEY);
     localStorage.removeItem(_KA_ROLE_KEY);
     localStorage.removeItem(_KA_EXP_KEY);
+    localStorage.removeItem(_KA_EPOCH_KEY);
   } catch (e) {}
   // Drop any ?view= lock so the next person gets a clean login
   var url = window.location.origin + window.location.pathname;
@@ -1221,8 +1256,30 @@ async function _sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+// Deliberately slow hash for the shared access code. Takes ~100ms in a browser,
+// which nobody notices once per month — but multiplies the cost of a offline
+// brute-force attempt against the public source by the same factor.
+async function _pbkdf2(str, salt, rounds) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(str), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name:'PBKDF2', salt: enc.encode(salt), iterations: rounds, hash:'SHA-256' }, key, 256);
+  return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// The code is typed by hand, so accept it in any case and ignore spaces and
+// dashes. HHWR-LNRM-WC2B, hhwrlnrmwc2b and "hhwr lnrm wc2b" are the same code.
+function _normCode(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
 function _checkSession() {
   try {
+    // A session created before the current epoch is void, however recent it is.
+    // This is what signs everyone out the moment the access code changes.
+    const ep = parseInt(localStorage.getItem(_KA_EPOCH_KEY), 10);
+    if (!isFinite(ep) || ep !== _KA_EPOCH) return false;
+
     const ts = localStorage.getItem(_KA_STORAGE_KEY);
     if (!ts) return false;
     const elapsed = (Date.now() - parseInt(ts)) / 3600000; // hours
@@ -1240,6 +1297,7 @@ function _grantAccess(role, fresh) {
   }, 300);
   try {
     localStorage.setItem(_KA_STORAGE_KEY, Date.now().toString());
+    localStorage.setItem(_KA_EPOCH_KEY, String(_KA_EPOCH));
     if (fresh) {
       var _rm = document.getElementById('login-remember');
       localStorage.setItem(_KA_EXP_KEY, String((_rm && _rm.checked) ? _KA_REMEMBER_HOURS : _KA_SESSION_HOURS));
@@ -1260,20 +1318,30 @@ function _grantAccess(role, fresh) {
 }
 
 async function attemptLogin() {
-  const pw  = document.getElementById('login-password').value;
-  const btn = document.getElementById('login-btn');
-  const err = document.getElementById('login-error');
-  if (!pw) return;
+  const pw   = document.getElementById('login-password').value;
+  const code = document.getElementById('login-code').value;
+  const btn  = document.getElementById('login-btn');
+  const err  = document.getElementById('login-error');
+  if (!pw || !code) return;
   btn.disabled = true;
   btn.textContent = 'Checking…';
   err.classList.remove('visible');
   try {
     const hash = await _sha256(pw);
     const role = _KA_ROLES[hash] || null;
-    if (hash === _KA_HASH || role) {
+    const pwOK = (hash === _KA_HASH || !!role);
+
+    // Both must be right. The code is checked even when the password failed,
+    // so a wrong password and a wrong code take the same time — otherwise the
+    // delay itself would tell someone which half they had guessed correctly.
+    const codeHash = await _pbkdf2(_normCode(code), _KA_CODE_SALT, _KA_CODE_ROUNDS);
+    const codeOK = (codeHash === _KA_CODE_HASH);
+
+    if (pwOK && codeOK) {
       btn.textContent = '✓ Access Granted';
       setTimeout(function(){ _grantAccess(role, true); }, 400);
     } else {
+      // Deliberately does not say which one was wrong.
       err.classList.add('visible');
       const card = document.getElementById('login-card');
       card.classList.remove('shake');
@@ -1282,6 +1350,7 @@ async function attemptLogin() {
       btn.disabled = false;
       btn.textContent = 'Access Dashboard →';
       document.getElementById('login-password').value = '';
+      document.getElementById('login-code').value = '';
       document.getElementById('login-password').focus();
     }
   } catch(e) {
@@ -1297,8 +1366,16 @@ function toggleLoginEye() {
   else                         { inp.type = 'password'; btn.textContent = '👁'; }
 }
 
-// Allow Enter key to submit
+// Allow Enter key to submit. From the password field, Enter moves to the code
+// field first if it is still empty — otherwise people press Enter out of habit
+// and see an error they don't understand.
 document.getElementById('login-password').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  var codeInp = document.getElementById('login-code');
+  if (codeInp && !codeInp.value.trim()) { codeInp.focus(); return; }
+  attemptLogin();
+});
+document.getElementById('login-code').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') attemptLogin();
 });
 
