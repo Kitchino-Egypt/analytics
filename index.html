@@ -9615,6 +9615,36 @@ function _govDetail(gov) {
       }).join('');
 }
 
+// Greys out the topbar filters that a page cannot honour, so a dropdown never
+// sits there looking live while being ignored.
+//
+// Contracted Customers Follow-up ignores two of them:
+//   • Month — the page tracks contracts still in progress, so a customer who
+//     signed in April and is still in Production must stay visible when August
+//     is picked. Filtering by signed-month would hide exactly the people the
+//     page exists to chase.
+//   • Area — the contracts feed carries no location field at all.
+// Everything else (Year, Designer, Period) applies normally.
+const _FILTERS_NA = {
+  followup: {
+    'filter-month': 'Not used here — this page tracks contracts still in progress, whichever month they were signed',
+    'filter-area':  'Not used here — the contracts feed has no area field'
+  }
+};
+
+function _syncFilterAvailability(name) {
+  const na = _FILTERS_NA[name] || {};
+  ['filter-month', 'filter-area'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const why = na[id];
+    el.disabled = !!why;
+    el.title = why || '';
+    el.style.opacity = why ? '0.45' : '';
+    el.style.cursor  = why ? 'not-allowed' : '';
+  });
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -9623,6 +9653,7 @@ function showPage(name) {
   const nav = document.querySelector(`[data-page="${name}"]`);
   if(nav) nav.classList.add('active');
   document.getElementById('page-title').textContent = PAGE_TITLES[name] || name;
+  _syncFilterAvailability(name);
 
   // Swap the period inputs to this page's own range BEFORE computing, so the
   // figures below are built from the right window. A range set elsewhere must
