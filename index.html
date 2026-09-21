@@ -7306,6 +7306,11 @@ function renderFollowupTable() {
     return true;
   });
 
+  // Published for the charts, which are rebuilt at the end of this function.
+  // Before this existed they read CONTRACTS_DATA directly and so ignored every
+  // filter — the KPI cards would move while the doughnut beside them did not.
+  _FU_FILTERED = _mainFiltered;
+
   const filter = document.getElementById('fu-aging-filter')?.value || 'all';
   const search = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
 
@@ -7523,6 +7528,10 @@ function renderFollowupTable() {
     const _rowWrap = cards => '<div style="display:flex;gap:8px;margin-bottom:8px">' + cards.map(_cardHtml).join('') + '</div>';
     _crmEl.innerHTML = _rowWrap(_row1) + (_row2.length ? _rowWrap(_row2) : '');
   }
+
+  // Rebuild the two charts against the same filtered set the cards just used.
+  // This is the last thing the function does, so _FU_FILTERED is current.
+  buildFollowupCharts();
 }
 
 function openFuCrmModal(label, key) {
@@ -8452,13 +8461,25 @@ function renderScorecard() {
   );}).join('');
 }
 
+// Holds the contracts left after the main topbar filters (year, designer,
+// period). Set by renderFollowupTable, read by the charts below, so both halves
+// of the page describe the same set of contracts.
+// `var`, not `let`: renderFollowupTable assigns this ~1,100 lines earlier in
+// the file, and `let` would leave it in the temporal dead zone if anything ever
+// called that function during initial script evaluation.
+var _FU_FILTERED = null;
+
 function buildFollowupCharts() {
+  // Falls back to the full dataset only on the very first paint, before
+  // renderFollowupTable has run once.
+  const _FU_SRC = _FU_FILTERED || CONTRACTS_DATA;
+
   (function(){
     const _CN = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
     const normCrm = c => { const k=(c.crm||'').trim().toLowerCase(); return _CN[k]||k||'unknown'; };
-    const delivered = CONTRACTS_DATA.filter(c => normCrm(c) === 'delivered').length;
-    const inStore   = CONTRACTS_DATA.filter(c => normCrm(c) === 'store').length;
-    const other     = CONTRACTS_DATA.filter(c => { const k=normCrm(c); return k!=='delivered'&&k!=='store'; }).length;
+    const delivered = _FU_SRC.filter(c => normCrm(c) === 'delivered').length;
+    const inStore   = _FU_SRC.filter(c => normCrm(c) === 'store').length;
+    const other     = _FU_SRC.filter(c => { const k=normCrm(c); return k!=='delivered'&&k!=='store'; }).length;
     makeChart('chart-fu-aging', {
       type:'doughnut',
       data:{
@@ -8472,15 +8493,18 @@ function buildFollowupCharts() {
   })();
 
   const byDesigner = {};
-  CONTRACTS_DATA.forEach(c=>{byDesigner[c.designer]=(byDesigner[c.designer]||0)+1});
+  _FU_SRC.forEach(c=>{byDesigner[c.designer]=(byDesigner[c.designer]||0)+1});
   const dEntries = Object.entries(byDesigner).sort((a,b)=>b[1]-a[1]);
+  // An empty result would make Math.max(...[]) return -Infinity and break the
+  // y-axis, so guard the scale maximum.
+  const _dMax = dEntries.length ? Math.max(...dEntries.map(d=>d[1])) : 0;
   makeChart('chart-fu-designer', {
     type:'bar',
     data:{
       labels:dEntries.map(d=>d[0].split(' ')[0]),
       datasets:[{label:'Open Contracts',data:dEntries.map(d=>d[1]),backgroundColor:'rgba(200,135,0,0.82)',borderColor:GOLD,borderWidth:1.5,borderRadius:4}]
     },
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0},suggestedMin:0,suggestedMax:Math.max(...dEntries.map(d=>d[1]))+1}}}
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,0.06)'},ticks:{stepSize:1,precision:0},suggestedMin:0,suggestedMax:_dMax+1}}}
   });
 }
 
@@ -9975,7 +9999,10 @@ async function _silentFetch(isAutoRefresh) {
 // Fed by three columns the Apps Script connector writes: Showroom Summary,
 // Showroom Share %, Showroom Orders — four filled rows, one per branch.
 const SHOWROOM_DATA = [];
-const _SHOWROOM_COLOURS = ['#2E7D32', '#8FD584', '#C9A227', '#E08A3C', '#8C8580', '#5B8DEF'];
+// Categorical palette, fixed order — never cycled by rank. A showroom keeps the
+// same colour whatever position it lands in, so a branch overtaking another
+// does not repaint the whole card.
+const _SHOWROOM_COLOURS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#6250d6'];
 
 function renderShowroomSales() {
   const host = document.getElementById('fu-showroom');
@@ -9988,32 +10015,49 @@ function renderShowroomSales() {
   }
 
   const totalOrders = SHOWROOM_DATA.reduce((n, s) => n + s.orders, 0);
+  const lead = SHOWROOM_DATA[0];
 
+  // A ring per showroom: the coloured arc IS the share, so the picture and the
+  // number say the same thing. Drawn with conic-gradient rather than Chart.js
+  // so there is no canvas to resize and nothing to redraw on tab switches.
   host.innerHTML =
-    '<div style="display:flex;flex-direction:column;gap:11px;padding:14px 16px">'
+    '<div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;'
+    +      'padding:20px 16px 16px">'
     + SHOWROOM_DATA.map((s, i) => {
-        const col = _SHOWROOM_COLOURS[i % _SHOWROOM_COLOURS.length];
-        // Bar width IS the share, not a share-of-the-largest. A branch on 0.6%
-        // should look like 0.6%; the 2% floor only keeps it visible.
-        const w = Math.max(2, s.share);
-        return '<div>'
-          + '<div style="display:flex;justify-content:space-between;align-items:baseline;'
-          +      'font-size:12px;margin-bottom:5px">'
-          +   '<b style="color:var(--text)">' + s.branch + '</b>'
-          +   '<span style="color:var(--text2)">'
-          +     '<b style="color:' + col + ';font-size:13px">' + s.share.toFixed(1) + '%</b>'
-          +     ' · ' + s.orders + ' order' + (s.orders === 1 ? '' : 's')
-          +   '</span>'
-          + '</div>'
-          + '<div style="height:9px;border-radius:5px;background:rgba(0,0,0,.06);overflow:hidden">'
-          +   '<div style="height:100%;width:' + w + '%;background:' + col + ';border-radius:5px"></div>'
-          + '</div>'
+        const col  = _SHOWROOM_COLOURS[i % _SHOWROOM_COLOURS.length];
+        // Floor of 1.5% so a very small branch still shows a sliver of colour
+        // rather than an empty grey ring that looks like missing data.
+        const arc  = Math.max(1.5, s.share);
+        return ''
+        + '<div style="display:flex;flex-direction:column;align-items:center;gap:9px">'
+        +   '<div style="width:116px;height:116px;border-radius:50%;display:flex;'
+        +        'align-items:center;justify-content:center;transition:transform .16s;'
+        +        'background:conic-gradient(' + col + ' 0 ' + arc + '%,'
+        +        'rgba(0,0,0,.065) ' + arc + '% 100%)"'
+        +        ' onmouseenter="this.style.transform=\'scale(1.05)\'"'
+        +        ' onmouseleave="this.style.transform=\'\'">'
+        +     '<div style="width:88px;height:88px;border-radius:50%;background:var(--card,#fff);'
+        +          'display:flex;flex-direction:column;align-items:center;justify-content:center">'
+        +       '<b style="font-size:21px;font-weight:900;line-height:1;color:' + col + '">'
+        +         s.share.toFixed(1) + '%</b>'
+        +       '<span style="font-size:9px;letter-spacing:.7px;text-transform:uppercase;'
+        +            'color:var(--text2);margin-top:3px">of value</span>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div style="text-align:center">'
+        +     '<div style="font-size:12.5px;font-weight:800;color:var(--text);'
+        +          'letter-spacing:.3px">' + s.branch + '</div>'
+        +     '<div style="font-size:11px;color:var(--text2);margin-top:2px">'
+        +       s.orders + ' order' + (s.orders === 1 ? '' : 's') + '</div>'
+        +   '</div>'
         + '</div>';
       }).join('')
     + '</div>'
-    + '<div style="border-top:1px solid var(--line);padding:9px 16px;font-size:11px;'
-    +      'color:var(--text2)">'
-    +   totalOrders + ' counted orders · approved and confirmed, drafts excluded'
+    + '<div style="border-top:1px solid var(--line);padding:10px 16px;font-size:11px;'
+    +      'color:var(--text2);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +   '<span><b style="color:var(--text)">' + lead.branch + '</b> leads on '
+    +     lead.share.toFixed(1) + '% of value</span>'
+    +   '<span>' + totalOrders + ' counted orders · drafts excluded</span>'
     + '</div>';
 }
 
