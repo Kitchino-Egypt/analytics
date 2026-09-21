@@ -2148,6 +2148,19 @@ if (_checkSession()) {
     <div id="fu-crm-pipeline" style="display:block;padding:12px 16px"></div>
   </div>
 
+  <!-- Sales By Showroom — share and order count only, never a value.
+       The contracts sheet is published to the web, so any figure written into
+       it is public. The money stays in the Excel workbook. -->
+  <div class="table-card" style="margin-bottom:16px">
+    <div class="table-header">
+      <div class="table-title">Sales By Showroom</div>
+      <div class="table-actions" style="font-size:11px;color:var(--text2)">
+        share of value · drafts excluded
+      </div>
+    </div>
+    <div id="fu-showroom"></div>
+  </div>
+
   <div class="chart-grid chart-2">
     <div class="chart-card">
       <div class="chart-title">CRM Stage Breakdown</div>
@@ -9951,6 +9964,59 @@ async function _silentFetch(isAutoRefresh) {
   }
 }
 
+// ── SALES BY SHOWROOM ───────────────────────────────────────────────────────
+// Shows share of value and order count. It never shows an amount, and the
+// sheet never carries one: that sheet is published to the web as CSV, so any
+// figure written into it is readable by anyone with the URL. The money lives
+// in the Excel workbook, which is not published. Do not "improve" this by
+// adding a value column — per-order amounts would be worse than a total,
+// because one known amount plus the shares reconstructs all the others.
+//
+// Fed by three columns the Apps Script connector writes: Showroom Summary,
+// Showroom Share %, Showroom Orders — four filled rows, one per branch.
+const SHOWROOM_DATA = [];
+const _SHOWROOM_COLOURS = ['#2E7D32', '#8FD584', '#C9A227', '#E08A3C', '#8C8580', '#5B8DEF'];
+
+function renderShowroomSales() {
+  const host = document.getElementById('fu-showroom');
+  if (!host) return;
+
+  if (!SHOWROOM_DATA.length) {
+    host.innerHTML = '<div style="padding:14px 16px;font-size:12px;color:var(--text2)">'
+      + 'No showroom figures in the sheet yet — the connector writes them on its next run.</div>';
+    return;
+  }
+
+  const totalOrders = SHOWROOM_DATA.reduce((n, s) => n + s.orders, 0);
+
+  host.innerHTML =
+    '<div style="display:flex;flex-direction:column;gap:11px;padding:14px 16px">'
+    + SHOWROOM_DATA.map((s, i) => {
+        const col = _SHOWROOM_COLOURS[i % _SHOWROOM_COLOURS.length];
+        // Bar width IS the share, not a share-of-the-largest. A branch on 0.6%
+        // should look like 0.6%; the 2% floor only keeps it visible.
+        const w = Math.max(2, s.share);
+        return '<div>'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;'
+          +      'font-size:12px;margin-bottom:5px">'
+          +   '<b style="color:var(--text)">' + s.branch + '</b>'
+          +   '<span style="color:var(--text2)">'
+          +     '<b style="color:' + col + ';font-size:13px">' + s.share.toFixed(1) + '%</b>'
+          +     ' · ' + s.orders + ' order' + (s.orders === 1 ? '' : 's')
+          +   '</span>'
+          + '</div>'
+          + '<div style="height:9px;border-radius:5px;background:rgba(0,0,0,.06);overflow:hidden">'
+          +   '<div style="height:100%;width:' + w + '%;background:' + col + ';border-radius:5px"></div>'
+          + '</div>'
+        + '</div>';
+      }).join('')
+    + '</div>'
+    + '<div style="border-top:1px solid var(--line);padding:9px 16px;font-size:11px;'
+    +      'color:var(--text2)">'
+    +   totalOrders + ' counted orders · approved and confirmed, drafts excluded'
+    + '</div>';
+}
+
 // ── CONTRACTS FETCH — reads same Google Sheet as Contracts Dashboard ─────────
 // Source: kitchino-egypt.github.io/contracts-dashboard/
 // Sheet ID : 1aNmKdJRIQosNpvAwH5CfZUaNZvfZ9yHgoK6yflGi5cA
@@ -10015,13 +10081,27 @@ async function _fetchContracts() {
           safe:     SAFE_CRM_SET.has((crmStatus||crmCode).toLowerCase())
         };
       });
+    // Showroom shares ride along in three columns on the first few rows. They
+    // are read from the raw rows, not from `parsed`, because those rows are
+    // also order rows and the order filter would not change the result.
+    const shares = rows
+      .filter(r => String(r['Showroom Summary'] || '').trim())
+      .map(r => ({
+        branch: String(r['Showroom Summary']).trim(),
+        share:  parseFloat(r['Showroom Share %']) || 0,
+        orders: parseInt(r['Showroom Orders'], 10) || 0
+      }));
+    SHOWROOM_DATA.splice(0, SHOWROOM_DATA.length, ...shares);
+
     if (parsed.length) {
       CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...parsed);
       _contractsLoadedAt = Date.now();
       buildFollowupCharts();
       renderFollowupTable();
+      renderShowroomSales();
       updateBadges();
-      console.log('[Contracts] Loaded', parsed.length, 'records from CSV');
+      console.log('[Contracts] Loaded', parsed.length, 'records from CSV,',
+                  shares.length, 'showrooms');
     }
   };
 
