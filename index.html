@@ -1529,6 +1529,24 @@ if (_checkSession()) {
     <span id="sheet-last-updated-ago" style="display:none"></span>
   </div>
 
+  <!-- DATA LOAD BANNER — shown only while loading, or when the load fails.
+       Before this existed a failed fetch changed one small grey word in the
+       line above and nothing else: every card kept its "—" placeholder, so the
+       dashboard simply looked empty, with no reason given and nothing to press.
+       That is exactly how it presents on a phone, where the line above is easy
+       to miss entirely. -->
+  <div id="data-load-banner" style="display:none;margin:10px 12px;padding:11px 14px;
+       border:1px solid var(--gold);border-left:4px solid var(--gold);border-radius:8px;
+       background:rgba(200,135,0,.09);font-size:13px;color:var(--text);
+       align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="data-load-text" style="flex:1;min-width:170px">Loading data…</span>
+    <button id="data-load-retry" onclick="retryDataLoad()"
+      style="display:none;background:var(--gold);color:#1e1e1e;border:0;border-radius:6px;
+             padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+      ↻ Retry
+    </button>
+  </div>
+
   <!-- MOBILE FILTER PANEL -->
   <div id="mob-filter-panel" style="display:none;background:var(--card);border-bottom:1px solid var(--border);padding:10px 12px;gap:8px;flex-direction:column">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
@@ -9980,10 +9998,37 @@ function _setSourceLabel(state, extra) {
   el.style.color = s.color;
 }
 
+// Controls the load banner above the page content.
+//   'loading' — a fetch is in flight
+//   'error'   — it failed, with a Retry button
+//   'hide'    — data is in, get out of the way
+// _setSourceLabel alone was not enough: it writes to an element that is not
+// visible on the dashboard itself, so a failure produced no user-facing signal.
+function _setDataBanner(state, msg) {
+  const bar   = document.getElementById('data-load-banner');
+  const text  = document.getElementById('data-load-text');
+  const retry = document.getElementById('data-load-retry');
+  if (!bar || !text || !retry) return;
+  if (state === 'hide') { bar.style.display = 'none'; return; }
+  text.textContent   = msg;
+  retry.style.display = (state === 'error') ? 'inline-block' : 'none';
+  bar.style.borderColor = (state === 'error') ? 'var(--red, #c62828)' : 'var(--gold)';
+  bar.style.background  = (state === 'error') ? 'rgba(198,40,40,.08)' : 'rgba(200,135,0,.09)';
+  bar.style.display  = 'flex';
+}
+
+function retryDataLoad() {
+  _setDataBanner('loading', 'Loading data…');
+  _silentFetch(false);
+}
+
 // Core silent-fetch — used by auto-refresh and manual refresh
 async function _silentFetch(isAutoRefresh) {
   if (!sheetsUrl) return;
   _setSourceLabel('fetching');
+  // Auto-refreshes run behind a dashboard that already has data, so they stay
+  // silent. Only a load the user is waiting on announces itself.
+  if (!isAutoRefresh) _setDataBanner('loading', 'Loading data…');
   try {
     const yearF    = document.getElementById('filter-year')?.value || 'all';
     const yearParam = (yearF && yearF !== 'all') ? '&year=' + yearF : '';
@@ -10005,6 +10050,7 @@ async function _silentFetch(isAutoRefresh) {
     _fetchContracts();
     const ts = '· updated ' + _fmtTime(new Date());
     _setSourceLabel('live', ts);
+    _setDataBanner('hide');
     localStorage.setItem('kitchino_last_fetch', Date.now());
   } catch(err) {
     const lastOk = localStorage.getItem('kitchino_last_fetch');
@@ -10012,10 +10058,18 @@ async function _silentFetch(isAutoRefresh) {
       ? Math.round((Date.now() - parseInt(lastOk)) / 60000) + ' min ago'
       : 'unknown';
     _setSourceLabel('stale', '· last OK ' + ago);
-    if (!isAutoRefresh) {
-      // Only show alert on manual refresh — silent on auto
-      console.warn('Sheets fetch failed:', err.message);
-    }
+    console.warn('Sheets fetch failed:', err.message);
+
+    // Say so on the page. A timeout is the common case on a phone — the feed
+    // sends the whole dataset, which is quick on wi-fi and slow on mobile data.
+    const timedOut = /timed out/i.test(err.message || '');
+    _setDataBanner('error', timedOut
+      ? 'Data did not load — the connection timed out. On mobile data this can take a while.'
+      : 'Data did not load. ' + (err.message || 'Unknown error') + '.');
+
+    // The header must stop saying "Loading…" forever.
+    const lu = document.getElementById('sheet-last-updated');
+    if (lu) lu.textContent = 'not loaded';
   }
 }
 
