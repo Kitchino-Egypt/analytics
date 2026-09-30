@@ -2199,6 +2199,12 @@ if (_checkSession()) {
     <div class="table-header">
       <div class="table-title">Follow-up Dashboard</div>
       <div class="table-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="filter-select" id="fu-whatsnew-btn" onclick="openWhatsNew()"
+          title="What changed since you last looked"
+          style="cursor:pointer;white-space:nowrap;position:relative">✨ What's New
+          <span id="fu-whatsnew-count" style="display:none;margin-left:5px;background:var(--red,#c62828);
+                color:#fff;border-radius:9px;padding:1px 7px;font-size:10px;font-weight:800">0</span>
+        </button>
         <button class="filter-select" id="fu-notes-bell" onclick="openNotesPopup(true)"
           title="Show all notes and reminders" style="cursor:pointer;white-space:nowrap">🔔 Notes</button>
         <button class="filter-select" onclick="openWaNumbers()"
@@ -2336,6 +2342,24 @@ if (_checkSession()) {
         <input type="checkbox" id="fu-notes-mute" onchange="_muteNotesPopup(this.checked)"> Don't show again today
       </label>
       <button onclick="closeNotesPopup()" style="background:var(--k-grey);border:none;color:#fff;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- WHAT'S NEW — what changed since this browser last looked at the page.
+     The comparison is against a snapshot kept in this browser, so it answers
+     "since *I* last looked", not "since the sheet last changed". Two people
+     will correctly see different answers. -->
+<div id="fu-wn-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeWhatsNew()">
+  <div style="background:var(--card);border-radius:14px;padding:24px;width:94%;max-width:620px;max-height:86vh;overflow-y:auto;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-size:16px;font-weight:700;color:var(--text)">✨ What's New</div>
+      <button onclick="closeWhatsNew()" style="background:none;border:0;font-size:20px;cursor:pointer;color:var(--text2)">×</button>
+    </div>
+    <div id="fu-wn-since" style="font-size:11px;color:var(--text2);margin-bottom:16px"></div>
+    <div id="fu-wn-body" style="display:flex;flex-direction:column;gap:18px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
+      <button onclick="markWhatsNewSeen()" style="background:var(--gold);color:#1e1e1e;border:0;border-radius:7px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Mark as seen</button>
     </div>
   </div>
 </div>
@@ -10086,6 +10110,122 @@ async function _silentFetch(isAutoRefresh) {
   }
 }
 
+// ── WHAT'S NEW ──────────────────────────────────────────────────────────────
+// Compares the contracts on screen against a snapshot this browser saved the
+// last time the user pressed "Mark as seen". Two things count as news:
+//   • a contract whose Order ID was not in the snapshot  → new contract
+//   • a contract whose CRM stage differs from the snapshot → it moved
+//
+// The snapshot lives in localStorage, so this answers "since I last looked",
+// not "since the sheet changed". Two people will see different answers, and
+// that is correct — it is a personal reading list, not a company log.
+const _WN_KEY = 'kitchino_fu_seen';
+
+function _wnRead() {
+  try { return JSON.parse(localStorage.getItem(_WN_KEY) || 'null'); }
+  catch (e) { return null; }
+}
+
+function _wnWrite() {
+  const orders = {};
+  CONTRACTS_DATA.forEach(c => { if (c.orderId) orders[String(c.orderId)] = (c.crm || ''); });
+  try { localStorage.setItem(_WN_KEY, JSON.stringify({ at: Date.now(), orders: orders })); }
+  catch (e) { console.warn('[WhatsNew] could not save snapshot:', e.message); }
+}
+
+function _wnDiff() {
+  const snap = _wnRead();
+
+  // First ever run on this browser: record the baseline and report nothing.
+  // Without this the first click would announce all 350-odd existing contracts
+  // as brand new, which is noise, not news.
+  if (!snap || !snap.orders) {
+    if (CONTRACTS_DATA.length) _wnWrite();
+    return { first: true, added: [], moved: [], at: Date.now() };
+  }
+
+  const added = [], moved = [];
+  CONTRACTS_DATA.forEach(c => {
+    if (!c.orderId) return;
+    const before = snap.orders[String(c.orderId)];
+    if (before === undefined)            added.push(c);
+    else if ((c.crm || '') !== before)   moved.push({ row: c, from: before || '—', to: c.crm || '—' });
+  });
+  return { first: false, added, moved, at: snap.at };
+}
+
+function updateWhatsNewBadge() {
+  const d = _wnDiff();
+  const n = d.added.length + d.moved.length;
+  const el = document.getElementById('fu-whatsnew-count');
+  if (!el) return;
+  el.textContent = n;
+  el.style.display = n ? 'inline-block' : 'none';
+}
+
+function openWhatsNew() {
+  const d     = _wnDiff();
+  const body  = document.getElementById('fu-wn-body');
+  const since = document.getElementById('fu-wn-since');
+  const modal = document.getElementById('fu-wn-modal');
+  if (!body || !modal) return;
+  modal.style.display = 'flex';
+
+  const when = new Date(d.at);
+  since.textContent = d.first
+    ? 'First time on this device — starting the clock now. Come back and this will show what moved.'
+    : 'Since ' + when.toLocaleDateString('en-GB', {day:'numeric',month:'short'})
+      + ' at ' + when.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+
+  if (!d.added.length && !d.moved.length) {
+    body.innerHTML = '<div style="padding:26px 0;text-align:center;color:var(--text2);font-size:13px">'
+      + (d.first ? 'Nothing to compare against yet.' : 'Nothing has changed since you last looked.')
+      + '</div>';
+    return;
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+  const section = (title, colour, rows) => rows.length ? ''
+    + '<div>'
+    +   '<div style="font-size:12px;font-weight:800;color:' + colour + ';margin-bottom:8px;'
+    +        'text-transform:uppercase;letter-spacing:.5px">' + title + ' · ' + rows.length + '</div>'
+    +   '<div style="display:flex;flex-direction:column;gap:6px">' + rows.join('') + '</div>'
+    + '</div>' : '';
+
+  const addedRows = d.added.map(c => ''
+    + '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 11px;'
+    +      'background:var(--bg2,var(--bg));border-radius:7px;font-size:12px">'
+    +   '<span style="flex:1;min-width:0"><b>' + esc(c.name || '—') + '</b>'
+    +     '<span style="color:var(--text2)"> · ' + esc(c.orderId) + '</span></span>'
+    +   '<span style="color:var(--text2);white-space:nowrap">' + esc(c.designer || '—') + '</span>'
+    + '</div>');
+
+  const movedRows = d.moved.map(m => ''
+    + '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 11px;'
+    +      'background:var(--bg2,var(--bg));border-radius:7px;font-size:12px">'
+    +   '<span style="flex:1;min-width:0"><b>' + esc(m.row.name || '—') + '</b>'
+    +     '<span style="color:var(--text2)"> · ' + esc(m.row.orderId) + '</span></span>'
+    +   '<span style="white-space:nowrap;color:var(--text2)">' + esc(m.from)
+    +     ' <span style="color:var(--gold)">→</span> <b style="color:var(--text)">' + esc(m.to) + '</b></span>'
+    + '</div>');
+
+  body.innerHTML = section('New contracts', 'var(--green)', addedRows)
+                 + section('Moved stage',   'var(--gold)',  movedRows);
+}
+
+function markWhatsNewSeen() {
+  _wnWrite();
+  updateWhatsNewBadge();
+  closeWhatsNew();
+}
+
+function closeWhatsNew() {
+  const m = document.getElementById('fu-wn-modal');
+  if (m) m.style.display = 'none';
+}
+
 // ── SALES BY SHOWROOM ───────────────────────────────────────────────────────
 // Shows share of value and order count. It never shows an amount, and the
 // sheet never carries one: that sheet is published to the web as CSV, so any
@@ -10241,6 +10381,7 @@ async function _fetchContracts() {
       buildFollowupCharts();
       renderFollowupTable();
       renderShowroomSales();
+      updateWhatsNewBadge();
       updateBadges();
       console.log('[Contracts] Loaded', parsed.length, 'records from CSV,',
                   shares.length, 'showrooms');
