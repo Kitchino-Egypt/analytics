@@ -4612,13 +4612,23 @@ function _loadFromCache() {
 
     const mins = Math.round((Date.now() - c.at) / 60000);
     const age  = mins < 60 ? mins + ' min' : Math.round(mins/60) + ' hr';
-    _showLoadError('Showing saved data from ' + age + ' ago — live sheet unreachable.', true);
+    // Tone matters: this bar sits at the top of a dashboard the CEO reads.
+    // Data a few minutes old is a footnote, not an alarm — "live sheet
+    // unreachable" made a perfectly usable dashboard look broken. Only data
+    // old enough to actually mislead gets the warning treatment.
+    const recent = mins < 30;
+    _showLoadError('Saved data from ' + age + ' ago'
+      + (recent ? '.' : ' — could not reach the live sheet.'), true, recent);
     console.log('[ENGINE] Loaded', ENGINE_CLEAN_ROWS.length, 'rows from cache');
     return true;
   } catch (e) { console.warn('[Cache] load failed:', e.message); return false; }
 }
 
-function _showLoadError(msg, cached) {
+// Three tones, because the same bar covers three quite different situations:
+//   quiet  — cached data only minutes old. A note, not a problem.
+//   cached — cached data old enough to mislead. A warning.
+//   error  — nothing loaded at all. A failure.
+function _showLoadError(msg, cached, quiet) {
   let bar = document.getElementById('load-error-bar');
   if (!bar) {
     bar = document.createElement('div');
@@ -4629,11 +4639,14 @@ function _showLoadError(msg, cached) {
     if (host && host.parentNode) host.parentNode.insertBefore(bar, host.nextSibling);
     else document.body.insertBefore(bar, document.body.firstChild);
   }
-  bar.style.background = cached ? 'rgba(194,161,92,0.12)' : 'var(--negative-soft)';
-  bar.style.color      = cached ? 'var(--k-gold-d)'       : 'var(--negative)';
-  bar.innerHTML = '<span>' + (cached ? '⚠' : '✕') + '</span><span>' + msg + '</span>'
+  bar.style.background = quiet ? 'transparent'
+                       : cached ? 'rgba(194,161,92,0.12)' : 'var(--negative-soft)';
+  bar.style.color      = quiet ? 'var(--text2)'
+                       : cached ? 'var(--k-gold-d)'       : 'var(--negative)';
+  const icon = quiet ? '🕐' : cached ? '⚠' : '✕';
+  bar.innerHTML = '<span>' + icon + '</span><span>' + msg + '</span>'
     + '<button onclick="_retryLoad()" style="margin-left:auto;background:none;border:1px solid currentColor;'
-    + 'color:inherit;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px">Retry now</button>';
+    + 'color:inherit;padding:4px 12px;border-radius:6px;cursor:pointer;font-size:11px;opacity:.85">Refresh</button>';
 }
 
 function _retryLoad() {
