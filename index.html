@@ -7328,11 +7328,18 @@ function renderFollowupTable() {
   const _CRM_NORM = {'تعاقد':'contracted','اوتو':'oto','تسليم':'delivered','ميكانيك':'electromechanic','technical office':'oto','tecnical office':'oto','technical  office':'oto','المكتب الفني':'oto','المكتب الفنى':'oto','مكتب فني':'oto','مكتب فنى':'oto'};
 
   // ── Apply main topbar filters to CONTRACTS_DATA ─────────────────────────
-  // Month filter is intentionally excluded: the follow-up page shows ALL active
-  // contracts for a designer/year — filtering by contract-signed month would
-  // hide customers who are still in progress from earlier months.
   const _mainYear = document.getElementById('filter-year')?.value  || 'all';
   const _mainDes  = document.getElementById('filter-designer')?.value || 'all';
+  const _mainMon  = document.getElementById('filter-month')?.value || 'all';
+  // The month dropdown holds full month names ("September"), matching the rest
+  // of the portal. Contract dates arrive as M/D/YYYY strings.
+  const _MN = ['January','February','March','April','May','June',
+               'July','August','September','October','November','December'];
+  const _monthOf = d => {
+    if (!d) return '';
+    const t = new Date(d);
+    return isNaN(t.getTime()) ? '' : _MN[t.getMonth()];
+  };
   const _parseCYear = d => {
     if (!d) return null;
     const m4 = d.match(/(\d{4})/); return m4 ? m4[1] : null;
@@ -7350,6 +7357,10 @@ function renderFollowupTable() {
       const cy = _parseCYear(c.date);
       if (cy && cy !== _mainYear) return false;
     }
+    // Month filters on the contract date. Unlike the year filter above, an
+    // undated contract is DROPPED when a month is chosen — keeping it would
+    // add the same rows to every month and quietly inflate all twelve.
+    if (_mainMon !== 'all' && _monthOf(c.date) !== _mainMon) return false;
     if (_fuLo !== null || _fuHi !== null) {
       const t = c.date ? new Date(c.date).getTime() : NaN;
       // Undated contracts are kept, matching the Year filter's behaviour above.
@@ -9673,17 +9684,17 @@ function _govDetail(gov) {
 // Greys out the topbar filters that a page cannot honour, so a dropdown never
 // sits there looking live while being ignored.
 //
-// Contracted Customers Follow-up ignores two of them:
-//   • Month — the page tracks contracts still in progress, so a customer who
-//     signed in April and is still in Production must stay visible when August
-//     is picked. Filtering by signed-month would hide exactly the people the
-//     page exists to chase.
+// Contracted Customers Follow-up ignores one of them:
 //   • Area — the contracts feed carries no location field at all.
-// Everything else (Year, Designer, Period) applies normally.
+//
+// Month was greyed out here until 3 October 2026, on the reasoning that a
+// customer who signed in April and is still in Production should stay visible
+// when August is picked. Nabila asked for it back: she wants the page to answer
+// "what was signed this month" as well. It now filters on contract date like
+// every other page.
 const _FILTERS_NA = {
   followup: {
-    'filter-month': 'Not used here — this page tracks contracts still in progress, whichever month they were signed',
-    'filter-area':  'Not used here — the contracts feed has no area field'
+    'filter-area': 'Not used here — the contracts feed has no area field'
   }
 };
 
