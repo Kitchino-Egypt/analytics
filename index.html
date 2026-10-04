@@ -7400,10 +7400,15 @@ function renderFollowupTable() {
     return true;
   });
 
+  // Drafts are recorded but never counted. They stay in the table below so a
+  // row never silently vanishes, but every KPI, chart and share on this page is
+  // built from the counted set.
+  const _COUNTED = _mainFiltered.filter(c => c.cgStatus !== 'DRAFT');
+
   // Published for the charts, which are rebuilt at the end of this function.
   // Before this existed they read CONTRACTS_DATA directly and so ignored every
   // filter — the KPI cards would move while the doughnut beside them did not.
-  _FU_FILTERED = _mainFiltered;
+  _FU_FILTERED = _COUNTED;
 
   const filter = document.getElementById('fu-aging-filter')?.value || 'all';
   const search = (document.getElementById('global-search')?.value || '').toLowerCase().trim();
@@ -7494,9 +7499,17 @@ function renderFollowupTable() {
       const _rowStyle = _isDeclined
         ? ' style="opacity:.5"'
         : '';
-      const _nameCell = _isDeclined
+      // A draft is listed but not counted, so it must say so. Otherwise the
+      // table shows 50 rows while the card above reads 46 and nothing explains
+      // the gap.
+      const _draftTag = c.cgStatus === 'DRAFT'
+        ? ' <span style="font-size:9px;font-weight:800;letter-spacing:.5px;padding:1px 6px;'
+          + 'border-radius:8px;background:rgba(0,0,0,.07);color:var(--text2);'
+          + 'vertical-align:middle" title="Cash Gear draft — listed but not counted">DRAFT</span>'
+        : '';
+      const _nameCell = (_isDeclined
         ? `<span style="text-decoration:line-through;text-decoration-thickness:1px">${c.name}</span>`
-        : c.name;
+        : c.name) + _draftTag;
       const _ageCell = _isDeclined
         ? '<span class="muted">—</span>'
         : `<span class="badge ${ageClass}">${c.age} days</span>`;
@@ -7533,19 +7546,20 @@ function renderFollowupTable() {
     if (el) el.innerHTML = rowsHtml;
   });
 
-  // Update KPIs on follow-up page
-  const _fuND        = _mainFiltered.filter(c => (c.crm||'').toLowerCase() !== 'declined');
-  const _fuTotal     = _mainFiltered.length;  // all orders including declined
+  // Update KPIs on follow-up page — all built from _COUNTED, which excludes
+  // Cash Gear drafts. August 2026: 50 rows in the sheet, 4 drafts, 46 counted.
+  const _fuND        = _COUNTED.filter(c => (c.crm||'').toLowerCase() !== 'declined');
+  const _fuTotal     = _COUNTED.length;  // counted orders, including declined
   const _isInvFU     = c => c.status === 'فاتورة' || c.status === 'اضافات';
-  const _fuContracts = _mainFiltered.filter(c => !_isInvFU(c)).length;
-  const _fuInvoice   = _mainFiltered.filter(c => _isInvFU(c)).length;
+  const _fuContracts = _COUNTED.filter(c => !_isInvFU(c)).length;
+  const _fuInvoice   = _COUNTED.filter(c => _isInvFU(c)).length;
   const _fuSafe      = _fuND.filter(c => c.safe).length;  // safe = non-declined safe orders
   const _fuOverdue   = _fuND.filter(c => !c.safe).length; // active but not yet safe
   // Distinct customers behind those orders. Names are normalised (case and
   // internal spacing) before counting, otherwise "Ahmed  Ali" and "ahmed ali"
   // would count twice. One customer with three orders counts once, which is
   // why this number is lower than Total Sales Orders.
-  const _fuCustSet = new Set(_mainFiltered.map(_custKey).filter(Boolean));
+  const _fuCustSet = new Set(_COUNTED.map(_custKey).filter(Boolean));
   const _fuCustomers = _fuCustSet.size;
 
   const _setFu = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
@@ -7562,11 +7576,11 @@ function renderFollowupTable() {
   _setFu('fu-overdue-sub',   _fuTotal > 0 ? Math.round(_fuOverdue/_fuTotal*100)+'% of total' : 'not in safe zone');
   _setFu('fu-safe',          _fuSafe);
   _setFu('fu-safe-sub',      _fuTotal > 0 ? Math.round(_fuSafe/_fuTotal*100)+'% in safe stages' : 'Technical Office → Delivered');
-  // CRM Status Pipeline
+  // CRM Status Pipeline (element removed 4 Oct, this now no-ops)
   const _crmMap = {};
-  _mainFiltered.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
+  _COUNTED.forEach(c => { let k=(c.crm||'').trim().toLowerCase(); k=_CRM_NORM[k]||k||'unknown'; _crmMap[k]=(_crmMap[k]||0)+1; });
   // Populate designer dropdown from live data
-  const _fuDes = [...new Set(_mainFiltered.map(c=>c.designer).filter(Boolean))].sort();
+  const _fuDes = [...new Set(_COUNTED.map(c=>c.designer).filter(Boolean))].sort();
   const _fuDesSel = document.getElementById('fu-designer-filter');
   if (_fuDesSel) { const _cur=_fuDesSel.value; _fuDesSel.innerHTML='<option value="all">All Designers</option>'+_fuDes.map(d=>`<option value="${d}" ${d===_cur?'selected':''}>${d}</option>`).join(''); }
   // Populate designer tabs bar
@@ -7574,7 +7588,7 @@ function renderFollowupTable() {
   if (_tabsBar) {
     const _tabBase = 'display:inline-flex;align-items:center;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);transition:all .15s;white-space:nowrap';
     _tabsBar.innerHTML = _fuDes.map(d => {
-      const cnt = _mainFiltered.filter(c => c.designer === d).length;
+      const cnt = _COUNTED.filter(c => c.designer === d).length;
       return `<div style="${_tabBase}" onclick="openFuDesModal('${d.replace(/'/g,"\'")}')" onmouseenter="this.style.background='var(--gold)';this.style.color='#1e1e1e';this.style.borderColor='var(--gold)'" onmouseleave="this.style.background='';this.style.color='';this.style.borderColor='var(--border)'">
         ${d} <span style="margin-left:6px;background:var(--bg2,var(--bg));border-radius:10px;padding:1px 7px;font-size:11px">${cnt}</span>
       </div>`;
@@ -10516,7 +10530,14 @@ async function _fetchContracts() {
           crmCode,
           age:      parseInt(r['Contract Age (Days)']) || 0,
           aging:    r['Aging Category'] || '',
-          safe:     SAFE_CRM_SET.has((crmStatus||crmCode).toLowerCase())
+          safe:     SAFE_CRM_SET.has((crmStatus||crmCode).toLowerCase()),
+          // Cash Gear's own state: APPROVED, CONFIRMED or DRAFT.
+          // Rule, set 20 Sept 2026: record every order, count APPROVED and
+          // CONFIRMED, exclude DRAFT. A draft is not a sale yet.
+          // August 2026 is the worked example — 50 rows in the sheet, 4 drafts,
+          // 46 counted (36 contracts + 10 اضافات). The portal read 50 until
+          // this was added, which is what Nabila spotted on 4 October.
+          cgStatus: String(r['Sales Order C.G Status'] || '').trim().toUpperCase()
         };
       });
     // Showroom shares ride along in three columns on the first few rows. They
