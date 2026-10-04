@@ -2363,6 +2363,17 @@ if (_checkSession()) {
   </div>
 </div>
 
+<!-- Six-month delivery detail — opened by clicking any figure on that card. -->
+<div id="fu-6m-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeSixMonthList()">
+  <div style="background:var(--card);border-radius:14px;padding:22px;width:94%;max-width:660px;max-height:86vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div id="fu-6m-modal-title" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+      <button onclick="closeSixMonthList()" style="background:none;border:0;font-size:20px;cursor:pointer;color:var(--text2)">×</button>
+    </div>
+    <div id="fu-6m-modal-body"></div>
+  </div>
+</div>
+
 <!-- WHAT'S NEW — what changed since this browser last looked at the page.
      The comparison is against a snapshot kept in this browser, so it answers
      "since *I* last looked", not "since the sheet last changed". Two people
@@ -10282,17 +10293,26 @@ function renderSixMonth() {
   const col   = rate >= 70 ? '#1baf7a' : rate >= 50 ? '#eda100' : '#e34948';
   const arc   = Math.max(1.5, rate);
 
-  const stat = (label, value, note) => ''
-    + '<div style="flex:1 1 130px;min-width:130px">'
-    +   '<div style="font-size:10px;letter-spacing:.7px;text-transform:uppercase;'
-    +        'color:var(--text2);margin-bottom:5px">' + label + '</div>'
-    +   '<div style="font-size:21px;font-weight:800;color:var(--text);line-height:1">' + value + '</div>'
-    +   (note ? '<div style="font-size:11px;color:var(--text2);margin-top:3px">' + note + '</div>' : '')
-    + '</div>';
+  // Each figure opens the matching list. `key` selects which contracts the
+  // modal shows; a count of 0 is not clickable.
+  const stat = (label, value, note, key) => {
+    const n    = parseInt(value, 10) || 0;
+    const live = n > 0 && key;
+    return '<div onclick="' + (live ? 'openSixMonthList(\'' + key + '\')' : '') + '"'
+      + ' style="flex:1 1 130px;min-width:130px;' + (live ? 'cursor:pointer' : '') + '"'
+      + (live ? ' title="Click to see the contracts"' : '') + '>'
+      + '<div style="font-size:10px;letter-spacing:.7px;text-transform:uppercase;'
+      +      'color:var(--text2);margin-bottom:5px">' + label + '</div>'
+      + '<div style="font-size:21px;font-weight:800;line-height:1;'
+      +      'color:' + (live ? 'var(--gold)' : 'var(--text)') + '">' + n + '</div>'
+      + (note ? '<div style="font-size:11px;color:var(--text2);margin-top:3px">' + note + '</div>' : '')
+      + '</div>';
+  };
 
   host.innerHTML =
     '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:26px;padding:20px 18px 16px">'
-    +   '<div style="width:124px;height:124px;border-radius:50%;flex:none;display:flex;'
+    +   '<div onclick="openSixMonthList(\'ontime\')" title="Click to see the contracts"'
+    +        ' style="width:124px;height:124px;border-radius:50%;flex:none;display:flex;cursor:pointer;'
     +        'align-items:center;justify-content:center;background:conic-gradient('
     +        col + ' 0 ' + arc + '%, rgba(0,0,0,.065) ' + arc + '% 100%)">'
     +     '<div style="width:94px;height:94px;border-radius:50%;background:var(--card,#fff);'
@@ -10304,11 +10324,10 @@ function renderSixMonth() {
     +     '</div>'
     +   '</div>'
     +   '<div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:20px">'
-    +     stat('Measured', d.eligible, 'signed 183+ days ago')
-    +     + stat('Delivered in time', d.ontime, 'within 183 days')
-    +     + stat('Delivered late', d.late, 'over 183 days')
-    +     + stat('Never delivered', d.undelivered,
-    +            '<b style="color:var(--red,#c62828)">still open</b>')
+    +     stat('Measured', d.eligible, 'signed 183+ days ago', 'all')
+    +     stat('Delivered in time', d.ontime, 'within 183 days', 'ontime')
+    +     stat('Delivered late', d.late, 'over 183 days', 'late')
+    +     stat('Never delivered', d.undelivered, 'still open', 'open')
     +   '</div>'
     + '</div>'
     + '<div style="border-top:1px solid var(--line);padding:10px 16px;font-size:11px;'
@@ -10316,6 +10335,51 @@ function renderSixMonth() {
     +   '<span>Median ' + (d.median || '—') + ' days for those delivered</span>'
     +   '<span>Only contracts carrying a CRM Code can be traced to a delivery</span>'
     + '</div>';
+}
+
+// Detail rows for the four lists, carried alongside the contracts feed.
+const SIXMONTH_ROWS = [];
+
+function openSixMonthList(key) {
+  const TITLES = {
+    all:    'All measured contracts',
+    ontime: 'Delivered within 6 months',
+    late:   'Delivered late — over 183 days',
+    open:   'Never delivered — still open'
+  };
+  const rows = SIXMONTH_ROWS.filter(r =>
+      key === 'all'    ? true
+    : key === 'ontime' ? (r.days !== '' && +r.days >= 0 && +r.days <= 183)
+    : key === 'late'   ? (r.days !== '' && +r.days > 183)
+    :                    (r.days === ''));
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+  document.getElementById('fu-6m-modal-title').textContent =
+    (TITLES[key] || '') + ' — ' + rows.length;
+
+  document.getElementById('fu-6m-modal-body').innerHTML = rows.length
+    ? '<table style="width:100%;font-size:12px;border-collapse:collapse">'
+      + '<thead><tr style="text-align:left;color:var(--text2);font-size:11px">'
+      +   '<th style="padding:6px 8px">Customer</th><th style="padding:6px 8px">Order</th>'
+      +   '<th style="padding:6px 8px">Signed</th><th style="padding:6px 8px">Days</th></tr></thead><tbody>'
+      + rows.map(r => '<tr style="border-top:1px solid var(--line)">'
+          + '<td style="padding:7px 8px">' + esc(r.name) + '</td>'
+          + '<td style="padding:7px 8px;color:var(--text2)">' + esc(r.orderId) + '</td>'
+          + '<td style="padding:7px 8px;color:var(--text2)">' + esc(r.signed) + '</td>'
+          + '<td style="padding:7px 8px"><b style="color:'
+          +   (r.days === '' ? 'var(--red,#c62828)' : +r.days <= 183 ? 'var(--green)' : 'var(--gold)')
+          +   '">' + (r.days === '' ? 'not delivered' : r.days + ' d') + '</b></td></tr>').join('')
+      + '</tbody></table>'
+    : '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px">Nothing in this group.</div>';
+
+  document.getElementById('fu-6m-modal').style.display = 'flex';
+}
+
+function closeSixMonthList() {
+  const m = document.getElementById('fu-6m-modal');
+  if (m) m.style.display = 'none';
 }
 
 // ── SALES BY SHOWROOM ───────────────────────────────────────────────────────
@@ -10467,12 +10531,23 @@ async function _fetchContracts() {
       }));
     SHOWROOM_DATA.splice(0, SHOWROOM_DATA.length, ...shares);
 
-    // Six-month delivery figures ride in two columns as label/value pairs.
+    // Six-month delivery figures ride in two columns as label/value pairs,
+    // and the per-contract detail in four more.
     Object.keys(SIXMONTH_DATA).forEach(k => delete SIXMONTH_DATA[k]);
+    const sixRows = [];
     rows.forEach(r => {
       const k = String(r['6M KPI Label'] || '').trim();
       if (k) SIXMONTH_DATA[k] = String(r['6M KPI Value'] || '').trim();
+
+      const nm = String(r['6M Name'] || '').trim();
+      if (nm) sixRows.push({
+        name:    nm,
+        orderId: String(r['6M Order']  || '').trim(),
+        signed:  String(r['6M Signed'] || '').trim(),
+        days:    String(r['6M Days']   || '').trim()
+      });
     });
+    SIXMONTH_ROWS.splice(0, SIXMONTH_ROWS.length, ...sixRows);
 
     if (parsed.length) {
       CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...parsed);
