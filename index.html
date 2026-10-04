@@ -2160,10 +2160,27 @@ if (_checkSession()) {
     </div>
   </div>
 
-  <!-- CRM Status Pipeline -->
+  <!-- CRM Status Pipeline removed 4 Oct 2026 at Nabila's request.
+       The code that fills it is still in renderFollowupTable and guards on
+       `if (_crmEl)`, so it simply does nothing now. To bring the cards back,
+       restore this block:
+         <div class="table-card" style="margin-bottom:16px">
+           <div class="table-header"><div class="table-title">CRM Status Pipeline</div></div>
+           <div id="fu-crm-pipeline" style="display:block;padding:12px 16px"></div>
+         </div> -->
+
+  <!-- DELIVERED WITHIN 6 MONTHS — on-time delivery against the contract date.
+       The denominator is contracts signed more than 183 days ago, so a contract
+       that was never delivered counts as a miss. Measuring only delivered
+       contracts would read 95% while 26 orders sat stuck. -->
   <div class="table-card" style="margin-bottom:16px">
-    <div class="table-header"><div class="table-title">CRM Status Pipeline</div></div>
-    <div id="fu-crm-pipeline" style="display:block;padding:12px 16px"></div>
+    <div class="table-header">
+      <div class="table-title">Delivered Within 6 Months</div>
+      <div class="table-actions" style="font-size:11px;color:var(--text2)">
+        contracts signed 183+ days ago
+      </div>
+    </div>
+    <div id="fu-sixmonth"></div>
   </div>
 
   <!-- Sales By Showroom — share and order count only, never a value.
@@ -10237,6 +10254,70 @@ function closeWhatsNew() {
   if (m) m.style.display = 'none';
 }
 
+// ── DELIVERED WITHIN 6 MONTHS ───────────────────────────────────────────────
+// On-time delivery measured against the contract date.
+//
+// The denominator is deliberately harsh: every contract signed more than 183
+// days ago, whether or not it was ever delivered. A contract still sitting in
+// production after a year counts as a miss, because it is one. Measuring only
+// delivered contracts would report 95% while 26 orders were stuck — the number
+// would be true and useless.
+//
+// Fed by two columns the sheet carries: "6M KPI Label" and "6M KPI Value".
+const SIXMONTH_DATA = {};
+
+function renderSixMonth() {
+  const host = document.getElementById('fu-sixmonth');
+  if (!host) return;
+
+  const d = SIXMONTH_DATA;
+  if (!d.eligible) {
+    host.innerHTML = '<div style="padding:14px 16px;font-size:12px;color:var(--text2)">'
+      + 'No figures in the sheet yet.</div>';
+    return;
+  }
+
+  const rate  = parseFloat(d.rate) || 0;
+  // Colour by performance, not by brand. Anything under half is a red number.
+  const col   = rate >= 70 ? '#1baf7a' : rate >= 50 ? '#eda100' : '#e34948';
+  const arc   = Math.max(1.5, rate);
+
+  const stat = (label, value, note) => ''
+    + '<div style="flex:1 1 130px;min-width:130px">'
+    +   '<div style="font-size:10px;letter-spacing:.7px;text-transform:uppercase;'
+    +        'color:var(--text2);margin-bottom:5px">' + label + '</div>'
+    +   '<div style="font-size:21px;font-weight:800;color:var(--text);line-height:1">' + value + '</div>'
+    +   (note ? '<div style="font-size:11px;color:var(--text2);margin-top:3px">' + note + '</div>' : '')
+    + '</div>';
+
+  host.innerHTML =
+    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:26px;padding:20px 18px 16px">'
+    +   '<div style="width:124px;height:124px;border-radius:50%;flex:none;display:flex;'
+    +        'align-items:center;justify-content:center;background:conic-gradient('
+    +        col + ' 0 ' + arc + '%, rgba(0,0,0,.065) ' + arc + '% 100%)">'
+    +     '<div style="width:94px;height:94px;border-radius:50%;background:var(--card,#fff);'
+    +          'display:flex;flex-direction:column;align-items:center;justify-content:center">'
+    +       '<b style="font-size:23px;font-weight:900;line-height:1;color:' + col + '">'
+    +         rate.toFixed(1) + '%</b>'
+    +       '<span style="font-size:9px;letter-spacing:.7px;text-transform:uppercase;'
+    +            'color:var(--text2);margin-top:3px">on time</span>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:20px">'
+    +     stat('Measured', d.eligible, 'signed 183+ days ago')
+    +     + stat('Delivered in time', d.ontime, 'within 183 days')
+    +     + stat('Delivered late', d.late, 'over 183 days')
+    +     + stat('Never delivered', d.undelivered,
+    +            '<b style="color:var(--red,#c62828)">still open</b>')
+    +   '</div>'
+    + '</div>'
+    + '<div style="border-top:1px solid var(--line);padding:10px 16px;font-size:11px;'
+    +      'color:var(--text2);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">'
+    +   '<span>Median ' + (d.median || '—') + ' days for those delivered</span>'
+    +   '<span>Only contracts carrying a CRM Code can be traced to a delivery</span>'
+    + '</div>';
+}
+
 // ── SALES BY SHOWROOM ───────────────────────────────────────────────────────
 // Shows share of value and order count. It never shows an amount, and the
 // sheet never carries one: that sheet is published to the web as CSV, so any
@@ -10386,12 +10467,20 @@ async function _fetchContracts() {
       }));
     SHOWROOM_DATA.splice(0, SHOWROOM_DATA.length, ...shares);
 
+    // Six-month delivery figures ride in two columns as label/value pairs.
+    Object.keys(SIXMONTH_DATA).forEach(k => delete SIXMONTH_DATA[k]);
+    rows.forEach(r => {
+      const k = String(r['6M KPI Label'] || '').trim();
+      if (k) SIXMONTH_DATA[k] = String(r['6M KPI Value'] || '').trim();
+    });
+
     if (parsed.length) {
       CONTRACTS_DATA.splice(0, CONTRACTS_DATA.length, ...parsed);
       _contractsLoadedAt = Date.now();
       buildFollowupCharts();
       renderFollowupTable();
       renderShowroomSales();
+      renderSixMonth();
       updateWhatsNewBadge();
       updateBadges();
       console.log('[Contracts] Loaded', parsed.length, 'records from CSV,',
