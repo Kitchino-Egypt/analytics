@@ -7856,11 +7856,24 @@ function renderMeasuresTable() {
     return true;
   });
 
-  // ── No Pay count: rows with no positive payment recorded ─────────────────
-  var _noPayRows = displayRows.filter(function(r) {
-    var n = parseFloat(String(r.payment || '').replace(/,/g,''));
-    return !(n > 0);
+  // ── No Pay: customers not marked "Paid" in استثناءات سداد (column J) ──────
+  // Column J is the source of truth for whether a customer paid — NOT the
+  // amount in column H. A multi-room order books its deposit once, on the lead
+  // line, so the sibling room lines carry 0 while still being "Paid". Reading
+  // the amount reported 89 for September 2026; reading column J is correct.
+  // Anything other than "Paid" — عميل متعاقد, عميل مكتب هندسي, الادارة, a
+  // voucher, a named approver, or blank — means no payment was collected.
+  // Counted per customer, which is what the card says. (5 Oct 2026)
+  var _npByCust = {};
+  displayRows.forEach(function(r) {
+    var key  = String(r.customer || '').trim() || '—';
+    var note = String(r.paymentNote || '').trim();
+    var c    = _npByCust[key] || (_npByCust[key] = { paid:false, first:r });
+    if (note.toLowerCase() === 'paid') c.paid = true;
   });
+  var _noPayRows = Object.keys(_npByCust)
+    .filter(function(k){ return !_npByCust[k].paid; })
+    .map(function(k){ return _npByCust[k].first; });
   var noPayEl = document.getElementById('mt-nopay');
   if (noPayEl) noPayEl.textContent = _noPayRows.length.toLocaleString();
   // Stash for modal use
@@ -11289,7 +11302,8 @@ function showNoPayList() {
   const modal = document.getElementById('nopay-modal');
   if (!modal) return;
   const sub = document.getElementById('nopay-subtitle');
-  if (sub) sub.textContent = rows.length + ' customer record' + (rows.length!==1?'s':'') + ' with no payment';
+  if (sub) sub.textContent = rows.length + ' customer' + (rows.length!==1?'s':'')
+    + ' not marked Paid in استثناءات سداد';
 
   // Sort: contracted first, then by customer name
   const STATUS_ORDER = {'تعاقد':0,'مناقشة':1,'الغاء':2};
