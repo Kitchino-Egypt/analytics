@@ -2183,18 +2183,18 @@ if (_checkSession()) {
     <div id="fu-sixmonth"></div>
   </div>
 
-  <!-- Sales By Showroom — share and order count only, never a value.
-       The contracts sheet is published to the web, so any figure written into
-       it is public. The money stays in the Excel workbook. -->
-  <div class="table-card" style="margin-bottom:16px">
-    <div class="table-header">
-      <div class="table-title">Sales By Showroom</div>
-      <div class="table-actions" style="font-size:11px;color:var(--text2)">
-        share of value · drafts excluded
-      </div>
-    </div>
-    <div id="fu-showroom"></div>
-  </div>
+  <!-- Sales By Showroom removed 4 Oct 2026 at Nabila's request.
+       renderShowroomSales() still exists and guards on `if (!host) return`,
+       so it simply does nothing. To bring it back, restore this block:
+         <div class="table-card" style="margin-bottom:16px">
+           <div class="table-header">
+             <div class="table-title">Sales By Showroom</div>
+             <div class="table-actions" style="font-size:11px;color:var(--text2)">
+               share of value · drafts excluded
+             </div>
+           </div>
+           <div id="fu-showroom"></div>
+         </div> -->
 
   <div class="chart-grid chart-2">
     <div class="chart-card">
@@ -9917,8 +9917,14 @@ function _updateSheetTimestamp(isoOrNull) {
   KITCHINO_STATE._sheetLastUpdated = dt;
 }
 
+// Calls still in flight, keyed by callbackName. A second request with the same
+// name (auto-refresh landing on top of a slow first load, or the user pressing
+// Retry) joins the one already running instead of tearing its script out.
+const _JSONP_INFLIGHT = {};
+
 function jsonpFetch(url, callbackName, timeoutMs) {
-  return new Promise((resolve, reject) => {
+  if (_JSONP_INFLIGHT[callbackName]) return _JSONP_INFLIGHT[callbackName];
+  const p = new Promise((resolve, reject) => {
     // Each request gets its OWN script element keyed by callbackName.
     // This allows concurrent JSONP calls (e.g. getAllRows + getContracts)
     // without scripts overwriting each other.
@@ -9932,8 +9938,13 @@ function jsonpFetch(url, callbackName, timeoutMs) {
     function cleanup() {
       clearTimeout(timer);
       delete window[callbackName];
+      delete _JSONP_INFLIGHT[callbackName];
       const old = document.getElementById(scriptId);
-      if (old && old.parentNode) old.parentNode.removeChild(old);
+      // Detach onerror BEFORE removing. Chrome fires `error` on a <script> that
+      // is torn out of the DOM while still loading; with the handler still
+      // attached that surfaced as "Script load failed — check the URL" even
+      // though the endpoint was healthy and simply slow. (5 Oct 2026)
+      if (old) { old.onerror = null; if (old.parentNode) old.parentNode.removeChild(old); }
     }
 
     window[callbackName] = function(data) {
@@ -9941,9 +9952,10 @@ function jsonpFetch(url, callbackName, timeoutMs) {
       resolve(data);
     };
 
-    // Remove any stale script with this same callback (e.g. from a previous timed-out call)
+    // Remove any stale script with this same callback (e.g. from a previous timed-out call).
+    // Same reason as above: drop its handler first so removing it stays silent.
     const stale = document.getElementById(scriptId);
-    if (stale && stale.parentNode) stale.parentNode.removeChild(stale);
+    if (stale) { stale.onerror = null; if (stale.parentNode) stale.parentNode.removeChild(stale); }
 
     const sep = url.includes('?') ? '&' : '?';
     const script = document.createElement('script');
@@ -9952,6 +9964,8 @@ function jsonpFetch(url, callbackName, timeoutMs) {
     script.onerror = () => { cleanup(); reject(new Error('Script load failed — check the URL')); };
     document.head.appendChild(script);
   });
+  _JSONP_INFLIGHT[callbackName] = p;
+  return p;
 }
 
 async function connectGoogleSheets() {
