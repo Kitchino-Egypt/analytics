@@ -2815,8 +2815,15 @@ if (_checkSession()) {
     </div>
     <!-- Supply → install start lag distribution -->
     <div class="chart-card" style="margin-bottom:16px">
-      <div class="chart-title">Waiting Time — Supply to Installation Start</div>
-      <div class="chart-subtitle" id="inst-lag-sub">How long materials wait before installation begins</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div>
+          <div class="chart-title">Waiting Time — Supply to Installation Start</div>
+          <div class="chart-subtitle" id="inst-lag-sub">How long materials wait before installation begins</div>
+        </div>
+        <button onclick="_instExportLag()" title="Download every order behind these bars, with customer names and its waiting band"
+                style="padding:6px 11px;border:1px solid var(--green,#10b981);background:transparent;color:var(--green,#10b981);
+                       border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">⬇ Export Excel</button>
+      </div>
       <div id="inst-lag-dist" style="margin-top:14px"></div>
     </div>
 
@@ -15727,6 +15734,74 @@ function _instLagDays(r) {
   var d = Math.round((st - sup) / 86400000);
   // A start before supply is a data-entry error, not a negative wait
   return d < 0 ? null : d;
+}
+
+// ── Export the orders behind the waiting-time bars ────────────────────────
+// The chart says 11 orders waited over 60 days; this says WHICH 11, by name.
+// Each row carries its waiting band, so filtering the file to "Over 60 days"
+// in Excel reproduces the red bar exactly.
+// Uses _instLagDays — the same function the chart buckets on — so the 400 of
+// 428 records with both dates are precisely the rows exported; the 28 missing
+// a supply or start date are left out, as the subtitle says. (6 Oct 2026)
+function _instExportLag() {
+  if (!_INST_DATA) { alert('Installation data has not loaded yet.'); return; }
+
+  var rows = _instMainFiltered(_INST_DATA);
+  var band = function (d) {
+    if (d === 0)  return 'Same day';
+    if (d <= 7)   return '1-7 days';
+    if (d <= 14)  return '8-14 days';
+    if (d <= 30)  return '15-30 days';
+    if (d <= 60)  return '31-60 days';
+    return 'Over 60 days';
+  };
+
+  var out = [];
+  rows.forEach(function (r) {
+    var d = _instLagDays(r);
+    if (d === null) return;
+    out.push({ days: d, band: band(d), row: r });
+  });
+
+  if (!out.length) { alert('No records with both a supply date and an installation start date.'); return; }
+
+  // Longest wait first — the whole point of opening this file.
+  out.sort(function (a, b) { return b.days - a.days; });
+
+  var techKey = (typeof _instTechKey === 'function') ? _instTechKey(rows) : 'فني التركيب';
+  var pick = function (r, k) {
+    if (r[k] !== undefined) return r[k];
+    var a1 = k.replace(/ي/g, 'ى'); if (r[a1] !== undefined) return r[a1];
+    var a2 = k.replace(/ى/g, 'ي'); return r[a2] !== undefined ? r[a2] : '';
+  };
+  var esc = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+
+  var header = ['أيام الانتظار','الفئة','العميل','المنتج','رقم المشروع','العنوان',
+                'الحالة','فني التركيب','تاريخ التوريد','تاريخ بداية التركيب','تاريخ التسليم'];
+  var csv = header.map(esc).join(',') + '\n';
+
+  out.forEach(function (o) {
+    var r = o.row;
+    csv += [ esc(o.days),
+             esc(o.band),
+             esc(pick(r, 'العميل')),
+             esc(pick(r, 'المنتج')),
+             esc(pick(r, 'رقم المشروع')),
+             esc(pick(r, 'العنوان')),
+             esc(pick(r, 'الحالة')),
+             esc(pick(r, techKey) || pick(r, 'فني التركيب')),
+             esc(pick(r, 'تاريخ التوريد')),
+             esc(pick(r, 'تاريخ بداية التركيب')),
+             esc(pick(r, 'تاريخ التسليم')) ].join(',') + '\n';
+  });
+
+  var stamp = new Date().toISOString().slice(0, 10);
+  var blob  = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kitchino_waiting_time_' + stamp + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 function _instRenderLag(rows) {
