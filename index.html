@@ -2914,6 +2914,9 @@ if (_checkSession()) {
             <option value="">فني التركيب</option>
           </select>
           <button onclick="_instClearFilters()" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text3);font-size:11px;cursor:pointer">Clear</button>
+          <button onclick="_instExportTable()" title="Download the filtered rows as a spreadsheet"
+                  style="padding:6px 11px;border:1px solid var(--green,#10b981);background:transparent;color:var(--green,#10b981);
+                         border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">⬇ Export Excel</button>
         </div>
       </div>
       <div style="overflow-x:auto">
@@ -14932,6 +14935,54 @@ function _instOpenModal(status) {
 // being open or the table being paginated.
 // A UTF-8 BOM is prepended: without it Excel opens Arabic names as mojibake,
 // which is the usual reason a working export looks broken.
+// Exports the Installation Records table. Built from _instFilteredRows, so it
+// honours every filter (search, status, product, area, technician) AND spans
+// all pages — the table itself paginates at 100 rows, and scraping the DOM
+// would silently export only the page on screen.
+// Same UTF-8 BOM as _instExportModal: without it Excel on Arabic Windows reads
+// UTF-8 as Windows-1252 and every name arrives as mojibake. (6 Oct 2026)
+function _instExportTable() {
+  const rows = (typeof _instFilteredRows !== 'undefined' && _instFilteredRows.length)
+    ? _instFilteredRows
+    : (typeof _INST_DATA !== 'undefined' && _INST_DATA ? _instMainFiltered(_INST_DATA) : []);
+  if (!rows.length) { alert('Nothing to export — no rows match the current filters.'); return; }
+
+  const techKey = (typeof _instTechKey === 'function') ? _instTechKey(rows) : 'فني التركيب';
+  const COLS = [
+    ['العميل',               'العميل'],
+    ['المنتج',               'المنتج'],
+    ['رقم المشروع',          'رقم المشروع'],
+    ['العنوان',              'العنوان'],
+    ['الحالة',               'الحالة'],
+    ['تاريخ التوريد',        'تاريخ التوريد'],
+    ['تاريخ بداية التركيب',  'تاريخ بداية التركيب'],
+    ['تاريخ التسليم',        'تاريخ التسليم'],
+    [techKey,                'فني التركيب'],
+    ['إجمالي عدد الزيارات',  'الزيارات'],
+    ['إجمالي ايام التركيب',  'أيام التركيب']
+  ];
+
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const pick = (r, k) => {
+    if (r[k] !== undefined) return r[k];
+    const alt = k.replace(/ي/g, 'ى');              // ي / ى vary between sources
+    if (r[alt] !== undefined) return r[alt];
+    const alt2 = k.replace(/ى/g, 'ي');
+    return r[alt2] !== undefined ? r[alt2] : '';
+  };
+
+  let csv = COLS.map(c => esc(c[1])).join(',') + '\n';
+  rows.forEach(r => { csv += COLS.map(c => esc(pick(r, c[0]))).join(',') + '\n'; });
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const blob  = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kitchino_installation_records_' + stamp + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
 function _instExportModal() {
   const rows = (typeof _instModalRows !== 'undefined' && _instModalRows) ? _instModalRows : [];
   if (!rows.length) { alert('Nothing to export.'); return; }
