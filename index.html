@@ -2822,8 +2822,15 @@ if (_checkSession()) {
 
     <!-- KPI 1 — average days per order type -->
     <div class="chart-card" style="margin-bottom:16px">
-      <div class="chart-title">Average Installation Days by Order Type</div>
-      <div class="chart-subtitle" id="inst-prod-sub">How long each product type takes to install</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div>
+          <div class="chart-title">Average Installation Days by Order Type</div>
+          <div class="chart-subtitle" id="inst-prod-sub">How long each product type takes to install</div>
+        </div>
+        <button onclick="_instExportSpeed('product')" title="Download every job behind these averages, with customer names"
+                style="padding:6px 11px;border:1px solid var(--green,#10b981);background:transparent;color:var(--green,#10b981);
+                       border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">⬇ Export Excel</button>
+      </div>
       <div id="inst-by-product" style="margin-top:14px"></div>
     </div>
 
@@ -2834,10 +2841,15 @@ if (_checkSession()) {
           <div class="chart-title">Technician Speed — by Order Type</div>
           <div class="chart-subtitle" id="inst-tech-sub">Average days each technician takes per product</div>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
-          <input type="checkbox" id="inst-tech-thin" onchange="_instRenderTechByProduct()" style="cursor:pointer">
-          Include technicians with fewer than 3 jobs
-        </label>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer">
+            <input type="checkbox" id="inst-tech-thin" onchange="_instRenderTechByProduct()" style="cursor:pointer">
+            Include technicians with fewer than 3 jobs
+          </label>
+          <button onclick="_instExportSpeed('tech')" title="Download the jobs for the selected order type, with customer names"
+                  style="padding:6px 11px;border:1px solid var(--green,#10b981);background:transparent;color:var(--green,#10b981);
+                         border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">⬇ Export Excel</button>
+        </div>
       </div>
       <div id="inst-prod-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0"></div>
       <div id="inst-tech-list"></div>
@@ -15827,6 +15839,81 @@ function _instSpeedIndex(rows) {
 function _avg(a) {
   if (!a.length) return null;
   return a.reduce(function (x, y) { return x + y; }, 0) / a.length;
+}
+
+// ── Export the jobs behind the two speed charts ───────────────────────────
+// Both charts show averages; this writes the JOBS those averages are built
+// from, one row per installation WITH the customer name — which is what makes
+// a slow average actionable. Without the names you can see that Laundry Room
+// averages 56 days and still not know which jobs to chase.
+//
+// scope 'product' = every job feeding "Average Installation Days by Order Type"
+// scope 'tech'    = only the order type whose tab is open in "Technician Speed"
+//
+// Honours the page filters (year/area/month) exactly as the charts do, and
+// only includes rows with a usable days value and product — the same rows the
+// charts count, so the export and the bars always agree.
+// UTF-8 BOM for Excel on Arabic Windows. (6 Oct 2026)
+function _instExportSpeed(scope) {
+  if (!_INST_DATA) { alert('Installation data has not loaded yet.'); return; }
+
+  var rows = _instMainFiltered(_INST_DATA);
+  var sel  = (scope === 'tech') ? window._instProdTab : null;
+
+  var out = [];
+  rows.forEach(function (r) {
+    var d = _instDays(r['إجمالي ايام التركيب']);
+    if (d === null) return;
+    var p = _instProduct(r['المنتج']);
+    if (!p) return;
+    if (sel && p !== sel) return;
+    out.push({ product: p, days: d, row: r });
+  });
+
+  if (!out.length) { alert('Nothing to export for the current filters.'); return; }
+
+  // Slowest first — the reason anyone opens this file.
+  out.sort(function (a, b) {
+    if (a.product !== b.product) return a.product < b.product ? -1 : 1;
+    return b.days - a.days;
+  });
+
+  var techKey = (typeof _instTechKey === 'function') ? _instTechKey(rows) : 'فني التركيب';
+  var pick = function (r, k) {
+    if (r[k] !== undefined) return r[k];
+    var a1 = k.replace(/ي/g, 'ى'); if (r[a1] !== undefined) return r[a1];
+    var a2 = k.replace(/ى/g, 'ي'); return r[a2] !== undefined ? r[a2] : '';
+  };
+  var esc = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+
+  var header = ['Order Type','العميل','رقم المشروع','العنوان','الحالة',
+                'فني التركيب','تاريخ التوريد','تاريخ بداية التركيب','تاريخ التسليم',
+                'أيام التركيب','الزيارات'];
+  var csv = header.map(esc).join(',') + '\n';
+
+  out.forEach(function (o) {
+    var r = o.row;
+    csv += [ esc(o.product),
+             esc(pick(r, 'العميل')),
+             esc(pick(r, 'رقم المشروع')),
+             esc(pick(r, 'العنوان')),
+             esc(pick(r, 'الحالة')),
+             esc(pick(r, techKey) || pick(r, 'فني التركيب')),
+             esc(pick(r, 'تاريخ التوريد')),
+             esc(pick(r, 'تاريخ بداية التركيب')),
+             esc(pick(r, 'تاريخ التسليم')),
+             esc(o.days),
+             esc(pick(r, 'إجمالي عدد الزيارات')) ].join(',') + '\n';
+  });
+
+  var tag   = sel ? String(sel).replace(/[^\w؀-ۿ]+/g, '_') : 'all_order_types';
+  var stamp = new Date().toISOString().slice(0, 10);
+  var blob  = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'kitchino_installation_speed_' + tag + '_' + stamp + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 // ── KPI 1: average days per ORDER TYPE ────────────────────────────────────
