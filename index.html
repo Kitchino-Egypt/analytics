@@ -2817,8 +2817,8 @@ if (_checkSession()) {
     <div class="chart-card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div>
-          <div class="chart-title">Waiting Time — Supply to Installation Start</div>
-          <div class="chart-subtitle" id="inst-lag-sub">How long materials wait before installation begins</div>
+          <div class="chart-title">Waiting Time — Days Since Installation Started</div>
+          <div class="chart-subtitle" id="inst-lag-sub">How long open jobs have been running since تاريخ بداية التركيب</div>
         </div>
         <button onclick="_instExportLag()" title="Download every order behind these bars, with customer names and its waiting band"
                 style="padding:6px 11px;border:1px solid var(--green,#10b981);background:transparent;color:var(--green,#10b981);
@@ -15736,6 +15736,53 @@ function _instLagDays(r) {
   return d < 0 ? null : d;
 }
 
+// ── Open-job ageing: بداية التركيب → today ────────────────────────────────
+// Rules set by the operator, 6 Oct 2026:
+//   • the clock starts at تاريخ بداية التركيب, not تاريخ التوريد
+//   • three closed-out statuses never appear:
+//       تم الاستلام بدون ملاحظات · تفعيل ضمان إدارى · خارج الضمان
+// A job with no start date has not begun, so it has no age and is left out.
+// Status matching collapses whitespace and normalises the Arabic letters that
+// vary between sources (أ إ آ → ا, ى → ي, ة → ه), because an exclusion that
+// misses one spelling leaves closed jobs sitting in the red bar.
+// ONE definition, used by both the chart and its export.
+var _INST_CLOSED_STATUSES = [
+  'تم الاستلام بدون ملاحظات',
+  'تفعيل ضمان إدارى',
+  'خارج الضمان'
+];
+
+function _instNormAr(s) {
+  return String(s == null ? '' : s)
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[ً-ْـ]/g, '')   // diacritics and tatweel
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+var _INST_CLOSED_SET = _INST_CLOSED_STATUSES.map(_instNormAr);
+
+function _instIsClosed(r) {
+  var st = _instNormAr(r['الحالة'] !== undefined ? r['الحالة'] : r['الحاله']);
+  return _INST_CLOSED_SET.indexOf(st) !== -1;
+}
+
+function _instOpenAges(rows) {
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var out = [];
+  rows.forEach(function (r) {
+    if (_instIsClosed(r)) return;
+    var st = _journeyParseDate(r['تاريخ بداية التركيب']);
+    if (!st) return;
+    var d = Math.round((today - st) / 86400000);
+    if (d < 0) return;                      // start dated in the future = entry error
+    out.push({ days: d, row: r });
+  });
+  return out;
+}
+
 // ── Export the orders behind the waiting-time bars ────────────────────────
 // The chart says 11 orders waited over 60 days; this says WHICH 11, by name.
 // Each row carries its waiting band, so filtering the file to "Over 60 days"
@@ -15756,14 +15803,11 @@ function _instExportLag() {
     return 'Over 60 days';
   };
 
-  var out = [];
-  rows.forEach(function (r) {
-    var d = _instLagDays(r);
-    if (d === null) return;
-    out.push({ days: d, band: band(d), row: r });
+  var out = _instOpenAges(rows).map(function (o) {
+    return { days: o.days, band: band(o.days), row: o.row };
   });
 
-  if (!out.length) { alert('No records with both a supply date and an installation start date.'); return; }
+  if (!out.length) { alert('No open jobs with an installation start date.'); return; }
 
   // Longest wait first — the whole point of opening this file.
   out.sort(function (a, b) { return b.days - a.days; });
@@ -15776,7 +15820,7 @@ function _instExportLag() {
   };
   var esc = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
 
-  var header = ['أيام الانتظار','الفئة','العميل','المنتج','رقم المشروع','العنوان',
+  var header = ['أيام منذ بداية التركيب','الفئة','العميل','المنتج','رقم المشروع','العنوان',
                 'الحالة','فني التركيب','تاريخ التوريد','تاريخ بداية التركيب','تاريخ التسليم'];
   var csv = header.map(esc).join(',') + '\n';
 
@@ -15809,25 +15853,42 @@ function _instRenderLag(rows) {
   var sub = document.getElementById('inst-lag-days-sub');
   var box = document.getElementById('inst-lag-dist');
 
+  // ── The KPI CARD keeps its original meaning: التوريد → بداية التركيب, every
+  // record, no status exclusions. Confirmed 6 Oct 2026 — the exclusions below
+  // apply to the distribution chart only. ──────────────────────────────────
   var gaps = [];
   rows.forEach(function (r) { var d = _instLagDays(r); if (d !== null) gaps.push(d); });
 
-  if (!gaps.length) {
+  if (gaps.length) {
+    var kMed  = _median(gaps);
+    var kMean = gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length;
+    var kW7   = gaps.filter(function (d) { return d <= 7; }).length;
+    if (el) el.innerHTML = Math.round(kMed) + '<span style="font-size:13px;font-weight:600;opacity:.75"> days</span>';
+    if (sub) sub.innerHTML = 'median · ' + Math.round(kW7 / gaps.length * 100) + '% within a week'
+      + '<span style="opacity:.7"> · avg ' + Math.round(kMean) + 'd</span>';
+  } else {
     if (el) el.textContent = '—';
     if (sub) sub.textContent = 'no supply/start dates';
-    if (box) box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">No records with both a supply date and an installation start date</div>';
+  }
+
+  if (!box) return;
+
+  // ── The CHART is a different measure: ageing from بداية التركيب to TODAY,
+  // for jobs that have started and are not yet closed out. Rules set by the
+  // operator, 6 Oct 2026. ──────────────────────────────────────────────────
+  var ages = _instOpenAges(rows);
+
+  if (!ages.length) {
+    box.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:10px">'
+      + 'No open jobs with an installation start date</div>';
+    var s0 = document.getElementById('inst-lag-sub');
+    if (s0) s0.textContent = 'Days since installation started · no open jobs';
     return;
   }
 
+  gaps = ages.map(function (a) { return a.days; });
   var med  = _median(gaps);
   var mean = gaps.reduce(function (a, b) { return a + b; }, 0) / gaps.length;
-  var within7 = gaps.filter(function (d) { return d <= 7; }).length;
-
-  if (el) el.innerHTML = Math.round(med) + '<span style="font-size:13px;font-weight:600;opacity:.75"> days</span>';
-  if (sub) sub.innerHTML = 'median · ' + Math.round(within7 / gaps.length * 100) + '% within a week'
-    + '<span style="opacity:.7"> · avg ' + Math.round(mean) + 'd</span>';
-
-  if (!box) return;
 
   // Buckets chosen around the operational thresholds rather than even splits
   var buckets = [
@@ -15860,15 +15921,16 @@ function _instRenderLag(rows) {
     + 'Median wait <b style="color:var(--text1)">' + Math.round(med) + ' days</b> · '
     + 'average <b style="color:var(--text1)">' + Math.round(mean) + ' days</b> '
     + '(pulled up by a small number of very long waits)<br>'
-    + '<b style="color:var(--red)">' + slow + ' orders</b> waited more than a month'
-    + (gaps.length ? ' (' + Math.round(slow / gaps.length * 100) + '% of ' + gaps.length + ' measured)' : '')
-    + ' · records missing either date are excluded'
+    + '<b style="color:var(--red)">' + slow + ' orders</b> open more than a month'
+    + (gaps.length ? ' (' + Math.round(slow / gaps.length * 100) + '% of ' + gaps.length + ' open jobs)' : '')
+    + '<br>Counted from تاريخ بداية التركيب to today · closed jobs '
+    + '(تم الاستلام بدون ملاحظات · تفعيل ضمان إدارى · خارج الضمان) are excluded'
     + '</div>';
   box.innerHTML = html;
 
   var s2 = document.getElementById('inst-lag-sub');
-  if (s2) s2.textContent = 'How long materials wait before installation begins · '
-    + gaps.length + ' of ' + rows.length + ' records have both dates';
+  if (s2) s2.textContent = 'Days since installation started, still open · '
+    + gaps.length + ' of ' + rows.length + ' records';
 }
 
 function _instRenderAvgDays(rows) {
