@@ -15760,7 +15760,19 @@ function _instRenderCharts(rows) {
     // team keys more dates. The current month is drawn dashed because it is
     // still running; without that it reads as a collapse rather than a part-month.
     {
-      const snagRows = _allInstRows
+      // POPULATION — only projects that have actually reached delivery. Rule set
+      // by the operator, 11 Oct 2026: take الحالة of either
+      //   تم الاستلام بدون ملاحظات  (delivered, snags closed)
+      //   ملاحظات التسليم           (delivered, snags still open)
+      // Everything else — موعد تركيب, فنش, استكمال تركيب, تركيب رخام and the rest
+      // — has not been delivered and must not sit on either line. Counting every
+      // row with a تاريخ التسليم put ~160 undelivered projects on the handover
+      // line and made the chart read wrong.
+      const _DELIVERED_STATUSES = ['تم الاستلام بدون ملاحظات', 'ملاحظات التسليم'].map(_instNormAr);
+      const _delivRows = _allInstRows.filter(r =>
+        _DELIVERED_STATUSES.indexOf(_instNormAr(r['الحالة'] !== undefined ? r['الحالة'] : r['الحاله'])) !== -1);
+
+      const snagRows = _delivRows
         .map(r => ({ row:r, ym:_pidYM(String(r['تاريخ إنهاء ملاحظات'] || r['تاريخ انهاء ملاحظات'] || '').trim()) }))
         .filter(x => x.ym);
       window._INST_SNAG_ROWS = snagRows.map(x => x.row);
@@ -15780,9 +15792,7 @@ function _instRenderCharts(rows) {
         let y = +_SNAG_START.split('-')[0], m = +_SNAG_START.split('-')[1];
         const endY = _now.getFullYear(), endM = _now.getMonth()+1;
         // Any date keyed before the start month still counts — folded into July.
-        Object.keys(snagMap).forEach(k => { if (k < _SNAG_START) {
-          snagMap[_SNAG_START] = (snagMap[_SNAG_START]||0) + snagMap[k]; delete snagMap[k];
-        }});
+        Object.keys(snagMap).forEach(k => { if (k < _SNAG_START) delete snagMap[k]; });
         while (y < endY || (y === endY && m <= endM)) {
           _axis.push(y + '-' + String(m).padStart(2,'0'));
           m++; if (m > 12) { m = 1; y++; }
@@ -15800,10 +15810,10 @@ function _instRenderCharts(rows) {
       // strictly later — no negative gaps, no same-day closures.
       // The vertical gap between the two lines is the snag backlog opened that month.
       const handMap = {};
-      _allInstRows.forEach(r => {
+      _delivRows.forEach(r => {
         const k = _pidYM(String(r['تاريخ التسليم'] || '').trim());
-        if (!k) return;
-        handMap[k < _SNAG_START ? _SNAG_START : k] = (handMap[k < _SNAG_START ? _SNAG_START : k] || 0) + 1;
+        if (!k || k < _SNAG_START) return;   // before July 2026 is out of scope, not folded in
+        handMap[k] = (handMap[k] || 0) + 1;
       });
       const handEntries = _axis.map(k => [k, handMap[k] || 0]);
 
@@ -15887,8 +15897,10 @@ function _instRenderCharts(rows) {
                 : '')
             + '<br>Since July 2026: <b style="color:#3b82f6">' + totH + '</b> handed over, '
             + '<b style="color:#10b981">' + totF + '</b> fully delivered. '
-            + '<span style="color:var(--amber,#d08700)">تاريخ إنهاء ملاحظات is only keyed on '
-            + snagRows.length + ' of ' + _allInstRows.length + ' records, so the green line understates real sign-offs.</span>'
+            + 'Scope: الحالة of تم الاستلام بدون ملاحظات or ملاحظات التسليم only — '
+            + _delivRows.length + ' of ' + _allInstRows.length + ' records.'
+            + '<span style="color:var(--amber,#d08700)"> تاريخ إنهاء ملاحظات is keyed on just '
+            + snagRows.length + ' of them, so the green line understates real sign-offs until the back history is filled in.</span>'
             + '<br>The dashed final segment is the current month, still running.';
         }
         if (snagSub) snagSub.textContent =
