@@ -15447,6 +15447,10 @@ function _instNormalizeRows(rows) {
   const iVisits    = fIdx(13, 'زيار');
   const iInstDays  = fIdx(14, 'يام', 'تركيب');
   const iDelivCompl = fIdx(16, 'تسليم');   // تاريخ التسليم (col 16)
+  // تاريخ إنهاء ملاحظات — the OFFICIAL full-delivery date (rule, 11 Oct 2026).
+  // Matched on 'نهاء' so both إنهاء and انهاء spellings resolve. Without this
+  // line the column is dropped here and every chart built on it renders empty.
+  const iNotesDone  = fIdx(18, 'نهاء', 'ملاحظات');
 
   // Access by column index via insertion-ordered keys[]
   const g = (r, i) => (i >= 0 && i < keys.length) ? ((r[keys[i]] || '').trim()) : '';
@@ -15468,7 +15472,8 @@ function _instNormalizeRows(rows) {
     'فني التركيب':        g(r, iTech),
     'إجمالي عدد الزيارات':   g(r, iVisits),
     'إجمالي ايام التركيب':  g(r, iInstDays),
-    'تاريخ التسليم':            g(r, iDelivCompl)
+    'تاريخ التسليم':            g(r, iDelivCompl),
+    'تاريخ إنهاء ملاحظات':    g(r, iNotesDone)
   })).filter(r => r['العميل'] || r['رقم المشروع']);
 }
 
@@ -15762,16 +15767,37 @@ function _instRenderCharts(rows) {
 
       const snagMap = {};
       snagRows.forEach(x => { snagMap[x.ym] = (snagMap[x.ym] || 0) + 1; });
-      const snagEntries = Object.entries(snagMap).sort((a,b) => a[0].localeCompare(b[0]));
+
+      // The axis runs CONTINUOUSLY from July 2026 — when the team began keying
+      // تاريخ إنهاء ملاحظات — to the current month, with empty months drawn as 0.
+      // Plotting only the months that happen to have data would space unequal
+      // gaps evenly and make a quiet month invisible instead of visible as zero.
+      const _SNAG_START = '2026-07';
+      const _now  = new Date();
+      const _curYM = _now.getFullYear() + '-' + String(_now.getMonth()+1).padStart(2,'0');
+      const _axis = [];
+      {
+        let y = +_SNAG_START.split('-')[0], m = +_SNAG_START.split('-')[1];
+        const endY = _now.getFullYear(), endM = _now.getMonth()+1;
+        // Any date keyed before the start month still counts — folded into July.
+        Object.keys(snagMap).forEach(k => { if (k < _SNAG_START) {
+          snagMap[_SNAG_START] = (snagMap[_SNAG_START]||0) + snagMap[k]; delete snagMap[k];
+        }});
+        while (y < endY || (y === endY && m <= endM)) {
+          _axis.push(y + '-' + String(m).padStart(2,'0'));
+          m++; if (m > 12) { m = 1; y++; }
+          if (_axis.length > 60) break;   // guard against a bad clock
+        }
+      }
+      const snagEntries = _axis.map(k => [k, snagMap[k] || 0]);
 
       _instKillChart('snag');
       const snagCanvas = document.getElementById('inst-canvas-snag');
       const snagFoot   = document.getElementById('inst-snag-foot');
       const snagSub    = document.getElementById('inst-snag-sub');
 
-      if (snagCanvas && snagEntries.length) {
-        const now    = new Date();
-        const curYM  = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      if (snagCanvas && snagRows.length) {
+        const curYM = _curYM;
         const tcS = _txtColor(), gcS = _gridColor();
         _instCJs['snag'] = new Chart(snagCanvas.getContext('2d'), {
           type:'line',
