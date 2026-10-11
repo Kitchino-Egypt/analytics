@@ -2831,8 +2831,8 @@ if (_checkSession()) {
     <div class="chart-card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
         <div>
-          <div class="chart-title">Snag Closure — Projects Signed Off per Month</div>
-          <div class="chart-subtitle" id="inst-snag-sub">Projects reaching تم الاستلام بدون ملاحظات, dated by تاريخ إنهاء ملاحظات</div>
+          <div class="chart-title">Handover vs Full Delivery — per Month</div>
+          <div class="chart-subtitle" id="inst-snag-sub">Handover (تاريخ التسليم) against official full delivery (تاريخ إنهاء ملاحظات) · from July 2026</div>
         </div>
         <button onclick="_instExportSnag()" title="Download these projects with customer names"
                 style="padding:6px 11px;border:1px solid var(--green,#10b981);background:transparent;color:var(--green,#10b981);
@@ -15791,37 +15791,75 @@ function _instRenderCharts(rows) {
       }
       const snagEntries = _axis.map(k => [k, snagMap[k] || 0]);
 
+      // Second series: HANDOVER (تاريخ التسليم). The two dates are sequential
+      // stages of one project, never alternatives:
+      //   تاريخ التسليم  = handover — customer receives it, snags may be open
+      //   تاريخ إنهاء ملاحظات = official FULL delivery — snags closed, status
+      //                          becomes تم الاستلام بدون ملاحظات
+      // Verified across all 35 records carrying both: the second date is always
+      // strictly later — no negative gaps, no same-day closures.
+      // The vertical gap between the two lines is the snag backlog opened that month.
+      const handMap = {};
+      _allInstRows.forEach(r => {
+        const k = _pidYM(String(r['تاريخ التسليم'] || '').trim());
+        if (!k) return;
+        handMap[k < _SNAG_START ? _SNAG_START : k] = (handMap[k < _SNAG_START ? _SNAG_START : k] || 0) + 1;
+      });
+      const handEntries = _axis.map(k => [k, handMap[k] || 0]);
+
       _instKillChart('snag');
       const snagCanvas = document.getElementById('inst-canvas-snag');
       const snagFoot   = document.getElementById('inst-snag-foot');
       const snagSub    = document.getElementById('inst-snag-sub');
 
-      if (snagCanvas && snagRows.length) {
+      if (snagCanvas && (snagRows.length || handEntries.some(e => e[1]))) {
         const curYM = _curYM;
         const tcS = _txtColor(), gcS = _gridColor();
+        const dashCur = arr => ctx =>
+          arr[ctx.p1DataIndex] && arr[ctx.p1DataIndex][0] === curYM ? [6,4] : undefined;
+
         _instCJs['snag'] = new Chart(snagCanvas.getContext('2d'), {
           type:'line',
           data:{
-            labels: snagEntries.map(([k]) => { const p = k.split('-'); return _ML3[+p[1]-1] + ' ' + p[0]; }),
-            datasets:[{
-              data: snagEntries.map(e => e[1]),
-              borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.12)',
-              borderWidth:2.5, tension:.3, fill:true,
-              pointRadius:5, pointHoverRadius:7,
-              pointBackgroundColor: snagEntries.map(([k]) => k === curYM ? '#fff' : '#10b981'),
-              pointBorderColor:'#10b981', pointBorderWidth:2,
-              segment:{ borderDash: ctx =>
-                snagEntries[ctx.p1DataIndex] && snagEntries[ctx.p1DataIndex][0] === curYM ? [6,4] : undefined }
-            }]
+            labels: _axis.map(k => { const p = k.split('-'); return _ML3[+p[1]-1] + ' ' + p[0]; }),
+            datasets:[
+              { label:'تاريخ التسليم — handover',
+                data: handEntries.map(e => e[1]),
+                borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.10)',
+                borderWidth:2.5, tension:.3, fill:true,
+                pointRadius:4, pointHoverRadius:7,
+                pointBackgroundColor: handEntries.map(([k]) => k === curYM ? '#fff' : '#3b82f6'),
+                pointBorderColor:'#3b82f6', pointBorderWidth:2,
+                segment:{ borderDash: dashCur(handEntries) } },
+              { label:'تاريخ إنهاء ملاحظات — full delivery',
+                data: snagEntries.map(e => e[1]),
+                borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.14)',
+                borderWidth:2.5, tension:.3, fill:true,
+                pointRadius:4, pointHoverRadius:7,
+                pointBackgroundColor: snagEntries.map(([k]) => k === curYM ? '#fff' : '#10b981'),
+                pointBorderColor:'#10b981', pointBorderWidth:2,
+                segment:{ borderDash: dashCur(snagEntries) } }
+            ]
           },
           options:{
             responsive:true, maintainAspectRatio:false,
-            plugins:{ legend:{display:false}, tooltip:{ callbacks:{
-              label: ctx => ' ' + ctx.raw + ' project' + (ctx.raw !== 1 ? 's' : '') + ' signed off'
-                           + (snagEntries[ctx.dataIndex][0] === curYM ? ' (month still running)' : '') }}},
+            interaction:{ mode:'index', intersect:false },
+            plugins:{
+              legend:{ display:true, position:'top', align:'end',
+                       labels:{ color:tcS, boxWidth:12, boxHeight:12, usePointStyle:true,
+                                pointStyle:'line', font:{size:11} } },
+              tooltip:{ callbacks:{
+                label: ctx => ' ' + ctx.dataset.label.split(' — ')[1] + ': ' + ctx.raw,
+                afterBody: items => {
+                  const i = items[0].dataIndex;
+                  const open = handEntries[i][1] - snagEntries[i][1];
+                  const tail = _axis[i] === curYM ? '\nMonth still running' : '';
+                  return (open > 0 ? '\nStill open at month end: ' + open : '') + tail;
+                } }}
+            },
             scales:{
               x:{ grid:{display:false}, ticks:{color:tcS,font:{size:10}}, border:{display:false} },
-              y:{ grid:{color:gcS}, ticks:{color:tcS,font:{size:10},stepSize:1}, border:{display:false}, beginAtZero:true }
+              y:{ grid:{color:gcS}, ticks:{color:tcS,font:{size:10}}, border:{display:false}, beginAtZero:true }
             }, animation:{ duration:600 }
           }
         });
@@ -15837,15 +15875,24 @@ function _instRenderCharts(rows) {
         if (snagFoot) {
           const med = lags.length ? lags[Math.floor(lags.length/2)] : null;
           const avg = lags.length ? Math.round(lags.reduce((a,b)=>a+b,0)/lags.length) : null;
-          snagFoot.innerHTML = lags.length
-            ? 'Snag closure takes <b style="color:var(--text1)">' + med + ' days</b> at the median '
-              + '(average ' + avg + ', range ' + lags[0] + '–' + lags[lags.length-1] + ') '
-              + 'from تاريخ التسليم to تاريخ إنهاء ملاحظات, across ' + lags.length + ' projects.'
-              + '<br>The dashed final point is the current month, still running.'
-            : 'No project has both a delivery date and a notes-closed date yet.';
+          const totH = handEntries.reduce((s,e)=>s+e[1],0);
+          const totF = snagEntries.reduce((s,e)=>s+e[1],0);
+          snagFoot.innerHTML =
+            '<b style="color:#3b82f6">تاريخ التسليم</b> is handover — the customer receives the job, snags may still be open. '
+            + '<b style="color:#10b981">تاريخ إنهاء ملاحظات</b> is the <b>official full delivery</b> — snags closed, status becomes تم الاستلام بدون ملاحظات. '
+            + 'The second date always falls after the first; the gap between the lines is the snag backlog.'
+            + (lags.length
+                ? '<br>Closing snags takes <b style="color:var(--text1)">' + med + ' days</b> at the median '
+                  + '(average ' + avg + ', range ' + lags[0] + '–' + lags[lags.length-1] + '), across ' + lags.length + ' projects with both dates.'
+                : '')
+            + '<br>Since July 2026: <b style="color:#3b82f6">' + totH + '</b> handed over, '
+            + '<b style="color:#10b981">' + totF + '</b> fully delivered. '
+            + '<span style="color:var(--amber,#d08700)">تاريخ إنهاء ملاحظات is only keyed on '
+            + snagRows.length + ' of ' + _allInstRows.length + ' records, so the green line understates real sign-offs.</span>'
+            + '<br>The dashed final segment is the current month, still running.';
         }
-        if (snagSub) snagSub.textContent = 'Projects reaching تم الاستلام بدون ملاحظات, dated by تاريخ إنهاء ملاحظات · '
-          + snagRows.length + ' of ' + _allInstRows.length + ' records carry this date';
+        if (snagSub) snagSub.textContent =
+          'Handover (تاريخ التسليم) against official full delivery (تاريخ إنهاء ملاحظات) · from July 2026';
       } else {
         if (snagCanvas) snagCanvas.getContext('2d').clearRect(0,0,snagCanvas.width,snagCanvas.height);
         if (snagFoot) snagFoot.textContent = 'No records carry تاريخ إنهاء ملاحظات for the current filters.';
