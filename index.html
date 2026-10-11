@@ -15809,6 +15809,8 @@ function _instRenderCharts(rows) {
       // Verified across all 35 records carrying both: the second date is always
       // strictly later — no negative gaps, no same-day closures.
       // The vertical gap between the two lines is the snag backlog opened that month.
+      // Both delivered statuses ride this line — تم الاستلام بدون ملاحظات and
+      // ملاحظات التسليم alike. A project with open snags was still handed over.
       const handMap = {};
       _delivRows.forEach(r => {
         const k = _pidYM(String(r['تاريخ التسليم'] || '').trim());
@@ -15862,9 +15864,12 @@ function _instRenderCharts(rows) {
                 label: ctx => ' ' + ctx.dataset.label.split(' — ')[1] + ': ' + ctx.raw,
                 afterBody: items => {
                   const i = items[0].dataIndex;
-                  const open = handEntries[i][1] - snagEntries[i][1];
-                  const tail = _axis[i] === curYM ? '\nMonth still running' : '';
-                  return (open > 0 ? '\nStill open at month end: ' + open : '') + tail;
+                  const total = handEntries[i][1] + snagEntries[i][1];
+                  // Chart.js draws one line per array entry; a '\n' inside a single
+                  // string is not a line break on canvas. Blank entry = spacer rule.
+                  const out = ['', 'Total: ' + total];
+                  if (_axis[i] === curYM) out.push('Month still running');
+                  return out;
                 } }}
             },
             scales:{
@@ -15874,40 +15879,18 @@ function _instRenderCharts(rows) {
           }
         });
 
-        // Closure time rides in the footer rather than a second chart — 35 records
-        // do not justify their own card, but the number is the useful one.
-        const lags = snagRows.map(x => {
-          const d1 = _journeyParseDate(x.row['تاريخ التسليم']);
-          const d2 = _journeyParseDate(x.row['تاريخ إنهاء ملاحظات'] || x.row['تاريخ انهاء ملاحظات']);
-          return (d1 && d2) ? Math.round((d2 - d1) / 86400000) : null;
-        }).filter(d => d !== null && d >= 0).sort((a,b) => a-b);
-
-        if (snagFoot) {
-          const med = lags.length ? lags[Math.floor(lags.length/2)] : null;
-          const avg = lags.length ? Math.round(lags.reduce((a,b)=>a+b,0)/lags.length) : null;
-          const totH = handEntries.reduce((s,e)=>s+e[1],0);
-          const totF = snagEntries.reduce((s,e)=>s+e[1],0);
-          snagFoot.innerHTML =
-            '<b style="color:#3b82f6">تاريخ التسليم</b> is handover — the customer receives the job, snags may still be open. '
-            + '<b style="color:#10b981">تاريخ إنهاء ملاحظات</b> is the <b>official full delivery</b> — snags closed, status becomes تم الاستلام بدون ملاحظات. '
-            + 'The second date always falls after the first; the gap between the lines is the snag backlog.'
-            + (lags.length
-                ? '<br>Closing snags takes <b style="color:var(--text1)">' + med + ' days</b> at the median '
-                  + '(average ' + avg + ', range ' + lags[0] + '–' + lags[lags.length-1] + '), across ' + lags.length + ' projects with both dates.'
-                : '')
-            + '<br>Since July 2026: <b style="color:#3b82f6">' + totH + '</b> handed over, '
-            + '<b style="color:#10b981">' + totF + '</b> fully delivered. '
-            + 'Scope: الحالة of تم الاستلام بدون ملاحظات or ملاحظات التسليم only — '
-            + _delivRows.length + ' of ' + _allInstRows.length + ' records.'
-            + '<span style="color:var(--amber,#d08700)"> تاريخ إنهاء ملاحظات is keyed on just '
-            + snagRows.length + ' of them, so the green line understates real sign-offs until the back history is filled in.</span>'
-            + '<br>The dashed final segment is the current month, still running.';
-        }
+        // Explanatory footer removed by request — the chart, legend and subtitle
+        // carry the meaning; the prose block below it was noise.
+        if (snagFoot) { snagFoot.innerHTML = ''; snagFoot.style.display = 'none'; }
         if (snagSub) snagSub.textContent =
           'Handover (تاريخ التسليم) against official full delivery (تاريخ إنهاء ملاحظات) · from July 2026';
       } else {
         if (snagCanvas) snagCanvas.getContext('2d').clearRect(0,0,snagCanvas.width,snagCanvas.height);
-        if (snagFoot) snagFoot.textContent = 'No records carry تاريخ إنهاء ملاحظات for the current filters.';
+        // Empty-state message stays — with no chart drawn, it is the only signal.
+        if (snagFoot) {
+          snagFoot.style.display = '';
+          snagFoot.textContent = 'No records carry تاريخ إنهاء ملاحظات for the current filters.';
+        }
       }
     }
 
