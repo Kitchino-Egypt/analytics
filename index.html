@@ -403,6 +403,19 @@ canvas { max-width:100%; }
 }
 .table-title { font-size:13px; font-weight:600; }
 .table-actions { display:flex; gap:8px; }
+
+/* Period chip — stamped beside every section title by _stampPeriodChips() so a
+   figure can never be read without knowing the window it covers. Deliberately
+   quiet: it sits next to the heading, it is not a second heading. */
+.period-chip {
+  display:inline-block; margin-inline-start:8px; padding:1px 7px;
+  border-radius:999px; font-size:10px; font-weight:600; line-height:16px;
+  letter-spacing:.2px; white-space:nowrap; vertical-align:middle;
+  color:var(--text2); background:var(--card2,rgba(0,0,0,.05));
+  border:1px solid var(--border,rgba(0,0,0,.10));
+}
+/* A narrowed window is the exception, so it is the one that gets colour. */
+.period-chip.narrowed { color:#b07400; background:rgba(237,161,0,.12); border-color:rgba(237,161,0,.35); }
 .btn-sm {
   padding:5px 12px; border-radius:6px; font-size:11px; cursor:pointer;
   border:1px solid var(--border); background:var(--card2); color:var(--text2);
@@ -8949,6 +8962,13 @@ function applyFilters() {
   // moved. renderFollowupTable does not touch it.
   if (typeof renderSixMonth === 'function') renderSixMonth();
 
+  // The chips name the active window, so they move with it.
+  if (typeof _stampPeriodChips === 'function') {
+    _stampPeriodChips();
+    setTimeout(_stampPeriodChips, 150);
+    setTimeout(_stampPeriodChips, 600);
+  }
+
   // ── 5. Immediately rebuild the active page with new filtered state ────────
   const activePage = document.querySelector('.page.active')?.id.replace('page-','');
   if (activePage) {
@@ -9946,6 +9966,52 @@ function _syncFilterAvailability(name) {
   });
 }
 
+// ── PERIOD CHIPS ────────────────────────────────────────────────────────────
+// Every section title carries the window its figures cover. Without it a card
+// read in isolation — or screenshotted into a message — says nothing about
+// whether it means this June or every year on record.
+//
+// One function stamps them all, so a section added later inherits the behaviour
+// rather than quietly going unlabelled.
+function _periodLabel() {
+  const yearF = document.getElementById('filter-year')?.value  || 'all';
+  const monF  = document.getElementById('filter-month')?.value || 'all';
+  const per   = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
+
+  // An explicit range outranks the dropdowns — it is the narrower statement.
+  if (per.from || per.to) {
+    const fmt = s => {
+      const d = new Date(s + 'T00:00:00');
+      return isNaN(d) ? s : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    };
+    if (per.from && per.to) return { text: fmt(per.from) + ' – ' + fmt(per.to), narrowed:true };
+    return { text: (per.from ? 'From ' + fmt(per.from) : 'Until ' + fmt(per.to)), narrowed:true };
+  }
+
+  if (monF !== 'all' && yearF !== 'all') return { text: monF + ' ' + yearF, narrowed:true };
+  if (monF !== 'all')                    return { text: monF + ' · all years', narrowed:true };
+  if (yearF !== 'all')                   return { text: yearF, narrowed:true };
+  return { text: 'All time', narrowed:false };
+}
+
+function _stampPeriodChips() {
+  const { text, narrowed } = _periodLabel();
+
+  document.querySelectorAll('.chart-title, .table-title').forEach(el => {
+    // Some titles are rewritten wholesale by their render function, which wipes
+    // the chip. Re-querying each pass and re-creating when missing is what keeps
+    // it stable without any render function needing to know this exists.
+    let chip = el.querySelector(':scope > .period-chip');
+    if (!chip) {
+      chip = document.createElement('span');
+      chip.className = 'period-chip';
+      el.appendChild(chip);
+    }
+    chip.textContent = text;
+    chip.classList.toggle('narrowed', narrowed);
+  });
+}
+
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -10009,6 +10075,12 @@ function showPage(name) {
   if (name === 'followup') setTimeout(function () {
     if (typeof _maybeShowNotesPopup === 'function') _maybeShowNotesPopup();
   }, 400);
+
+  // Page builders run on a 50ms timeout and several rewrite their own titles,
+  // so one stamp now is not enough — the later passes catch what gets redrawn.
+  _stampPeriodChips();
+  setTimeout(_stampPeriodChips, 150);
+  setTimeout(_stampPeriodChips, 600);
 }
 
 document.querySelectorAll('.nav-item[data-page]').forEach(el => {
@@ -10604,12 +10676,11 @@ function renderSixMonth() {
   }
 
   if (scopeEl) {
-    const bits = ['contracts signed 183+ days ago'];
-    if (f.desF  !== 'all') bits.push(f.desF);
-    if (f.monF  !== 'all') bits.push(f.monF);
-    if (f.yearF !== 'all') bits.push(f.yearF);
-    if (f.period)          bits.push('selected period');
-    scopeEl.textContent = bits.join(' · ');
+    // The period chip beside the title now says which window this covers, so
+    // repeating year, month and range here would only make the header noisy.
+    // Designer is not in the chip, so it is the one thing left to name.
+    scopeEl.textContent = 'contracts signed 183+ days ago'
+      + (f.desF !== 'all' ? ' · ' + f.desF : '');
   }
 
   if (!d.eligible) {
