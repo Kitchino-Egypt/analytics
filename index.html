@@ -2169,14 +2169,18 @@ if (_checkSession()) {
            <div id="fu-crm-pipeline" style="display:block;padding:12px 16px"></div>
          </div> -->
 
-  <!-- DELIVERED WITHIN 6 MONTHS — on-time delivery against the contract date.
+  <!-- OTIF — on-time delivery against the contract date. Renamed from
+       "Delivered Within 6 Months" on 12 Oct 2026; the measure is unchanged.
        The denominator is contracts signed more than 183 days ago, so a contract
        that was never delivered counts as a miss. Measuring only delivered
-       contracts would read 95% while 26 orders sat stuck. -->
+       contracts would read 95% while 26 orders sat stuck.
+       The sub-label is written by renderSixMonth() so it can name the active
+       filters — a figure that moves with the topbar must say what it is now. -->
   <div class="table-card" style="margin-bottom:16px">
     <div class="table-header">
-      <div class="table-title">Delivered Within 6 Months</div>
-      <div class="table-actions" style="font-size:11px;color:var(--text2)">
+      <div class="table-title">OTIF</div>
+      <div class="table-actions" id="fu-sixmonth-scope"
+           style="font-size:11px;color:var(--text2)">
         contracts signed 183+ days ago
       </div>
     </div>
@@ -8941,6 +8945,10 @@ function applyFilters() {
   // ── 4. Update follow-up table ─────────────────────────────────────────────
   renderFollowupTable();
 
+  // OTIF recomputes from the detail rows, so it has to be told the filters
+  // moved. renderFollowupTable does not touch it.
+  if (typeof renderSixMonth === 'function') renderSixMonth();
+
   // ── 5. Immediately rebuild the active page with new filtered state ────────
   const activePage = document.querySelector('.page.active')?.id.replace('page-','');
   if (activePage) {
@@ -10478,8 +10486,9 @@ function closeWhatsNew() {
   if (m) m.style.display = 'none';
 }
 
-// ── DELIVERED WITHIN 6 MONTHS ───────────────────────────────────────────────
-// On-time delivery measured against the contract date.
+// ── OTIF ────────────────────────────────────────────────────────────────────
+// Named "Delivered Within 6 Months" until 12 Oct 2026. Same measure throughout:
+// on-time delivery measured against the contract date.
 //
 // The denominator is deliberately harsh: every contract signed more than 183
 // days ago, whether or not it was ever delivered. A contract still sitting in
@@ -10488,16 +10497,119 @@ function closeWhatsNew() {
 // would be true and useless.
 //
 // Fed by two columns the sheet carries: "6M KPI Label" and "6M KPI Value".
+// Those are whole-book totals. They remain the fallback, but the card now
+// recomputes from SIXMONTH_ROWS so it answers the topbar filters — a KPI that
+// sits still while the filters move reads as a bug, and is one.
 const SIXMONTH_DATA = {};
+
+// ── OTIF under the main filters ─────────────────────────────────────────────
+// Mirrors the filter logic in renderFollowupTable (year / designer / month /
+// period) so the card and the table below it can never disagree. The detail
+// rows carry no designer of their own, so it comes from CONTRACTS_DATA joined
+// on order id — the same join the sheet used to build them.
+function _sixMonthFiltered() {
+  const yearF = document.getElementById('filter-year')?.value     || 'all';
+  const desF  = document.getElementById('filter-designer')?.value || 'all';
+  const monF  = document.getElementById('filter-month')?.value    || 'all';
+
+  const MN = ['January','February','March','April','May','June',
+              'July','August','September','October','November','December'];
+  const per = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
+  const lo  = per.from ? new Date(per.from + 'T00:00:00').getTime() : null;
+  const hi  = per.to   ? new Date(per.to   + 'T23:59:59').getTime() : null;
+
+  // Order id → designer. Built once per render rather than scanned per row.
+  const desBy = {};
+  (typeof CONTRACTS_DATA !== 'undefined' ? CONTRACTS_DATA : []).forEach(c => {
+    const k = String(c.orderId || '').trim();
+    if (k) desBy[k] = c.designer || '';
+  });
+
+  const active = yearF !== 'all' || desF !== 'all' || monF !== 'all' || lo !== null || hi !== null;
+
+  const rows = SIXMONTH_ROWS.filter(r => {
+    if (desF !== 'all' && (desBy[String(r.orderId || '').trim()] || '') !== desF) return false;
+
+    const signed = String(r.signed || '').trim();
+    if (yearF !== 'all') {
+      const m4 = signed.match(/(\d{4})/);
+      // An unparseable signed date is kept, matching the year filter on the
+      // contracts table. Month and period are stricter, as they are there.
+      if (m4 && m4[1] !== yearF) return false;
+    }
+    const t = signed ? new Date(signed).getTime() : NaN;
+    if (monF !== 'all') {
+      if (isNaN(t) || MN[new Date(t).getMonth()] !== monF) return false;
+    }
+    if ((lo !== null || hi !== null) && !isNaN(t)) {
+      if (lo !== null && t < lo) return false;
+      if (hi !== null && t > hi) return false;
+    }
+    return true;
+  });
+
+  return { rows, active, yearF, desF, monF, period: (lo !== null || hi !== null) };
+}
 
 function renderSixMonth() {
   const host = document.getElementById('fu-sixmonth');
   if (!host) return;
 
-  const d = SIXMONTH_DATA;
+  const f = _sixMonthFiltered();
+  const scopeEl = document.getElementById('fu-sixmonth-scope');
+
+  // Detail rows are the live source. Without them the card falls back to the
+  // sheet's whole-book totals, which cannot answer a filter — so when a filter
+  // is on and the rows are missing, say so rather than show the wrong number.
+  // The sheet writes the summary and the detail rows independently, so the rows
+  // can be short of the stated eligible count. When they are and no filter is
+  // on, the sheet's own total is the truer number — recomputing would quietly
+  // shrink the headline figure. With a filter on, the rows are all there is.
+  const sheetTotal = parseInt(SIXMONTH_DATA.eligible, 10) || 0;
+  const rowsComplete = SIXMONTH_ROWS.length >= sheetTotal;
+
+  let d;
+  if (SIXMONTH_ROWS.length && (f.active || rowsComplete)) {
+    const days = f.rows.filter(r => r.days !== '').map(r => +r.days)
+                       .filter(n => !isNaN(n) && n >= 0).sort((a,b) => a - b);
+    const ontime = f.rows.filter(r => r.days !== '' && +r.days >= 0 && +r.days <= 183).length;
+    d = {
+      eligible:    f.rows.length,
+      ontime,
+      late:        f.rows.filter(r => r.days !== '' && +r.days > 183).length,
+      undelivered: f.rows.filter(r => r.days === '').length,
+      rate:        f.rows.length ? (ontime / f.rows.length * 100) : 0,
+      median:      days.length ? days[Math.floor(days.length / 2)] : ''
+    };
+  } else if (f.active) {
+    if (scopeEl) scopeEl.textContent = 'contracts signed 183+ days ago';
+    // Two different failures look identical from here, and blaming the sheet
+    // when the feed simply has not arrived sends the reader to the wrong place.
+    const noFeed = !(typeof CONTRACTS_DATA !== 'undefined' && CONTRACTS_DATA.length);
+    host.innerHTML = '<div style="padding:14px 16px;font-size:12px;color:var(--text2)">'
+      + (noFeed
+          ? 'Contracts data has not loaded, so OTIF cannot be calculated. Press Refresh.'
+          : 'The sheet carries only whole-book totals for OTIF, so it cannot answer the '
+            + 'current filters. Clear them to see the overall figure.')
+      + '</div>';
+    return;
+  } else {
+    d = SIXMONTH_DATA;
+  }
+
+  if (scopeEl) {
+    const bits = ['contracts signed 183+ days ago'];
+    if (f.desF  !== 'all') bits.push(f.desF);
+    if (f.monF  !== 'all') bits.push(f.monF);
+    if (f.yearF !== 'all') bits.push(f.yearF);
+    if (f.period)          bits.push('selected period');
+    scopeEl.textContent = bits.join(' · ');
+  }
+
   if (!d.eligible) {
     host.innerHTML = '<div style="padding:14px 16px;font-size:12px;color:var(--text2)">'
-      + 'No figures in the sheet yet.</div>';
+      + (f.active ? 'No contracts match the current filters.' : 'No figures in the sheet yet.')
+      + '</div>';
     return;
   }
 
@@ -10532,8 +10644,13 @@ function renderSixMonth() {
     +          'display:flex;flex-direction:column;align-items:center;justify-content:center">'
     +       '<b style="font-size:23px;font-weight:900;line-height:1;color:' + col + '">'
     +         rate.toFixed(1) + '%</b>'
+    // The percentage alone hides its own weight — 100% off two contracts and
+    // 100% off two hundred read identically. The count rides with it.
+    +       '<span style="font-size:11px;font-weight:700;line-height:1;color:var(--text);'
+    +            'margin-top:4px">' + (parseInt(d.ontime,10)||0) + ' / '
+    +            (parseInt(d.eligible,10)||0) + '</span>'
     +       '<span style="font-size:9px;letter-spacing:.7px;text-transform:uppercase;'
-    +            'color:var(--text2);margin-top:3px">on time</span>'
+    +            'color:var(--text2);margin-top:2px">OTIF</span>'
     +     '</div>'
     +   '</div>'
     +   '<div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:20px">'
@@ -10560,7 +10677,9 @@ function openSixMonthList(key) {
     late:   'Delivered late — over 183 days',
     open:   'Never delivered — still open'
   };
-  const rows = SIXMONTH_ROWS.filter(r =>
+  // Opens the same set the card counted, not the whole book — otherwise a list
+  // reached from a filtered figure contradicts the figure that opened it.
+  const rows = _sixMonthFiltered().rows.filter(r =>
       key === 'all'    ? true
     : key === 'ontime' ? (r.days !== '' && +r.days >= 0 && +r.days <= 183)
     : key === 'late'   ? (r.days !== '' && +r.days > 183)
