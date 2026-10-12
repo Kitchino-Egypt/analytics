@@ -10573,11 +10573,17 @@ function renderSixMonth() {
     const days = f.rows.filter(r => r.days !== '').map(r => +r.days)
                        .filter(n => !isNaN(n) && n >= 0).sort((a,b) => a - b);
     const ontime = f.rows.filter(r => r.days !== '' && +r.days >= 0 && +r.days <= 183).length;
+    const late   = f.rows.filter(r => r.days !== '' && +r.days > 183).length;
+    const undel  = f.rows.filter(r => r.days === '').length;
     d = {
       eligible:    f.rows.length,
       ontime,
-      late:        f.rows.filter(r => r.days !== '' && +r.days > 183).length,
-      undelivered: f.rows.filter(r => r.days === '').length,
+      late,
+      undelivered: undel,
+      // A gap that is neither blank nor a readable number — negative days, or
+      // text — lands in no bucket, so the three stop summing to Measured and the
+      // card looks broken. It is a data fault, counted as a miss and named.
+      unclear:     f.rows.length - ontime - late - undel,
       rate:        f.rows.length ? (ontime / f.rows.length * 100) : 0,
       median:      days.length ? days[Math.floor(days.length / 2)] : ''
     };
@@ -10663,6 +10669,10 @@ function renderSixMonth() {
     + '<div style="border-top:1px solid var(--line);padding:10px 16px;font-size:11px;'
     +      'color:var(--text2);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">'
     +   '<span>Median ' + (d.median || '—') + ' days for those delivered</span>'
+    +   ((parseInt(d.unclear,10)||0) > 0
+        ? '<span style="color:var(--amber,#d08700)">' + d.unclear + ' with an unreadable '
+          + 'delivery gap — counted as a miss, so the four figures fall short of Measured</span>'
+        : '')
     +   '<span>Only contracts carrying a CRM Code can be traced to a delivery</span>'
     + '</div>';
 }
