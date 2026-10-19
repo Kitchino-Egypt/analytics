@@ -3537,26 +3537,45 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-wallet .wal-section-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:0 2px 14px}
 #page-wallet .wal-section-head h3{margin:0;font-size:15px;font-weight:700;color:var(--text)}
 #page-wallet .wal-section-head span{font-size:11.5px;color:var(--text2)}
-/* Cards — one per person, in the shape of a payment card. */
-#page-wallet .wal-deck{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:30px}
-#page-wallet .wal-card{position:relative;overflow:hidden;flex:0 1 352px;min-width:300px;border-radius:19px;padding:22px 24px;color:#fff;
-  box-shadow:0 12px 30px rgba(12,40,34,.26);transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s}
-#page-wallet .wal-card:hover{transform:translateY(-4px);box-shadow:0 20px 42px rgba(12,40,34,.34)}
+/* Cards — built to real credit-card proportions (ISO/IEC 7810 ID-1 is
+   85.6 × 54 mm, so 1.586:1) with the furniture in the places a card actually
+   has it: chip upper-left, number across the middle, holder and expiry along
+   the bottom. The mark is Kitchino's own — no card network is implied. */
+#page-wallet .wal-deck{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:30px}
+#page-wallet .wal-card{position:relative;overflow:hidden;flex:0 0 auto;width:372px;aspect-ratio:1.586/1;
+  border-radius:16px;padding:22px 24px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;
+  box-shadow:0 14px 34px rgba(12,40,34,.3),inset 0 1px 0 rgba(255,255,255,.18);
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+#page-wallet .wal-card:hover{transform:translateY(-6px) rotate(-.6deg);box-shadow:0 26px 54px rgba(12,40,34,.4)}
+/* Guilloché-style sheen, the faint curved banding a real card carries. */
+#page-wallet .wal-card::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.07) 0 2px,transparent 2px 9px)}
 #page-wallet .wal-card::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(420px 170px at 112% -30%,rgba(255,255,255,.26),transparent 62%)}
+  background:radial-gradient(460px 200px at 112% -32%,rgba(255,255,255,.3),transparent 60%)}
 #page-wallet .wal-card>*{position:relative;z-index:1}
-#page-wallet .wal-chip{width:34px;height:25px;border-radius:6px;background:linear-gradient(145deg,#f1d79a,#c79f4c);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.34)}
-#page-wallet .wal-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-#page-wallet .wal-card-name{font-size:14.5px;font-weight:700;letter-spacing:.2px}
-#page-wallet .wal-card-amt{font-size:33px;font-weight:800;letter-spacing:-1.3px;line-height:1.1}
-#page-wallet .wal-card-pts{font-size:12px;color:rgba(255,255,255,.76);margin-top:5px}
-#page-wallet .wal-card-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:20px;
-  padding-top:14px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;color:rgba(255,255,255,.8)}
-#page-wallet .wal-card-foot b{display:block;font-size:14px;color:#fff;margin-top:3px}
-#page-wallet .wal-ring{width:50px;height:50px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}
-#page-wallet .wal-ring div{width:39px;height:39px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:10.5px;font-weight:800}
+/* EMV chip — contact pads, not a plain gold rectangle. */
+#page-wallet .wal-chip{width:46px;height:35px;border-radius:6px;position:relative;
+  background:linear-gradient(145deg,#f6e3ae,#d4ab54 55%,#b8902f);box-shadow:inset 0 0 0 1px rgba(255,255,255,.45)}
+#page-wallet .wal-chip::before{content:"";position:absolute;inset:6px 4px;border-radius:2px;
+  border:1px solid rgba(90,65,15,.55);border-left:0;border-right:0}
+#page-wallet .wal-chip::after{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:1px;
+  background:rgba(90,65,15,.55)}
+#page-wallet .wal-contactless{font-size:17px;opacity:.78;transform:rotate(90deg);letter-spacing:-2px}
+#page-wallet .wal-card-head{display:flex;justify-content:space-between;align-items:flex-start}
+#page-wallet .wal-brand{font-size:14px;font-weight:800;letter-spacing:-.4px;text-align:right}
+#page-wallet .wal-brand small{display:block;font-size:8.5px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.72);margin-top:2px}
+/* The "card number" is the balance, spaced like a PAN so it reads as one. */
+#page-wallet .wal-pan{font-family:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,monospace;
+  font-size:25px;font-weight:600;letter-spacing:3.5px;text-shadow:0 1px 1px rgba(0,0,0,.3)}
+#page-wallet .wal-pan small{font-size:12px;letter-spacing:1px;color:rgba(255,255,255,.78);margin-left:6px}
+#page-wallet .wal-card-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:14px}
+#page-wallet .wal-field{font-size:7.5px;letter-spacing:1.3px;text-transform:uppercase;color:rgba(255,255,255,.62);line-height:1.5}
+#page-wallet .wal-holder{font-size:13.5px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase}
+#page-wallet .wal-ring{width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}
+#page-wallet .wal-ring div{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:800}
+@media (prefers-reduced-motion:reduce){#page-wallet .wal-card{transition:none}#page-wallet .wal-card:hover{transform:none}}
 /* Statement — a running list of what was locked in, newest first. */
 #page-wallet .wal-statement{background:var(--card,#fff);border:1px solid var(--line,#e6e9e4);border-radius:16px;overflow:hidden}
 #page-wallet .wal-row{display:flex;align-items:center;gap:15px;padding:15px 20px;border-top:1px solid var(--line,#eef1ec)}
@@ -3570,6 +3589,12 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-wallet .wal-row-amt b{display:block;font-size:15px;font-weight:800;color:#1b9a6e}
 #page-wallet .wal-row-amt span{font-size:11px;color:var(--text2)}
 #page-wallet .wal-empty{padding:40px 24px;text-align:center;color:var(--text2);font-size:13px}
+/* Payable vs paid is the distinction the statement exists to make, so it is a
+   tag on the row rather than something inferred from a colour alone. */
+#page-wallet .wal-tag{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;
+  font-size:10px;font-weight:700;letter-spacing:.3px;vertical-align:middle}
+#page-wallet .wal-tag.owed{background:rgba(237,161,0,.16);color:#a37100}
+#page-wallet .wal-tag.paid{background:rgba(27,154,110,.15);color:#157956}
 @media(max-width:640px){#page-wallet .wal-amount{font-size:40px}#page-wallet .wal-hero{padding:24px 20px}#page-wallet .wal-card{flex:1 1 100%}}
 </style>
 </div>
@@ -15257,6 +15282,8 @@ function _walRender(d) {
   const names   = Object.keys(wallets);
   const balance = names.reduce((s,n) => s + (wallets[n].balance || 0), 0);
   const banked  = names.reduce((s,n) => s + (wallets[n].banked  || 0), 0);
+  const owed    = names.reduce((s,n) => s + (wallets[n].owed    || 0), 0);
+  const paidOut = names.reduce((s,n) => s + (wallets[n].paidOut || 0), 0);
 
   // A null store count means the receivables sheet could not be read. It is
   // never shown as 0, which would read as "target met" and imply the wallets
@@ -15283,6 +15310,13 @@ function _walRender(d) {
       +   '<div class="wal-subline">across ' + names.length + ' wallet' + (names.length === 1 ? '' : 's')
       +     ' · ' + egp(d.value) + ' per point'
       +     (banked ? ' · ' + banked + ' points banked to date' : '') + '</div>'
+      // Banked money is the number somebody is actually owed, so it is stated
+      // next to the balance rather than left to be worked out from the list.
+      +   (owed || paidOut
+          ? '<div class="wal-subline" style="margin-top:12px;display:flex;gap:22px;flex-wrap:wrap">'
+            + '<span>Awaiting payment <b style="color:#ffd98a;font-size:15px">' + egp(owed) + '</b></span>'
+            + '<span>Paid out <b style="color:#fff;font-size:15px">' + egp(paidOut) + '</b></span></div>'
+          : '')
       + '</div><div style="text-align:right">'
       +   '<span class="wal-pill' + (d.earning ? '' : ' paused') + '"><span class="wal-dot"></span>'
       +     (d.earning ? 'Earning now' : 'Paused at target') + '</span>'
@@ -15323,16 +15357,29 @@ function _walRender(d) {
           const pct = d.goal ? Math.min(100, bal / d.goal * 100) : 0;
           const ring = Math.max(2, pct);
 
+          // The balance is set in the place a card number lives, grouped in
+          // fours, so the card reads as a card rather than a tile with a
+          // number on it.
+          const pan = (bal * d.value).toLocaleString('en-EG',
+            { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
           return '<div class="wal-card" style="background:' + SKINS[i % SKINS.length] + '">'
-            + '<div class="wal-card-head"><div class="wal-chip"></div>'
-            +   '<div class="wal-card-name">' + esc(n) + '</div></div>'
-            + '<div class="wal-card-amt">' + egp(bal * d.value) + '</div>'
-            + '<div class="wal-card-pts">' + bal + ' point' + (bal === 1 ? '' : 's') + ' in wallet</div>'
+            + '<div class="wal-card-head"><div>'
+            +   '<div class="wal-chip"></div>'
+            +   '<div class="wal-contactless" style="margin-top:8px">)))</div>'
+            + '</div><div class="wal-brand">kitchino.'
+            +   '<small>Reward Wallet</small></div></div>'
+            + '<div><div class="wal-field" style="margin-bottom:5px">Balance EGP</div>'
+            +   '<div class="wal-pan">' + pan + '<small>' + bal
+            +     ' pt' + (bal === 1 ? '' : 's') + '</small></div></div>'
             + '<div class="wal-card-foot">'
-            +   '<span>Banked to date<b>' + (w.banked || 0) + '</b></span>'
-            +   '<span>Earned all time<b>' + (w.earned || 0) + '</b></span>'
+            +   '<div><div class="wal-field">Card holder</div>'
+            +     '<div class="wal-holder">' + esc(n) + '</div></div>'
+            +   '<div><div class="wal-field">Awaiting payment</div>'
+            +     '<div class="wal-holder" style="letter-spacing:.6px">' + egp(w.owed || 0) + '</div></div>'
             +   '<div class="wal-ring" style="background:conic-gradient(#eac570 0 ' + ring
-            +     '%,rgba(255,255,255,.22) ' + ring + '% 100%)">'
+            +     '%,rgba(255,255,255,.22) ' + ring + '% 100%)" title="'
+            +     Math.round(pct) + '% of the ' + d.goal + '-point milestone">'
             +     '<div style="background:rgba(0,0,0,.34);color:#fff">' + Math.round(pct) + '%</div></div>'
             + '</div></div>';
         }).join('')
@@ -15346,11 +15393,21 @@ function _walRender(d) {
 
     hist.innerHTML = rows.length
       ? rows.map(b => '<div class="wal-row">'
-          + '<div class="wal-av">' + esc(String(b.employee || '?').trim().charAt(0).toUpperCase()) + '</div>'
-          + '<div class="wal-row-main"><b>' + esc(b.employee) + '</b><span>'
+          + '<div class="wal-av"' + (b.paid ? ' style="background:linear-gradient(135deg,#2f5d7c,#3f86ad)"' : '') + '>'
+          +   esc(String(b.employee || '?').trim().charAt(0).toUpperCase()) + '</div>'
+          + '<div class="wal-row-main"><b>' + esc(b.employee)
+          +   (b.paid
+              ? '<span class="wal-tag paid">Paid</span>'
+              : '<span class="wal-tag owed">Payable</span>') + '</b><span>'
           +   new Date(b.at).toLocaleString()
-          +   (b.storeCount == null ? '' : ' · store was ' + b.storeCount) + '</span></div>'
-          + '<div class="wal-row-amt"><b>+' + egp(b.value) + '</b><span>'
+          +   (b.storeCount == null ? '' : ' · store was ' + b.storeCount)
+          +   (b.paid
+              ? ' · paid ' + new Date(b.paid).toLocaleDateString()
+                + (b.paidBy ? ' by ' + esc(b.paidBy) : '')
+                + (b.reference ? ' · ref ' + esc(b.reference) : '')
+              : '') + '</span></div>'
+          + '<div class="wal-row-amt"><b' + (b.paid ? ' style="color:var(--text2)"' : '') + '>'
+          +   (b.paid ? '' : '+') + egp(b.value) + '</b><span>'
           +   b.points + ' point' + (b.points === 1 ? '' : 's') + '</span></div>'
           + '</div>').join('')
       : '<div class="wal-empty">Nothing banked yet.<br>Wallets bank when the store returns to '
