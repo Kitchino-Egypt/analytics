@@ -3601,27 +3601,29 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 
 <div class="page" id="page-receivables">
   <!-- ▼ SECURE FINANCIAL DATA — served from Google Apps Script ▼ -->
-  <div style="position:absolute;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(var(--bg-rgb,15,17,23),0.94);backdrop-filter:blur(6px);border-radius:12px;min-height:340px">
-    <div style="text-align:center;padding:40px 32px;max-width:460px">
-      <div style="font-size:40px;margin-bottom:14px">🔒</div>
-      <div style="font-size:18px;font-weight:700;color:var(--text1,#e2e8f0);margin-bottom:10px">Receivables — Protected</div>
-      <div style="font-size:13px;color:var(--text2,#94a3b8);line-height:1.65;margin-bottom:18px">
-        Financial data is not served through this dashboard. It opens in a secure
-        window that verifies your Kitchino Google account before any data is loaded.
-      </div>
-      <a id="secure-rd-link" href="#" target="_blank" rel="noopener"
-         style="display:inline-block;background:var(--green);color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:11px 26px;border-radius:8px">
-        Open Secure Receivables →
-      </a>
-      <div id="secure-rd-missing" style="font-size:11px;color:var(--gold);margin-top:14px;display:none">
-        Not configured yet — paste the Apps Script URL into SECURE_FIN_URL in index.html
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:16px;letter-spacing:.5px">
-        CONFIDENTIAL · ACCESS IS LOGGED
-      </div>
+  <!-- Passcode gate. The Google-account check was replaced on request so the
+       CEO can read everything from one place. The passcode is verified by the
+       Apps Script, never here: this page is public, so a check in the browser
+       could simply be read out of the source. -->
+  <div id="rd-gate" style="display:none;text-align:center;padding:50px 24px">
+    <div style="font-size:38px;margin-bottom:12px">🔒</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">Receivables — Passcode required</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.65;max-width:470px;margin:0 auto 20px">
+      Customer balances are confidential. Enter the passcode once and this browser
+      will remember it.
+    </div>
+    <div style="max-width:420px;margin:0 auto;display:grid;gap:10px">
+      <input type="text" id="rd-url-in" placeholder="Receivables data /exec URL"
+        style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <input type="password" id="rd-pass-in" placeholder="Passcode"
+        onkeydown="if(event.key==='Enter')_rdSaveConfig()"
+        style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <button class="btn-sm primary" onclick="_rdSaveConfig()">Unlock</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:18px;letter-spacing:.5px">
+      CONFIDENTIAL — DO NOT SHARE THE PASSCODE
     </div>
   </div>
-  <!-- ▲ SECURE FINANCIAL DATA ▲ -->
   <div id="rd-loading" style="text-align:center;padding:60px 0;display:none">
     <div style="font-size:32px;margin-bottom:12px">⏳</div>
     <div style="color:var(--text2)">Loading Receivables & Delivery data…</div>
@@ -3629,6 +3631,7 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   <div id="rd-error" style="text-align:center;padding:60px 0;display:none">
     <div style="font-size:32px;margin-bottom:12px">⚠️</div>
     <div id="rd-error-msg" style="color:var(--red)">Could not load data.</div>
+    <button class="btn-sm" style="margin-top:14px" onclick="_rdClearConfig()">Change URL or passcode</button>
   </div>
   <div id="rd-content" style="display:none">
 
@@ -15415,6 +15418,27 @@ function _walRender(d) {
   }
 }
 
+// URL and passcode live in this browser, not in the file — the portal is
+// published publicly, so anything written here would ship with it.
+const _rdUrl  = () => localStorage.getItem('kitchino_rd_url')  || '';
+const _rdPass = () => localStorage.getItem('kitchino_rd_pass') || '';
+
+function _rdSaveConfig() {
+  const url  = (document.getElementById('rd-url-in')?.value  || '').trim();
+  const pass = (document.getElementById('rd-pass-in')?.value || '').trim();
+  if (!url || !pass) return alert('Both the URL and the passcode are needed.');
+  localStorage.setItem('kitchino_rd_url', url);
+  localStorage.setItem('kitchino_rd_pass', pass);
+  _RD_DATA = null;
+  buildReceivablesPage();
+}
+
+function _rdClearConfig() {
+  localStorage.removeItem('kitchino_rd_pass');
+  _RD_DATA = null;
+  buildReceivablesPage();
+}
+
 const RD_SCRIPT_URL = localStorage.getItem('kitchino_rd_url') || '';
 let _RD_DATA = null;
 let _rdFilteredRows = [];
@@ -15435,30 +15459,44 @@ async function buildReceivablesPage() {
   const cont    = document.getElementById('rd-content');
   if (!loading) return;
 
-  if (!RD_SCRIPT_URL) {
-    loading.style.display = 'none';
-    error.style.display   = 'block';
-    document.getElementById('rd-error-msg').textContent =
-      '⚠ No Receivables & Delivery script URL configured. Add it via Settings.';
+  const gate = document.getElementById('rd-gate');
+  const show = el => ['rd-gate','rd-loading','rd-error','rd-content']
+    .forEach(id => { const e = document.getElementById(id);
+                     if (e) e.style.display = (id === el ? 'block' : 'none'); });
+
+  if (!_rdUrl() || !_rdPass()) {
+    if (gate) {
+      const u = document.getElementById('rd-url-in');
+      if (u && !u.value) u.value = _rdUrl();
+    }
+    show('rd-gate');
     return;
   }
 
-  if (_RD_DATA) { _rdRender(_RD_DATA); return; }
+  if (_RD_DATA) { show('rd-content'); _rdRender(_RD_DATA); return; }
 
-  loading.style.display = 'block';
-  error.style.display   = 'none';
-  cont.style.display    = 'none';
+  show('rd-loading');
 
   try {
-    const data = await jsonpFetch(RD_SCRIPT_URL + '?_t=' + Date.now(), '_rdCb', 30000);
+    const data = await jsonpFetch(
+      _rdUrl() + '?key=' + encodeURIComponent(_rdPass()) + '&_t=' + Date.now(),
+      '_rdCb', 30000);
+
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data');
+
     _RD_DATA = data.data || [];
-    loading.style.display = 'none';
-    cont.style.display    = 'block';
+    show('rd-content');
     _rdRender(_RD_DATA);
   } catch(err) {
-    loading.style.display = 'none';
-    error.style.display   = 'block';
+    // A wrong passcode should return you to the gate, not to a dead error page.
+    if (/passcode/i.test(err.message || '')) {
+      localStorage.removeItem('kitchino_rd_pass');
+      show('rd-gate');
+      const p = document.getElementById('rd-pass-in');
+      if (p) { p.value = ''; p.placeholder = 'Wrong passcode — try again'; }
+      return;
+    }
+    show('rd-error');
     document.getElementById('rd-error-msg').textContent = '⚠ ' + err.message;
   }
 }
