@@ -3635,10 +3635,28 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   </div>
   <div id="rd-content" style="display:none">
 
-    <!-- KPI strip -->
-    <div class="kpi-grid kpi-4" id="rd-kpi-strip" style="margin-bottom:20px"></div>
+    <div class="rd-conf">🔒 Confidential — customer balances</div>
 
-    <!-- Charts row -->
+    <!-- Money first. The old strip counted orders; what this page is for is
+         where the money is sitting and who owes it. -->
+    <div class="rd-money" id="rd-money"></div>
+
+    <!-- Stage rings, matching the secure dashboard. -->
+    <div class="rd-rings" id="rd-rings"></div>
+
+    <div class="chart-grid chart-2" style="margin-bottom:22px">
+      <div class="chart-card">
+        <div class="chart-title">Outstanding by Stage</div>
+        <div class="chart-subtitle">where the money is sitting</div>
+        <div id="rd-by-stage" style="margin-top:14px"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top Debtors</div>
+        <div class="chart-subtitle">largest balances owed</div>
+        <div id="rd-debtors" style="margin-top:14px"></div>
+      </div>
+    </div>
+
     <div class="chart-grid chart-2" style="margin-bottom:22px">
       <div class="chart-card">
         <div class="chart-title">By Project Type</div>
@@ -3651,6 +3669,35 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
         <div class="chart-wrap"><canvas id="rd-chart-designer" height="260"></canvas></div>
       </div>
     </div>
+
+<style>
+/* Receivables — money view. Scoped so it cannot leak into other pages. */
+#page-receivables .rd-conf{display:inline-block;padding:5px 13px;border-radius:7px;margin-bottom:16px;
+  font-size:11px;font-weight:700;letter-spacing:.6px;background:rgba(214,60,60,.12);
+  color:#d14b4b;border:1px solid rgba(214,60,60,.3)}
+#page-receivables .rd-money{display:grid;gap:14px;margin-bottom:22px;
+  grid-template-columns:repeat(auto-fit,minmax(192px,1fr))}
+#page-receivables .rd-m{background:var(--card,#fff);border:1px solid var(--line,#e6e9e4);
+  border-radius:13px;padding:17px 19px}
+#page-receivables .rd-m .lbl{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text2)}
+#page-receivables .rd-m .val{font-size:27px;font-weight:800;letter-spacing:-1px;line-height:1.15;margin-top:9px}
+#page-receivables .rd-m .sub{font-size:11px;color:var(--text2);margin-top:6px}
+/* Rings: a count inside a coloured circle, red where the backlog is worst. */
+#page-receivables .rd-rings{display:flex;flex-wrap:wrap;gap:22px;justify-content:center;margin:4px 0 26px}
+#page-receivables .rd-ring{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;border:3px solid;text-align:center}
+#page-receivables .rd-ring b{font-size:30px;font-weight:800;line-height:1}
+#page-receivables .rd-ring span{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;margin-top:6px;color:var(--text2)}
+#page-receivables .rd-ring i{font-style:normal;font-size:10px;color:var(--text3);margin-top:3px}
+/* Bars — the label, the bar and the figure on one line, so the comparison is
+   immediate rather than something to read off two axes. */
+#page-receivables .rd-bar{display:flex;align-items:center;gap:12px;margin-bottom:11px;font-size:12.5px}
+#page-receivables .rd-bar .nm{flex:0 0 130px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-receivables .rd-bar .tr{flex:1;height:17px;border-radius:5px;background:var(--card2,rgba(0,0,0,.06));overflow:hidden}
+#page-receivables .rd-bar .tr i{display:block;height:100%;border-radius:5px}
+#page-receivables .rd-bar .amt{flex:0 0 96px;text-align:right;font-weight:700;color:var(--text)}
+#page-receivables .rd-bar .pc{flex:0 0 62px;text-align:right;font-size:11px;color:var(--text2)}
+</style>
 
     <!-- Filters + Table -->
     <div class="chart-card" style="margin-bottom:22px">
@@ -15441,6 +15488,7 @@ function _rdClearConfig() {
 
 const RD_SCRIPT_URL = localStorage.getItem('kitchino_rd_url') || '';
 let _RD_DATA = null;
+let _RD_PAYMENTS = [];
 let _rdFilteredRows = [];
 let _rdCurrentPage  = 1;
 const RD_PAGE_SIZE  = 100;
@@ -15485,6 +15533,7 @@ async function buildReceivablesPage() {
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data');
 
     _RD_DATA = data.data || [];
+    _RD_PAYMENTS = data.payments || [];
     show('rd-content');
     _rdRender(_RD_DATA);
   } catch(err) {
@@ -15507,14 +15556,112 @@ function _rdRender(allRows) {
   const finalQc    = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'final qc').length;
   const inStore    = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'store').length;
 
-  // KPI cards
-  const kpiEl = document.getElementById('rd-kpi-strip');
-  if (kpiEl) {
-    kpiEl.innerHTML =
-      `<div class="kpi-card teal"><div class="kpi-icon">📋</div><div class="kpi-label">Total Orders</div><div class="kpi-value">${total}</div><div class="kpi-sub">All pending delivery</div></div>` +
-      `<div class="kpi-card blue"><div class="kpi-icon">🏭</div><div class="kpi-label">In Production</div><div class="kpi-value">${production}</div><div class="kpi-sub">${total?Math.round(production/total*100):0}% of total</div></div>` +
-      `<div class="kpi-card gold"><div class="kpi-icon">🔍</div><div class="kpi-label">Final QC</div><div class="kpi-value">${finalQc}</div><div class="kpi-sub">${total?Math.round(finalQc/total*100):0}% of total</div></div>` +
-      `<div class="kpi-card green"><div class="kpi-icon">🏪</div><div class="kpi-label">In Store</div><div class="kpi-value">${inStore}</div><div class="kpi-sub">${total?Math.round(inStore/total*100):0}% of total</div></div>`;
+  // ── Money ────────────────────────────────────────────────────────────────
+  // Amounts arrive as "£127,825" strings, so everything numeric strips the
+  // formatting first. A row can be marked Due with no amount keyed yet, which
+  // is why "orders with balance" counts the flag and the totals sum the money
+  // — they answer different questions and will not always agree.
+  const num = v => Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')) || 0;
+  const egp = n => new Intl.NumberFormat('en-EG', { maximumFractionDigits: 0 }).format(n || 0);
+  const stageOf = r => (r['Project Status'] || r['CRM Status'] || '').trim().toLowerCase();
+  const payFlag = r => (r['Payment Report'] || '').trim().toLowerCase();
+
+  const dueRows = allRows.filter(r => payFlag(r) === 'due');
+  const paidRows = allRows.filter(r => payFlag(r) === 'paid');
+  const outstanding = allRows.reduce((s, r) => s + num(r['Due Amount']), 0);
+  const withAmount = allRows.filter(r => num(r['Due Amount']) > 0);
+  const largest = withAmount.reduce((m, r) => Math.max(m, num(r['Due Amount'])), 0);
+  const avg = dueRows.length ? outstanding / dueRows.length : 0;
+  const known = dueRows.length + paidRows.length;
+
+  // Today's payments come from the settlement log: Sheet2 holds only what is
+  // still owed, so a balance cleared today leaves no trace in it.
+  const payments = (_RD_PAYMENTS || []);
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const todayPays = payments.filter(p => (p.date || '').slice(0, 10) === todayKey);
+  const todayTotal = todayPays.reduce((s, p) => s + (p.paid || 0), 0);
+
+  const card = (label, value, sub, colour) =>
+    '<div class="rd-m"><div class="lbl">' + label + '</div>'
+    + '<div class="val" style="color:' + colour + '">' + value + '</div>'
+    + '<div class="sub">' + sub + '</div></div>';
+
+  const money = document.getElementById('rd-money');
+  if (money) {
+    money.innerHTML =
+        card("Today's Payment", egp(todayTotal),
+             todayPays.length + ' balance' + (todayPays.length === 1 ? '' : 's') + ' settled', '#1b9a6e')
+      + card('Total Outstanding', egp(outstanding), 'Due Amount', '#d14b4b')
+      + card('Orders With Balance', dueRows.length,
+             (known ? Math.round(dueRows.length / known * 100) : 0) + '% of ' + known + ' known', '#d79a23')
+      + card('Settled', paidRows.length, 'marked Paid', '#3f86ad')
+      + card('Average Balance', egp(avg), 'per order still owing', '#7d61ad')
+      + card('Largest Single', egp(largest), 'biggest one balance', '#b0579b');
+  }
+
+  const RING = [
+    ['Production',  production, '#3b82f6'],
+    ['Assembly QC', allRows.filter(r => stageOf(r) === 'assembly qc').length, '#10b981'],
+    ['Final QC',    finalQc,    '#f59e0b'],
+    ['Store',       inStore,    '#ef4444']
+  ];
+
+  const rings = document.getElementById('rd-rings');
+  if (rings) {
+    rings.innerHTML = RING.map(([name, n, c]) =>
+      '<div class="rd-ring" style="border-color:' + c + '">'
+      + '<b style="color:' + c + '">' + n + '</b>'
+      + '<span>' + name + '</span>'
+      + '<i>' + (total ? Math.round(n / total * 100) : 0) + '% of orders</i></div>').join('');
+  }
+
+  // ── Outstanding by stage ─────────────────────────────────────────────────
+  const byStage = {};
+  withAmount.forEach(r => {
+    const k = (r['Project Status'] || r['CRM Status'] || '—').trim() || '—';
+    if (!byStage[k]) byStage[k] = { sum: 0, n: 0 };
+    byStage[k].sum += num(r['Due Amount']);
+    byStage[k].n++;
+  });
+
+  const stageEl = document.getElementById('rd-by-stage');
+  if (stageEl) {
+    const list = Object.entries(byStage).sort((a, b) => b[1].sum - a[1].sum);
+    const top = list.length ? list[0][1].sum : 1;
+    const SC = { 'final qc':'#f59e0b', 'assembly qc':'#10b981', 'production':'#3b82f6', 'store':'#ef4444' };
+
+    stageEl.innerHTML = list.length ? list.map(([k, v]) =>
+      '<div class="rd-bar"><span class="nm">' + k + '</span>'
+      + '<span class="tr"><i style="width:' + (v.sum / top * 100) + '%;background:'
+      +   (SC[k.toLowerCase()] || '#8b5cf6') + '"></i></span>'
+      + '<span class="amt">' + egp(v.sum) + '</span>'
+      + '<span class="pc">' + (outstanding ? Math.round(v.sum / outstanding * 100) : 0)
+      +   '% · ' + v.n + '</span></div>').join('')
+      : '<div style="color:var(--text2);font-size:13px">Nothing outstanding.</div>';
+  }
+
+  // ── Top debtors ──────────────────────────────────────────────────────────
+  // Grouped by client, because one customer commonly has several rooms open
+  // and the exposure is the person, not the row.
+  const byClient = {};
+  withAmount.forEach(r => {
+    const k = (r['Client Name'] || '—').trim() || '—';
+    if (!byClient[k]) byClient[k] = { sum: 0, n: 0 };
+    byClient[k].sum += num(r['Due Amount']);
+    byClient[k].n++;
+  });
+
+  const debtEl = document.getElementById('rd-debtors');
+  if (debtEl) {
+    const list = Object.entries(byClient).sort((a, b) => b[1].sum - a[1].sum).slice(0, 8);
+    const top = list.length ? list[0][1].sum : 1;
+
+    debtEl.innerHTML = list.length ? list.map(([k, v], i) =>
+      '<div class="rd-bar"><span class="nm" title="' + k + '">' + (i + 1) + '. ' + k + '</span>'
+      + '<span class="tr"><i style="width:' + (v.sum / top * 100) + '%;background:#d14b4b"></i></span>'
+      + '<span class="amt">' + egp(v.sum) + '</span>'
+      + '<span class="pc">' + v.n + ' ord</span></div>').join('')
+      : '<div style="color:var(--text2);font-size:13px">No balances owed.</div>';
   }
 
   // Populate dropdowns
