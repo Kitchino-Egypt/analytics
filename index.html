@@ -3498,22 +3498,80 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
     <button class="btn-sm" style="margin-top:14px" onclick="_walClearConfig()">Change URL or key</button>
   </div>
   <div id="wal-content" style="display:none">
-    <div class="kpi-grid kpi-4" id="wal-kpi-strip" style="margin-bottom:20px"></div>
-    <div class="table-card" style="margin-bottom:16px">
-      <div class="table-header">
-        <div class="table-title">Wallets</div>
-        <div class="table-actions" id="wal-scope" style="font-size:11px;color:var(--text2)"></div>
-      </div>
-      <div id="wal-cards" style="display:flex;flex-wrap:wrap;gap:14px;padding:18px"></div>
-    </div>
-    <div class="table-card">
-      <div class="table-header">
-        <div class="table-title">Banking history</div>
-        <div class="table-actions" style="font-size:11px;color:var(--text2)">locked in when the store returned to target</div>
-      </div>
-      <div id="wal-banked"></div>
-    </div>
+    <div class="wal-hero" id="wal-hero"></div>
+    <div class="wal-section-head"><h3>Wallets</h3><span id="wal-scope"></span></div>
+    <div id="wal-cards" class="wal-deck"></div>
+    <div class="wal-section-head"><h3>Statement</h3><span>banked when the store returns to target</span></div>
+    <div id="wal-banked" class="wal-statement"></div>
   </div>
+
+<style>
+/* ── Reward Wallet look ───────────────────────────────────────────────────
+   Scoped to #page-wallet on purpose. This page is money rather than
+   reporting, so it reads like a payments app: a balance you see first, a
+   live status, cards per person, and a statement underneath. Everything is
+   kept off the shared classes so nothing here leaks into the other pages. */
+#page-wallet .wal-hero{position:relative;overflow:hidden;border-radius:22px;padding:30px 32px;margin-bottom:26px;
+  background:linear-gradient(135deg,#0c3a30 0%,#146b55 48%,#1d9a72 100%);color:#fff;
+  box-shadow:0 18px 44px rgba(10,60,48,.34)}
+#page-wallet .wal-hero::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(880px 300px at 88% -40%,rgba(255,255,255,.22),transparent 60%)}
+#page-wallet .wal-hero-top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+#page-wallet .wal-eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#a9d4c4}
+#page-wallet .wal-amount{font-size:52px;font-weight:800;letter-spacing:-2.4px;line-height:1.05;margin-top:10px}
+#page-wallet .wal-amount span{font-size:17px;font-weight:500;letter-spacing:0;color:#b9dccf;margin-left:8px}
+#page-wallet .wal-subline{font-size:13px;color:#b9dccf;margin-top:8px}
+#page-wallet .wal-pill{display:inline-flex;align-items:center;gap:9px;padding:9px 16px;border-radius:999px;
+  font-size:12.5px;font-weight:650;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);backdrop-filter:blur(4px)}
+#page-wallet .wal-dot{width:9px;height:9px;border-radius:50%;background:#7ff0bf;box-shadow:0 0 0 0 rgba(127,240,191,.75);animation:walPulse 1.9s infinite}
+#page-wallet .wal-pill.paused .wal-dot{background:#f3cf7a;animation:none;box-shadow:none}
+@keyframes walPulse{0%{box-shadow:0 0 0 0 rgba(127,240,191,.7)}70%{box-shadow:0 0 0 11px rgba(127,240,191,0)}100%{box-shadow:0 0 0 0 rgba(127,240,191,0)}}
+@media (prefers-reduced-motion:reduce){#page-wallet .wal-dot{animation:none}#page-wallet .wal-meter i{transition:none}}
+/* Store meter — the target is a line you are over or under, not a number to
+   compare in your head. */
+#page-wallet .wal-meter-wrap{position:relative;z-index:1;margin-top:24px}
+#page-wallet .wal-meter{position:relative;height:12px;border-radius:999px;background:rgba(255,255,255,.17);overflow:hidden}
+#page-wallet .wal-meter i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7ff0bf,#eac570);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+#page-wallet .wal-mark{position:absolute;top:-5px;width:2px;height:22px;background:rgba(255,255,255,.85);border-radius:2px}
+#page-wallet .wal-meter-legend{display:flex;justify-content:space-between;font-size:11.5px;color:#b9dccf;margin-top:10px}
+#page-wallet .wal-section-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin:0 2px 14px}
+#page-wallet .wal-section-head h3{margin:0;font-size:15px;font-weight:700;color:var(--text)}
+#page-wallet .wal-section-head span{font-size:11.5px;color:var(--text2)}
+/* Cards — one per person, in the shape of a payment card. */
+#page-wallet .wal-deck{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:30px}
+#page-wallet .wal-card{position:relative;overflow:hidden;flex:0 1 352px;min-width:300px;border-radius:19px;padding:22px 24px;color:#fff;
+  box-shadow:0 12px 30px rgba(12,40,34,.26);transition:transform .22s cubic-bezier(.2,.8,.2,1),box-shadow .22s}
+#page-wallet .wal-card:hover{transform:translateY(-4px);box-shadow:0 20px 42px rgba(12,40,34,.34)}
+#page-wallet .wal-card::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(420px 170px at 112% -30%,rgba(255,255,255,.26),transparent 62%)}
+#page-wallet .wal-card>*{position:relative;z-index:1}
+#page-wallet .wal-chip{width:34px;height:25px;border-radius:6px;background:linear-gradient(145deg,#f1d79a,#c79f4c);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.34)}
+#page-wallet .wal-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+#page-wallet .wal-card-name{font-size:14.5px;font-weight:700;letter-spacing:.2px}
+#page-wallet .wal-card-amt{font-size:33px;font-weight:800;letter-spacing:-1.3px;line-height:1.1}
+#page-wallet .wal-card-pts{font-size:12px;color:rgba(255,255,255,.76);margin-top:5px}
+#page-wallet .wal-card-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:20px;
+  padding-top:14px;border-top:1px solid rgba(255,255,255,.2);font-size:11px;color:rgba(255,255,255,.8)}
+#page-wallet .wal-card-foot b{display:block;font-size:14px;color:#fff;margin-top:3px}
+#page-wallet .wal-ring{width:50px;height:50px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center}
+#page-wallet .wal-ring div{width:39px;height:39px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800}
+/* Statement — a running list of what was locked in, newest first. */
+#page-wallet .wal-statement{background:var(--card,#fff);border:1px solid var(--line,#e6e9e4);border-radius:16px;overflow:hidden}
+#page-wallet .wal-row{display:flex;align-items:center;gap:15px;padding:15px 20px;border-top:1px solid var(--line,#eef1ec)}
+#page-wallet .wal-row:first-child{border-top:0}
+#page-wallet .wal-av{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;color:#fff;background:linear-gradient(135deg,#17715a,#1d9a72)}
+#page-wallet .wal-row-main{flex:1;min-width:0}
+#page-wallet .wal-row-main b{display:block;font-size:13.5px;color:var(--text)}
+#page-wallet .wal-row-main span{font-size:11.5px;color:var(--text2)}
+#page-wallet .wal-row-amt{text-align:right;white-space:nowrap}
+#page-wallet .wal-row-amt b{display:block;font-size:15px;font-weight:800;color:#1b9a6e}
+#page-wallet .wal-row-amt span{font-size:11px;color:var(--text2)}
+#page-wallet .wal-empty{padding:40px 24px;text-align:center;color:var(--text2);font-size:13px}
+@media(max-width:640px){#page-wallet .wal-amount{font-size:40px}#page-wallet .wal-hero{padding:24px 20px}#page-wallet .wal-card{flex:1 1 100%}}
+</style>
 </div>
 
 <div class="page" id="page-receivables">
@@ -15206,62 +15264,97 @@ function _walRender(d) {
   const sc = (d.storeCount === null || d.storeCount === undefined) ? null : d.storeCount;
   const over = sc === null ? null : sc - d.target;
 
-  const kpi = document.getElementById('wal-kpi-strip');
-  if (kpi) {
-    kpi.innerHTML =
-      `<div class="kpi-card ${sc===null?'gold':over>0?'green':'blue'}"><div class="kpi-icon">🏪</div>`
-      + `<div class="kpi-label">In Store</div><div class="kpi-value">${sc===null?'—':sc}</div>`
-      + `<div class="kpi-sub">${sc===null?'count unavailable':over>0?`${over} over target (${d.target})`:`at target (${d.target})`}</div></div>`
-      + `<div class="kpi-card ${d.earning?'green':'gold'}"><div class="kpi-icon">${d.earning?'⚡':'⏸'}</div>`
-      + `<div class="kpi-label">Wallet Status</div><div class="kpi-value" style="font-size:20px">${d.earning?'Earning':'Paused'}</div>`
-      + `<div class="kpi-sub">${d.earning?'every shipped order earns':'banks and resets at target'}</div></div>`
-      + `<div class="kpi-card teal"><div class="kpi-icon">👛</div><div class="kpi-label">Open Balance</div>`
-      + `<div class="kpi-value">${balance}</div><div class="kpi-sub">${egp(balance * d.value)} across ${names.length} wallet${names.length===1?'':'s'}</div></div>`
-      + `<div class="kpi-card blue"><div class="kpi-icon">🏦</div><div class="kpi-label">Banked To Date</div>`
-      + `<div class="kpi-value">${banked}</div><div class="kpi-sub">${egp((d.banked||[]).reduce((s,b)=>s+(b.value||0),0))} payable</div></div>`;
+  const esc = s => String(s == null ? '' : s)
+    .replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+  // ── Hero: the balance first, then whether it is still growing ────────────
+  const hero = document.getElementById('wal-hero');
+  if (hero) {
+    // The meter runs to 150% of target so being over it is visible as overflow
+    // rather than a bar that is simply full and says nothing.
+    const scale = Math.max(d.target * 1.5, (sc || 0) + 1);
+    const fill  = sc === null ? 0 : Math.min(100, sc / scale * 100);
+    const mark  = Math.min(100, d.target / scale * 100);
+
+    hero.innerHTML =
+      '<div class="wal-hero-top"><div>'
+      +   '<div class="wal-eyebrow">Open balance</div>'
+      +   '<div class="wal-amount">' + egp(balance * d.value) + '<span>' + balance + ' points</span></div>'
+      +   '<div class="wal-subline">across ' + names.length + ' wallet' + (names.length === 1 ? '' : 's')
+      +     ' · ' + egp(d.value) + ' per point'
+      +     (banked ? ' · ' + banked + ' points banked to date' : '') + '</div>'
+      + '</div><div style="text-align:right">'
+      +   '<span class="wal-pill' + (d.earning ? '' : ' paused') + '"><span class="wal-dot"></span>'
+      +     (d.earning ? 'Earning now' : 'Paused at target') + '</span>'
+      +   '<div class="wal-subline" style="margin-top:10px">'
+      +     (d.earning
+            ? 'every shipped order adds a point'
+            : 'wallets bank and restart at zero') + '</div>'
+      + '</div></div>'
+      + '<div class="wal-meter-wrap">'
+      +   '<div class="wal-meter"><i style="width:' + fill + '%"></i>'
+      +     '<span class="wal-mark" style="left:' + mark + '%"></span></div>'
+      +   '<div class="wal-meter-legend"><span>'
+      +     (sc === null ? 'Store count unavailable'
+          : over > 0 ? '<b style="color:#fff">' + sc + '</b> in store · ' + over + ' over target'
+          : '<b style="color:#fff">' + sc + '</b> in store · at or under target')
+      +   '</span><span>Target ' + d.target + '</span></div>'
+      + '</div>';
   }
 
   const scope = document.getElementById('wal-scope');
-  if (scope) scope.textContent = egp(d.value) + ' per point · milestone ' + d.goal
-    + (d.updated ? ' · ' + new Date(d.updated).toLocaleString() : '');
+  if (scope) scope.textContent = 'milestone ' + d.goal + ' points'
+    + (d.updated ? ' · updated ' + new Date(d.updated).toLocaleString() : '');
+
+  // ── One payment card per person ──────────────────────────────────────────
+  const SKINS = [
+    'linear-gradient(135deg,#0c3a30,#17715a 60%,#1d9a72)',
+    'linear-gradient(135deg,#243b55,#2f5d7c 60%,#3f86ad)',
+    'linear-gradient(135deg,#4a3418,#8a6224 60%,#c08f3a)',
+    'linear-gradient(135deg,#3b2a4d,#5b4480 60%,#7d61ad)'
+  ];
 
   const cards = document.getElementById('wal-cards');
   if (cards) {
     cards.innerHTML = names.length
-      ? names.sort((a,b) => (wallets[b].balance||0) - (wallets[a].balance||0)).map(n => {
-          const w = wallets[n];
-          return '<div style="flex:1 1 230px;min-width:230px;background:#154f40;color:#fff;border-radius:14px;padding:18px 20px">'
-            + '<div style="font-size:14px;font-weight:700">' + n + ' Wallet</div>'
-            + '<div style="font-size:38px;font-weight:800;letter-spacing:-1.5px;line-height:1.2;margin-top:8px">'
-            +   (w.balance||0) + ' <span style="font-size:13px;font-weight:400;color:#bfd9cd">points · '
-            +   egp((w.balance||0) * d.value) + '</span></div>'
-            + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#c2d8cd;margin-top:10px">'
-            +   '<span>Banked <b style="color:#fff">' + (w.banked||0) + '</b></span>'
-            +   '<span>Earned all time <b style="color:#fff">' + (w.earned||0) + '</b></span></div>'
-            + '</div>';
+      ? names.sort((a, b) => (wallets[b].balance || 0) - (wallets[a].balance || 0)).map((n, i) => {
+          const w   = wallets[n];
+          const bal = w.balance || 0;
+          const pct = d.goal ? Math.min(100, bal / d.goal * 100) : 0;
+          const ring = Math.max(2, pct);
+
+          return '<div class="wal-card" style="background:' + SKINS[i % SKINS.length] + '">'
+            + '<div class="wal-card-head"><div class="wal-chip"></div>'
+            +   '<div class="wal-card-name">' + esc(n) + '</div></div>'
+            + '<div class="wal-card-amt">' + egp(bal * d.value) + '</div>'
+            + '<div class="wal-card-pts">' + bal + ' point' + (bal === 1 ? '' : 's') + ' in wallet</div>'
+            + '<div class="wal-card-foot">'
+            +   '<span>Banked to date<b>' + (w.banked || 0) + '</b></span>'
+            +   '<span>Earned all time<b>' + (w.earned || 0) + '</b></span>'
+            +   '<div class="wal-ring" style="background:conic-gradient(#eac570 0 ' + ring
+            +     '%,rgba(255,255,255,.22) ' + ring + '% 100%)">'
+            +     '<div style="background:rgba(0,0,0,.34);color:#fff">' + Math.round(pct) + '%</div></div>'
+            + '</div></div>';
         }).join('')
-      : '<div style="color:var(--text2);font-size:13px;padding:8px">No wallets yet.</div>';
+      : '<div class="wal-empty" style="flex:1">No wallets yet.</div>';
   }
 
+  // ── Statement ────────────────────────────────────────────────────────────
   const hist = document.getElementById('wal-banked');
   if (hist) {
     const rows = (d.banked || []).slice().reverse();
+
     hist.innerHTML = rows.length
-      ? '<table style="width:100%;font-size:12px;border-collapse:collapse">'
-        + '<thead><tr style="text-align:left;color:var(--text2);font-size:11px">'
-        +   '<th style="padding:8px 14px">Banked at</th><th style="padding:8px 14px">Employee</th>'
-        +   '<th style="padding:8px 14px">Points</th><th style="padding:8px 14px">Value</th>'
-        +   '<th style="padding:8px 14px">Store count</th></tr></thead><tbody>'
-        + rows.map(b => '<tr style="border-top:1px solid var(--line)">'
-            + '<td style="padding:8px 14px;color:var(--text2)">' + new Date(b.at).toLocaleString() + '</td>'
-            + '<td style="padding:8px 14px">' + b.employee + '</td>'
-            + '<td style="padding:8px 14px"><b>' + b.points + '</b></td>'
-            + '<td style="padding:8px 14px">' + egp(b.value) + '</td>'
-            + '<td style="padding:8px 14px;color:var(--text2)">'
-            +   (b.storeCount == null ? '—' : b.storeCount) + '</td></tr>').join('')
-        + '</tbody></table>'
-      : '<div style="padding:22px;text-align:center;color:var(--text2);font-size:13px">'
-        + 'Nothing banked yet. Wallets bank when the store returns to ' + d.target + ' or fewer.</div>';
+      ? rows.map(b => '<div class="wal-row">'
+          + '<div class="wal-av">' + esc(String(b.employee || '?').trim().charAt(0).toUpperCase()) + '</div>'
+          + '<div class="wal-row-main"><b>' + esc(b.employee) + '</b><span>'
+          +   new Date(b.at).toLocaleString()
+          +   (b.storeCount == null ? '' : ' · store was ' + b.storeCount) + '</span></div>'
+          + '<div class="wal-row-amt"><b>+' + egp(b.value) + '</b><span>'
+          +   b.points + ' point' + (b.points === 1 ? '' : 's') + '</span></div>'
+          + '</div>').join('')
+      : '<div class="wal-empty">Nothing banked yet.<br>Wallets bank when the store returns to '
+        + d.target + ' or fewer.</div>';
   }
 }
 
