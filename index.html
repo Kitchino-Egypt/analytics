@@ -1435,6 +1435,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="ordertypes"><span class="nav-icon">🗂</span>Order Types</div>
     <div class="nav-item" data-page="instfollowup"><span class="nav-icon">🔧</span>Installation</div>
     <div class="nav-item" data-page="receivables"><span class="nav-icon">💰</span>Receivables &amp; Delivery</div>
+    <div class="nav-item" data-page="wallet"><span class="nav-icon">🏅</span>Kitchino Reward Wallet</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
@@ -3468,6 +3469,53 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 </div>
 
 <!-- PAGE: STORE PROJECTS -->
+<!-- KITCHINO REWARD WALLET — read-only mirror of the Apps Script rewards app.
+     The store team enters work there; this page only reports. The wallet rule:
+     while the store holds more than the target, each shipped order earns a
+     point; when it returns to target the wallets bank as payable and reset. -->
+<div class="page" id="page-wallet">
+  <div id="wal-setup" style="display:none;text-align:center;padding:50px 24px">
+    <div style="font-size:34px;margin-bottom:12px">🔑</div>
+    <div style="color:var(--text2);max-width:520px;margin:0 auto 18px;font-size:13px;line-height:1.6">
+      The wallet endpoint is not configured in this browser. The URL and key are
+      kept in local storage rather than in the page, because this site is public
+      and anything written here would be readable by anyone.
+    </div>
+    <div style="max-width:520px;margin:0 auto;display:grid;gap:10px">
+      <input type="text" id="wal-url" placeholder="Rewards app /exec URL"
+        style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <input type="password" id="wal-key" placeholder="WALLET_API_KEY"
+        style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <button class="btn-sm primary" onclick="_walSaveConfig()">Save and load</button>
+    </div>
+  </div>
+  <div id="wal-loading" style="text-align:center;padding:60px 0;display:none">
+    <div style="color:var(--text2)">Loading reward wallets…</div>
+  </div>
+  <div id="wal-error" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+    <div id="wal-error-msg" style="color:var(--red)">Could not load data.</div>
+    <button class="btn-sm" style="margin-top:14px" onclick="_walClearConfig()">Change URL or key</button>
+  </div>
+  <div id="wal-content" style="display:none">
+    <div class="kpi-grid kpi-4" id="wal-kpi-strip" style="margin-bottom:20px"></div>
+    <div class="table-card" style="margin-bottom:16px">
+      <div class="table-header">
+        <div class="table-title">Wallets</div>
+        <div class="table-actions" id="wal-scope" style="font-size:11px;color:var(--text2)"></div>
+      </div>
+      <div id="wal-cards" style="display:flex;flex-wrap:wrap;gap:14px;padding:18px"></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Banking history</div>
+        <div class="table-actions" style="font-size:11px;color:var(--text2)">locked in when the store returned to target</div>
+      </div>
+      <div id="wal-banked"></div>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-receivables">
   <!-- ▼ SECURE FINANCIAL DATA — served from Google Apps Script ▼ -->
   <div style="position:absolute;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;background:rgba(var(--bg-rgb,15,17,23),0.94);backdrop-filter:blur(6px);border-radius:12px;min-height:340px">
@@ -9773,7 +9821,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',governorate:'Measures by Governorate',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet'
 };
 
 const PAGE_BUILDERS = {
@@ -9792,6 +9840,7 @@ const PAGE_BUILDERS = {
   ordertypes: buildOrderTypeCharts,
   instfollowup: buildInstFollowupPage,
   receivables: buildReceivablesPage,
+  wallet: buildWalletPage,
   journey: buildJourneyPage,
   signals: buildSignalsPage,
 };
@@ -9950,6 +9999,13 @@ function _govDetail(gov) {
 const _FILTERS_NA = {
   followup: {
     'filter-area': 'Not used here — the contracts feed has no area field'
+  },
+  // Wallet balances are a running position, not a period figure: a wallet
+  // holds what it holds until the store returns to target. Filtering it by
+  // month would produce a number that answers no real question.
+  wallet: {
+    'filter-month': 'Not used here — a wallet balance is a running total, not a monthly one',
+    'filter-area':  'Not used here — the rewards app has no area field'
   }
 };
 
@@ -9998,6 +10054,9 @@ function _stampPeriodChips() {
   const { text, narrowed } = _periodLabel();
 
   document.querySelectorAll('.chart-title, .table-title').forEach(el => {
+    // The wallet page ignores the filters by design, so a chip naming a month
+    // there would claim a scope the figures do not have.
+    if (el.closest('#page-wallet')) return;
     // Some titles are rewritten wholesale by their render function, which wipes
     // the chip. Re-querying each pass and re-creating when missing is what keeps
     // it stable without any render function needing to know this exists.
@@ -15068,6 +15127,143 @@ const SECURE_FIN_URL = 'https://script.google.com/a/macros/kitchino.com/s/AKfycb
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 })();
+
+// ── KITCHINO REWARD WALLET ──────────────────────────────────────────────────
+// Read-only mirror of the Apps Script rewards app. The URL and key live in
+// localStorage, never in this file: the portal is published to GitHub Pages,
+// so a key written here would ship to anyone who opens the site or the repo.
+let _WAL_DATA = null;
+
+const _walUrl = () => localStorage.getItem('kitchino_wallet_url') || '';
+const _walKey = () => localStorage.getItem('kitchino_wallet_key') || '';
+
+function _walSaveConfig() {
+  const url = (document.getElementById('wal-url')?.value || '').trim();
+  const key = (document.getElementById('wal-key')?.value || '').trim();
+  if (!url || !key) return alert('Both the URL and the key are needed.');
+  localStorage.setItem('kitchino_wallet_url', url);
+  localStorage.setItem('kitchino_wallet_key', key);
+  _WAL_DATA = null;
+  buildWalletPage();
+}
+
+function _walClearConfig() {
+  localStorage.removeItem('kitchino_wallet_url');
+  localStorage.removeItem('kitchino_wallet_key');
+  _WAL_DATA = null;
+  buildWalletPage();
+}
+
+async function buildWalletPage() {
+  const setup   = document.getElementById('wal-setup');
+  const loading = document.getElementById('wal-loading');
+  const error   = document.getElementById('wal-error');
+  const cont    = document.getElementById('wal-content');
+  if (!setup) return;
+
+  const show = el => ['wal-setup','wal-loading','wal-error','wal-content']
+    .forEach(id => { const e = document.getElementById(id);
+                     if (e) e.style.display = (id === el ? 'block' : 'none'); });
+
+  if (!_walUrl() || !_walKey()) { show('wal-setup'); return; }
+  if (_WAL_DATA) { show('wal-content'); _walRender(_WAL_DATA); return; }
+
+  show('wal-loading');
+
+  try {
+    // JSONP, because an Apps Script /exec sends no CORS headers and a plain
+    // fetch from this origin would be blocked before the response is read.
+    const data = await jsonpFetch(
+      _walUrl() + '?api=wallet&key=' + encodeURIComponent(_walKey()) +
+      '&_t=' + Date.now(), '_walCb', 30000);
+
+    if (!data || data.status !== 'ok') {
+      throw new Error(data && data.message ? data.message : 'No data returned');
+    }
+
+    _WAL_DATA = data;
+    show('wal-content');
+    _walRender(data);
+  } catch (err) {
+    show('wal-error');
+    const m = document.getElementById('wal-error-msg');
+    if (m) m.textContent = '⚠ ' + err.message;
+  }
+}
+
+function _walRender(d) {
+  const egp = n => new Intl.NumberFormat('en-EG',
+    { style:'currency', currency:'EGP', maximumFractionDigits:2 }).format(n || 0);
+
+  const wallets = d.wallets || {};
+  const names   = Object.keys(wallets);
+  const balance = names.reduce((s,n) => s + (wallets[n].balance || 0), 0);
+  const banked  = names.reduce((s,n) => s + (wallets[n].banked  || 0), 0);
+
+  // A null store count means the receivables sheet could not be read. It is
+  // never shown as 0, which would read as "target met" and imply the wallets
+  // had just been emptied.
+  const sc = (d.storeCount === null || d.storeCount === undefined) ? null : d.storeCount;
+  const over = sc === null ? null : sc - d.target;
+
+  const kpi = document.getElementById('wal-kpi-strip');
+  if (kpi) {
+    kpi.innerHTML =
+      `<div class="kpi-card ${sc===null?'gold':over>0?'green':'blue'}"><div class="kpi-icon">🏪</div>`
+      + `<div class="kpi-label">In Store</div><div class="kpi-value">${sc===null?'—':sc}</div>`
+      + `<div class="kpi-sub">${sc===null?'count unavailable':over>0?`${over} over target (${d.target})`:`at target (${d.target})`}</div></div>`
+      + `<div class="kpi-card ${d.earning?'green':'gold'}"><div class="kpi-icon">${d.earning?'⚡':'⏸'}</div>`
+      + `<div class="kpi-label">Wallet Status</div><div class="kpi-value" style="font-size:20px">${d.earning?'Earning':'Paused'}</div>`
+      + `<div class="kpi-sub">${d.earning?'every shipped order earns':'banks and resets at target'}</div></div>`
+      + `<div class="kpi-card teal"><div class="kpi-icon">👛</div><div class="kpi-label">Open Balance</div>`
+      + `<div class="kpi-value">${balance}</div><div class="kpi-sub">${egp(balance * d.value)} across ${names.length} wallet${names.length===1?'':'s'}</div></div>`
+      + `<div class="kpi-card blue"><div class="kpi-icon">🏦</div><div class="kpi-label">Banked To Date</div>`
+      + `<div class="kpi-value">${banked}</div><div class="kpi-sub">${egp((d.banked||[]).reduce((s,b)=>s+(b.value||0),0))} payable</div></div>`;
+  }
+
+  const scope = document.getElementById('wal-scope');
+  if (scope) scope.textContent = egp(d.value) + ' per point · milestone ' + d.goal
+    + (d.updated ? ' · ' + new Date(d.updated).toLocaleString() : '');
+
+  const cards = document.getElementById('wal-cards');
+  if (cards) {
+    cards.innerHTML = names.length
+      ? names.sort((a,b) => (wallets[b].balance||0) - (wallets[a].balance||0)).map(n => {
+          const w = wallets[n];
+          return '<div style="flex:1 1 230px;min-width:230px;background:#154f40;color:#fff;border-radius:14px;padding:18px 20px">'
+            + '<div style="font-size:14px;font-weight:700">' + n + ' Wallet</div>'
+            + '<div style="font-size:38px;font-weight:800;letter-spacing:-1.5px;line-height:1.2;margin-top:8px">'
+            +   (w.balance||0) + ' <span style="font-size:13px;font-weight:400;color:#bfd9cd">points · '
+            +   egp((w.balance||0) * d.value) + '</span></div>'
+            + '<div style="display:flex;justify-content:space-between;font-size:11px;color:#c2d8cd;margin-top:10px">'
+            +   '<span>Banked <b style="color:#fff">' + (w.banked||0) + '</b></span>'
+            +   '<span>Earned all time <b style="color:#fff">' + (w.earned||0) + '</b></span></div>'
+            + '</div>';
+        }).join('')
+      : '<div style="color:var(--text2);font-size:13px;padding:8px">No wallets yet.</div>';
+  }
+
+  const hist = document.getElementById('wal-banked');
+  if (hist) {
+    const rows = (d.banked || []).slice().reverse();
+    hist.innerHTML = rows.length
+      ? '<table style="width:100%;font-size:12px;border-collapse:collapse">'
+        + '<thead><tr style="text-align:left;color:var(--text2);font-size:11px">'
+        +   '<th style="padding:8px 14px">Banked at</th><th style="padding:8px 14px">Employee</th>'
+        +   '<th style="padding:8px 14px">Points</th><th style="padding:8px 14px">Value</th>'
+        +   '<th style="padding:8px 14px">Store count</th></tr></thead><tbody>'
+        + rows.map(b => '<tr style="border-top:1px solid var(--line)">'
+            + '<td style="padding:8px 14px;color:var(--text2)">' + new Date(b.at).toLocaleString() + '</td>'
+            + '<td style="padding:8px 14px">' + b.employee + '</td>'
+            + '<td style="padding:8px 14px"><b>' + b.points + '</b></td>'
+            + '<td style="padding:8px 14px">' + egp(b.value) + '</td>'
+            + '<td style="padding:8px 14px;color:var(--text2)">'
+            +   (b.storeCount == null ? '—' : b.storeCount) + '</td></tr>').join('')
+        + '</tbody></table>'
+      : '<div style="padding:22px;text-align:center;color:var(--text2);font-size:13px">'
+        + 'Nothing banked yet. Wallets bank when the store returns to ' + d.target + ' or fewer.</div>';
+  }
+}
 
 const RD_SCRIPT_URL = localStorage.getItem('kitchino_rd_url') || '';
 let _RD_DATA = null;
