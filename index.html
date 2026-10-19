@@ -3697,7 +3697,31 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-receivables .rd-bar .tr i{display:block;height:100%;border-radius:5px}
 #page-receivables .rd-bar .amt{flex:0 0 96px;text-align:right;font-weight:700;color:var(--text)}
 #page-receivables .rd-bar .pc{flex:0 0 62px;text-align:right;font-size:11px;color:var(--text2)}
+/* Store over target is the one number on this page that calls for action, so
+   it pulses — slowly, because a fast flash is an alarm and this is a backlog.
+   At or under target the colour changes and the motion stops: the absence of
+   movement is the signal that it has been cleared. */
+@keyframes rdStorePulse{0%,100%{box-shadow:0 0 0 0 rgba(224,62,62,.52)}50%{box-shadow:0 0 0 15px rgba(224,62,62,0)}}
+#page-receivables .rd-ring.over{animation:rdStorePulse 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){#page-receivables .rd-ring.over{animation:none}}
+#page-receivables .rd-m.clickable{cursor:pointer;transition:transform .16s,box-shadow .16s}
+#page-receivables .rd-m.clickable:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
 </style>
+
+<!-- Payment detail. Opened from the Today's Payment card. -->
+<div id="rd-pay-modal" style="display:none;position:fixed;inset:0;z-index:900;
+     background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px"
+     onclick="if(event.target===this)closeRdPayments()">
+  <div style="background:var(--card,#fff);border-radius:14px;max-width:680px;width:100%;
+       max-height:82vh;overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;
+         padding:16px 20px;border-bottom:1px solid var(--line)">
+      <div id="rd-pay-title" style="font-size:15px;font-weight:800;color:var(--text)">Payments</div>
+      <button class="btn-sm" onclick="closeRdPayments()">Close</button>
+    </div>
+    <div id="rd-pay-body"></div>
+  </div>
+</div>
 
     <!-- Filters + Table -->
     <div class="chart-card" style="margin-bottom:22px">
@@ -15581,8 +15605,9 @@ function _rdRender(allRows) {
   const todayPays = payments.filter(p => (p.date || '').slice(0, 10) === todayKey);
   const todayTotal = todayPays.reduce((s, p) => s + (p.paid || 0), 0);
 
-  const card = (label, value, sub, colour) =>
-    '<div class="rd-m"><div class="lbl">' + label + '</div>'
+  const card = (label, value, sub, colour, onClick) =>
+    '<div class="rd-m' + (onClick ? ' clickable" onclick="' + onClick + '"' : '"') + '>'
+    + '<div class="lbl">' + label + '</div>'
     + '<div class="val" style="color:' + colour + '">' + value + '</div>'
     + '<div class="sub">' + sub + '</div></div>';
 
@@ -15590,7 +15615,9 @@ function _rdRender(allRows) {
   if (money) {
     money.innerHTML =
         card("Today's Payment", egp(todayTotal),
-             todayPays.length + ' balance' + (todayPays.length === 1 ? '' : 's') + ' settled', '#1b9a6e')
+             todayPays.length + ' balance' + (todayPays.length === 1 ? '' : 's') + ' settled'
+             + (payments.length ? ' · click to view' : ''), '#1b9a6e',
+             payments.length ? 'openRdPayments()' : '')
       + card('Total Outstanding', egp(outstanding), 'Due Amount', '#d14b4b')
       + card('Orders With Balance', dueRows.length,
              (known ? Math.round(dueRows.length / known * 100) : 0) + '% of ' + known + ' known', '#d79a23')
@@ -15599,20 +15626,35 @@ function _rdRender(allRows) {
       + card('Largest Single', egp(largest), 'biggest one balance', '#b0579b');
   }
 
+  // Store carries the reward target, so it is the one ring whose colour means
+  // something beyond "this is the store". Over target it is red and pulsing;
+  // at or under, teal and still. Same threshold the wallet banks on.
+  const RD_STORE_TARGET = 15;
+  const storeOver = inStore > RD_STORE_TARGET;
+
   const RING = [
-    ['Production',  production, '#3b82f6'],
-    ['Assembly QC', allRows.filter(r => stageOf(r) === 'assembly qc').length, '#10b981'],
-    ['Final QC',    finalQc,    '#f59e0b'],
-    ['Store',       inStore,    '#ef4444']
+    ['Production',  production, '#3b82f6', ''],
+    ['Assembly QC', allRows.filter(r => stageOf(r) === 'assembly qc').length, '#10b981', ''],
+    ['Final QC',    finalQc,    '#f59e0b', ''],
+    ['Store',       inStore,    storeOver ? '#e03e3e' : '#0d9a88',
+                    storeOver ? ' over' : '']
   ];
 
   const rings = document.getElementById('rd-rings');
   if (rings) {
-    rings.innerHTML = RING.map(([name, n, c]) =>
-      '<div class="rd-ring" style="border-color:' + c + '">'
+    rings.innerHTML = RING.map(([name, n, c, cls]) =>
+      '<div class="rd-ring' + cls + '" style="border-color:' + c + '"'
+      + (name === 'Store'
+         ? ' title="Target ' + RD_STORE_TARGET + '. '
+           + (storeOver ? (n - RD_STORE_TARGET) + ' over target — rewards are earning.'
+                        : 'At or under target — wallets bank and reset.') + '"'
+         : '') + '>'
       + '<b style="color:' + c + '">' + n + '</b>'
       + '<span>' + name + '</span>'
-      + '<i>' + (total ? Math.round(n / total * 100) : 0) + '% of orders</i></div>').join('');
+      + '<i>' + (name === 'Store'
+                 ? (storeOver ? (n - RD_STORE_TARGET) + ' over target' : 'at target')
+                 : (total ? Math.round(n / total * 100) : 0) + '% of orders')
+      + '</i></div>').join('');
   }
 
   // ── Outstanding by stage ─────────────────────────────────────────────────
@@ -15720,6 +15762,55 @@ function _rdRender(allRows) {
   }
 
   filterRdTable();
+}
+
+/**
+ * Payment detail behind the Today's Payment card.
+ *
+ * Falls back to the most recent payments when nothing has been settled today,
+ * because a card showing zero is exactly when somebody wants to know what the
+ * last movement was — an empty list would answer nothing.
+ */
+function openRdPayments() {
+  const esc = s => String(s == null ? '' : s)
+    .replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const egp = n => new Intl.NumberFormat('en-EG', { maximumFractionDigits: 0 }).format(n || 0);
+
+  const all = _RD_PAYMENTS || [];
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const today = all.filter(p => (p.date || '').slice(0, 10) === todayKey);
+  const rows = today.length ? today : all.slice(0, 25);
+  const sum = rows.reduce((s, p) => s + (p.paid || 0), 0);
+
+  document.getElementById('rd-pay-title').textContent =
+    (today.length ? "Today's payments" : 'Most recent payments')
+    + ' — ' + rows.length + ' · ' + egp(sum) + ' EGP';
+
+  document.getElementById('rd-pay-body').innerHTML = rows.length
+    ? (today.length ? '' :
+        '<div style="padding:11px 20px;font-size:11.5px;color:var(--text2);'
+        + 'background:var(--card2,rgba(0,0,0,.04))">Nothing settled today — showing the latest instead.</div>')
+      + '<table style="width:100%;font-size:12.5px;border-collapse:collapse">'
+      + '<thead><tr style="text-align:left;color:var(--text2);font-size:11px">'
+      +   '<th style="padding:9px 20px">Date</th><th style="padding:9px 14px">Customer</th>'
+      +   '<th style="padding:9px 14px">Project #</th>'
+      +   '<th style="padding:9px 20px;text-align:right">Paid</th></tr></thead><tbody>'
+      + rows.map(p => '<tr style="border-top:1px solid var(--line)">'
+          + '<td style="padding:10px 20px;color:var(--text2);white-space:nowrap">' + esc(p.date) + '</td>'
+          + '<td style="padding:10px 14px">' + esc(p.client || '—') + '</td>'
+          + '<td style="padding:10px 14px;color:var(--text2)">' + esc(p.key || '—') + '</td>'
+          + '<td style="padding:10px 20px;text-align:right;font-weight:700;color:#1b9a6e">'
+          +   egp(p.paid) + '</td></tr>').join('')
+      + '</tbody></table>'
+    : '<div style="padding:30px;text-align:center;color:var(--text2);font-size:13px">'
+      + 'No payments recorded.</div>';
+
+  document.getElementById('rd-pay-modal').style.display = 'flex';
+}
+
+function closeRdPayments() {
+  const m = document.getElementById('rd-pay-modal');
+  if (m) m.style.display = 'none';
 }
 
 function filterRdTable() {
