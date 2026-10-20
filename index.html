@@ -15412,6 +15412,11 @@ function _walRender(d) {
 
   const scope = document.getElementById('wal-scope');
   if (scope) scope.textContent = 'milestone ' + d.goal + ' points'
+    // A queued rate change is invisible until it fires, which is precisely
+    // when somebody would be surprised by it.
+    + (d.nextValue === null || d.nextValue === undefined
+       ? ''
+       : ' · ' + egp(d.nextValue) + ' per point from the next reset')
     + (d.updated ? ' · updated ' + new Date(d.updated).toLocaleString() : '');
 
   // ── One payment card per person ──────────────────────────────────────────
@@ -15498,6 +15503,20 @@ function _rdSaveConfig() {
   const url  = (document.getElementById('rd-url-in')?.value  || '').trim();
   const pass = (document.getElementById('rd-pass-in')?.value || '').trim();
   if (!url || !pass) return alert('Both the URL and the passcode are needed.');
+
+  // A /a/macros/<domain>/ URL is a domain-restricted deployment: it answers an
+  // anonymous request with a Google sign-in page, which fails as "Script load
+  // failed" and says nothing about the real problem. Catch it here instead.
+  if (/\/a\/macros\//.test(url)) {
+    return alert('That is the domain-restricted dashboard URL — it asks for a Google '
+      + 'sign-in and cannot be read by this page.\n\nUse the data API deployment URL, '
+      + 'which looks like:\nhttps://script.google.com/macros/s/.../exec');
+  }
+
+  if (!/\/exec(\?|$)/.test(url)) {
+    return alert('That URL does not end in /exec. Copy the Web app URL from the '
+      + 'deployment, not the editor address.');
+  }
   localStorage.setItem('kitchino_rd_url', url);
   localStorage.setItem('kitchino_rd_pass', pass);
   _RD_DATA = null;
@@ -15505,8 +15524,13 @@ function _rdSaveConfig() {
 }
 
 function _rdClearConfig() {
+  // Clear the URL too. A wrong URL is the harder fault to spot — it fails as
+  // "Script load failed" rather than anything about a passcode — and keeping
+  // it meant the only way out was editing local storage by hand.
   localStorage.removeItem('kitchino_rd_pass');
+  localStorage.removeItem('kitchino_rd_url');
   _RD_DATA = null;
+  _RD_PAYMENTS = [];
   buildReceivablesPage();
 }
 
