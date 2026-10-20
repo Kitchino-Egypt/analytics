@@ -3697,13 +3697,17 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-receivables .rd-bar .tr i{display:block;height:100%;border-radius:5px}
 #page-receivables .rd-bar .amt{flex:0 0 96px;text-align:right;font-weight:700;color:var(--text)}
 #page-receivables .rd-bar .pc{flex:0 0 62px;text-align:right;font-size:11px;color:var(--text2)}
-/* Store over target is the one number on this page that calls for action, so
-   it pulses — slowly, because a fast flash is an alarm and this is a backlog.
-   At or under target the colour changes and the motion stops: the absence of
-   movement is the signal that it has been cleared. */
-@keyframes rdStorePulse{0%,100%{box-shadow:0 0 0 0 rgba(224,62,62,.52)}50%{box-shadow:0 0 0 15px rgba(224,62,62,0)}}
-#page-receivables .rd-ring.over{animation:rdStorePulse 2.6s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){#page-receivables .rd-ring.over{animation:none}}
+/* Store runs a three-step scale: green and still at or under target, amber and
+   pulsing once over it, red and pulsing once it has doubled. Slow pulses —
+   a fast flash reads as an alarm, and this is a backlog, not an outage.
+   Separate keyframes per colour rather than one with a variable, because the
+   glow has to match the ring it is coming from. */
+@keyframes rdPulseAmber{0%,100%{box-shadow:0 0 0 0 rgba(232,135,26,.5)}50%{box-shadow:0 0 0 15px rgba(232,135,26,0)}}
+@keyframes rdPulseRed{0%,100%{box-shadow:0 0 0 0 rgba(224,62,62,.55)}50%{box-shadow:0 0 0 17px rgba(224,62,62,0)}}
+#page-receivables .rd-ring.warn{animation:rdPulseAmber 2.8s ease-in-out infinite}
+#page-receivables .rd-ring.crit{animation:rdPulseRed 1.9s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){
+  #page-receivables .rd-ring.warn,#page-receivables .rd-ring.crit{animation:none}}
 #page-receivables .rd-m.clickable{cursor:pointer;transition:transform .16s,box-shadow .16s}
 #page-receivables .rd-m.clickable:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
 </style>
@@ -15650,34 +15654,52 @@ function _rdRender(allRows) {
       + card('Largest Single', egp(largest), 'biggest one balance', '#b0579b');
   }
 
-  // Store carries the reward target, so it is the one ring whose colour means
-  // something beyond "this is the store". Over target it is red and pulsing;
-  // at or under, teal and still. Same threshold the wallet banks on.
-  const RD_STORE_TARGET = 15;
-  const storeOver = inStore > RD_STORE_TARGET;
+  // Store is the only ring whose colour is a judgement rather than a label, so
+  // it owns the traffic-light scale outright:
+  //   ≤ 15  green, still      — at target, wallets bank and reset
+  //   16–29 amber, pulsing    — over target, rewards earning
+  //   ≥ 30  red, pulsing      — double the target, needs clearing
+  // The other three stages were moved off green/amber/red for exactly that
+  // reason: reusing those hues as plain labels would imply a verdict the
+  // pipeline stages do not carry. They run a neutral blue→violet ramp instead.
+  const RD_STORE_TARGET   = 15;
+  const RD_STORE_CRITICAL = 30;
+
+  const storeState = inStore >= RD_STORE_CRITICAL ? 'crit'
+                   : inStore >  RD_STORE_TARGET   ? 'warn'
+                   : 'ok';
+
+  const STORE_LOOK = {
+    ok:   { colour: '#1b9a6e', cls: '',      note: 'at target' },
+    warn: { colour: '#e8871a', cls: ' warn', note: (inStore - RD_STORE_TARGET) + ' over target' },
+    crit: { colour: '#e03e3e', cls: ' crit', note: (inStore - RD_STORE_TARGET) + ' over target' }
+  }[storeState];
+
+  const STORE_TITLE = {
+    ok:   'At or under the target of ' + RD_STORE_TARGET + ' — wallets bank and reset.',
+    warn: 'Over the target of ' + RD_STORE_TARGET + ' — rewards are earning.',
+    crit: 'At or above ' + RD_STORE_CRITICAL + ', double the target of '
+          + RD_STORE_TARGET + ' — needs clearing.'
+  }[storeState];
 
   const RING = [
     ['Production',  production, '#3b82f6', ''],
-    ['Assembly QC', allRows.filter(r => stageOf(r) === 'assembly qc').length, '#10b981', ''],
-    ['Final QC',    finalQc,    '#f59e0b', ''],
-    ['Store',       inStore,    storeOver ? '#e03e3e' : '#0d9a88',
-                    storeOver ? ' over' : '']
+    ['Assembly QC', allRows.filter(r => stageOf(r) === 'assembly qc').length, '#6366f1', ''],
+    ['Final QC',    finalQc,    '#8b5cf6', ''],
+    ['Store',       inStore,    STORE_LOOK.colour, STORE_LOOK.cls]
   ];
 
   const rings = document.getElementById('rd-rings');
   if (rings) {
     rings.innerHTML = RING.map(([name, n, c, cls]) =>
       '<div class="rd-ring' + cls + '" style="border-color:' + c + '"'
-      + (name === 'Store'
-         ? ' title="Target ' + RD_STORE_TARGET + '. '
-           + (storeOver ? (n - RD_STORE_TARGET) + ' over target — rewards are earning.'
-                        : 'At or under target — wallets bank and reset.') + '"'
-         : '') + '>'
+      + (name === 'Store' ? ' title="' + STORE_TITLE + '"' : '') + '>'
       + '<b style="color:' + c + '">' + n + '</b>'
       + '<span>' + name + '</span>'
-      + '<i>' + (name === 'Store'
-                 ? (storeOver ? (n - RD_STORE_TARGET) + ' over target' : 'at target')
-                 : (total ? Math.round(n / total * 100) : 0) + '% of orders')
+      + '<i' + (name === 'Store' ? ' style="color:' + c + ';font-weight:600"' : '') + '>'
+      + (name === 'Store'
+         ? STORE_LOOK.note
+         : (total ? Math.round(n / total * 100) : 0) + '% of orders')
       + '</i></div>').join('');
   }
 
