@@ -320,8 +320,18 @@ body.dark .refresh-btn:hover { color:var(--k-gold); }
 .kpi-card.blue   { background:var(--card); border-left-color:var(--accent);   }
 .kpi-card.purple { background:var(--card); border-left-color:var(--text3);    }
 .kpi-card:hover { box-shadow:var(--shadow-md); border-color:var(--border-strong); }
+/* These two date from when gold and red cards carried a coloured fill, where
+   near-black text was the readable choice. The fill is gone — both now use
+   var(--card) like every other card — so in dark mode the rule was painting
+   dark text on a dark card and the figure disappeared entirely. Kept for the
+   light theme, where it matches --text closely enough, and handed back to the
+   theme variables in dark. */
 .kpi-card.gold .kpi-value,.kpi-card.gold .kpi-label,.kpi-card.gold .kpi-sub { color:#1e1e1e; }
 .kpi-card.red  .kpi-value,.kpi-card.red  .kpi-label,.kpi-card.red  .kpi-sub { color:#1e1e1e; }
+body.dark .kpi-card.gold .kpi-value,
+body.dark .kpi-card.red  .kpi-value { color:var(--text); }
+body.dark .kpi-card.gold .kpi-label,body.dark .kpi-card.gold .kpi-sub,
+body.dark .kpi-card.red  .kpi-label,body.dark .kpi-card.red  .kpi-sub { color:var(--text3); }
 .kpi-card.blue:hover   { border-left-color:#4285f4; }
 .kpi-card.purple:hover { border-left-color:#9c27b0; }
 
