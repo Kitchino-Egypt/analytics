@@ -3706,8 +3706,15 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 @keyframes rdPulseRed{0%,100%{box-shadow:0 0 0 0 rgba(224,62,62,.55)}50%{box-shadow:0 0 0 17px rgba(224,62,62,0)}}
 #page-receivables .rd-ring.warn{animation:rdPulseAmber 2.8s ease-in-out infinite}
 #page-receivables .rd-ring.crit{animation:rdPulseRed 1.9s ease-in-out infinite}
+/* The store's bar pulses in step with its circle. A glow would be lost against
+   the track behind it, so the bar breathes its opacity instead — same rhythm,
+   so the two read as one signal rather than two competing ones. */
+@keyframes rdBarBreathe{0%,100%{opacity:1}50%{opacity:.52}}
+#page-receivables .rd-bar .tr i.warn{animation:rdBarBreathe 2.8s ease-in-out infinite}
+#page-receivables .rd-bar .tr i.crit{animation:rdBarBreathe 1.9s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){
-  #page-receivables .rd-ring.warn,#page-receivables .rd-ring.crit{animation:none}}
+  #page-receivables .rd-ring.warn,#page-receivables .rd-ring.crit,
+  #page-receivables .rd-bar .tr i.warn,#page-receivables .rd-bar .tr i.crit{animation:none}}
 #page-receivables .rd-m.clickable{cursor:pointer;transition:transform .16s,box-shadow .16s}
 #page-receivables .rd-m.clickable:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
 </style>
@@ -15716,11 +15723,22 @@ function _rdRender(allRows) {
   if (stageEl) {
     const list = Object.entries(byStage).sort((a, b) => b[1].sum - a[1].sum);
     const top = list.length ? list[0][1].sum : 1;
-    const SC = { 'final qc':'#f59e0b', 'assembly qc':'#10b981', 'production':'#3b82f6', 'store':'#ef4444' };
+    // Same palette as the rings above. Green, amber and red are reserved for
+    // the store's target state, so the pipeline stages stay on the neutral
+    // blue→violet ramp here too — otherwise the bars would contradict the
+    // circles sitting directly above them.
+    const SC = {
+      'production':  '#3b82f6',
+      'assembly qc': '#6366f1',
+      'final qc':    '#8b5cf6',
+      'store':       STORE_LOOK.colour
+    };
 
     stageEl.innerHTML = list.length ? list.map(([k, v]) =>
       '<div class="rd-bar"><span class="nm">' + k + '</span>'
-      + '<span class="tr"><i style="width:' + (v.sum / top * 100) + '%;background:'
+      + '<span class="tr"><i class="'
+      +   (k.toLowerCase() === 'store' ? STORE_LOOK.cls.trim() : '')
+      +   '" style="width:' + (v.sum / top * 100) + '%;background:'
       +   (SC[k.toLowerCase()] || '#8b5cf6') + '"></i></span>'
       + '<span class="amt">' + egp(v.sum) + '</span>'
       + '<span class="pc">' + (outstanding ? Math.round(v.sum / outstanding * 100) : 0)
