@@ -5028,7 +5028,10 @@ const GREEN = '#34a853';
 // getComputedStyle reflects whichever theme is active.
 function _tok(name, fallback) {
   try {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    // From <body>, not <html>. The dark palette is declared on `body.dark`, so
+    // asking documentElement returns the light value whatever theme is on —
+    // which is why chart text and legends stayed dark on a dark page.
+    const v = getComputedStyle(document.body).getPropertyValue(name).trim();
     return v || fallback;
   } catch (e) { return fallback; }
 }
@@ -10913,11 +10916,45 @@ function renderSixMonth() {
   }
 
   if (scopeEl) {
-    // The period chip beside the title now says which window this covers, so
+    // The period chip beside the title says which window this covers, so
     // repeating year, month and range here would only make the header noisy.
     // Designer is not in the chip, so it is the one thing left to name.
+    //
+    // The signed-date span is spelled out because the denominator is a rolling
+    // 183-day window, not a calendar year: today it holds only Jan–Apr 2026,
+    // which is why the Year filter looks inert. Computed from the rows rather
+    // than written in, so it moves as the window does.
     scopeEl.textContent = 'contracts signed 183+ days ago'
       + (f.desF !== 'all' ? ' · ' + f.desF : '');
+  }
+
+  // ── Coverage note ────────────────────────────────────────────────────────
+  // A plain sentence saying which period the figures actually cover. The
+  // denominator is a rolling 183-day window, not a calendar year, so the Year
+  // filter can look inert simply because everything eligible falls in one
+  // year. Said outright, that stops reading as a fault.
+  //
+  // Derived from the rows, never written in, so it follows the window instead
+  // of going stale the moment 2027 contracts become eligible.
+  const _times = f.rows
+    .map(r => new Date(String(r.signed || '').trim()).getTime())
+    .filter(t => !isNaN(t))
+    .sort((a, b) => a - b);
+
+  let coverage = '';
+  if (_times.length) {
+    const a = new Date(_times[0]);
+    const b = new Date(_times[_times.length - 1]);
+    const MN = ['January','February','March','April','May','June',
+                'July','August','September','October','November','December'];
+
+    coverage = (a.getFullYear() === b.getFullYear())
+      ? (a.getMonth() === b.getMonth()
+         ? 'This analysis covers ' + MN[a.getMonth()] + ' ' + a.getFullYear() + ' only.'
+         : 'This analysis covers ' + MN[a.getMonth()] + '–' + MN[b.getMonth()]
+           + ' ' + a.getFullYear() + ' only.')
+      : 'This analysis covers ' + MN[a.getMonth()] + ' ' + a.getFullYear()
+        + ' to ' + MN[b.getMonth()] + ' ' + b.getFullYear() + '.';
   }
 
   if (!d.eligible) {
@@ -10949,7 +10986,10 @@ function renderSixMonth() {
   };
 
   host.innerHTML =
-    '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:26px;padding:20px 18px 16px">'
+    (coverage
+      ? '<div style="padding:12px 18px 0;font-size:12px;color:var(--text2)">' + coverage + '</div>'
+      : '')
+    + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:26px;padding:20px 18px 16px">'
     +   '<div onclick="openSixMonthList(\'ontime\')" title="Click to see the contracts"'
     +        ' style="width:124px;height:124px;border-radius:50%;flex:none;display:flex;cursor:pointer;'
     +        'align-items:center;justify-content:center;background:conic-gradient('
@@ -15619,6 +15659,20 @@ async function buildReceivablesPage() {
   }
 }
 
+/**
+ * The current theme's text colour, for canvas elements that cannot use CSS.
+ *
+ * Read from <body>, not <html>: the dark theme is declared on `body.dark`, so
+ * asking documentElement returns the light theme's near-black and paints it on
+ * a dark background — which is how the donut legend became unreadable.
+ * getPropertyValue also returns a leading space, which Chart.js silently
+ * rejects, so it is trimmed.
+ */
+function _rdTextColour() {
+  const v = getComputedStyle(document.body).getPropertyValue('--text');
+  return (v || '').trim() || (document.body.classList.contains('dark') ? '#e8eaf6' : '#1e1e1e');
+}
+
 function _rdRender(allRows) {
   const total      = allRows.length;
   const production = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'production').length;
@@ -15816,7 +15870,8 @@ function _rdRender(allRows) {
     _rdChartType = new Chart(ctxT.getContext('2d'), {
       type: 'doughnut',
       data: { labels: typeLabels, datasets: [{ data: typeLabels.map(t=>typeCounts[t]), backgroundColor: CHART_COLORS, borderWidth: 2 }] },
-      options: { responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.documentElement).getPropertyValue('--text')||'#fff', font:{size:11} } } } }
+      options: { responsive:true, plugins:{ legend:{ position:'bottom',
+        labels:{ color: _rdTextColour(), font:{size:11} } } } }
     });
   }
 
@@ -16492,7 +16547,8 @@ function _instKillChart(id) { if (_instCJs[id]) { try { _instCJs[id].destroy(); 
 
 function _instRenderCharts(rows) {
   const PROD_COLORS = ['#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#0ea5e9','#a3e635'];
-  const _txtColor  = () => getComputedStyle(document.documentElement).getPropertyValue('--text2').trim() || '#888';
+  // <body>, not <html> — the dark palette lives on `body.dark`.
+  const _txtColor  = () => getComputedStyle(document.body).getPropertyValue('--text2').trim() || '#888';
   const _gridColor = () => 'rgba(128,128,128,0.1)';
 
   // ── Donut: By Product Type ──────────────────────────────────────────────────
@@ -16509,7 +16565,7 @@ function _instRenderCharts(rows) {
         datasets: [{
           data: prodEntries.map(e=>e[1]),
           backgroundColor: prodEntries.map((_,i)=>PROD_COLORS[i%PROD_COLORS.length]),
-          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#fff',
+          borderColor: getComputedStyle(document.body).getPropertyValue('--card').trim() || '#fff',
           borderWidth: 3, hoverOffset: 8
         }]
       },
