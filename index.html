@@ -15633,6 +15633,9 @@ function _rdSaveConfig() {
   }
   localStorage.setItem('kitchino_rd_url', url);
   localStorage.setItem('kitchino_rd_pass', pass);
+  // Kept under a second key that clearing never touches, purely to prefill the
+  // field next time. The URL is not a secret — retyping it is just friction.
+  localStorage.setItem('kitchino_rd_url_last', url);
   _RD_DATA = null;
   buildReceivablesPage();
 }
@@ -15683,7 +15686,9 @@ async function buildReceivablesPage() {
   if (!_rdUrl() || !_rdPass()) {
     if (gate) {
       const u = document.getElementById('rd-url-in');
-      if (u && !u.value) u.value = _rdUrl();
+      if (u && !u.value) {
+        u.value = _rdUrl() || localStorage.getItem('kitchino_rd_url_last') || '';
+      }
     }
     show('rd-gate');
     return;
