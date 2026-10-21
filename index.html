@@ -9411,7 +9411,11 @@ function applyFilters() {
 
   // ── 5. Immediately rebuild the active page with new filtered state ────────
   const activePage = document.querySelector('.page.active')?.id.replace('page-','');
-  if (activePage) {
+  if (activePage === 'custbalance') {
+    // Filters narrow the data already loaded; refetching on every keystroke of
+    // the search box would hammer the Apps Script for nothing.
+    if (typeof _CB_DATA !== 'undefined' && _CB_DATA) _cbRender(_CB_DATA);
+  } else if (activePage) {
     // Always rebuild the current page (delete from builtPages to force rebuild)
     builtPages.delete(activePage);
     if (PAGE_BUILDERS[activePage]) {
@@ -10392,8 +10396,9 @@ function _govDetail(gov) {
 const _FILTERS_NA = {
   // A balance is a position on the day of the export, not a period figure.
   custbalance: {
-    'filter-month': 'Not used here — customer balances are a position, not a monthly figure',
-    'filter-area':  'Not used here — the balance export has no area field'
+    'filter-month':    'Not used here — customer balances are a position, not a monthly figure',
+    'filter-area':     'Not used here — the balance export has no area field',
+    'filter-designer': 'Not used here — the balance export has no designer field'
   },
   followup: {
     'filter-area': 'Not used here — the contracts feed has no area field'
@@ -10409,7 +10414,7 @@ const _FILTERS_NA = {
 
 function _syncFilterAvailability(name) {
   const na = _FILTERS_NA[name] || {};
-  ['filter-month', 'filter-area'].forEach(id => {
+  ['filter-month', 'filter-area', 'filter-designer'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const why = na[id];
@@ -10483,6 +10488,9 @@ function showPage(name) {
   // figures below are built from the right window. A range set elsewhere must
   // not leak into this page.
   _restorePeriodForPage(name);
+  // _syncPeriodUI (inside the call above) re-enables Month, so the page's own
+  // not-applicable filters are applied again afterwards.
+  _syncFilterAvailability(name);
 
   // Only rebuild if THIS page's period changed since it was last built.
   // Unconditionally clearing the cache would re-render every chart on every
@@ -15934,7 +15942,8 @@ const _CB_CS = {
 let _cbCredits = [];
 
 function _cbRender(d) {
-  const acc = d.accounts || [];
+  const scope = _cbScopeInfo();
+  const acc = (d.accounts || []).filter(_cbInScope);
   const live = acc.filter(a => a.g);                 // rows in the current export
   const deb = a => a.net > 0 ? a.net : 0;
   const crd = a => a.net < 0 ? a.net : 0;
@@ -15960,7 +15969,12 @@ function _cbRender(d) {
     + ' · delivery: ' + (src.installOk
         ? _cbEgp(src.installMatched) + ' customers matched to installation records'
         : '<b style="color:#c43d3d">installation sheet unreachable — delivery unknown</b>')
-    + (src.contractsOk ? '' : ' · <b style="color:#c43d3d">contracts sheet unreachable — cancellations unknown</b>');
+    + (src.contractsOk ? '' : ' · <b style="color:#c43d3d">contracts sheet unreachable — cancellations unknown</b>')
+    + (scope.active
+        ? '<br><b style="color:var(--gold,#c89b3c)">Filtered: ' + _cbEsc(scope.text) + ' — '
+          + _cbEgp(live.length) + ' of ' + _cbEgp((d.accounts || []).filter(a => a.g).length)
+          + ' accounts. Every figure below covers these accounts only.</b>'
+        : '');
 
   // ── Money cards ──────────────────────────────────────────────────────────
   const receivable = sum(live, deb);
@@ -16067,8 +16081,9 @@ function _cbRender(d) {
       : '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:18px">Every open balance has a decision.</td></tr>');
 
   // ── Tie-out to the system report (control check only) ────────────────────
-  document.getElementById('cb-tieout').innerHTML =
-    'Tie-out to the system report, for control only: the report\'s single net figure of <b>'
+  document.getElementById('cb-tieout').innerHTML = (scope.active
+      ? 'Tie-out for the filtered accounts only (clear the filters to tie out to the full report): net <b>'
+      : 'Tie-out to the system report, for control only: the report\'s single net figure of <b>')
     + _cbEgp(receivable + credits) + '</b> is the receivable (' + _cbEgp(receivable)
     + ') minus customer credits (' + _cbEgp(Math.abs(credits)) + '). That net is not a collectible '
     + 'amount and is not used anywhere on this page. Every save is recorded in the change log '
@@ -16129,7 +16144,7 @@ function _cbRenderAccounts() {
   const cat = document.getElementById('cb-acc-cat')?.value || 'all';
   const dec = document.getElementById('cb-acc-dec')?.value || 'all';
   const hide = document.getElementById('cb-acc-hidezero')?.checked;
-  const rows = (_CB_DATA.accounts || []).filter(a => a.g
+  const rows = (_CB_DATA.accounts || []).filter(a => a.g && _cbInScope(a)
     && (cat === 'all' || a.cat === cat)
     && (dec === 'all' || (dec === 'none' ? !a.dec : !!a.dec))
     && (!hide || Math.abs(a.net) > 10)
@@ -16335,6 +16350,34 @@ async function _cbSendExport() {
   }
 }
 
+
+// ── Portal filters ──────────────────────────────────────────────────────────
+// Year, Period and the top search box narrow the page to the accounts in
+// scope. Dates are the account's opening date from the export. Designer, Area
+// and Month do not exist in a balance export and are disabled on this page.
+// Filtering re-renders from the data already loaded — no new request.
+function _cbScopeInfo() {
+  const year = document.getElementById('filter-year')?.value || 'all';
+  const per = (typeof _periodFilter === 'function') ? _periodFilter() : { from: null, to: null };
+  const q = (document.getElementById('global-search')?.value || '').trim().toLowerCase();
+  const parts = [];
+  if (per.from || per.to) parts.push('accounts opened ' + (per.from ? 'from ' + per.from : '') + (per.from && per.to ? ' ' : '') + (per.to ? 'to ' + per.to : ''));
+  else if (year !== 'all') parts.push('accounts opened in ' + year);
+  if (q) parts.push('search “' + q + '”');
+  return { year, from: per.from, to: per.to, q, active: parts.length > 0, text: parts.join(' · ') };
+}
+function _cbInScope(a) {
+  const s = _cbScopeInfo();
+  if (!s.active) return true;
+  const d = a.d || '';
+  if (s.from || s.to) {
+    if (!d) return false;
+    if (s.from && d < s.from) return false;
+    if (s.to && d > s.to) return false;
+  } else if (s.year !== 'all' && d.slice(0, 4) !== s.year) return false;
+  if (s.q && !(String(a.n).toLowerCase().includes(s.q) || String(a.a).toLowerCase().includes(s.q))) return false;
+  return true;
+}
 // URL and passcode live in this browser, not in the file — the portal is
 // published publicly, so anything written here would ship with it.
 const _rdUrl  = () => localStorage.getItem('kitchino_rd_url')  || '';
