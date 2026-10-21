@@ -1446,6 +1446,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="instfollowup"><span class="nav-icon">🔧</span>Installation</div>
     <div class="nav-item" data-page="receivables"><span class="nav-icon">💰</span>Receivables &amp; Delivery</div>
     <div class="nav-item" data-page="wallet"><span class="nav-icon">🏅</span>Kitchino Reward Wallet</div>
+    <div class="nav-item" data-page="custbalance"><span class="nav-icon">🧾</span>Customer Balance Cleanup</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Intelligence</div>
@@ -3606,6 +3607,216 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-wallet .wal-tag.owed{background:rgba(237,161,0,.16);color:#a37100}
 #page-wallet .wal-tag.paid{background:rgba(27,154,110,.15);color:#157956}
 @media(max-width:640px){#page-wallet .wal-amount{font-size:40px}#page-wallet .wal-hero{padding:24px 20px}#page-wallet .wal-card{flex:1 1 100%}}
+</style>
+</div>
+
+<!-- CUSTOMER BALANCE CLEANUP — the 2021-onwards customer balance cleanup.
+     Viewers read the position; editors record decisions and credit statuses
+     and upload new exports here. The Google Sheet behind it is storage only.
+     Every category is recomputed by the Apps Script on each visit. -->
+<div class="page" id="page-custbalance">
+  <!-- Passcode gate — same terms as Receivables: URL and passcode in this
+       browser's local storage, passcode verified by the Apps Script only. -->
+  <div id="cb-gate" style="display:none;text-align:center;padding:50px 24px">
+    <div style="font-size:38px;margin-bottom:12px">🔒</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:10px">Customer Balance Cleanup — Passcode required</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.65;max-width:470px;margin:0 auto 20px">
+      Customer balances are confidential. Enter the passcode once and this browser
+      will remember it.
+    </div>
+    <div style="max-width:420px;margin:0 auto;display:grid;gap:10px">
+      <input type="text" id="cb-url-in" placeholder="Cleanup data /exec URL"
+        style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <input type="password" id="cb-pass-in" placeholder="Viewer or editor passcode"
+        onkeydown="if(event.key==='Enter')_cbSaveConfig()"
+        style="padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <button class="btn-sm primary" onclick="_cbSaveConfig()">Unlock</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:18px;letter-spacing:.5px">
+      CONFIDENTIAL — DO NOT SHARE THE PASSCODE
+    </div>
+  </div>
+  <div id="cb-loading" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⏳</div>
+    <div style="color:var(--text2)">Recomputing the customer balance position…</div>
+  </div>
+  <div id="cb-error" style="text-align:center;padding:60px 0;display:none">
+    <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+    <div id="cb-error-msg" style="color:var(--red)">Could not load data.</div>
+    <button class="btn-sm" style="margin-top:14px" onclick="_cbClearConfig()">Change URL or passcode</button>
+  </div>
+  <div id="cb-content" style="display:none">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+      <div class="cb-conf" style="margin-bottom:0">🔒 Confidential — customer balances</div>
+      <span class="cb-role" id="cb-role"></span>
+      <button class="btn-sm" style="margin-left:auto" onclick="_cbClearConfig()">Switch passcode</button>
+    </div>
+    <div class="cb-stamp" id="cb-stamp"></div>
+
+    <!-- Editors only: replace the balances with a new export. -->
+    <div class="chart-card cb-edit-only" id="cb-upload" style="margin-bottom:22px;display:none">
+      <div class="chart-title">Upload a new customer balance export</div>
+      <div class="chart-subtitle">the .xlsx exactly as the system exports it · replaces the current balances · decisions are kept</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px">
+        <input type="file" id="cb-file" accept=".xlsx,.xls,.csv" onchange="_cbReadExport(this.files[0])"
+          style="font-size:13px;color:var(--text)">
+        <button class="btn-sm primary" id="cb-upload-btn" style="display:none" onclick="_cbSendExport()">Replace balances</button>
+      </div>
+      <div class="cb-note" id="cb-upload-msg"></div>
+    </div>
+
+    <div class="cb-money" id="cb-money"></div>
+
+    <div class="chart-card" style="margin-bottom:22px">
+      <div class="chart-title">Where the receivable sits</div>
+      <div class="chart-subtitle">debit balances and customer credits in separate columns — never netted</div>
+      <div style="overflow-x:auto;margin-top:12px"><table class="cb-tbl" id="cb-tiers"></table></div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:22px">
+      <div class="chart-title">Customer credits — money owed to customers</div>
+      <div class="chart-subtitle">tracked from the start of the cleanup · status from the Credit status column</div>
+      <div class="cb-prog" id="cb-cr-prog"></div>
+      <div class="cb-money cb-money-sm" id="cb-cr-cards"></div>
+      <div id="cb-cr-other" class="cb-note"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 10px">
+        <input type="text" id="cb-cr-search" placeholder="🔍 Search name or account…" oninput="_cbRenderCreditTable()"
+          style="flex:1;min-width:180px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <select id="cb-cr-filter" onchange="_cbRenderCreditTable()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">All statuses</option>
+          <option value="">Unexplained</option>
+          <option value="Voucher found">Voucher found</option>
+          <option value="No voucher">No voucher</option>
+          <option value="Posted">Posted</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;max-height:520px;overflow-y:auto"><table class="cb-tbl" id="cb-cr-table"></table></div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:22px">
+      <div class="chart-title">All accounts</div>
+      <div class="chart-subtitle" id="cb-acc-sub">search, filter and record decisions</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 10px">
+        <input type="text" id="cb-acc-search" placeholder="🔍 Search name or account…" oninput="_cbAccPage=1;_cbRenderAccounts()"
+          style="flex:1;min-width:180px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <select id="cb-acc-cat" onchange="_cbAccPage=1;_cbRenderAccounts()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;max-width:320px">
+          <option value="all">All categories</option>
+        </select>
+        <select id="cb-acc-dec" onchange="_cbAccPage=1;_cbRenderAccounts()"
+          style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="all">Any decision</option>
+          <option value="none">No decision yet</option>
+          <option value="some">Decided</option>
+        </select>
+        <label style="font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px">
+          <input type="checkbox" id="cb-acc-hidezero" checked onchange="_cbAccPage=1;_cbRenderAccounts()"> hide settled (≤10)
+        </label>
+      </div>
+      <div style="overflow-x:auto"><table class="cb-tbl" id="cb-acc-table"></table></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:var(--text2)">
+        <span id="cb-acc-count">—</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-sm" onclick="_cbAccNav(-1)">← Prev</button>
+          <span id="cb-acc-page">1 / 1</span>
+          <button class="btn-sm" onclick="_cbAccNav(1)">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-bottom:22px">
+      <div class="chart-title">Largest open balances without a decision</div>
+      <div class="chart-subtitle">to verify, doubtful and to-clear accounts, biggest first</div>
+      <div style="overflow-x:auto;margin-top:12px"><table class="cb-tbl" id="cb-todo"></table></div>
+    </div>
+
+    <div class="cb-note" id="cb-tieout"></div>
+  </div>
+
+<!-- Edit form (editors only). -->
+<div id="cb-modal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.55);
+     align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)_cbCloseEdit()">
+  <div style="background:var(--card,#fff);border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;
+       box-shadow:0 30px 80px rgba(0,0,0,.4);padding:20px 22px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div>
+        <div id="cb-m-title" style="font-size:15px;font-weight:800;color:var(--text);direction:rtl;text-align:left"></div>
+        <div id="cb-m-sub" style="font-size:12px;color:var(--text2);margin-top:4px"></div>
+      </div>
+      <button class="btn-sm" onclick="_cbCloseEdit()">Close</button>
+    </div>
+    <div id="cb-m-alert" class="cb-alert" style="display:none"></div>
+    <div class="cb-form">
+      <label>Decision
+        <select id="cb-m-dec"><option value="">— none —</option></select></label>
+      <label>Agreed amount to collect (EGP)
+        <input type="number" id="cb-m-agr" step="0.01" placeholder="blank if none"></label>
+      <label id="cb-m-cs-wrap">Credit status
+        <select id="cb-m-cs"><option value="">Unexplained</option></select></label>
+      <label>Notes
+        <textarea id="cb-m-note" rows="3" maxlength="500" placeholder="voucher no., statement requested, who to call…"></textarea></label>
+      <label>Your name (recorded in the change log)
+        <input type="text" id="cb-m-editor" maxlength="60"></label>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">
+      <button class="btn-sm" onclick="_cbCloseEdit()">Cancel</button>
+      <button class="btn-sm primary" id="cb-m-save" onclick="_cbSaveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Customer Balance Cleanup — scoped to its own page. */
+#page-custbalance .cb-conf{display:inline-block;padding:5px 13px;border-radius:7px;margin-bottom:8px;
+  font-size:11px;font-weight:700;letter-spacing:.6px;background:rgba(214,60,60,.12);
+  color:#d14b4b;border:1px solid rgba(214,60,60,.3)}
+#page-custbalance .cb-stamp{font-size:11px;color:var(--text3);margin-bottom:16px}
+#page-custbalance .cb-money{display:grid;gap:14px;margin-bottom:22px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+#page-custbalance .cb-money-sm{margin:14px 0 6px}
+#page-custbalance .cb-m{background:var(--card,#fff);border:1px solid var(--line,#e6e9e4);border-radius:12px;padding:16px 18px}
+#page-custbalance .cb-m .lbl{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text2)}
+#page-custbalance .cb-m .val{font-size:24px;font-weight:800;letter-spacing:-.6px;line-height:1.15;margin-top:8px;color:var(--text)}
+#page-custbalance .cb-m .sub{font-size:11px;color:var(--text2);margin-top:6px;line-height:1.45}
+#page-custbalance .cb-m.ok{border-left:4px solid #1b9a6e}
+#page-custbalance .cb-m.warn{border-left:4px solid #e8871a}
+#page-custbalance .cb-m.bad{border-left:4px solid #9aa0a6}
+#page-custbalance .cb-m.owed{border-left:4px solid #d14b4b;background:rgba(214,60,60,.05)}
+#page-custbalance .cb-m.owed .val{color:#c43d3d}
+#page-custbalance .cb-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+#page-custbalance .cb-tbl th{background:var(--card2);color:var(--text2);text-align:left;padding:8px 10px;font-weight:600;position:sticky;top:0}
+#page-custbalance .cb-tbl td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+#page-custbalance .cb-tbl td.n,#page-custbalance .cb-tbl th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+#page-custbalance .cb-tbl td.cr{color:#c43d3d}
+#page-custbalance .cb-tbl tr.tier td{font-weight:700;background:var(--card2)}
+#page-custbalance .cb-tbl tr.total td{font-weight:800;border-top:2px solid var(--text2)}
+#page-custbalance .cb-tbl td.ar{direction:rtl;text-align:right}
+#page-custbalance .cb-tbl td.muted{color:var(--text2);font-size:11.5px}
+#page-custbalance .cb-tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;white-space:nowrap}
+#page-custbalance .cb-tag.none{background:rgba(214,60,60,.13);color:#c43d3d}
+#page-custbalance .cb-tag.found{background:rgba(237,161,0,.16);color:#a37100}
+#page-custbalance .cb-tag.novch{background:rgba(59,130,246,.14);color:#2f6fd6}
+#page-custbalance .cb-tag.posted{background:rgba(27,154,110,.15);color:#157956}
+#page-custbalance .cb-prog{margin-top:14px}
+#page-custbalance .cb-prog .bar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--card2)}
+#page-custbalance .cb-prog .bar i{display:block;height:100%}
+#page-custbalance .cb-prog .cap{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:7px;flex-wrap:wrap;gap:8px}
+#page-custbalance .cb-prog .cap b{color:var(--text)}
+#page-custbalance .cb-note{font-size:11.5px;color:var(--text2);line-height:1.6;margin-top:8px}
+#page-custbalance .cb-role{display:inline-block;padding:4px 11px;border-radius:7px;font-size:11px;font-weight:700;letter-spacing:.4px}
+#page-custbalance .cb-role.editor{background:rgba(27,154,110,.14);color:#157956}
+#page-custbalance .cb-role.viewer{background:var(--card2);color:var(--text2)}
+#page-custbalance .cb-ed{padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);
+  color:var(--text);cursor:pointer;font-size:11.5px}
+#page-custbalance .cb-ed:hover{border-color:var(--text2)}
+#page-custbalance .cb-alert{margin-top:12px;padding:9px 12px;border-radius:8px;font-size:12.5px;line-height:1.5}
+#page-custbalance .cb-alert.err{background:rgba(214,60,60,.12);color:#b83232}
+#page-custbalance .cb-alert.ok{background:rgba(27,154,110,.13);color:#157956}
+#page-custbalance .cb-form{display:grid;gap:12px;margin-top:16px}
+#page-custbalance .cb-form label{display:grid;gap:5px;font-size:11.5px;color:var(--text2);font-weight:600}
+#page-custbalance .cb-form select,#page-custbalance .cb-form input,#page-custbalance .cb-form textarea{
+  padding:8px 11px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);
+  font-size:13px;font-weight:400;font-family:inherit}
 </style>
 </div>
 
@@ -10002,7 +10213,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',governorate:'Measures by Governorate',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet',custbalance:'Customer Balance Cleanup'
 };
 
 const PAGE_BUILDERS = {
@@ -10022,6 +10233,7 @@ const PAGE_BUILDERS = {
   instfollowup: buildInstFollowupPage,
   receivables: buildReceivablesPage,
   wallet: buildWalletPage,
+  custbalance: buildCustBalancePage,
   journey: buildJourneyPage,
   signals: buildSignalsPage,
 };
@@ -10178,6 +10390,11 @@ function _govDetail(gov) {
 // "what was signed this month" as well. It now filters on contract date like
 // every other page.
 const _FILTERS_NA = {
+  // A balance is a position on the day of the export, not a period figure.
+  custbalance: {
+    'filter-month': 'Not used here — customer balances are a position, not a monthly figure',
+    'filter-area':  'Not used here — the balance export has no area field'
+  },
   followup: {
     'filter-area': 'Not used here — the contracts feed has no area field'
   },
@@ -10283,6 +10500,10 @@ function showPage(name) {
   // stay in sync with current filter state regardless of navigation order
   computeFilteredState();
   updateKPICards();
+
+  // Customer Balance Cleanup recomputes on every visit: its categories follow
+  // the team's decisions, so a once-per-session build would show a stale position.
+  if (name === 'custbalance') builtPages.delete(name);
 
   if(!builtPages.has(name)) {
     builtPages.add(name);
@@ -11649,6 +11870,7 @@ function refreshData() {
   const active = document.querySelector('.page.active')?.id;
   if (active === 'page-receivables') buildReceivablesPage();
   if (active === 'page-wallet')      buildWalletPage();
+  if (active === 'page-custbalance') buildCustBalancePage();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -15608,6 +15830,511 @@ function _walRender(d) {
   }
 }
 
+// ── CUSTOMER BALANCE CLEANUP ────────────────────────────────────────────────
+// The 2021-onwards customer balance cleanup. The Apps Script
+// (CustomerBalanceCleanup.gs) reads the cleanup sheet's Balances and Decisions
+// tabs plus the live installation / contracts sheets, and recomputes every
+// category on each request. Nothing is cached here: each visit fetches again.
+//
+// Two passcodes, both checked by the Apps Script, never here:
+//   viewer — reads the position;
+//   editor — also records decisions / credit statuses and uploads exports.
+// The page hides edit controls from viewers for tidiness only; the server
+// refuses any write that does not carry the editor passcode.
+//
+// Customer credits are money owed to customers. They are shown as their own
+// figure everywhere and are never subtracted from the receivable.
+//
+// URL and passcode live in this browser (same rule as Receivables): the portal
+// is public, so nothing secret can be written into this file.
+const _cbUrl  = () => localStorage.getItem('kitchino_cb_url')  || '';
+const _cbPass = () => localStorage.getItem('kitchino_cb_pass') || '';
+let _CB_DATA = null;
+
+function _cbSaveConfig() {
+  const url  = (document.getElementById('cb-url-in')?.value  || '').trim();
+  const pass = (document.getElementById('cb-pass-in')?.value || '').trim();
+  if (!url || !pass) return alert('Both the URL and the passcode are needed.');
+  if (/\/a\/macros\//.test(url)) {
+    return alert('That is a domain-restricted URL — it asks for a Google sign-in and '
+      + 'cannot be read by this page.\n\nUse the data API deployment URL, which looks like:\n'
+      + 'https://script.google.com/macros/s/.../exec');
+  }
+  if (!/\/exec(\?|$)/.test(url)) {
+    return alert('That URL does not end in /exec. Copy the Web app URL from the '
+      + 'deployment, not the editor address.');
+  }
+  localStorage.setItem('kitchino_cb_url', url);
+  localStorage.setItem('kitchino_cb_pass', pass);
+  localStorage.setItem('kitchino_cb_url_last', url);
+  _CB_DATA = null;
+  buildCustBalancePage();
+}
+
+function _cbClearConfig() {
+  localStorage.removeItem('kitchino_cb_pass');
+  localStorage.removeItem('kitchino_cb_url');
+  _CB_DATA = null;
+  buildCustBalancePage();
+}
+
+async function buildCustBalancePage() {
+  if (!document.getElementById('cb-loading')) return;
+  const show = el => ['cb-gate','cb-loading','cb-error','cb-content']
+    .forEach(id => { const e = document.getElementById(id);
+                     if (e) e.style.display = (id === el ? 'block' : 'none'); });
+
+  if (!_cbUrl() || !_cbPass()) {
+    const u = document.getElementById('cb-url-in');
+    if (u && !u.value) u.value = _cbUrl() || localStorage.getItem('kitchino_cb_url_last') || '';
+    show('cb-gate');
+    return;
+  }
+
+  // Keep the last position on screen while the fresh one loads; a blank page
+  // on every visit would make the recompute feel like a failure.
+  if (!_CB_DATA) show('cb-loading');
+
+  try {
+    const data = await jsonpFetch(
+      _cbUrl() + '?key=' + encodeURIComponent(_cbPass()) + '&_t=' + Date.now(),
+      '_cbCb', 45000);
+    if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data');
+    _CB_DATA = data;
+    show('cb-content');
+    _cbRender(data);
+  } catch (err) {
+    if (/passcode/i.test(err.message || '')) {
+      localStorage.removeItem('kitchino_cb_pass');
+      _CB_DATA = null;
+      show('cb-gate');
+      const p = document.getElementById('cb-pass-in');
+      if (p) { p.value = ''; p.placeholder = 'Wrong passcode — try again'; }
+      return;
+    }
+    show('cb-error');
+    document.getElementById('cb-error-msg').textContent = '⚠ ' + err.message;
+  }
+}
+
+const _cbEgp = n => new Intl.NumberFormat('en-EG', { maximumFractionDigits: 0 }).format(Math.round(n || 0));
+const _cbM = n => {
+  const a = Math.abs(n || 0);
+  return a >= 1e6 ? (n / 1e6).toFixed(a >= 1e7 ? 1 : 2) + 'M' : _cbEgp(n);
+};
+const _cbEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g,
+  c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const _cbIsCredit = cat => /^0[678] /.test(cat || '');
+const _CB_CS = {
+  '':              { cls: 'none',   label: 'Unexplained' },
+  'Voucher found': { cls: 'found',  label: 'Voucher found' },
+  'No voucher':    { cls: 'novch',  label: 'No voucher' },
+  'Posted':        { cls: 'posted', label: 'Posted' }
+};
+let _cbCredits = [];
+
+function _cbRender(d) {
+  const acc = d.accounts || [];
+  const live = acc.filter(a => a.g);                 // rows in the current export
+  const deb = a => a.net > 0 ? a.net : 0;
+  const crd = a => a.net < 0 ? a.net : 0;
+  const sum = (rows, f) => rows.reduce((s, a) => s + f(a), 0);
+  const inTier = letter => live.filter(a => (a.tier || '').charAt(0) === letter);
+
+  // ── Stamp ────────────────────────────────────────────────────────────────
+  const src = d.sources || {};
+  const when = d.generatedAt ? new Date(d.generatedAt) : new Date();
+  const ed = d.role === 'editor';
+  const roleEl = document.getElementById('cb-role');
+  if (roleEl) { roleEl.className = 'cb-role ' + (ed ? 'editor' : 'viewer');
+                roleEl.textContent = ed ? '✎ Editor' : '👁 View only'; }
+  const up = document.getElementById('cb-upload');
+  if (up) up.style.display = ed ? 'block' : 'none';
+  const ex = d.export;
+  document.getElementById('cb-stamp').innerHTML =
+    (ex ? 'Export: <b>' + _cbEsc(ex.file || 'uploaded file') + '</b> · uploaded by ' + _cbEsc(ex.by)
+          + ' on ' + new Date(ex.at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) + ' · '
+        : 'Export: original upload (21 Oct 2026) · ')
+    + 'Recomputed ' + when.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+    + ' · ' + _cbEgp(src.balanceRows) + ' accounts in the export'
+    + ' · delivery: ' + (src.installOk
+        ? _cbEgp(src.installMatched) + ' customers matched to installation records'
+        : '<b style="color:#c43d3d">installation sheet unreachable — delivery unknown</b>')
+    + (src.contractsOk ? '' : ' · <b style="color:#c43d3d">contracts sheet unreachable — cancellations unknown</b>');
+
+  // ── Money cards ──────────────────────────────────────────────────────────
+  const receivable = sum(live, deb);
+  const credits    = sum(live, crd);
+  const A = sum(inTier('A'), deb), B = sum(inTier('B'), deb);
+  const C = sum(inTier('C'), deb), D = sum(inTier('D'), deb);
+  const E = sum(inTier('E'), deb), F = sum(inTier('F'), deb);
+  const nDeb = live.filter(a => a.net > 0.5).length;
+  const card = (cls, lbl, val, sub) =>
+    '<div class="cb-m ' + cls + '"><div class="lbl">' + lbl + '</div><div class="val">'
+    + val + '</div><div class="sub">' + sub + '</div></div>';
+  const pc = v => receivable ? Math.round(v / receivable * 100) + '% of receivable' : '';
+  document.getElementById('cb-money').innerHTML =
+      card('', 'Receivable on the books', _cbM(receivable), _cbEgp(nDeb) + ' accounts with a debit balance')
+    + card('ok', 'Confirmed collectible', _cbM(A + B),
+        _cbM(A) + ' now · ' + _cbM(B) + ' on delivery · ' + pc(A + B))
+    + card('warn', 'To verify', _cbM(C), 'B2B statements & recent invoices · ' + pc(C))
+    + card('warn', 'Doubtful', _cbM(D), 'old invoices & stale contracts · ' + pc(D))
+    + card('bad', 'Unreal — clear off', _cbM(E + F),
+        _cbM(E) + ' to clear · ' + _cbM(F) + ' intercompany')
+    + card('owed', 'Owed to customers', _cbM(Math.abs(credits)),
+        'credit balances — a liability, not deducted from the receivable');
+
+  // ── Tier table ───────────────────────────────────────────────────────────
+  const cats = {};
+  live.forEach(a => {
+    const c = cats[a.cat] = cats[a.cat] || { tier: a.tier, act: a.act, n: 0, deb: 0, crd: 0, dec: 0, agr: 0 };
+    c.n++; c.deb += deb(a); c.crd += crd(a);
+    if (a.dec) c.dec++;
+    if (a.agr) c.agr += a.agr;
+  });
+  const tiers = {};
+  Object.keys(cats).sort().forEach(k => {
+    const c = cats[k];
+    const t = tiers[c.tier] = tiers[c.tier] || { n: 0, deb: 0, crd: 0, dec: 0, agr: 0, cats: [] };
+    t.n += c.n; t.deb += c.deb; t.crd += c.crd; t.dec += c.dec; t.agr += c.agr;
+    t.cats.push([k, c]);
+  });
+  const num = (v, cls) => '<td class="n' + (cls ? ' ' + cls : '') + '">' + (Math.round(v) ? _cbEgp(v) : '–') + '</td>';
+  let h = '<tr><th>Tier / category</th><th class="n">Accounts</th><th class="n">Receivable</th>'
+        + '<th class="n">Owed to customers</th><th class="n">Decided</th>'
+        + '<th class="n">Agreed to collect</th><th>Action</th></tr>';
+  const tot = { n: 0, deb: 0, crd: 0, dec: 0, agr: 0 };
+  Object.keys(tiers).sort().forEach(tk => {
+    const t = tiers[tk];
+    ['n','deb','crd','dec','agr'].forEach(f => tot[f] += t[f]);
+    h += '<tr class="tier"><td>' + _cbEsc(tk) + '</td><td class="n">' + _cbEgp(t.n) + '</td>'
+       + num(t.deb) + num(t.crd, 'cr') + '<td class="n">' + t.dec + ' / ' + t.n + '</td>'
+       + num(t.agr) + '<td></td></tr>';
+    t.cats.forEach(([k, c]) => {
+      h += '<tr><td style="padding-left:24px">' + _cbEsc(k) + '</td><td class="n">' + _cbEgp(c.n) + '</td>'
+         + num(c.deb) + num(c.crd, 'cr') + '<td class="n">' + c.dec + ' / ' + c.n + '</td>'
+         + num(c.agr) + '<td class="muted">' + _cbEsc(c.act) + '</td></tr>';
+    });
+  });
+  h += '<tr class="total"><td>Total</td><td class="n">' + _cbEgp(tot.n) + '</td>' + num(tot.deb)
+     + num(tot.crd, 'cr') + '<td class="n">' + tot.dec + ' / ' + tot.n + '</td>' + num(tot.agr) + '<td></td></tr>';
+  document.getElementById('cb-tiers').innerHTML = h;
+
+  // ── Customer credits ─────────────────────────────────────────────────────
+  // The tracked set is every account with a "Credit at start" — it does not
+  // shrink when a refund is posted and the live balance goes to zero, which is
+  // what lets "cleared" be measured at all.
+  _cbCredits = acc.filter(a => a.cr0 != null && a.cr0 < 0)
+    .sort((x, y) => x.cr0 - y.cr0);
+  const by = s => _cbCredits.filter(a => (a.cs || '') === s);
+  const amt = rows => Math.abs(sum(rows, a => a.cr0));
+  const tracked = amt(_cbCredits), nTr = _cbCredits.length;
+  const un = by(''), vf = by('Voucher found'), nv = by('No voucher'), po = by('Posted');
+  const resolved = nTr - un.length;
+  const seg = (rows, col) => tracked ? '<i style="width:' + (amt(rows) / tracked * 100).toFixed(2)
+    + '%;background:' + col + '" title=""></i>' : '';
+  document.getElementById('cb-cr-prog').innerHTML =
+    '<div class="bar">' + seg(po, '#1b9a6e') + seg(nv, '#3b82f6') + seg(vf, '#e0a100') + seg(un, '#d14b4b') + '</div>'
+    + '<div class="cap"><span><b>' + resolved + ' of ' + nTr + '</b> credits resolved</span>'
+    + '<span>by amount: ' + (tracked ? Math.round((tracked - amt(un)) / tracked * 100) : 0) + '% explained · '
+    + (tracked ? Math.round(amt(po) / tracked * 100) : 0) + '% cleared</span></div>';
+  document.getElementById('cb-cr-cards').innerHTML =
+      card('owed', 'Still unexplained', _cbM(amt(un)), un.length + ' credits with no status yet')
+    + card('warn', 'Voucher found', _cbM(amt(vf)), vf.length + ' explained — awaiting posting')
+    + card('', 'No voucher', _cbM(amt(nv)), nv.length + ' confirmed owed to the customer')
+    + card('ok', 'Cleared', _cbM(amt(po)), po.length + ' posted in the ledger')
+    + card('', 'Tracked at start', _cbM(tracked), nTr + ' customer credits');
+
+  // Credits outside the tracked set are still liabilities — say where they are.
+  const other = live.filter(a => a.net < -10 && (a.cr0 == null));
+  document.getElementById('cb-cr-other').innerHTML =
+    other.length
+      ? 'Also in credit and not in the tracked set: <b>' + other.length + '</b> accounts, <b>'
+        + _cbEgp(Math.abs(sum(other, crd))) + '</b> (exhibition pool accounts and differences under 1,000 — '
+        + 'see their categories above).'
+      : '';
+  _cbRenderCreditTable();
+
+  // ── To-do: biggest open balances with no decision ────────────────────────
+  const todo = live.filter(a => a.net > 1000 && !a.dec && /^[CDEF]/.test(a.tier || ''))
+    .sort((x, y) => y.net - x.net).slice(0, 30);
+  document.getElementById('cb-todo').innerHTML =
+    '<tr><th>Account</th><th>Customer</th><th>Category</th><th class="n">Balance</th><th>Action</th>'
+    + (ed ? '<th></th>' : '') + '</tr>'
+    + (todo.length ? todo.map(a => '<tr><td>' + _cbEsc(a.a) + '</td><td class="ar">' + _cbEsc(a.n)
+        + '</td><td class="muted">' + _cbEsc(a.cat) + '</td>' + num(a.net)
+        + '<td class="muted">' + _cbEsc(a.act) + '</td>' + _cbEditCell(a) + '</tr>').join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:18px">Every open balance has a decision.</td></tr>');
+
+  // ── Tie-out to the system report (control check only) ────────────────────
+  document.getElementById('cb-tieout').innerHTML =
+    'Tie-out to the system report, for control only: the report\'s single net figure of <b>'
+    + _cbEgp(receivable + credits) + '</b> is the receivable (' + _cbEgp(receivable)
+    + ') minus customer credits (' + _cbEgp(Math.abs(credits)) + '). That net is not a collectible '
+    + 'amount and is not used anywhere on this page. Every save is recorded in the change log '
+    + '(time, name, account, old and new value).';
+
+  // ── Accounts explorer ────────────────────────────────────────────────────
+  const sel = document.getElementById('cb-acc-cat');
+  if (sel) {
+    const keep = sel.value;
+    const opts = Object.keys(cats).sort();
+    sel.innerHTML = '<option value="all">All categories</option>'
+      + opts.map(k => '<option value="' + _cbEsc(k) + '">' + _cbEsc(k) + ' (' + cats[k].n + ')</option>').join('');
+    if (keep && (keep === 'all' || opts.indexOf(keep) > -1)) sel.value = keep;
+  }
+  _cbRenderAccounts();
+}
+
+function _cbRenderCreditTable() {
+  const el = document.getElementById('cb-cr-table');
+  if (!el) return;
+  const q = (document.getElementById('cb-cr-search')?.value || '').trim().toLowerCase();
+  const f = document.getElementById('cb-cr-filter')?.value;
+  const rows = _cbCredits.filter(a =>
+    (f === 'all' || f == null || (a.cs || '') === f) &&
+    (!q || String(a.n).toLowerCase().includes(q) || String(a.a).toLowerCase().includes(q)));
+  el.innerHTML = '<tr><th>Account</th><th>Customer</th><th>Category</th>'
+    + '<th class="n">Credit at start</th><th class="n">Credit now</th><th>Status</th><th>Notes</th>'
+    + (_cbIsEditor() ? '<th></th>' : '') + '</tr>'
+    + (rows.length ? rows.map(a => {
+        const s = _CB_CS[a.cs || ''] || { cls: 'found', label: a.cs };
+        return '<tr><td>' + _cbEsc(a.a) + '</td><td class="ar">' + _cbEsc(a.n) + '</td>'
+          + '<td class="muted">' + _cbEsc(a.cat) + '</td>'
+          + '<td class="n cr">' + _cbEgp(Math.abs(a.cr0)) + '</td>'
+          + '<td class="n' + (a.net < 0 ? ' cr' : '') + '">' + (a.net < -0.5 ? _cbEgp(Math.abs(a.net)) : '–') + '</td>'
+          + '<td><span class="cb-tag ' + s.cls + '">' + _cbEsc(s.label) + '</span></td>'
+          + '<td class="muted">' + _cbEsc(a.note) + '</td>' + _cbEditCell(a) + '</tr>';
+      }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:18px">No credits match.</td></tr>');
+}
+
+// ── Editing (editor passcode only) ──────────────────────────────────────────
+const _CB_DECISIONS = ['Collect', 'Write off', 'Close contract', 'Refund customer',
+  'Post missing voucher', 'Merge accounts', 'Reclassify', 'Keep open'];
+const _CB_CREDIT_STATUS = ['Voucher found', 'No voucher', 'Posted'];
+const _cbIsEditor = () => !!(_CB_DATA && _CB_DATA.role === 'editor');
+const _cbEditCell = a => _cbIsEditor()
+  ? '<td><button class="cb-ed" data-acct="' + _cbEsc(a.a) + '" onclick="_cbOpenEdit(this.dataset.acct)">Edit</button></td>'
+  : '';
+const _cbFind = acct => ((_CB_DATA && _CB_DATA.accounts) || []).find(x => String(x.a) === String(acct));
+
+let _cbAccPage = 1;
+const CB_ACC_PAGE = 50;
+
+function _cbRenderAccounts() {
+  const el = document.getElementById('cb-acc-table');
+  if (!el || !_CB_DATA) return;
+  const q = (document.getElementById('cb-acc-search')?.value || '').trim().toLowerCase();
+  const cat = document.getElementById('cb-acc-cat')?.value || 'all';
+  const dec = document.getElementById('cb-acc-dec')?.value || 'all';
+  const hide = document.getElementById('cb-acc-hidezero')?.checked;
+  const rows = (_CB_DATA.accounts || []).filter(a => a.g
+    && (cat === 'all' || a.cat === cat)
+    && (dec === 'all' || (dec === 'none' ? !a.dec : !!a.dec))
+    && (!hide || Math.abs(a.net) > 10)
+    && (!q || String(a.n).toLowerCase().includes(q) || String(a.a).toLowerCase().includes(q)))
+    .sort((x, y) => Math.abs(y.net) - Math.abs(x.net));
+  const pages = Math.max(1, Math.ceil(rows.length / CB_ACC_PAGE));
+  _cbAccPage = Math.min(Math.max(1, _cbAccPage), pages);
+  const start = (_cbAccPage - 1) * CB_ACC_PAGE;
+  const ed = _cbIsEditor();
+  const amt = v => '<td class="n' + (v < 0 ? ' cr' : '') + '">' + (Math.abs(v) > 0.5 ? _cbEgp(v) : '–') + '</td>';
+  el.innerHTML = '<tr><th>Account</th><th>Customer</th><th>Category</th><th class="n">Balance</th>'
+    + '<th>Decision</th><th class="n">Agreed</th><th>Credit status</th><th>Notes</th>' + (ed ? '<th></th>' : '') + '</tr>'
+    + (rows.length ? rows.slice(start, start + CB_ACC_PAGE).map(a => {
+        const isCr = a.cr0 != null && a.cr0 < 0;
+        const s = isCr ? (_CB_CS[a.cs || ''] || { cls: 'found', label: a.cs }) : null;
+        return '<tr><td>' + _cbEsc(a.a) + '</td><td class="ar">' + _cbEsc(a.n) + '</td>'
+          + '<td class="muted">' + _cbEsc(a.cat) + '</td>' + amt(a.net)
+          + '<td>' + (a.dec ? _cbEsc(a.dec) : '<span style="color:var(--text3)">—</span>') + '</td>'
+          + '<td class="n">' + (a.agr ? _cbEgp(a.agr) : '–') + '</td>'
+          + '<td>' + (s ? '<span class="cb-tag ' + s.cls + '">' + _cbEsc(s.label) + '</span>' : '') + '</td>'
+          + '<td class="muted">' + _cbEsc(a.note) + '</td>' + _cbEditCell(a) + '</tr>';
+      }).join('')
+      : '<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:18px">No accounts match.</td></tr>');
+  const c = document.getElementById('cb-acc-count');
+  if (c) c.textContent = rows.length ? 'Showing ' + (start + 1) + '–' + Math.min(start + CB_ACC_PAGE, rows.length)
+    + ' of ' + rows.length + ' accounts' : '0 accounts';
+  const pg = document.getElementById('cb-acc-page');
+  if (pg) pg.textContent = _cbAccPage + ' / ' + pages;
+  const sub = document.getElementById('cb-acc-sub');
+  if (sub) sub.textContent = ed ? 'search, filter and record decisions' : 'search and filter — view only';
+}
+function _cbAccNav(d) { _cbAccPage += d; _cbRenderAccounts(); }
+
+let _cbEditing = null;   // { a, base } — base is what the editor saw on opening
+
+function _cbOpenEdit(acct) {
+  const a = _cbFind(acct);
+  if (!a || !_cbIsEditor()) return;
+  const opt = (list, v, blank) => blank + list.map(x =>
+    '<option' + (x === v ? ' selected' : '') + '>' + _cbEsc(x) + '</option>').join('');
+  document.getElementById('cb-m-title').textContent = a.n || a.a;
+  document.getElementById('cb-m-sub').textContent = 'Account ' + a.a + ' · ' + a.cat + ' · balance ' + _cbEgp(a.net);
+  document.getElementById('cb-m-dec').innerHTML = opt(_CB_DECISIONS, a.dec, '<option value="">— none —</option>');
+  document.getElementById('cb-m-agr').value = a.agr == null ? '' : a.agr;
+  const isCr = a.cr0 != null && a.cr0 < 0;
+  document.getElementById('cb-m-cs-wrap').style.display = isCr || a.cs ? 'grid' : 'none';
+  document.getElementById('cb-m-cs').innerHTML = opt(_CB_CREDIT_STATUS, a.cs, '<option value="">Unexplained</option>');
+  document.getElementById('cb-m-note').value = a.note || '';
+  let who = ''; try { who = localStorage.getItem('kitchino_cb_editor') || ''; } catch (e) {}
+  document.getElementById('cb-m-editor').value = who;
+  document.getElementById('cb-m-alert').style.display = 'none';
+  _cbEditing = { a: a.a, base: { dec: a.dec || '', agr: a.agr == null ? '' : a.agr, cs: a.cs || '', note: a.note || '' } };
+  document.getElementById('cb-m-save').disabled = false;
+  document.getElementById('cb-modal').style.display = 'flex';
+}
+function _cbCloseEdit() { document.getElementById('cb-modal').style.display = 'none'; _cbEditing = null; }
+
+// text/plain body: a "simple" request, so no CORS preflight (same as Contract Notes).
+async function _cbPost(body) {
+  const res = await fetch(_cbUrl(), { method: 'POST',
+    body: JSON.stringify(Object.assign({ key: _cbPass() }, body)) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  try { return JSON.parse(await res.text()); }
+  catch (e) { throw new Error('The script did not answer with data — check the deployment.'); }
+}
+
+async function _cbSaveEdit() {
+  if (!_cbEditing) return;
+  const al = document.getElementById('cb-m-alert');
+  const say = (cls, msg) => { al.className = 'cb-alert ' + cls; al.textContent = msg; al.style.display = 'block'; };
+  const editor = document.getElementById('cb-m-editor').value.trim();
+  if (!editor) return say('err', 'Enter your name — it is recorded with every change.');
+  try { localStorage.setItem('kitchino_cb_editor', editor); } catch (e) {}
+  const fields = {
+    dec:  document.getElementById('cb-m-dec').value,
+    agr:  document.getElementById('cb-m-agr').value.trim(),
+    cs:   document.getElementById('cb-m-cs').value,
+    note: document.getElementById('cb-m-note').value.trim()
+  };
+  const btn = document.getElementById('cb-m-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const r = await _cbPost({ action: 'save', a: _cbEditing.a, fields, base: _cbEditing.base, editor });
+    if (r.status === 'conflict') {
+      // Show what the sheet holds now and make it the new base, so a second
+      // Save is a deliberate overwrite rather than an accident.
+      const c = r.current || {};
+      document.getElementById('cb-m-dec').value = c.dec || '';
+      document.getElementById('cb-m-agr').value = c.agr === '' || c.agr == null ? '' : c.agr;
+      document.getElementById('cb-m-cs').value = c.cs || '';
+      document.getElementById('cb-m-note').value = c.note || '';
+      _cbEditing.base = { dec: c.dec || '', agr: c.agr == null ? '' : c.agr, cs: c.cs || '', note: c.note || '' };
+      _cbApplySaved(_cbEditing.a, c);
+      return say('err', r.message);
+    }
+    if (r.status !== 'ok') return say('err', r.message || 'Save failed.');
+    _cbApplySaved(_cbEditing.a, r.saved || fields);
+    _cbCloseEdit();
+    _cbRender(_CB_DATA);
+  } catch (e) {
+    say('err', 'Not saved: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+function _cbApplySaved(acct, v) {
+  const a = _cbFind(acct); if (!a) return;
+  a.dec = v.dec || '';
+  a.agr = v.agr === '' || v.agr == null ? null : Number(v.agr);
+  a.cs = v.cs || '';
+  a.note = v.note || '';
+}
+
+// ── Export upload (editor passcode only) ────────────────────────────────────
+// SheetJS is loaded only when an editor actually picks a file.
+let _cbExport = null;
+function _cbLoadXlsx() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = () => ok(); s.onerror = () => fail(new Error('Could not load the Excel reader.'));
+    document.head.appendChild(s);
+  });
+}
+
+async function _cbReadExport(file) {
+  const msg = document.getElementById('cb-upload-msg');
+  const btn = document.getElementById('cb-upload-btn');
+  _cbExport = null; btn.style.display = 'none';
+  if (!file) { msg.textContent = ''; return; }
+  msg.textContent = 'Reading ' + file.name + '…';
+  try {
+    await _cbLoadXlsx();
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+    // The export's headers can sit on any tab, and on any of the first rows.
+    let grid = null, hr = -1;
+    for (const name of wb.SheetNames) {
+      const g = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+      const i = g.slice(0, 15).findIndex(r => {
+        const t = r.map(x => String(x).trim());
+        return t.includes('Cust. Account') && t.includes('Ledger balance');
+      });
+      if (i > -1) { grid = g; hr = i; break; }
+    }
+    if (!grid) throw new Error('No sheet with the export headers (Cust. Account, Ledger balance…) was found.');
+    const h = grid[hr].map(x => String(x).trim());
+    const need = ['Date', 'Cust. Account', 'Cust. Name', 'Group', 'Ledger balance', 'Contract Amount'];
+    const miss = need.filter(n => h.indexOf(n) < 0);
+    if (miss.length) throw new Error('Missing column(s): ' + miss.join(', '));
+    const ix = n => h.indexOf(n);
+    const toNum = v => {
+      if (typeof v === 'number') return v;
+      const t = String(v == null ? '' : v).replace(/[^0-9.()-]/g, '');
+      return Number(/^\(.*\)$/.test(t) ? '-' + t.slice(1, -1) : t) || 0;
+    };
+    const rows = grid.slice(hr + 1).filter(r => String(r[ix('Cust. Account')] || '').trim() !== '').map(r => {
+      const dv = r[ix('Date')];
+      const d = dv instanceof Date ? dv : (dv ? new Date(dv) : null);
+      return { d: d && !isNaN(d) ? d.toISOString() : '', a: String(r[ix('Cust. Account')]).trim(),
+               n: String(r[ix('Cust. Name')] || '').trim(), g: String(r[ix('Group')] || '').trim(),
+               l: toNum(r[ix('Ledger balance')]), c: toNum(r[ix('Contract Amount')]),
+               net: ix('Net position') > -1 ? toNum(r[ix('Net position')]) : null };
+    });
+    const real = rows.filter(r => r.g);
+    if (!real.length) throw new Error('No customer rows were found under the headers.');
+    const netOf = r => r.net != null ? r.net : r.l + r.c;
+    const net = real.reduce((s, r) => s + netOf(r), 0);
+    const deb = real.reduce((s, r) => s + Math.max(netOf(r), 0), 0);
+    _cbExport = { filename: file.name, rows };
+    const cur = (_CB_DATA && _CB_DATA.sources && _CB_DATA.sources.balanceRows) || 0;
+    msg.innerHTML = '<b>' + _cbEsc(file.name) + '</b>: ' + _cbEgp(real.length) + ' accounts (now ' + _cbEgp(cur)
+      + ') · receivable ' + _cbEgp(deb) + ' · report net ' + _cbEgp(net)
+      + '. Check these against the system report, then press <b>Replace balances</b>. '
+      + 'The current balances are kept as a backup.';
+    btn.style.display = 'inline-block';
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#c43d3d">⚠ ' + _cbEsc(e.message) + '</span>';
+  }
+}
+
+async function _cbSendExport() {
+  if (!_cbExport) return;
+  const msg = document.getElementById('cb-upload-msg');
+  const btn = document.getElementById('cb-upload-btn');
+  let editor = ''; try { editor = localStorage.getItem('kitchino_cb_editor') || ''; } catch (e) {}
+  editor = (prompt('Your name (recorded in the change log):', editor) || '').trim();
+  if (!editor) return;
+  try { localStorage.setItem('kitchino_cb_editor', editor); } catch (e) {}
+  btn.disabled = true; btn.textContent = 'Uploading…';
+  try {
+    const r = await _cbPost({ action: 'upload', filename: _cbExport.filename, rows: _cbExport.rows, editor });
+    if (r.status !== 'ok') throw new Error(r.message || 'Upload failed.');
+    msg.innerHTML = '<span style="color:#157956">✓ Balances replaced — ' + _cbEgp(r.export.rows)
+      + ' accounts. Recomputing…</span>';
+    _cbExport = null; btn.style.display = 'none';
+    document.getElementById('cb-file').value = '';
+    buildCustBalancePage();
+  } catch (e) {
+    msg.innerHTML = '<span style="color:#c43d3d">⚠ Not uploaded: ' + _cbEsc(e.message) + '</span>';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Replace balances';
+  }
+}
+
 // URL and passcode live in this browser, not in the file — the portal is
 // published publicly, so anything written here would ship with it.
 const _rdUrl  = () => localStorage.getItem('kitchino_rd_url')  || '';
@@ -18109,6 +18836,7 @@ function _instRenderPage() {
     measures:'measures', followup:'followup', contracts:'followup',
     journey:'journey', customerjourney:'journey', order:'journey',
     receivables:'receivables', delivery:'receivables',
+    custbalance:'custbalance', cleanup:'custbalance', balances:'custbalance',
     executive:'executive', daily:'daily', ceo:'ceo', monthly:'monthly',
     designers:'designers', sources:'sources', geographic:'geographic',
     conversion:'conversion', ordertypes:'ordertypes', forecast:'forecast'
