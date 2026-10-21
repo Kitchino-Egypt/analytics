@@ -10814,6 +10814,39 @@ function closeWhatsNew() {
 // sits still while the filters move reads as a bug, and is one.
 const SIXMONTH_DATA = {};
 
+// ── The delivery promise ────────────────────────────────────────────────────
+// ONE STANDARD: 183 days (six months) for every contract, whatever its own
+// terms say. Decided by the operator, 20 Oct 2026.
+//
+// The contractual promise was shortened to four months (122 days) for
+// contracts signed on or after 11 July 2026, and this measure deliberately
+// does NOT follow it. The reason is comparability: a KPI whose definition
+// changes mid-year stops being a trend — January and December would no longer
+// mean the same thing — and the sheet that decides eligibility uses 183 too,
+// so two rules would have to be kept in step in two places.
+//
+// The cost, which should not be forgotten: a contract promised four months and
+// delivered in five counts here as on time. OTIF therefore reads more
+// favourably than the promises actually made from 11 July onwards. It measures
+// a consistent six-month standard, not contractual compliance.
+//
+// To measure the real promise instead, set OTIF_DAYS_AFTER to 122 and have
+// _otifPromise branch on OTIF_RULE_CHANGE — and update the 6M Delivery KPI
+// sheet tab to match, or contracts signed from 11 July will never become
+// eligible at all.
+const OTIF_RULE_CHANGE = '2026-07-11';
+const OTIF_DAYS_BEFORE = 183;   // six months
+const OTIF_DAYS_AFTER  = 183;   // deliberately the same — see above
+
+function _otifPromise(signed) {
+  const t = new Date(String(signed || '').trim()).getTime();
+  const c = new Date(OTIF_RULE_CHANGE + 'T00:00:00').getTime();
+  return (!isNaN(t) && t >= c) ? OTIF_DAYS_AFTER : OTIF_DAYS_BEFORE;
+}
+
+const _otifOnTime = r => r.days !== '' && +r.days >= 0 && +r.days <= _otifPromise(r.signed);
+const _otifLate   = r => r.days !== '' && +r.days >  _otifPromise(r.signed);
+
 // ── OTIF under the main filters ─────────────────────────────────────────────
 // Mirrors the filter logic in renderFollowupTable (year / designer / month /
 // period) so the card and the table below it can never disagree. The detail
@@ -10884,8 +10917,8 @@ function renderSixMonth() {
   if (SIXMONTH_ROWS.length && (f.active || rowsComplete)) {
     const days = f.rows.filter(r => r.days !== '').map(r => +r.days)
                        .filter(n => !isNaN(n) && n >= 0).sort((a,b) => a - b);
-    const ontime = f.rows.filter(r => r.days !== '' && +r.days >= 0 && +r.days <= 183).length;
-    const late   = f.rows.filter(r => r.days !== '' && +r.days > 183).length;
+    const ontime = f.rows.filter(_otifOnTime).length;
+    const late   = f.rows.filter(_otifLate).length;
     const undel  = f.rows.filter(r => r.days === '').length;
     d = {
       eligible:    f.rows.length,
@@ -10930,9 +10963,10 @@ function renderSixMonth() {
 
   // ── Coverage note ────────────────────────────────────────────────────────
   // A plain sentence saying which period the figures actually cover. The
-  // denominator is a rolling 183-day window, not a calendar year, so the Year
-  // filter can look inert simply because everything eligible falls in one
-  // year. Said outright, that stops reading as a fault.
+  // denominator is a rolling window — six months, or four for contracts signed
+  // from 11 July 2026 — not a calendar year, so the Year filter can look inert
+  // simply because everything eligible falls in one year. Said outright, that
+  // stops reading as a fault.
   //
   // Derived from the rows, never written in, so it follows the window instead
   // of going stale the moment 2027 contracts become eligible.
@@ -11008,6 +11042,8 @@ function renderSixMonth() {
     +     '</div>'
     +   '</div>'
     +   '<div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:20px">'
+    // The window differs per contract now, so the notes name the promise
+    // rather than a number that would be wrong for half the set.
     +     stat('Measured', d.eligible, 'signed 183+ days ago', 'all')
     +     stat('Delivered in time', d.ontime, 'within 183 days', 'ontime')
     +     stat('Delivered late', d.late, 'over 183 days', 'late')
@@ -11039,8 +11075,8 @@ function openSixMonthList(key) {
   // reached from a filtered figure contradicts the figure that opened it.
   const rows = _sixMonthFiltered().rows.filter(r =>
       key === 'all'    ? true
-    : key === 'ontime' ? (r.days !== '' && +r.days >= 0 && +r.days <= 183)
-    : key === 'late'   ? (r.days !== '' && +r.days > 183)
+    : key === 'ontime' ? _otifOnTime(r)
+    : key === 'late'   ? _otifLate(r)
     :                    (r.days === ''));
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m =>
@@ -11059,8 +11095,9 @@ function openSixMonthList(key) {
           + '<td style="padding:7px 8px;color:var(--text2)">' + esc(r.orderId) + '</td>'
           + '<td style="padding:7px 8px;color:var(--text2)">' + esc(r.signed) + '</td>'
           + '<td style="padding:7px 8px"><b style="color:'
-          +   (r.days === '' ? 'var(--red,#c62828)' : +r.days <= 183 ? 'var(--green)' : 'var(--gold)')
-          +   '">' + (r.days === '' ? 'not delivered' : r.days + ' d') + '</b></td></tr>').join('')
+          +   (r.days === '' ? 'var(--red,#c62828)' : _otifOnTime(r) ? 'var(--green)' : 'var(--gold)')
+          +   '">' + (r.days === '' ? 'not delivered'
+                      : r.days + ' d / ' + _otifPromise(r.signed)) + '</b></td></tr>').join('')
       + '</tbody></table>'
     : '<div style="padding:24px;text-align:center;color:var(--text2);font-size:13px">Nothing in this group.</div>';
 
@@ -11593,12 +11630,25 @@ async function connectGoogleSheets() {
 
 // Override refreshData to use silent-fetch
 function refreshData() {
+  // Receivables and the Reward Wallet hold their own fetched copies. Without
+  // dropping them here, Refresh reloaded everything else while those two kept
+  // serving whatever they fetched first — so a payment recorded after the page
+  // was opened stayed invisible until a full browser reload.
+  _RD_DATA = null; _RD_PAYMENTS = []; _rdLoadedAt = 0;
+  _WAL_DATA = null; _walLoadedAt = 0;
+
   if (sheetsUrl) {
     _silentFetch(false);
   } else {
     builtPages.clear();
     showPage('executive');
   }
+
+  // Rebuild whichever of the two is on screen, since neither is part of the
+  // page-builder path above.
+  const active = document.querySelector('.page.active')?.id;
+  if (active === 'page-receivables') buildReceivablesPage();
+  if (active === 'page-wallet')      buildWalletPage();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -15384,7 +15434,9 @@ async function buildWalletPage() {
                      if (e) e.style.display = (id === el ? 'block' : 'none'); });
 
   if (!_walUrl() || !_walKey()) { show('wal-setup'); return; }
-  if (_WAL_DATA) { show('wal-content'); _walRender(_WAL_DATA); return; }
+  if (_WAL_DATA && (Date.now() - _walLoadedAt) < RD_STALE_MS) {
+    show('wal-content'); _walRender(_WAL_DATA); return;
+  }
 
   show('wal-loading');
 
@@ -15400,6 +15452,7 @@ async function buildWalletPage() {
     }
 
     _WAL_DATA = data;
+    _walLoadedAt = Date.now();
     show('wal-content');
     _walRender(data);
   } catch (err) {
@@ -15598,6 +15651,12 @@ function _rdClearConfig() {
 const RD_SCRIPT_URL = localStorage.getItem('kitchino_rd_url') || '';
 let _RD_DATA = null;
 let _RD_PAYMENTS = [];
+// Payments are written by an hourly trigger, so a copy fetched once and kept
+// forever goes stale while the page sits open. Five minutes keeps revisits
+// instant without hiding a settlement recorded in the meantime.
+let _rdLoadedAt = 0;
+let _walLoadedAt = 0;
+const RD_STALE_MS = 5 * 60 * 1000;
 let _rdFilteredRows = [];
 let _rdCurrentPage  = 1;
 const RD_PAGE_SIZE  = 100;
@@ -15630,7 +15689,9 @@ async function buildReceivablesPage() {
     return;
   }
 
-  if (_RD_DATA) { show('rd-content'); _rdRender(_RD_DATA); return; }
+  if (_RD_DATA && (Date.now() - _rdLoadedAt) < RD_STALE_MS) {
+    show('rd-content'); _rdRender(_RD_DATA); return;
+  }
 
   show('rd-loading');
 
@@ -15643,6 +15704,7 @@ async function buildReceivablesPage() {
 
     _RD_DATA = data.data || [];
     _RD_PAYMENTS = data.payments || [];
+    _rdLoadedAt = Date.now();
     show('rd-content');
     _rdRender(_RD_DATA);
   } catch(err) {
