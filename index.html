@@ -10482,6 +10482,9 @@ function showPage(name) {
   const nav = document.querySelector(`[data-page="${name}"]`);
   if(nav) nav.classList.add('active');
   document.getElementById('page-title').textContent = PAGE_TITLES[name] || name;
+  // Before any figure is computed: the cleanup page adds 2021–2023 to the Year
+  // menu while it is open and takes them away again on every other page.
+  if (typeof _cbYearOptions === 'function') _cbYearOptions(name === 'custbalance');
   _syncFilterAvailability(name);
 
   // Swap the period inputs to this page's own range BEFORE computing, so the
@@ -15909,6 +15912,7 @@ async function buildCustBalancePage() {
       '_cbCb', 45000);
     if (!data || data.status === 'error') throw new Error(data ? data.message : 'No data');
     _CB_DATA = data;
+    _cbYearOptions(true);
     show('cb-content');
     _cbRender(data);
   } catch (err) {
@@ -16377,6 +16381,30 @@ function _cbInScope(a) {
   } else if (s.year !== 'all' && d.slice(0, 4) !== s.year) return false;
   if (s.q && !(String(a.n).toLowerCase().includes(s.q) || String(a.a).toLowerCase().includes(s.q))) return false;
   return true;
+}
+// The portal's Year menu lists only the years the other pages have data for.
+// Balances go back to 2021, so while this page is open the missing years are
+// added (marked data-cb) and removed again on leaving, so no other page ever
+// offers a year it has nothing for.
+function _cbYearOptions(on) {
+  const sel = document.getElementById('filter-year');
+  if (!sel) return;
+  sel.querySelectorAll('option[data-cb]').forEach(o => {
+    if (!on) { if (sel.value === o.value) sel.value = 'all'; o.remove(); }
+  });
+  if (!on) return;
+  const have = new Set([...sel.options].map(o => o.value));
+  const years = new Set();
+  ((_CB_DATA && _CB_DATA.accounts) || []).forEach(a => { if (a.d) years.add(a.d.slice(0, 4)); });
+  if (!years.size) for (let y = 2021; y <= new Date().getFullYear(); y++) years.add(String(y));
+  [...years].sort().forEach(y => {
+    if (have.has(y)) return;
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y; o.dataset.cb = '1';
+    // Keep the menu in order: insert before the first later year.
+    const next = [...sel.options].find(x => x.value !== 'all' && x.value > y);
+    sel.insertBefore(o, next || null);
+  });
 }
 // URL and passcode live in this browser, not in the file — the portal is
 // published publicly, so anything written here would ship with it.
