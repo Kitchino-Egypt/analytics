@@ -3756,19 +3756,51 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 <style>
 /* The report is always light, on screen and on paper. It is a document, and a
    dark-themed one would print as a black page or a washed-out one. */
-#rd-report-sheet, #rd-report-sheet * { color:#111; }
+/* Styled as a finance document rather than a dashboard: restrained palette,
+   thin rules, numbered sections, figures right-aligned in tabular figures so
+   columns line up digit for digit. Colour is used only where it carries
+   meaning — money in and money owed. */
+#rd-report-sheet, #rd-report-sheet * { color:#15181d; }
+#rd-report-sheet { font-feature-settings:"tnum" 1; }
 #rd-report-sheet h1,#rd-report-sheet h2,#rd-report-sheet h3{margin:0}
 #rd-report-sheet table{width:100%;border-collapse:collapse;font-size:12px}
-#rd-report-sheet th{text-align:left;padding:7px 9px;background:#f3f4f6;color:#4b5563;
-  font-size:10px;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
-#rd-report-sheet td{padding:7px 9px;border-bottom:1px solid #f1f2f4}
-#rd-report-sheet tr:last-child td{border-bottom:0}
-.rd-rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 22px}
-.rd-rep-k{border:1px solid #e5e7eb;border-radius:9px;padding:12px 14px}
-.rd-rep-k span{display:block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#6b7280}
-.rd-rep-k b{display:block;font-size:21px;font-weight:800;margin-top:5px;letter-spacing:-.6px}
-.rd-rep-k i{font-style:normal;font-size:10.5px;color:#6b7280}
-.rd-rep-h{font-size:13px;font-weight:700;margin:24px 0 9px;padding-bottom:6px;border-bottom:2px solid #111}
+#rd-report-sheet th{text-align:left;padding:8px 10px;color:#5b6472;font-size:9.5px;
+  letter-spacing:.8px;text-transform:uppercase;font-weight:700;
+  border-bottom:1px solid #15181d;border-top:1px solid #d9dde3}
+#rd-report-sheet td{padding:7px 10px;border-bottom:1px solid #eceff3}
+#rd-report-sheet td.n,#rd-report-sheet th.n{text-align:right;font-variant-numeric:tabular-nums}
+#rd-report-sheet tr.total td{border-top:1.5px solid #15181d;border-bottom:3px double #15181d;
+  font-weight:800;background:#fafbfc}
+/* Letterhead */
+.rd-rep-head{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;
+  flex-wrap:wrap;padding-bottom:16px;border-bottom:2.5px solid #15181d}
+.rd-rep-mark{font-size:19px;font-weight:900;letter-spacing:3px}
+.rd-rep-sub{font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:#5b6472;margin-top:3px}
+.rd-rep-title{font-size:21px;font-weight:750;letter-spacing:-.4px;margin-top:16px}
+.rd-rep-meta{font-size:10.5px;border-collapse:collapse;min-width:230px}
+.rd-rep-meta td{padding:2.5px 0;border:0}
+.rd-rep-meta td:first-child{color:#5b6472;padding-right:16px;white-space:nowrap}
+.rd-rep-meta td:last-child{text-align:right;font-weight:600}
+/* Total, branching into its months */
+.rd-tree{margin:26px 0 8px}
+.rd-node{position:relative;border:1px solid #c9ced6;border-radius:3px;padding:14px 18px;background:#fff}
+.rd-node .lbl{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:#5b6472}
+.rd-node .val{font-size:22px;font-weight:800;letter-spacing:-.7px;margin-top:6px;font-variant-numeric:tabular-nums}
+.rd-node .note{font-size:10.5px;color:#5b6472;margin-top:3px}
+.rd-node-total{border:2px solid #15181d;text-align:center;padding:20px}
+.rd-node-total .val{font-size:34px;letter-spacing:-1.4px;color:#15803d}
+.rd-node-total .lbl{letter-spacing:2px}
+.rd-kids{display:grid;grid-template-columns:1fr 1fr;gap:20px;position:relative;margin-top:30px}
+.rd-kids::before{content:"";position:absolute;top:-30px;left:50%;width:1px;height:15px;background:#c9ced6}
+.rd-kids::after{content:"";position:absolute;top:-15px;left:25%;right:25%;height:1px;background:#c9ced6}
+.rd-kids>.rd-node::before{content:"";position:absolute;top:-15px;left:50%;width:1px;height:15px;background:#c9ced6}
+@media(max-width:560px){.rd-kids{grid-template-columns:1fr}
+  .rd-kids::after{display:none}}
+.rd-rep-h{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+  margin:30px 0 10px;padding-bottom:5px;border-bottom:1px solid #15181d;color:#15181d}
+.rd-rep-h span{color:#8a929e;margin-right:8px}
+.rd-var{font-size:11.5px;color:#5b6472;margin-top:10px;padding:8px 12px;background:#f6f8fa;
+  border-left:3px solid #c9ced6}
 /* Printing: hide the application, keep the document. Visibility rather than
    display, so the sheet keeps its layout instead of collapsing. */
 @media print {
@@ -16124,71 +16156,101 @@ function openRdReport() {
     ? label(pick[0]) + ' – ' + label(pick[1])
     : (pick[0] ? label(pick[0]) : '—');
 
+  const avg = inPeriod.length ? collected / inPeriod.length : 0;
+  const max = inPeriod.reduce((m, p) => Math.max(m, p.paid || 0), 0);
+  const share = v => collected ? (v / collected * 100).toFixed(1) + '%' : '—';
+
+  // ── Letterhead ───────────────────────────────────────────────────────────
   let html =
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">'
-    +   '<div><div style="font-size:11px;letter-spacing:2px;color:#6b7280">KITCHINO</div>'
-    +     '<h1 style="font-size:24px;font-weight:800;letter-spacing:-.8px;margin-top:4px">'
-    +       'Receivables Collection Report</h1>'
-    +     '<div style="font-size:12.5px;color:#4b5563;margin-top:5px">' + periodText + '</div></div>'
-    +   '<div style="text-align:right;font-size:11px;color:#6b7280">Generated<br><b style="color:#111">'
-    +     new Date().toLocaleString() + '</b></div>'
-    + '</div>'
+      '<div class="rd-rep-head"><div>'
+    +   '<div class="rd-rep-mark">KITCHINO</div>'
+    +   '<div class="rd-rep-sub">Finance · Receivables</div>'
+    +   '<div class="rd-rep-title">Collection Report</div>'
+    + '</div><table class="rd-rep-meta"><tbody>'
+    +   '<tr><td>Period</td><td>' + periodText + '</td></tr>'
+    +   '<tr><td>Currency</td><td>EGP</td></tr>'
+    +   '<tr><td>Basis</td><td>Cash — balances settled</td></tr>'
+    +   '<tr><td>Generated</td><td>' + new Date().toLocaleString() + '</td></tr>'
+    +   '<tr><td>Status</td><td style="color:#b91c1c">Confidential</td></tr>'
+    + '</tbody></table></div>';
 
-    + '<div class="rd-rep-kpis">'
-    +   '<div class="rd-rep-k"><span>Collected in period</span><b style="color:#15803d">'
-    +     egp(collected) + '</b><i>' + inPeriod.length + ' payment'
-    +     (inPeriod.length === 1 ? '' : 's') + '</i></div>'
-    +   '<div class="rd-rep-k"><span>Still outstanding</span><b style="color:#b91c1c">'
-    +     egp(outstanding) + '</b><i>' + dueCount + ' orders with balance</i></div>'
-    +   '<div class="rd-rep-k"><span>Average payment</span><b>'
-    +     egp(inPeriod.length ? collected / inPeriod.length : 0) + '</b><i>per settlement</i></div>'
-    +   '<div class="rd-rep-k"><span>Largest payment</span><b>'
-    +     egp(inPeriod.reduce((m, p) => Math.max(m, p.paid || 0), 0)) + '</b><i>single balance</i></div>'
-    + '</div>';
+  // ── 1. Collections: one total, branching into its months ─────────────────
+  html += '<div class="rd-rep-h"><span>1</span>Collections</div>'
+        + '<div class="rd-tree">'
+        +   '<div class="rd-node rd-node-total">'
+        +     '<div class="lbl">Total collected</div>'
+        +     '<div class="val">' + egp(collected) + '</div>'
+        +     '<div class="note">' + inPeriod.length + ' payment'
+        +       (inPeriod.length === 1 ? '' : 's') + ' · ' + periodText + '</div>'
+        +   '</div><div class="rd-kids">'
+        +   byMonth.map(m =>
+              '<div class="rd-node"><div class="lbl">' + label(m.k) + '</div>'
+              + '<div class="val">' + egp(m.sum) + '</div>'
+              + '<div class="note">' + m.list.length + ' payment'
+              + (m.list.length === 1 ? '' : 's') + ' · ' + share(m.sum) + ' of total</div></div>'
+            ).join('')
+        +   '</div></div>'
+        + (delta ? '<div class="rd-var">' + delta + '</div>' : '');
 
-  html += '<div class="rd-rep-h">Month on month</div><table><thead><tr>'
-        + '<th>Month</th><th>Payments</th><th style="text-align:right">Collected (EGP)</th>'
-        + '</tr></thead><tbody>'
-        + byMonth.map(m => '<tr><td><b>' + label(m.k) + '</b></td><td>' + m.list.length
-            + '</td><td style="text-align:right;font-weight:700">' + egp(m.sum) + '</td></tr>').join('')
-        + '</tbody></table>'
-        + (delta ? '<div style="font-size:12px;color:#4b5563;margin-top:8px">' + delta + '</div>' : '');
+  // ── 2. Position ──────────────────────────────────────────────────────────
+  html += '<div class="rd-rep-h"><span>2</span>Position</div><table><tbody>'
+        + '<tr><td>Outstanding receivable</td>'
+        +   '<td class="n" style="font-weight:700;color:#b91c1c">' + egp(outstanding) + '</td></tr>'
+        + '<tr><td>Orders carrying a balance</td><td class="n">' + dueCount + '</td></tr>'
+        + '<tr><td>Average settlement</td><td class="n">' + egp(avg) + '</td></tr>'
+        + '<tr><td>Largest single settlement</td><td class="n">' + egp(max) + '</td></tr>'
+        + '</tbody></table>';
 
+  // ── 3. By stage ──────────────────────────────────────────────────────────
   const stageList = Object.entries(byStage).sort((a, b) => b[1].sum - a[1].sum);
   if (stageList.length) {
-    html += '<div class="rd-rep-h">Collected by stage</div><table><thead><tr>'
-          + '<th>Stage</th><th>Payments</th><th style="text-align:right">EGP</th>'
-          + '<th style="text-align:right">Share</th></tr></thead><tbody>'
-          + stageList.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + v.n
-              + '</td><td style="text-align:right">' + egp(v.sum) + '</td>'
-              + '<td style="text-align:right;color:#6b7280">'
-              + (collected ? Math.round(v.sum / collected * 100) : 0) + '%</td></tr>').join('')
+    html += '<div class="rd-rep-h"><span>3</span>Collections by stage</div>'
+          + '<table><thead><tr><th>Stage</th><th class="n">Payments</th>'
+          + '<th class="n">Amount</th><th class="n">Share</th></tr></thead><tbody>'
+          + stageList.map(([k, v]) => '<tr><td>' + esc(k) + '</td>'
+              + '<td class="n">' + v.n + '</td>'
+              + '<td class="n">' + egp(v.sum) + '</td>'
+              + '<td class="n" style="color:#5b6472">' + share(v.sum) + '</td></tr>').join('')
+          + '<tr class="total"><td>Total</td><td class="n">' + inPeriod.length + '</td>'
+          + '<td class="n">' + egp(collected) + '</td><td class="n">100.0%</td></tr>'
           + '</tbody></table>';
   }
 
-  byMonth.forEach(m => {
-    html += '<div class="rd-rep-h">' + label(m.k) + ' — ' + m.list.length + ' payment'
-          + (m.list.length === 1 ? '' : 's') + ', ' + egp(m.sum) + ' EGP</div>';
+  // ── 4+. Detail, one schedule per month ───────────────────────────────────
+  byMonth.forEach((m, i) => {
+    html += '<div class="rd-rep-h"><span>' + (i + 4) + '</span>Detail — ' + label(m.k) + '</div>';
     html += m.list.length
-      ? '<table><thead><tr><th>Date</th><th>Customer</th><th>Project #</th><th>Stage</th>'
-        + '<th style="text-align:right">Paid (EGP)</th></tr></thead><tbody>'
-        + m.list.map(p => '<tr><td style="white-space:nowrap;color:#6b7280">' + esc(p.date) + '</td>'
+      ? '<table><thead><tr><th style="width:84px">Date</th><th>Customer</th>'
+        + '<th style="width:82px">Project</th><th style="width:96px">Stage</th>'
+        + '<th class="n" style="width:112px">Amount</th></tr></thead><tbody>'
+        + m.list.map(p => '<tr><td style="white-space:nowrap;color:#5b6472">' + esc(p.date) + '</td>'
             + '<td>' + esc(p.client || '—') + '</td>'
-            + '<td style="color:#6b7280">' + esc(p.key || '—') + '</td>'
-            + '<td style="color:#6b7280">' + esc(p.stage || '—') + '</td>'
-            + '<td style="text-align:right;font-weight:700">' + egp(p.paid) + '</td></tr>').join('')
-        + '<tr><td colspan="4" style="text-align:right;font-weight:700;border-top:2px solid #111">Total</td>'
-        + '<td style="text-align:right;font-weight:800;border-top:2px solid #111">' + egp(m.sum) + '</td></tr>'
-        + '</tbody></table>'
-      : '<div style="font-size:12px;color:#6b7280">No payments recorded.</div>';
+            + '<td style="color:#5b6472">' + esc(p.key || '—') + '</td>'
+            + '<td style="color:#5b6472">' + esc(p.stage || '—') + '</td>'
+            + '<td class="n">' + egp(p.paid) + '</td></tr>').join('')
+        + '<tr class="total"><td colspan="4">Total — ' + label(m.k) + '</td>'
+        + '<td class="n">' + egp(m.sum) + '</td></tr></tbody></table>'
+      : '<div style="font-size:12px;color:#5b6472">No payments recorded.</div>';
   });
 
-  html += '<div style="margin-top:26px;padding-top:12px;border-top:1px solid #e5e7eb;'
-        + 'font-size:10.5px;color:#6b7280;line-height:1.7">'
-        + 'A payment is recorded when a customer balance reaches zero. Part payments are not '
-        + 'counted, because in the sheet a part payment and a correction are indistinguishable.'
-        + '<br>Outstanding is the sum of Due Amount as it stands now, not at period end.'
-        + '<br><b style="color:#b91c1c">Confidential — customer balances. Do not circulate.</b></div>';
+  // ── Notes ────────────────────────────────────────────────────────────────
+  html += '<div class="rd-rep-h"><span>·</span>Basis of preparation</div>'
+        + '<div style="font-size:10.5px;color:#5b6472;line-height:1.85">'
+        + '<b>Recognition.</b> A collection is recognised when a customer balance reaches zero. '
+        + 'Part payments are excluded: in the source sheet a part payment and a downward '
+        + 'correction are indistinguishable, and treating every decrease as cash once banked a '
+        + 'correction as income.<br>'
+        + '<b>Outstanding.</b> Stated as at the time of generation, not at period end, and so '
+        + 'will not reconcile to a historic closing balance.<br>'
+        + '<b>Period.</b> The two most recent months carrying activity. The current month is '
+        + 'incomplete.<br>'
+        + '<b>Source.</b> Receivables &amp; Delivery, settlement ledger.'
+        + '</div>'
+        + '<div style="margin-top:18px;padding-top:10px;border-top:2.5px solid #15181d;'
+        + 'display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;'
+        + 'font-size:9.5px;letter-spacing:.5px;color:#5b6472">'
+        + '<span><b style="color:#b91c1c">CONFIDENTIAL</b> — customer balances. Do not circulate.</span>'
+        + '<span>Kitchino · generated from the Analytics Portal</span></div>';
 
   document.getElementById('rd-report-body').innerHTML = html;
   document.getElementById('rd-report-modal').style.display = 'flex';
