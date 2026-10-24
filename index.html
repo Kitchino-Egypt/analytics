@@ -3645,7 +3645,10 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   </div>
   <div id="rd-content" style="display:none">
 
-    <div class="rd-conf">🔒 Confidential — customer balances</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div class="rd-conf">🔒 Confidential — customer balances</div>
+      <button class="btn-sm primary" onclick="openRdReport()">📄 Collection report</button>
+    </div>
 
     <!-- Money first. The old strip counted orders; what this page is for is
          where the money is sitting and who owes it. -->
@@ -3727,6 +3730,58 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   #page-receivables .rd-bar .tr i.warn,#page-receivables .rd-bar .tr i.crit{animation:none}}
 #page-receivables .rd-m.clickable{cursor:pointer;transition:transform .16s,box-shadow .16s}
 #page-receivables .rd-m.clickable:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
+</style>
+
+<!-- Collection report. Shown on screen first: the CEO may only want to read it,
+     and making him export a PDF to find that out wastes his time. Export is a
+     button inside, not the only way to see it. -->
+<div id="rd-report-modal" style="display:none;position:fixed;inset:0;z-index:950;
+     background:rgba(0,0,0,.6);align-items:flex-start;justify-content:center;padding:24px;overflow:auto"
+     onclick="if(event.target===this)closeRdReport()">
+  <div id="rd-report-sheet" style="background:#fff;color:#111;border-radius:12px;max-width:920px;width:100%;
+       box-shadow:0 30px 90px rgba(0,0,0,.5)">
+    <div class="rd-report-actions" style="display:flex;justify-content:space-between;align-items:center;
+         gap:12px;padding:14px 22px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;
+         border-radius:12px 12px 0 0;z-index:2">
+      <div style="font-size:13px;font-weight:700;color:#374151">Collection report</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm primary" onclick="printRdReport()">⬇ Export PDF</button>
+        <button class="btn-sm" onclick="closeRdReport()">Close</button>
+      </div>
+    </div>
+    <div id="rd-report-body" style="padding:26px 30px 32px"></div>
+  </div>
+</div>
+
+<style>
+/* The report is always light, on screen and on paper. It is a document, and a
+   dark-themed one would print as a black page or a washed-out one. */
+#rd-report-sheet, #rd-report-sheet * { color:#111; }
+#rd-report-sheet h1,#rd-report-sheet h2,#rd-report-sheet h3{margin:0}
+#rd-report-sheet table{width:100%;border-collapse:collapse;font-size:12px}
+#rd-report-sheet th{text-align:left;padding:7px 9px;background:#f3f4f6;color:#4b5563;
+  font-size:10px;letter-spacing:.6px;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
+#rd-report-sheet td{padding:7px 9px;border-bottom:1px solid #f1f2f4}
+#rd-report-sheet tr:last-child td{border-bottom:0}
+.rd-rep-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0 22px}
+.rd-rep-k{border:1px solid #e5e7eb;border-radius:9px;padding:12px 14px}
+.rd-rep-k span{display:block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:#6b7280}
+.rd-rep-k b{display:block;font-size:21px;font-weight:800;margin-top:5px;letter-spacing:-.6px}
+.rd-rep-k i{font-style:normal;font-size:10.5px;color:#6b7280}
+.rd-rep-h{font-size:13px;font-weight:700;margin:24px 0 9px;padding-bottom:6px;border-bottom:2px solid #111}
+/* Printing: hide the application, keep the document. Visibility rather than
+   display, so the sheet keeps its layout instead of collapsing. */
+@media print {
+  body * { visibility:hidden !important; }
+  #rd-report-modal, #rd-report-modal * { visibility:visible !important; }
+  #rd-report-modal { position:absolute !important; inset:0 !important; display:block !important;
+    background:#fff !important; padding:0 !important; overflow:visible !important; }
+  #rd-report-sheet { box-shadow:none !important; max-width:none !important; border-radius:0 !important; }
+  .rd-report-actions { display:none !important; }
+  #rd-report-sheet table { page-break-inside:auto }
+  #rd-report-sheet tr { page-break-inside:avoid }
+  @page { margin:14mm }
+}
 </style>
 
 <!-- Payment detail. Opened from the Today's Payment card. -->
@@ -16013,6 +16068,141 @@ function closeRdPayments() {
   const m = document.getElementById('rd-pay-modal');
   if (m) m.style.display = 'none';
 }
+
+/**
+ * Collection report — the two most recent months present in the ledger.
+ *
+ * Derived from the data rather than naming September and October, so it does
+ * not quietly become a report about the wrong two months in December.
+ */
+function openRdReport() {
+  const esc = s => String(s == null ? '' : s)
+    .replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const egp = n => new Intl.NumberFormat('en-EG', { maximumFractionDigits: 0 }).format(n || 0);
+  const MN = ['January','February','March','April','May','June',
+              'July','August','September','October','November','December'];
+  const label = k => { const p = k.split('-'); return MN[+p[1] - 1] + ' ' + p[0]; };
+
+  const pays = (_RD_PAYMENTS || []).filter(p => /^\d{4}-\d{2}/.test(p.date || ''));
+  const months = [...new Set(pays.map(p => p.date.slice(0, 7)))].sort();
+  const pick = months.slice(-2);                 // two most recent with activity
+  const inPeriod = pays.filter(p => pick.includes(p.date.slice(0, 7)));
+
+  const rows  = _RD_DATA || [];
+  const num   = v => Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')) || 0;
+  const flag  = r => (r['Payment Report'] || '').trim().toLowerCase();
+  const stage = r => (r['Project Status'] || r['CRM Status'] || '').trim();
+
+  const outstanding = rows.reduce((s, r) => s + num(r['Due Amount']), 0);
+  const dueCount    = rows.filter(r => flag(r) === 'due').length;
+  const collected   = inPeriod.reduce((s, p) => s + (p.paid || 0), 0);
+
+  const byMonth = pick.map(k => {
+    const list = inPeriod.filter(p => p.date.slice(0, 7) === k)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return { k, list, sum: list.reduce((s, p) => s + (p.paid || 0), 0) };
+  });
+
+  // Month-on-month, stated plainly. A reader comparing two numbers in their
+  // head is a reader who might compare them wrongly.
+  let delta = '';
+  if (byMonth.length === 2 && byMonth[0].sum > 0) {
+    const d = byMonth[1].sum - byMonth[0].sum;
+    const pc = Math.round(Math.abs(d) / byMonth[0].sum * 100);
+    delta = (d >= 0 ? 'Up ' : 'Down ') + pc + '% on ' + label(byMonth[0].k)
+          + ' (' + (d >= 0 ? '+' : '−') + egp(Math.abs(d)) + ' EGP)';
+  }
+
+  const byStage = {};
+  inPeriod.forEach(p => {
+    const k = (p.stage || '').trim() || 'Not recorded';
+    if (!byStage[k]) byStage[k] = { n: 0, sum: 0 };
+    byStage[k].n++; byStage[k].sum += p.paid || 0;
+  });
+
+  const periodText = pick.length === 2
+    ? label(pick[0]) + ' – ' + label(pick[1])
+    : (pick[0] ? label(pick[0]) : '—');
+
+  let html =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">'
+    +   '<div><div style="font-size:11px;letter-spacing:2px;color:#6b7280">KITCHINO</div>'
+    +     '<h1 style="font-size:24px;font-weight:800;letter-spacing:-.8px;margin-top:4px">'
+    +       'Receivables Collection Report</h1>'
+    +     '<div style="font-size:12.5px;color:#4b5563;margin-top:5px">' + periodText + '</div></div>'
+    +   '<div style="text-align:right;font-size:11px;color:#6b7280">Generated<br><b style="color:#111">'
+    +     new Date().toLocaleString() + '</b></div>'
+    + '</div>'
+
+    + '<div class="rd-rep-kpis">'
+    +   '<div class="rd-rep-k"><span>Collected in period</span><b style="color:#15803d">'
+    +     egp(collected) + '</b><i>' + inPeriod.length + ' payment'
+    +     (inPeriod.length === 1 ? '' : 's') + '</i></div>'
+    +   '<div class="rd-rep-k"><span>Still outstanding</span><b style="color:#b91c1c">'
+    +     egp(outstanding) + '</b><i>' + dueCount + ' orders with balance</i></div>'
+    +   '<div class="rd-rep-k"><span>Average payment</span><b>'
+    +     egp(inPeriod.length ? collected / inPeriod.length : 0) + '</b><i>per settlement</i></div>'
+    +   '<div class="rd-rep-k"><span>Largest payment</span><b>'
+    +     egp(inPeriod.reduce((m, p) => Math.max(m, p.paid || 0), 0)) + '</b><i>single balance</i></div>'
+    + '</div>';
+
+  html += '<div class="rd-rep-h">Month on month</div><table><thead><tr>'
+        + '<th>Month</th><th>Payments</th><th style="text-align:right">Collected (EGP)</th>'
+        + '</tr></thead><tbody>'
+        + byMonth.map(m => '<tr><td><b>' + label(m.k) + '</b></td><td>' + m.list.length
+            + '</td><td style="text-align:right;font-weight:700">' + egp(m.sum) + '</td></tr>').join('')
+        + '</tbody></table>'
+        + (delta ? '<div style="font-size:12px;color:#4b5563;margin-top:8px">' + delta + '</div>' : '');
+
+  const stageList = Object.entries(byStage).sort((a, b) => b[1].sum - a[1].sum);
+  if (stageList.length) {
+    html += '<div class="rd-rep-h">Collected by stage</div><table><thead><tr>'
+          + '<th>Stage</th><th>Payments</th><th style="text-align:right">EGP</th>'
+          + '<th style="text-align:right">Share</th></tr></thead><tbody>'
+          + stageList.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td>' + v.n
+              + '</td><td style="text-align:right">' + egp(v.sum) + '</td>'
+              + '<td style="text-align:right;color:#6b7280">'
+              + (collected ? Math.round(v.sum / collected * 100) : 0) + '%</td></tr>').join('')
+          + '</tbody></table>';
+  }
+
+  byMonth.forEach(m => {
+    html += '<div class="rd-rep-h">' + label(m.k) + ' — ' + m.list.length + ' payment'
+          + (m.list.length === 1 ? '' : 's') + ', ' + egp(m.sum) + ' EGP</div>';
+    html += m.list.length
+      ? '<table><thead><tr><th>Date</th><th>Customer</th><th>Project #</th><th>Stage</th>'
+        + '<th style="text-align:right">Paid (EGP)</th></tr></thead><tbody>'
+        + m.list.map(p => '<tr><td style="white-space:nowrap;color:#6b7280">' + esc(p.date) + '</td>'
+            + '<td>' + esc(p.client || '—') + '</td>'
+            + '<td style="color:#6b7280">' + esc(p.key || '—') + '</td>'
+            + '<td style="color:#6b7280">' + esc(p.stage || '—') + '</td>'
+            + '<td style="text-align:right;font-weight:700">' + egp(p.paid) + '</td></tr>').join('')
+        + '<tr><td colspan="4" style="text-align:right;font-weight:700;border-top:2px solid #111">Total</td>'
+        + '<td style="text-align:right;font-weight:800;border-top:2px solid #111">' + egp(m.sum) + '</td></tr>'
+        + '</tbody></table>'
+      : '<div style="font-size:12px;color:#6b7280">No payments recorded.</div>';
+  });
+
+  html += '<div style="margin-top:26px;padding-top:12px;border-top:1px solid #e5e7eb;'
+        + 'font-size:10.5px;color:#6b7280;line-height:1.7">'
+        + 'A payment is recorded when a customer balance reaches zero. Part payments are not '
+        + 'counted, because in the sheet a part payment and a correction are indistinguishable.'
+        + '<br>Outstanding is the sum of Due Amount as it stands now, not at period end.'
+        + '<br><b style="color:#b91c1c">Confidential — customer balances. Do not circulate.</b></div>';
+
+  document.getElementById('rd-report-body').innerHTML = html;
+  document.getElementById('rd-report-modal').style.display = 'flex';
+}
+
+function closeRdReport() {
+  const m = document.getElementById('rd-report-modal');
+  if (m) m.style.display = 'none';
+}
+
+/** Hands the report to the browser's print dialog, where "Save as PDF" lives. */
+function printRdReport() { window.print(); }
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRdReport(); });
 
 function filterRdTable() {
   if (!_RD_DATA) return;
