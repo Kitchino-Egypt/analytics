@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img"
+     aria-label="Kitchino Analytics">
+  <!-- Home-screen icon. Deliberately a solid tile rather than a transparent
+       mark: Android and iOS both place it on unpredictable wallpapers, and a
+       transparent logo becomes unreadable on a light one. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17352b"/>
+      <stop offset="0.55" stop-color="#145c47"/>
+      <stop offset="1" stop-color="#1d9a72"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Three bars: the dashboard, not the kitchen. Reads at 48px. -->
+  <g fill="#ffffff" opacity="0.96">
+    <rect x="132" y="286" width="54" height="104" rx="14"/>
+    <rect x="229" y="222" width="54" height="168" rx="14"/>
+    <rect x="326" y="146" width="54" height="244" rx="14" fill="#eac570"/>
+  </g>
+
+  <!-- The full stop from the wordmark, kept as the one piece of brand. -->
+  <circle cx="353" cy="106" r="17" fill="#eac570"/>
+</svg>
