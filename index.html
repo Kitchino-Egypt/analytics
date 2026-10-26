@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kitchino Analytics — Operations Dashboard</title>
+
+<!-- ── Home screen install ───────────────────────────────────────────────
+     Lets "Add to Home screen" produce a proper Kitchino icon and a short
+     name, rather than a screenshot labelled with the full page title.
+     Opening it from the home screen uses the same browser storage, so the
+     saved passcodes carry over and nobody is asked to sign in again.
+     iOS ignores the manifest icon and reads apple-touch-icon, which must be
+     a PNG — Access/make-icons.html writes the three files needed. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#12151a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kitchino">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ══════════════════════════════════════════════════════════════════════════
@@ -3730,6 +3745,39 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   #page-receivables .rd-bar .tr i.warn,#page-receivables .rd-bar .tr i.crit{animation:none}}
 #page-receivables .rd-m.clickable{cursor:pointer;transition:transform .16s,box-shadow .16s}
 #page-receivables .rd-m.clickable:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.12)}
+
+/* ── Phones ───────────────────────────────────────────────────────────────
+   This is how the CEO actually opens it. Column widths that are comfortable on
+   a laptop leave the bar itself about 30px wide on a 390px screen, so the money
+   rows stack instead. Styling only — no stored setting is touched, so nobody
+   is signed out by this. */
+@media(max-width:640px){
+  /* Outstanding by Stage and Top Debtors: name on its own line, bar and
+     figure beneath, rather than five columns fighting for 358px. */
+  #page-receivables .rd-bar{flex-wrap:wrap;gap:5px 10px;margin-bottom:14px}
+  #page-receivables .rd-bar .nm{flex:1 1 100%;white-space:normal}
+  #page-receivables .rd-bar .tr{flex:1 1 110px}
+  #page-receivables .rd-bar .amt{flex:0 0 auto}
+  #page-receivables .rd-bar .pc{flex:0 0 auto}
+  /* Two rings per row, legibly, instead of four squeezed onto one. */
+  #page-receivables .rd-rings{gap:14px;margin-bottom:20px}
+  #page-receivables .rd-ring{width:120px;height:120px}
+  #page-receivables .rd-ring b{font-size:26px}
+  /* Modals go full-bleed: a phone has no room to spend on desktop padding. */
+  #rd-report-modal,#rd-pay-modal{padding:0}
+  #rd-report-sheet,#rd-pay-modal>div{border-radius:0}
+  #rd-report-body{padding:18px 14px 26px}
+  #rd-report-sheet table{font-size:10px}
+  #rd-report-sheet th,#rd-report-sheet td{padding:5px 6px}
+  #rd-report-sheet .rd-rep-meta{min-width:0;width:100%}
+  #rd-report-sheet .rd-node-total .val{font-size:27px}
+  #rd-pay-modal>div{max-height:100vh}
+  #rd-pay-body th,#rd-pay-body td{padding:8px 10px}
+  /* Wallet: full-width card, headline that fits. */
+  #page-wallet .wal-amount{font-size:34px}
+  #page-wallet .wal-card{width:100%}
+  #page-wallet .wal-pan{font-size:21px;letter-spacing:2px}
+}
 </style>
 
 <!-- Collection report. Shown on screen first: the CEO may only want to read it,
