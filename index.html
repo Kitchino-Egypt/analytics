@@ -1449,6 +1449,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="followup"><span class="nav-icon">🔔</span>Contracted Customers Follow-up</div>
     <div class="nav-item" data-page="journey"><span class="nav-icon">🧭</span>Customer / Order Journey</div>
     <div class="nav-item" data-page="monthly"><span class="nav-icon">📅</span>Monthly Trends</div>
+    <div class="nav-item" data-page="vouchers"><span class="nav-icon">🎟</span>Le Marché Vouchers</div>
   </div>
   <div class="nav-section">
     <div class="nav-label">Performance</div>
@@ -3491,6 +3492,309 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
     <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Measures, declined count and achievement rate · former staff marked</div>
     <div id="lr-designer-table" style="overflow-x:auto"></div>
   </div>
+</div>
+
+<!-- PAGE: LE MARCHÉ VOUCHERS — voucher register for the Le Marché furniture
+     event (29 Oct – 1 Nov 2026). Records are entered HERE, not in a Google
+     Sheet: they live in one JSON file in Drive behind VoucherStore.gs. The
+     endpoint URL and key sit in local storage, never in this public page,
+     because the records carry customer names, addresses and phone numbers. -->
+<div class="page" id="page-vouchers">
+  <div id="vch-setup" style="display:none" class="vch-empty">
+    <div style="font-size:34px;margin-bottom:12px">🎟</div>
+    <div class="vch-empty-text">
+      The voucher register is not connected in this browser. Paste the
+      VoucherStore /exec URL and the key. They are kept in this browser only,
+      because the site is public and anything written into the page would be
+      readable by anyone.
+    </div>
+    <div style="max-width:520px;margin:0 auto;display:grid;gap:10px">
+      <input type="text" id="vch-cfg-url" class="vch-input" placeholder="VoucherStore /exec URL">
+      <input type="password" id="vch-cfg-key" class="vch-input" placeholder="Voucher key">
+      <button class="vch-btn primary" onclick="_vchSaveConfig()">Connect</button>
+    </div>
+  </div>
+  <div id="vch-loading" class="vch-empty" style="display:none"><div style="color:var(--text2)">Loading vouchers…</div></div>
+  <div id="vch-error" class="vch-empty" style="display:none">
+    <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+    <div id="vch-error-msg" style="color:var(--negative)">Could not load vouchers.</div>
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:center">
+      <button class="vch-btn" onclick="_VCH.data=null;buildVouchersPage()">Try again</button>
+      <button class="vch-btn" onclick="_vchClearConfig()">Change URL or key</button>
+    </div>
+  </div>
+
+  <div id="vch-content" style="display:none">
+    <div class="vch-hero">
+      <div>
+        <div class="vch-eyebrow" id="vch-event">Le Marché</div>
+        <div class="vch-hero-title">Voucher register</div>
+        <div class="vch-hero-sub" id="vch-rule"></div>
+      </div>
+      <div class="vch-hero-actions">
+        <button class="vch-btn primary" onclick="vchOpenForm()">＋ New voucher</button>
+        <button class="vch-btn" onclick="vchExportExcel()">⬇ Excel</button>
+        <button class="vch-btn" onclick="vchExportPDF()">⬇ PDF</button>
+        <button class="vch-btn" onclick="vchOpenTerms()">📜 Terms</button>
+        <button class="vch-btn" onclick="vchOpenBranches()">⚙ Branches</button>
+        <button class="vch-btn" title="Reload from the register" onclick="_VCH.data=null;buildVouchersPage()">↻</button>
+      </div>
+    </div>
+
+    <div class="vch-kpis" id="vch-kpis"></div>
+
+    <div class="vch-funnel" id="vch-funnel"></div>
+
+    <div class="vch-panel">
+      <div class="vch-toolbar">
+        <input type="search" id="vch-q" class="vch-input" placeholder="Search name, serial, CRM #, mobile…" oninput="vchRenderTable()">
+        <select id="vch-f-stage" class="vch-input" onchange="vchRenderTable()"></select>
+        <select id="vch-f-branch" class="vch-input" onchange="vchRenderTable()"></select>
+        <select id="vch-f-designer" class="vch-input" onchange="vchRenderTable()"></select>
+        <select id="vch-f-product" class="vch-input" onchange="vchRenderTable()">
+          <option value="">All products</option><option>Kitchen</option><option>Dressing</option><option>Furniture</option>
+        </select>
+        <span class="vch-count" id="vch-count"></span>
+      </div>
+      <div class="vch-table-wrap">
+        <table class="vch-table">
+          <thead><tr>
+            <th>Voucher Ser.</th><th>Customer</th><th>Product</th><th>Branch</th><th>Designer</th>
+            <th class="num">Paid (EGP)</th><th>Sold</th><th>Valid until</th><th>Stage</th><th>CRM #</th><th>Exception</th>
+          </tr></thead>
+          <tbody id="vch-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add / edit voucher -->
+  <div class="vch-modal" id="vch-form-modal" onclick="if(event.target===this)vchCloseForm()">
+    <div class="vch-dialog">
+      <div class="vch-dialog-head">
+        <div><div class="vch-dialog-title" id="vch-form-title">New voucher</div>
+          <div class="vch-dialog-sub" id="vch-form-sub"></div></div>
+        <button class="vch-x" onclick="vchCloseForm()" aria-label="Close">✕</button>
+      </div>
+      <form id="vch-form" onsubmit="event.preventDefault();vchSubmit()">
+        <div class="vch-section-label">Voucher</div>
+        <div class="vch-grid">
+          <label><span>Voucher Ser. <b>*</b></span><input name="serial" class="vch-input" required autocomplete="off"></label>
+          <label><span>Sale date <b>*</b></span><input name="saleDate" type="date" class="vch-input" required onchange="_vchFormHint()"></label>
+          <label><span>Paid amount (EGP) <b>*</b></span><input name="paidAmount" type="number" min="0" step="any" class="vch-input" required></label>
+          <label><span>Branch <b>*</b></span><select name="branch" class="vch-input" required></select></label>
+        </div>
+
+        <div class="vch-section-label">Customer</div>
+        <div class="vch-grid">
+          <label class="span2"><span>Full name <b>*</b></span><input name="fullName" class="vch-input" required></label>
+          <label><span>Mobile</span><input name="mobile" class="vch-input" inputmode="tel"></label>
+          <label><span>Nationality</span><input name="nationality" class="vch-input" list="vch-nat-list"></label>
+          <label class="span4"><span>Address</span><input name="address" class="vch-input"></label>
+        </div>
+
+        <div class="vch-section-label">Order</div>
+        <div class="vch-grid">
+          <div class="span2"><div class="vch-flabel">Product type <b>*</b></div>
+            <div class="vch-checks" id="vch-products">
+              <label><input type="checkbox" value="Kitchen" onchange="_vchFormHint()"> Kitchen <span>20%</span></label>
+              <label><input type="checkbox" value="Dressing" onchange="_vchFormHint()"> Dressing <span>15%</span></label>
+              <label><input type="checkbox" value="Furniture" onchange="_vchFormHint()"> Furniture <span>15%</span></label>
+            </div></div>
+          <label><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
+          <label><span>CRM #</span><input name="crm" class="vch-input" inputmode="numeric" placeholder="add once known"></label>
+        </div>
+
+        <div class="vch-section-label">Exception</div>
+        <div class="vch-grid">
+          <div><div class="vch-flabel">Exception?</div>
+            <div class="vch-seg" id="vch-exc">
+              <label><input type="radio" name="exception" value="No" checked onchange="_vchExcToggle()"><span>No</span></label>
+              <label><input type="radio" name="exception" value="Yes" onchange="_vchExcToggle()"><span>Yes</span></label>
+            </div></div>
+          <label class="span3" id="vch-exc-owner-wrap"><span>Exception owner <b>*</b></span><input name="exceptionOwner" class="vch-input" placeholder="Who approved the exception"></label>
+        </div>
+
+        <div class="vch-section-label">Progress</div>
+        <div class="vch-grid">
+          <label><span>Stage</span><select name="stage" class="vch-input" onchange="_vchStageToggle(true)"></select></label>
+          <label data-stage="Site Visit"><span>Site visit date</span><input name="siteVisitDate" type="date" class="vch-input"></label>
+          <label data-stage="Design"><span>Design discussion date</span><input name="designDate" type="date" class="vch-input"></label>
+          <label data-stage="Down Payment"><span>Down payment date</span><input name="downPaymentDate" type="date" class="vch-input"></label>
+          <label data-stage="Contracted"><span>Contract date</span><input name="contractDate" type="date" class="vch-input"></label>
+          <label data-stage="Declined"><span>Declined on</span><input name="declineDate" type="date" class="vch-input"></label>
+          <label data-stage="Declined" class="span2"><span>Reason for declining</span><input name="declineReason" class="vch-input"></label>
+          <label class="span4"><span>Notes</span><textarea name="notes" rows="2" class="vch-input"></textarea></label>
+        </div>
+
+        <div class="vch-hint" id="vch-form-hint"></div>
+        <div class="vch-history" id="vch-history"></div>
+        <div class="vch-form-err" id="vch-form-err"></div>
+        <div class="vch-dialog-foot">
+          <button type="button" class="vch-btn danger" id="vch-del-btn" onclick="vchDelete()">Delete</button>
+          <span style="flex:1"></span>
+          <button type="button" class="vch-btn" onclick="vchCloseForm()">Cancel</button>
+          <button type="submit" class="vch-btn primary" id="vch-save-btn">Save voucher</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Terms & conditions -->
+  <div class="vch-modal" id="vch-terms-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="vch-dialog">
+      <div class="vch-dialog-head">
+        <div><div class="vch-dialog-title">Voucher terms &amp; conditions</div>
+          <div class="vch-dialog-sub">Printed on every PDF report. Edit only when the printed voucher changes.</div></div>
+        <button class="vch-x" onclick="document.getElementById('vch-terms-modal').classList.remove('open')" aria-label="Close">✕</button>
+      </div>
+      <div id="vch-terms-view" class="vch-terms"></div>
+      <div id="vch-terms-edit" style="display:none" class="vch-terms-edit">
+        <label><span>English — one term per line</span><textarea id="vch-terms-en" rows="8" class="vch-input"></textarea></label>
+        <label><span>العربية — بند في كل سطر</span><textarea id="vch-terms-ar" rows="8" class="vch-input" dir="rtl"></textarea></label>
+      </div>
+      <div class="vch-form-err" id="vch-terms-err"></div>
+      <div class="vch-dialog-foot">
+        <span style="flex:1"></span>
+        <button class="vch-btn" id="vch-terms-editbtn" onclick="vchEditTerms()">Edit</button>
+        <button class="vch-btn primary" id="vch-terms-savebtn" style="display:none" onclick="vchSaveTerms()">Save terms</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch list -->
+  <div class="vch-modal" id="vch-br-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="vch-dialog" style="max-width:460px">
+      <div class="vch-dialog-head">
+        <div><div class="vch-dialog-title">Branches</div>
+          <div class="vch-dialog-sub">One branch per line. These fill the Branch list on the form.</div></div>
+        <button class="vch-x" onclick="document.getElementById('vch-br-modal').classList.remove('open')" aria-label="Close">✕</button>
+      </div>
+      <textarea id="vch-br-text" rows="8" class="vch-input" style="width:100%"></textarea>
+      <div class="vch-form-err" id="vch-br-err"></div>
+      <div class="vch-dialog-foot"><span style="flex:1"></span>
+        <button class="vch-btn primary" onclick="vchSaveBranches()">Save branches</button></div>
+    </div>
+  </div>
+
+  <datalist id="vch-nat-list"><option>Egyptian</option><option>Saudi</option><option>Emirati</option><option>Kuwaiti</option><option>Qatari</option><option>Jordanian</option><option>Lebanese</option><option>Syrian</option><option>Sudanese</option><option>Libyan</option><option>Iraqi</option><option>Palestinian</option></datalist>
+  <datalist id="vch-des-list"></datalist>
+
+<style>
+/* ── Le Marché Vouchers — scoped to #page-vouchers ─────────────────────── */
+#page-vouchers .vch-empty{text-align:center;padding:50px 24px}
+#page-vouchers .vch-empty-text{color:var(--text2);max-width:520px;margin:0 auto 18px;font-size:13px;line-height:1.6}
+#page-vouchers .vch-input{padding:8px 11px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card);
+  color:var(--text);font:inherit;font-size:13px;min-width:0;width:100%;box-sizing:border-box}
+#page-vouchers .vch-input:focus{outline:2px solid var(--accent-border);border-color:var(--accent)}
+#page-vouchers textarea.vch-input{resize:vertical;line-height:1.5}
+#page-vouchers .vch-btn{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+  border:1px solid var(--border-strong);background:var(--card);color:var(--text2);transition:.15s}
+#page-vouchers .vch-btn:hover{border-color:var(--accent);color:var(--accent)}
+#page-vouchers .vch-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-contrast)}
+#page-vouchers .vch-btn.primary:hover{background:var(--accent-hover);color:var(--accent-contrast)}
+#page-vouchers .vch-btn.danger{color:var(--negative)}
+#page-vouchers .vch-btn.danger:hover{border-color:var(--negative);background:var(--negative-soft)}
+#page-vouchers .vch-btn:disabled{opacity:.55;cursor:wait}
+
+#page-vouchers .vch-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:16px}
+#page-vouchers .vch-eyebrow{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--warning);font-weight:700}
+#page-vouchers .vch-hero-title{font-size:26px;font-weight:750;letter-spacing:-.6px;color:var(--text);margin-top:4px}
+#page-vouchers .vch-hero-sub{font-size:12.5px;color:var(--text3);margin-top:6px;max-width:62ch;line-height:1.55}
+#page-vouchers .vch-hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+#page-vouchers .vch-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+#page-vouchers .vch-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;border-left:4px solid var(--border)}
+#page-vouchers .vch-kpi.pos{border-left-color:var(--positive)} #page-vouchers .vch-kpi.acc{border-left-color:var(--accent)}
+#page-vouchers .vch-kpi.warn{border-left-color:var(--warning)} #page-vouchers .vch-kpi.neg{border-left-color:var(--negative)}
+#page-vouchers .vch-kpi-l{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+#page-vouchers .vch-kpi-v{font-size:26px;font-weight:700;color:var(--text);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+#page-vouchers .vch-kpi-s{font-size:12px;color:var(--text3);margin-top:4px}
+
+#page-vouchers .vch-funnel{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-bottom:16px}
+#page-vouchers .vch-fstep{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:.15s}
+#page-vouchers .vch-fstep:hover,#page-vouchers .vch-fstep.on{border-color:var(--accent);background:var(--accent-soft)}
+#page-vouchers .vch-fstep-n{font-size:20px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+#page-vouchers .vch-fstep-l{font-size:11.5px;color:var(--text2);margin-top:2px}
+#page-vouchers .vch-fbar{height:4px;border-radius:2px;background:var(--bg2);margin-top:8px;overflow:hidden}
+#page-vouchers .vch-fbar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+
+#page-vouchers .vch-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:22px}
+#page-vouchers .vch-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)}
+#page-vouchers .vch-toolbar .vch-input{width:auto;flex:0 1 170px}
+#page-vouchers .vch-toolbar input[type=search]{flex:1 1 240px}
+#page-vouchers .vch-count{font-size:12px;color:var(--text3);margin-left:auto}
+#page-vouchers .vch-table-wrap{overflow-x:auto}
+#page-vouchers .vch-table{width:100%;border-collapse:collapse;font-size:12.5px}
+#page-vouchers .vch-table th{text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;
+  padding:10px 12px;background:var(--card2);border-bottom:1px solid var(--border);white-space:nowrap}
+#page-vouchers .vch-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;white-space:nowrap}
+#page-vouchers .vch-table tbody tr{cursor:pointer}
+#page-vouchers .vch-table tbody tr:hover td{background:var(--accent-soft)}
+#page-vouchers .vch-table .num{text-align:right;font-variant-numeric:tabular-nums}
+#page-vouchers .vch-sub{font-size:11.5px;color:var(--text3)}
+#page-vouchers .vch-serial{font-weight:700;font-variant-numeric:tabular-nums}
+#page-vouchers .vch-pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:650;border:1px solid transparent}
+#page-vouchers .vch-pill.s-Sold{background:var(--bg2);color:var(--text2)}
+#page-vouchers .vch-pill.s-mid{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-border)}
+#page-vouchers .vch-pill.s-Contracted{background:var(--positive-soft);color:var(--positive)}
+#page-vouchers .vch-pill.s-Declined,#page-vouchers .vch-pill.s-Expired{background:var(--negative-soft);color:var(--negative)}
+#page-vouchers .vch-days{font-size:11px;font-weight:650}
+#page-vouchers .vch-days.ok{color:var(--text3)} #page-vouchers .vch-days.soon{color:var(--warning)} #page-vouchers .vch-days.gone{color:var(--negative)}
+#page-vouchers .vch-tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:11px;background:var(--bg2);color:var(--text2);margin-right:3px}
+#page-vouchers .vch-exc{color:var(--warning);font-weight:650}
+#page-vouchers .vch-none{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+
+#page-vouchers .vch-modal{position:fixed;inset:0;background:rgba(10,14,20,.55);display:none;align-items:flex-start;justify-content:center;
+  z-index:9000;overflow-y:auto;padding:40px 16px}
+#page-vouchers .vch-modal.open{display:flex}
+#page-vouchers .vch-dialog{background:var(--card);color:var(--text);border-radius:16px;width:100%;max-width:820px;padding:22px 24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);border:1px solid var(--border)}
+#page-vouchers .vch-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
+#page-vouchers .vch-dialog-title{font-size:18px;font-weight:700}
+#page-vouchers .vch-dialog-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
+#page-vouchers .vch-x{background:none;border:0;font-size:18px;color:var(--text3);cursor:pointer;padding:4px 8px}
+#page-vouchers .vch-section-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);
+  margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--border)}
+#page-vouchers .vch-section-label:first-of-type{border-top:0;padding-top:0;margin-top:8px}
+#page-vouchers .vch-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+#page-vouchers .vch-grid label,#page-vouchers .vch-terms-edit label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--text2)}
+#page-vouchers .vch-grid b,#page-vouchers .vch-flabel b{color:var(--negative);font-weight:700}
+#page-vouchers .vch-flabel{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
+#page-vouchers .span2{grid-column:span 2} #page-vouchers .span3{grid-column:span 3} #page-vouchers .span4{grid-column:span 4}
+#page-vouchers .vch-checks{display:flex;gap:8px;flex-wrap:wrap}
+#page-vouchers .vch-checks label{flex-direction:row !important;align-items:center;gap:7px !important;padding:8px 12px;border:1px solid var(--border-strong);
+  border-radius:8px;cursor:pointer;font-weight:600}
+#page-vouchers .vch-checks label span{color:var(--positive);font-size:11px}
+#page-vouchers .vch-checks label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+#page-vouchers .vch-seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden}
+#page-vouchers .vch-seg label{flex-direction:row !important;cursor:pointer;margin:0}
+#page-vouchers .vch-seg input{position:absolute;opacity:0;pointer-events:none}
+#page-vouchers .vch-seg span{padding:8px 18px;font-size:12.5px;font-weight:600;color:var(--text2)}
+#page-vouchers .vch-seg input:checked+span{background:var(--accent);color:var(--accent-contrast)}
+#page-vouchers .vch-hint{margin-top:14px;font-size:12.5px;color:var(--text2);background:var(--card2);border-radius:8px;padding:10px 12px;line-height:1.55}
+#page-vouchers .vch-hint:empty{display:none}
+#page-vouchers .vch-history{margin-top:12px;font-size:11.5px;color:var(--text3);max-height:120px;overflow:auto}
+#page-vouchers .vch-history:empty{display:none}
+#page-vouchers .vch-history div{padding:3px 0;border-bottom:1px dashed var(--border)}
+#page-vouchers .vch-form-err{color:var(--negative);font-size:12.5px;font-weight:600;margin-top:10px}
+#page-vouchers .vch-form-err:empty{display:none}
+#page-vouchers .vch-dialog-foot{display:flex;gap:8px;align-items:center;margin-top:16px}
+#page-vouchers .vch-terms{display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;line-height:1.6;color:var(--text2)}
+#page-vouchers .vch-terms ul{margin:0;padding-inline-start:18px}
+#page-vouchers .vch-terms h4{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3)}
+#page-vouchers .vch-terms-edit{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+@media (max-width:720px){
+  #page-vouchers .vch-grid{grid-template-columns:1fr 1fr}
+  #page-vouchers .span3,#page-vouchers .span4{grid-column:span 2}
+  #page-vouchers .vch-terms,#page-vouchers .vch-terms-edit{grid-template-columns:1fr}
+  #page-vouchers .vch-toolbar .vch-input{flex:1 1 45%}
+  #page-vouchers .vch-dialog{padding:18px 16px}
+  #page-vouchers .vch-modal{padding:16px 8px}
+}
+</style>
 </div>
 
 <!-- PAGE: STORE PROJECTS -->
@@ -10137,7 +10441,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',governorate:'Measures by Governorate',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet',vouchers:'Le Marché Vouchers'
 };
 
 const PAGE_BUILDERS = {
@@ -10157,6 +10461,7 @@ const PAGE_BUILDERS = {
   instfollowup: buildInstFollowupPage,
   receivables: buildReceivablesPage,
   wallet: buildWalletPage,
+  vouchers: () => buildVouchersPage(),   // defined in the voucher script at the end of the page
   journey: buildJourneyPage,
   signals: buildSignalsPage,
 };
@@ -10313,6 +10618,12 @@ function _govDetail(gov) {
 // "what was signed this month" as well. It now filters on contract date like
 // every other page.
 const _FILTERS_NA = {
+  // The voucher register is its own record set (Le Marché event), filtered on
+  // the page itself by stage, branch, designer and product.
+  vouchers: {
+    'filter-month': 'Not used here — use the filters on the voucher register',
+    'filter-area':  'Not used here — use the filters on the voucher register'
+  },
   followup: {
     'filter-area': 'Not used here — the contracts feed has no area field'
   },
@@ -11784,6 +12095,7 @@ function refreshData() {
   const active = document.querySelector('.page.active')?.id;
   if (active === 'page-receivables') buildReceivablesPage();
   if (active === 'page-wallet')      buildWalletPage();
+  if (active === 'page-vouchers')    { _VCH.loadedAt = 0; buildVouchersPage(); }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -18495,6 +18807,541 @@ function _instRenderPage() {
     setTimeout(boot, 250);
   }
 })();
+</script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// LE MARCHÉ VOUCHERS — voucher register (added 27 Oct 2026)
+// Vouchers sold at the Le Marché furniture event are recorded on this page and
+// followed until the customer contracts or declines. Storage is one JSON file in
+// Drive behind VoucherStore.gs (no Google Sheet). URL + key live in local
+// storage only, because this site is public and the records hold customer data.
+// Expired is never stored: it is read from sale date + validity days, so a
+// voucher that quietly runs out shows up without anyone having to mark it.
+// ════════════════════════════════════════════════════════════════════════════
+const _VCH = { data: null, loadedAt: 0, editing: null, stageFilter: '' };
+const VCH_STAGES = ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted', 'Declined'];
+const VCH_STAGE_LABEL = {
+  'Sold': 'Voucher sold', 'Site Visit': 'Site visit', 'Design': 'Design discussion',
+  'Down Payment': 'Down payment', 'Contracted': 'Contracted', 'Declined': 'Declined'
+};
+const VCH_STAGE_DATE = { 'Site Visit': 'siteVisitDate', 'Design': 'designDate',
+  'Down Payment': 'downPaymentDate', 'Contracted': 'contractDate', 'Declined': 'declineDate' };
+const VCH_DESIGNERS = ['Amira Alkafrawy','Amira Elaraby','Amira Kasem','Basma Nosair','Donia Hesham','Elham Fekry',
+  'Esraa Ali','Marwa Alfishawy','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
+  'Sara Eltoukhy','Sherif Tarek'];
+
+const _vchUrl = () => { try { return localStorage.getItem('kitchino_voucher_url') || ''; } catch (e) { return ''; } };
+const _vchKey = () => { try { return localStorage.getItem('kitchino_voucher_key') || ''; } catch (e) { return ''; } };
+
+function _vchEsc(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const _vchMoney = n => (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+function _vchToday() {
+  const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+function _vchFmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return isNaN(d) ? iso : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+function _vchSettings() {
+  const s = (_VCH.data && _VCH.data.settings) || {};
+  return {
+    event: s.event || 'Le Marché 2026', eventFrom: s.eventFrom || '2026-10-29', eventTo: s.eventTo || '2026-11-01',
+    validityDays: Number(s.validityDays) || 45, voucherValue: Number(s.voucherValue) || 50000,
+    discounts: s.discounts || { Kitchen: 20, Dressing: 15, Furniture: 15 },
+    branches: Array.isArray(s.branches) ? s.branches : [], terms: s.terms || { en: [], ar: [] }
+  };
+}
+
+// Expiry and the effective stage. Contracted and Declined are final; anything
+// still open after the validity window reads as Expired.
+function _vchExpiry(v) {
+  if (!v.saleDate) return null;
+  const d = new Date(v.saleDate + 'T00:00:00');
+  d.setDate(d.getDate() + _vchSettings().validityDays);
+  return d;
+}
+function _vchDaysLeft(v) {
+  const e = _vchExpiry(v); if (!e) return null;
+  const t = new Date(_vchToday() + 'T00:00:00');
+  return Math.round((e - t) / 86400000);
+}
+function _vchEffStage(v) {
+  const s = v.stage || 'Sold';
+  if (s === 'Contracted' || s === 'Declined') return s;
+  const left = _vchDaysLeft(v);
+  return left != null && left < 0 ? 'Expired' : s;
+}
+function _vchDiscountText(products) {
+  const d = _vchSettings().discounts;
+  return (products || []).map(p => p + ' ' + (d[p] != null ? d[p] : '') + '%').join(' · ');
+}
+
+// ── Config ────────────────────────────────────────────────────────────────
+function _vchSaveConfig() {
+  const url = (document.getElementById('vch-cfg-url')?.value || '').trim();
+  const key = (document.getElementById('vch-cfg-key')?.value || '').trim();
+  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) return alert('Paste the full Apps Script URL ending in /exec.');
+  if (!key) return alert('The key is needed.');
+  try { localStorage.setItem('kitchino_voucher_url', url); localStorage.setItem('kitchino_voucher_key', key); } catch (e) {}
+  _VCH.data = null; buildVouchersPage();
+}
+function _vchClearConfig() {
+  try { localStorage.removeItem('kitchino_voucher_url'); localStorage.removeItem('kitchino_voucher_key'); } catch (e) {}
+  _VCH.data = null; buildVouchersPage();
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────
+async function buildVouchersPage() {
+  if (!document.getElementById('vch-setup')) return;
+  const show = id => ['vch-setup', 'vch-loading', 'vch-error', 'vch-content']
+    .forEach(x => { const e = document.getElementById(x); if (e) e.style.display = (x === id ? 'block' : 'none'); });
+
+  if (!_vchUrl() || !_vchKey()) { show('vch-setup'); return; }
+  if (_VCH.data && (Date.now() - _VCH.loadedAt) < 2 * 60 * 1000) { show('vch-content'); _vchRenderAll(); return; }
+
+  if (!_VCH.data) show('vch-loading');
+  try {
+    const d = await jsonpFetch(_vchUrl() + '?key=' + encodeURIComponent(_vchKey()) + '&_t=' + Date.now(), '_vchCb', 30000);
+    if (!d || d.status !== 'ok') throw new Error(d && d.message ? d.message : 'No data returned');
+    _VCH.data = d; _VCH.loadedAt = Date.now();
+    show('vch-content'); _vchRenderAll();
+  } catch (err) {
+    show('vch-error');
+    const m = document.getElementById('vch-error-msg');
+    if (m) m.textContent = '⚠ ' + err.message + (/key/i.test(err.message) ? ' — check the key with whoever set up the register.' : '');
+  }
+}
+
+async function _vchPost(body) {
+  const res = await fetch(_vchUrl(), { method: 'POST', body: JSON.stringify(Object.assign({ key: _vchKey() }, body)) });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  let out; try { out = JSON.parse(await res.text()); } catch (e) { throw new Error('Unexpected reply from the register'); }
+  if (!out || out.status !== 'ok') throw new Error((out && out.message) || 'The register refused the change');
+  return out;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function _vchRenderAll() {
+  const s = _vchSettings();
+  document.getElementById('vch-event').textContent =
+    s.event + ' · ' + _vchFmtDate(s.eventFrom) + ' – ' + _vchFmtDate(s.eventTo);
+  document.getElementById('vch-rule').textContent =
+    'EGP ' + _vchMoney(s.voucherValue) + ' voucher · Kitchen ' + s.discounts.Kitchen + '% · Dressing & Furniture ' +
+    s.discounts.Dressing + '% · valid ' + s.validityDays + ' days from sale, in which the customer books the site visit, ' +
+    'agrees the design, pays the down payment and signs.';
+
+  const fill = (id, first, list) => {
+    const el = document.getElementById(id); if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">' + first + '</option>' + list.map(x => '<option>' + _vchEsc(x) + '</option>').join('');
+    el.value = list.includes(cur) ? cur : '';
+  };
+  const vs = _VCH.data.vouchers || [];
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  fill('vch-f-branch', 'All branches', uniq(s.branches.concat(vs.map(v => v.branch))));
+  fill('vch-f-designer', 'All designers', uniq(vs.map(v => v.designer)));
+  const st = document.getElementById('vch-f-stage');
+  const curSt = st.value;
+  st.innerHTML = '<option value="">All stages</option><option value="open">Open (not closed)</option>' +
+    VCH_STAGES.concat('Expired').map(x => '<option value="' + x + '">' + (VCH_STAGE_LABEL[x] || x) + '</option>').join('');
+  st.value = curSt;
+  document.getElementById('vch-des-list').innerHTML =
+    uniq(VCH_DESIGNERS.concat(vs.map(v => v.designer))).map(n => '<option value="' + _vchEsc(n) + '">').join('');
+
+  _vchRenderKpis(vs);
+  vchRenderTable();
+}
+
+function _vchRenderKpis(vs) {
+  const n = vs.length;
+  const by = st => vs.filter(v => _vchEffStage(v) === st).length;
+  const contracted = by('Contracted'), declined = by('Declined'), expired = by('Expired');
+  const open = n - contracted - declined - expired;
+  const soon = vs.filter(v => { const e = _vchEffStage(v); const l = _vchDaysLeft(v);
+    return e !== 'Contracted' && e !== 'Declined' && e !== 'Expired' && l != null && l <= 7; }).length;
+  const paid = vs.reduce((a, v) => a + (Number(v.paidAmount) || 0), 0);
+  const exc = vs.filter(v => v.exception === 'Yes').length;
+  const pct = x => n ? Math.round(x / n * 100) + '%' : '—';
+  const k = (cls, l, v, s) => '<div class="vch-kpi ' + cls + '"><div class="vch-kpi-l">' + l + '</div><div class="vch-kpi-v">' +
+    v + '</div><div class="vch-kpi-s">' + s + '</div></div>';
+  document.getElementById('vch-kpis').innerHTML =
+    k('acc', 'Vouchers sold', n, exc ? exc + ' with exception' : 'no exceptions') +
+    k('', 'Collected', 'EGP ' + _vchMoney(paid), 'paid on vouchers') +
+    k('pos', 'Contracted', contracted, pct(contracted) + ' conversion') +
+    k('', 'In progress', open, soon ? soon + ' expire within 7 days' : 'none close to expiry') +
+    k('warn', 'Expired', expired, 'validity ran out, still open') +
+    k('neg', 'Declined', declined, pct(declined) + ' of vouchers');
+
+  // Funnel: how many reached at least each stage. Declined and expired
+  // vouchers count for the stages they did reach.
+  const rank = { 'Sold': 0, 'Site Visit': 1, 'Design': 2, 'Down Payment': 3, 'Contracted': 4 };
+  const reached = v => {
+    if (v.stage === 'Contracted') return 4;
+    let r = rank[v.stage] || 0;
+    Object.keys(VCH_STAGE_DATE).forEach(s => { if (rank[s] != null && v[VCH_STAGE_DATE[s]]) r = Math.max(r, rank[s]); });
+    return r;
+  };
+  const steps = ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'];
+  document.getElementById('vch-funnel').innerHTML = steps.map((s, i) => {
+    const c = vs.filter(v => reached(v) >= i).length;
+    const w = n ? Math.round(c / n * 100) : 0;
+    return '<div class="vch-fstep' + (_VCH.stageFilter === s ? ' on' : '') + '" onclick="vchFunnelClick(\'' + s + '\')" title="Show vouchers now at this stage">' +
+      '<div class="vch-fstep-n">' + c + '</div><div class="vch-fstep-l">' + (i ? 'Reached ' + VCH_STAGE_LABEL[s].toLowerCase() : 'Vouchers sold') +
+      '</div><div class="vch-fbar"><i style="width:' + w + '%"></i></div></div>';
+  }).join('');
+}
+
+function vchFunnelClick(s) {
+  const st = document.getElementById('vch-f-stage');
+  st.value = st.value === s ? '' : s;
+  vchRenderTable();
+}
+
+function _vchFiltered() {
+  const vs = (_VCH.data && _VCH.data.vouchers) || [];
+  const q = (document.getElementById('vch-q')?.value || '').trim().toLowerCase();
+  const fs = document.getElementById('vch-f-stage')?.value || '';
+  const fb = document.getElementById('vch-f-branch')?.value || '';
+  const fd = document.getElementById('vch-f-designer')?.value || '';
+  const fp = document.getElementById('vch-f-product')?.value || '';
+  return vs.filter(v => {
+    const e = _vchEffStage(v);
+    if (fs === 'open' ? (e === 'Contracted' || e === 'Declined' || e === 'Expired') : (fs && e !== fs)) return false;
+    if (fb && v.branch !== fb) return false;
+    if (fd && v.designer !== fd) return false;
+    if (fp && !(v.products || []).includes(fp)) return false;
+    if (q && ![v.serial, v.fullName, v.crm, v.mobile, v.address, v.designer, v.exceptionOwner]
+      .some(x => String(x || '').toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.saleDate || '').localeCompare(a.saleDate || '') ||
+    String(b.serial || '').localeCompare(String(a.serial || ''), undefined, { numeric: true }));
+}
+
+function vchRenderTable() {
+  if (!_VCH.data) return;
+  _VCH.stageFilter = document.getElementById('vch-f-stage')?.value || '';
+  document.querySelectorAll('#vch-funnel .vch-fstep').forEach((el, i) =>
+    el.classList.toggle('on', ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'][i] === _VCH.stageFilter));
+  const rows = _vchFiltered();
+  const all = (_VCH.data.vouchers || []).length;
+  document.getElementById('vch-count').textContent = rows.length === all ? all + ' vouchers' : rows.length + ' of ' + all + ' vouchers';
+  const tb = document.getElementById('vch-tbody');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="11" class="vch-none">' +
+      (all ? 'No voucher matches these filters.' : 'No vouchers recorded yet. Use “＋ New voucher” to add the first one.') + '</td></tr>';
+    return;
+  }
+  tb.innerHTML = rows.map(v => {
+    const e = _vchEffStage(v), left = _vchDaysLeft(v), exp = _vchExpiry(v);
+    const closed = e === 'Contracted' || e === 'Declined';
+    const daysCls = left == null ? 'ok' : left < 0 ? 'gone' : left <= 7 ? 'soon' : 'ok';
+    const daysTxt = closed || left == null ? '' : left < 0 ? 'expired ' + (-left) + 'd ago' : left === 0 ? 'last day' : left + ' days left';
+    const pillCls = ['Sold', 'Contracted', 'Declined', 'Expired'].includes(e) ? 's-' + e : 's-mid';
+    return '<tr onclick="vchOpenForm(\'' + _vchEsc(v.id) + '\')">' +
+      '<td class="vch-serial">' + _vchEsc(v.serial) + '</td>' +
+      '<td><div>' + _vchEsc(v.fullName) + '</div><div class="vch-sub">' + _vchEsc(v.mobile || v.nationality || '') + '</div></td>' +
+      '<td>' + (v.products || []).map(p => '<span class="vch-tag">' + _vchEsc(p) + '</span>').join('') + '</td>' +
+      '<td>' + _vchEsc(v.branch) + '</td><td>' + _vchEsc(v.designer) + '</td>' +
+      '<td class="num">' + _vchMoney(v.paidAmount) + '</td>' +
+      '<td>' + _vchFmtDate(v.saleDate) + '</td>' +
+      '<td>' + (exp ? _vchFmtDate(exp.toISOString().slice(0, 10)) : '') + '<div class="vch-days ' + daysCls + '">' + daysTxt + '</div></td>' +
+      '<td><span class="vch-pill ' + pillCls + '">' + _vchEsc(VCH_STAGE_LABEL[e] || e) + '</span></td>' +
+      '<td>' + (v.crm ? _vchEsc(v.crm) : '<span class="vch-sub">—</span>') + '</td>' +
+      '<td>' + (v.exception === 'Yes' ? '<span class="vch-exc">Yes</span><div class="vch-sub">' + _vchEsc(v.exceptionOwner) + '</div>' : '<span class="vch-sub">No</span>') + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────
+function vchOpenForm(id) {
+  const f = document.getElementById('vch-form');
+  const s = _vchSettings();
+  const v = id ? (_VCH.data.vouchers || []).find(x => x.id === id) : null;
+  _VCH.editing = v || null;
+  f.reset();
+
+  const brs = s.branches.slice();
+  if (v && v.branch && !brs.includes(v.branch)) brs.push(v.branch);
+  f.branch.innerHTML = '<option value="">' + (brs.length ? 'Choose branch' : 'Add branches first (⚙ Branches)') + '</option>' +
+    brs.map(b => '<option>' + _vchEsc(b) + '</option>').join('');
+  f.stage.innerHTML = VCH_STAGES.map(x => '<option value="' + x + '">' + VCH_STAGE_LABEL[x] + '</option>').join('');
+
+  const set = (k, val) => { if (f[k]) f[k].value = val == null ? '' : val; };
+  if (v) {
+    ['serial', 'saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'designer', 'crm',
+      'exceptionOwner', 'stage', 'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate',
+      'declineReason', 'notes'].forEach(k => set(k, v[k]));
+    f.querySelector('input[name=exception][value="' + (v.exception === 'Yes' ? 'Yes' : 'No') + '"]').checked = true;
+  } else {
+    set('saleDate', _vchToday()); set('paidAmount', s.voucherValue); set('stage', 'Sold');
+    set('nationality', 'Egyptian');
+  }
+  document.querySelectorAll('#vch-products input').forEach(cb => { cb.checked = !!(v && (v.products || []).includes(cb.value)); });
+
+  document.getElementById('vch-form-title').textContent = v ? 'Voucher ' + v.serial : 'New voucher';
+  document.getElementById('vch-form-sub').textContent = v ? 'Recorded ' + new Date(v.createdAt).toLocaleString('en-GB') : 'Fields marked * are required';
+  document.getElementById('vch-del-btn').style.display = v ? '' : 'none';
+  document.getElementById('vch-form-err').textContent = '';
+  document.getElementById('vch-history').innerHTML = v && v.history && v.history.length
+    ? v.history.slice().reverse().map(h => '<div>' + new Date(h.at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) +
+      ' — ' + _vchEsc(h.what) + '</div>').join('') : '';
+  _vchExcToggle(); _vchStageToggle(false); _vchFormHint();
+  document.getElementById('vch-form-modal').classList.add('open');
+  setTimeout(() => (v ? f.stage : f.serial).focus(), 50);
+}
+function vchCloseForm() { document.getElementById('vch-form-modal').classList.remove('open'); _VCH.editing = null; }
+
+function _vchExcToggle() {
+  const f = document.getElementById('vch-form');
+  const yes = f.querySelector('input[name=exception]:checked')?.value === 'Yes';
+  const w = document.getElementById('vch-exc-owner-wrap');
+  w.style.visibility = yes ? 'visible' : 'hidden';
+  f.exceptionOwner.required = yes;
+}
+
+// Shows the date field for every stage up to the chosen one, and stamps
+// today's date on the newly chosen stage when it has none yet.
+function _vchStageToggle(stamp) {
+  const f = document.getElementById('vch-form');
+  const stage = f.stage.value;
+  const order = ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'];
+  const idx = order.indexOf(stage);
+  f.querySelectorAll('[data-stage]').forEach(el => {
+    const s = el.getAttribute('data-stage');
+    const showIt = s === 'Declined' ? stage === 'Declined'
+      : (stage === 'Declined' ? s !== 'Contracted' : order.indexOf(s) <= idx);
+    el.style.display = showIt ? '' : 'none';
+  });
+  if (stamp && VCH_STAGE_DATE[stage] && !f[VCH_STAGE_DATE[stage]].value) f[VCH_STAGE_DATE[stage]].value = _vchToday();
+  f.declineReason.required = stage === 'Declined';
+}
+
+function _vchFormHint() {
+  const f = document.getElementById('vch-form');
+  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
+  const parts = [];
+  if (prods.length) parts.push('Discount: <b>' + _vchEsc(_vchDiscountText(prods)) + '</b>');
+  if (f.saleDate.value) {
+    const e = _vchExpiry({ saleDate: f.saleDate.value });
+    const left = _vchDaysLeft({ saleDate: f.saleDate.value });
+    parts.push('Valid until <b>' + _vchFmtDate(e.toISOString().slice(0, 10)) + '</b>' +
+      (left < 0 ? ' (already expired)' : ' (' + left + ' days from today)'));
+  }
+  document.getElementById('vch-form-hint').innerHTML = parts.join(' &nbsp;·&nbsp; ');
+}
+
+async function vchSubmit() {
+  const f = document.getElementById('vch-form');
+  const err = document.getElementById('vch-form-err');
+  err.textContent = '';
+  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
+  if (!prods.length) { err.textContent = 'Choose at least one product type.'; return; }
+  const exception = f.querySelector('input[name=exception]:checked')?.value || 'No';
+  if (exception === 'Yes' && !f.exceptionOwner.value.trim()) { err.textContent = 'Name the exception owner.'; return; }
+
+  const serial = f.serial.value.trim();
+  const norm = x => String(x || '').replace(/\s+/g, '').toUpperCase();
+  const dup = (_VCH.data.vouchers || []).find(x => norm(x.serial) === norm(serial) && (!_VCH.editing || x.id !== _VCH.editing.id));
+  if (dup) { err.textContent = 'Voucher ' + serial + ' is already recorded for ' + dup.fullName + '.'; return; }
+
+  const crm = f.crm.value.trim();
+  if (crm && !/^\d{3,7}$/.test(crm)) { err.textContent = 'CRM # should be the number only (e.g. 21812).'; return; }
+
+  const v = { id: _VCH.editing ? _VCH.editing.id : '', serial, products: prods, exception, crm,
+    designer: typeof _fixDesigner === 'function' ? _fixDesigner(f.designer.value) : f.designer.value.trim() };
+  ['saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'exceptionOwner', 'stage',
+    'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate', 'declineReason', 'notes']
+    .forEach(k => { v[k] = f[k].value.trim(); });
+  // Dates of stages the customer never reached are dropped, so a stage moved
+  // back by mistake does not leave a stray date behind.
+  const order = ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'];
+  if (v.stage !== 'Declined') {
+    order.forEach((s, i) => { if (i > order.indexOf(v.stage) && VCH_STAGE_DATE[s]) v[VCH_STAGE_DATE[s]] = ''; });
+    v.declineDate = ''; v.declineReason = '';
+  }
+
+  const btn = document.getElementById('vch-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const out = await _vchPost({ action: 'save', voucher: v, baseUpdatedAt: _VCH.editing ? _VCH.editing.updatedAt : '' });
+    const list = _VCH.data.vouchers;
+    const i = list.findIndex(x => x.id === out.voucher.id);
+    if (i >= 0) list[i] = out.voucher; else list.push(out.voucher);
+    vchCloseForm(); _vchRenderAll();
+  } catch (e) {
+    err.textContent = '⚠ Not saved: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save voucher';
+  }
+}
+
+async function vchDelete() {
+  const v = _VCH.editing; if (!v) return;
+  if (!confirm('Delete voucher ' + v.serial + ' (' + v.fullName + ')?\n\nUse this only for a record entered by mistake. ' +
+    'A customer who walked away should be set to "Declined" instead.')) return;
+  try {
+    await _vchPost({ action: 'delete', id: v.id });
+    _VCH.data.vouchers = _VCH.data.vouchers.filter(x => x.id !== v.id);
+    vchCloseForm(); _vchRenderAll();
+  } catch (e) { document.getElementById('vch-form-err').textContent = '⚠ Not deleted: ' + e.message; }
+}
+
+// ── Terms & branches ─────────────────────────────────────────────────────
+function vchOpenTerms() {
+  const t = _vchSettings().terms;
+  const ul = (arr, dir) => '<ul dir="' + dir + '">' + (arr || []).map(x => '<li>' + _vchEsc(x) + '</li>').join('') + '</ul>';
+  document.getElementById('vch-terms-view').innerHTML =
+    '<div><h4>Terms &amp; Conditions</h4>' + ul(t.en, 'ltr') + '</div>' +
+    '<div dir="rtl"><h4>الشروط والأحكام</h4>' + ul(t.ar, 'rtl') + '</div>';
+  document.getElementById('vch-terms-view').style.display = '';
+  document.getElementById('vch-terms-edit').style.display = 'none';
+  document.getElementById('vch-terms-editbtn').style.display = '';
+  document.getElementById('vch-terms-savebtn').style.display = 'none';
+  document.getElementById('vch-terms-err').textContent = '';
+  document.getElementById('vch-terms-modal').classList.add('open');
+}
+function vchEditTerms() {
+  const t = _vchSettings().terms;
+  document.getElementById('vch-terms-en').value = (t.en || []).join('\n');
+  document.getElementById('vch-terms-ar').value = (t.ar || []).join('\n');
+  document.getElementById('vch-terms-view').style.display = 'none';
+  document.getElementById('vch-terms-edit').style.display = '';
+  document.getElementById('vch-terms-editbtn').style.display = 'none';
+  document.getElementById('vch-terms-savebtn').style.display = '';
+}
+async function vchSaveTerms() {
+  const lines = id => document.getElementById(id).value.split('\n').map(x => x.trim()).filter(Boolean);
+  try {
+    const out = await _vchPost({ action: 'settings', settings: { terms: { en: lines('vch-terms-en'), ar: lines('vch-terms-ar') } } });
+    _VCH.data.settings = out.settings; vchOpenTerms();
+  } catch (e) { document.getElementById('vch-terms-err').textContent = '⚠ Not saved: ' + e.message; }
+}
+function vchOpenBranches() {
+  document.getElementById('vch-br-text').value = _vchSettings().branches.join('\n');
+  document.getElementById('vch-br-err').textContent = '';
+  document.getElementById('vch-br-modal').classList.add('open');
+}
+async function vchSaveBranches() {
+  const list = [...new Set(document.getElementById('vch-br-text').value.split('\n').map(x => x.trim()).filter(Boolean))];
+  try {
+    const out = await _vchPost({ action: 'settings', settings: { branches: list } });
+    _VCH.data.settings = out.settings;
+    document.getElementById('vch-br-modal').classList.remove('open'); _vchRenderAll();
+  } catch (e) { document.getElementById('vch-br-err').textContent = '⚠ Not saved: ' + e.message; }
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+function _vchExportRows() {
+  return _vchFiltered().map(v => {
+    const e = _vchExpiry(v), left = _vchDaysLeft(v), st = _vchEffStage(v);
+    return {
+      'Voucher Ser.': v.serial || '', 'Sale Date': v.saleDate || '', 'Full Name': v.fullName || '', 'Mobile': v.mobile || '',
+      'Address': v.address || '', 'Nationality': v.nationality || '', 'Paid Amount (EGP)': Number(v.paidAmount) || 0,
+      'Product Type': (v.products || []).join(', '), 'Discount': _vchDiscountText(v.products),
+      'Branch': v.branch || '', 'Designer in Charge': v.designer || '', 'CRM #': v.crm || '',
+      'Exception': v.exception || 'No', 'Exception Owner': v.exceptionOwner || '',
+      'Stage': VCH_STAGE_LABEL[st] || st, 'Valid Until': e ? e.toISOString().slice(0, 10) : '',
+      'Days Left': (st === 'Contracted' || st === 'Declined' || left == null) ? '' : left,
+      'Site Visit': v.siteVisitDate || '', 'Design Discussion': v.designDate || '', 'Down Payment': v.downPaymentDate || '',
+      'Contract Date': v.contractDate || '', 'Declined On': v.declineDate || '', 'Decline Reason': v.declineReason || '',
+      'Notes': v.notes || ''
+    };
+  });
+}
+function _vchFilterLabel() {
+  const parts = [];
+  const sel = id => { const el = document.getElementById(id); return el && el.value ? el.options[el.selectedIndex].text : ''; };
+  ['vch-f-stage', 'vch-f-branch', 'vch-f-designer', 'vch-f-product'].forEach(id => { const t = sel(id); if (t) parts.push(t); });
+  const q = (document.getElementById('vch-q')?.value || '').trim(); if (q) parts.push('“' + q + '”');
+  return parts.length ? parts.join(' · ') : 'All vouchers';
+}
+function _vchLoadScript(src) {
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+}
+
+async function vchExportExcel() {
+  const rows = _vchExportRows();
+  if (!rows.length) return alert('Nothing to export with these filters.');
+  const stamp = _vchToday();
+  try {
+    if (!window.XLSX) await _vchLoadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = Object.keys(rows[0]).map(k => ({ wch: Math.min(40, Math.max(k.length, ...rows.map(r => String(r[k]).length)) + 2) }));
+    ws['!autofilter'] = { ref: ws['!ref'] };
+    XLSX.utils.book_append_sheet(wb, ws, 'Vouchers');
+    const t = _vchSettings().terms;
+    const tws = XLSX.utils.aoa_to_sheet([['Terms & Conditions', 'الشروط والأحكام']]
+      .concat(Array.from({ length: Math.max(t.en.length, t.ar.length) }, (_, i) => [t.en[i] || '', t.ar[i] || ''])));
+    tws['!cols'] = [{ wch: 90 }, { wch: 90 }];
+    XLSX.utils.book_append_sheet(wb, tws, 'Terms');
+    XLSX.writeFile(wb, 'Kitchino_LeMarche_Vouchers_' + stamp + '.xlsx');
+  } catch (e) {
+    // Library blocked or offline: fall back to CSV with a BOM so Arabic opens
+    // correctly in Excel on Windows.
+    const keys = Object.keys(rows[0]);
+    const q = x => '"' + String(x).replace(/"/g, '""') + '"';
+    const csv = '﻿' + [keys.map(q).join(',')].concat(rows.map(r => keys.map(k => q(r[k])).join(','))).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'Kitchino_LeMarche_Vouchers_' + stamp + '.csv'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+}
+
+// PDF: a print-ready report in a new window; the browser's "Save as PDF"
+// writes it. Done this way so Arabic names render correctly, which the
+// JavaScript PDF libraries do not manage without embedding a font.
+function vchExportPDF() {
+  const rows = _vchFiltered();
+  if (!rows.length) return alert('Nothing to export with these filters.');
+  const s = _vchSettings();
+  const w = window.open('', '_blank');
+  if (!w) return alert('Allow pop-ups for this site to export the PDF.');
+  const e = _vchEsc;
+  const cnt = st => rows.filter(v => _vchEffStage(v) === st).length;
+  const paid = rows.reduce((a, v) => a + (Number(v.paidAmount) || 0), 0);
+  const body = rows.map(v => {
+    const st = _vchEffStage(v), ex = _vchExpiry(v);
+    return '<tr><td><b>' + e(v.serial) + '</b></td><td>' + e(v.saleDate) + '</td><td>' + e(v.fullName) +
+      '<div class="m">' + e([v.mobile, v.nationality].filter(Boolean).join(' · ')) + '</div><div class="m">' + e(v.address) + '</div></td>' +
+      '<td>' + e((v.products || []).join(', ')) + '<div class="m">' + e(_vchDiscountText(v.products)) + '</div></td>' +
+      '<td>' + e(v.branch) + '</td><td>' + e(v.designer) + '</td><td class="n">' + _vchMoney(v.paidAmount) + '</td>' +
+      '<td>' + (ex ? ex.toISOString().slice(0, 10) : '') + '</td><td>' + e(VCH_STAGE_LABEL[st] || st) +
+      (st === 'Declined' && v.declineReason ? '<div class="m">' + e(v.declineReason) + '</div>' : '') + '</td>' +
+      '<td>' + e(v.crm) + '</td><td>' + (v.exception === 'Yes' ? 'Yes — ' + e(v.exceptionOwner) : 'No') + '</td></tr>';
+  }).join('');
+  const li = arr => (arr || []).map(x => '<li>' + e(x) + '</li>').join('');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Kitchino Le Marché Vouchers ' + _vchToday() + '</title><style>' +
+    '@page{size:A4 landscape;margin:12mm}body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:#16191f;font-size:10.5px;margin:0}' +
+    'h1{font-size:18px;margin:0}.sub{color:#555;margin:3px 0 12px}.k{display:flex;gap:18px;margin:0 0 12px;font-size:11px}.k b{font-size:15px;display:block}' +
+    'table{width:100%;border-collapse:collapse}th{background:#2b4c7e;color:#fff;text-align:left;padding:6px;font-size:9.5px}' +
+    'td{border-bottom:1px solid #ddd;padding:5px 6px;vertical-align:top}tr{page-break-inside:avoid}.n{text-align:right}.m{color:#666;font-size:9.5px}' +
+    '.t{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;page-break-inside:avoid;font-size:9.5px;color:#333}' +
+    '.t h3{font-size:11px;margin:0 0 4px}.t ul{margin:0;padding-inline-start:16px}</style></head><body>' +
+    '<h1>Kitchino · ' + e(s.event) + ' voucher register</h1>' +
+    '<div class="sub">' + e(_vchFilterLabel()) + ' · printed ' + new Date().toLocaleString('en-GB') + '</div>' +
+    '<div class="k"><div><b>' + rows.length + '</b>vouchers</div><div><b>EGP ' + _vchMoney(paid) + '</b>collected</div>' +
+    '<div><b>' + cnt('Contracted') + '</b>contracted</div><div><b>' + (rows.length - cnt('Contracted') - cnt('Declined') - cnt('Expired')) +
+    '</b>in progress</div><div><b>' + cnt('Expired') + '</b>expired</div><div><b>' + cnt('Declined') + '</b>declined</div></div>' +
+    '<table><thead><tr><th>Ser.</th><th>Sold</th><th>Customer</th><th>Product</th><th>Branch</th><th>Designer</th><th class="n">Paid EGP</th>' +
+    '<th>Valid until</th><th>Stage</th><th>CRM #</th><th>Exception</th></tr></thead><tbody>' + body + '</tbody></table>' +
+    '<div class="t"><div><h3>Terms &amp; Conditions</h3><ul>' + li(s.terms.en) + '</ul></div>' +
+    '<div dir="rtl"><h3>الشروط والأحكام</h3><ul>' + li(s.terms.ar) + '</ul></div></div>' +
+    '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
+  w.document.close();
+}
+
+document.addEventListener('keydown', ev => {
+  if (ev.key !== 'Escape') return;
+  document.querySelectorAll('#page-vouchers .vch-modal.open').forEach(m => m.classList.remove('open'));
+  _VCH.editing = null;
+});
 </script>
 </body>
 </html>
