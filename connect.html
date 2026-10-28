@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kitchino — Connect data sources</title>
+<meta name="theme-color" content="#12151a">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+/* ──────────────────────────────────────────────────────────────────────────
+   A separate page on purpose. It lives beside index.html, so it shares the
+   portal's browser storage and configures it — without editing index.html,
+   which is 1.3 MB and edited from more than one place.
+
+   It only ever writes the data-source keys. It never touches kitchino_auth_*,
+   so nobody is signed out of the portal by using this.
+   ────────────────────────────────────────────────────────────────────────── */
+:root{--bg:#12151a;--card:#1a1e25;--card2:#212630;--line:#2a3039;--ink:#e8eaf6;
+      --mut:#9aa4b2;--accent:#1d9a72;--gold:#eac570;--neg:#e0564f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:14px;line-height:1.6}
+.wrap{max-width:660px;margin:0 auto;padding:30px 18px 70px}
+h1{font-size:22px;margin:0 0 4px;letter-spacing:-.3px}
+.sub{color:var(--mut);font-size:13px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:16px 16px 18px;margin-bottom:14px}
+.card h2{font-size:14px;margin:0 0 2px;display:flex;align-items:center;gap:9px}
+.card p{color:var(--mut);font-size:12px;margin:0 0 12px}
+label{display:block;font-size:11px;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--mut);margin:10px 0 5px}
+input,textarea{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--ink);
+  border-radius:8px;padding:11px 12px;font:inherit;font-size:13px}
+input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+textarea{min-height:92px;resize:vertical;font-family:Consolas,"Courier New",monospace;font-size:12px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;background:#4a525e}
+.dot.on{background:var(--accent)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{flex:1 1 auto;background:var(--accent);color:#fff;border:0;border-radius:9px;
+  padding:13px 18px;font:inherit;font-weight:700;cursor:pointer}
+button.sec{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+button:active{transform:translateY(1px)}
+.note{border-left:3px solid var(--gold);background:#1c2029;padding:11px 13px;
+  border-radius:0 8px 8px 0;color:#c7cedb;font-size:12px;margin-top:16px}
+.note b{color:var(--ink)}
+#msg{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0f1419;
+  border:1px solid var(--line);padding:12px 20px;border-radius:10px;display:none;
+  box-shadow:0 10px 34px rgba(0,0,0,.5);font-size:13px;max-width:90vw}
+a.back{display:inline-block;margin-top:22px;color:var(--mut);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Connect data sources</h1>
+  <div class="sub">Settings live in this browser only, which is why each device asks once.
+    Do this on one device, copy the setup code, and paste it on the others.</div>
+
+  <!-- ── Transfer ──────────────────────────────────────────────────────── -->
+  <div class="card">
+    <h2>Move settings to another device</h2>
+    <p>One code carrying all three sources. Treat it exactly like the passcodes
+       themselves — it opens the same data.</p>
+    <div class="row">
+      <button onclick="copyCode()">Copy setup code</button>
+      <button class="sec" onclick="togglePaste()">Paste a code</button>
+    </div>
+    <div id="pasteBox" style="display:none">
+      <label>Setup code</label>
+      <textarea id="code" placeholder="Paste the code from the other device…"></textarea>
+      <div class="row"><button onclick="applyCode()">Apply</button></div>
+    </div>
+  </div>
+
+  <!-- ── The three sources ─────────────────────────────────────────────── -->
+  <div class="card">
+    <h2><span class="dot" id="d-rd"></span>Receivables &amp; Delivery</h2>
+    <p>Customer balances and the collection report.</p>
+    <label>Data /exec URL</label>
+    <input id="rd-url" type="text" placeholder="https://script.google.com/macros/s/…/exec">
+    <label>Passcode</label>
+    <input id="rd-pass" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" id="d-wal"></span>Kitchino Reward Wallet</h2>
+    <p>Points, wallets and the banking statement.</p>
+    <label>Rewards app /exec URL</label>
+    <input id="wal-url" type="text" placeholder="https://script.google.com/macros/s/…/exec">
+    <label>Wallet key</label>
+    <input id="wal-key" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" id="d-vou"></span>Le Marché Vouchers</h2>
+    <p>The voucher register.</p>
+    <label>VoucherStore /exec URL</label>
+    <input id="vou-url" type="text" placeholder="https://script.google.com/macros/s/…/exec">
+    <label>Voucher key</label>
+    <input id="vou-key" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </div>
+
+  <div class="row">
+    <button onclick="saveAll()">Save and open the portal</button>
+    <button class="sec" onclick="saveAll(true)">Save only</button>
+  </div>
+
+  <div class="note">
+    <b>This does not sign anyone out.</b> It writes only the data-source settings;
+    your portal sign-in is stored separately and is left alone.<br><br>
+    <b>Never send the setup code in a link.</b> Paste it into this box directly — a
+    URL carrying keys ends up in browser history and message previews.
+  </div>
+
+  <a class="back" href="./">← Back to the portal</a>
+</div>
+
+<div id="msg"></div>
+
+<script>
+/* The exact keys index.html uses. Changing any of these would silently
+   disconnect every device that is already working, so they are listed once
+   here and nowhere else. */
+const K = {
+  rdUrl:   'kitchino_rd_url',
+  rdPass:  'kitchino_rd_pass',
+  rdLast:  'kitchino_rd_url_last',
+  walUrl:  'kitchino_wallet_url',
+  walKey:  'kitchino_wallet_key',
+  vouUrl:  'kitchino_voucher_url',
+  vouKey:  'kitchino_voucher_key'
+};
+
+const $ = id => document.getElementById(id);
+const get = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const set = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+
+function toast(t) {
+  const m = $('msg'); m.textContent = t; m.style.display = 'block';
+  clearTimeout(window._t); window._t = setTimeout(() => m.style.display = 'none', 3200);
+}
+
+function load() {
+  $('rd-url').value  = get(K.rdUrl) || get(K.rdLast);
+  $('rd-pass').value = get(K.rdPass);
+  $('wal-url').value = get(K.walUrl);
+  $('wal-key').value = get(K.walKey);
+  $('vou-url').value = get(K.vouUrl);
+  $('vou-key').value = get(K.vouKey);
+  marks();
+}
+
+function marks() {
+  $('d-rd').classList.toggle('on',  !!(get(K.rdUrl)  && get(K.rdPass)));
+  $('d-wal').classList.toggle('on', !!(get(K.walUrl) && get(K.walKey)));
+  $('d-vou').classList.toggle('on', !!(get(K.vouUrl) && get(K.vouKey)));
+}
+
+function saveAll(stay) {
+  const rdUrl = $('rd-url').value.trim();
+
+  // The domain-restricted dashboard URL answers an anonymous request with a
+  // Google sign-in page, which fails as "Script load failed" and explains
+  // nothing. Catch it here rather than let it be debugged later.
+  if (rdUrl && /\/a\/macros\//.test(rdUrl)) {
+    return toast('That Receivables URL is the Google-restricted dashboard. Use the data API /exec URL.');
+  }
+
+  set(K.rdUrl,  rdUrl);
+  set(K.rdPass, $('rd-pass').value.trim());
+  if (rdUrl) set(K.rdLast, rdUrl);
+  set(K.walUrl, $('wal-url').value.trim());
+  set(K.walKey, $('wal-key').value.trim());
+  set(K.vouUrl, $('vou-url').value.trim());
+  set(K.vouKey, $('vou-key').value.trim());
+
+  marks();
+
+  if (stay) return toast('Saved on this device.');
+  toast('Saved. Opening the portal…');
+  setTimeout(() => location.href = './', 700);
+}
+
+/* The code is base64 of a small JSON object. That is obfuscation, not
+   protection — anyone holding the code holds the keys, which is why the page
+   says to treat it as one. */
+function copyCode() {
+  const payload = {
+    v: 1,
+    rdUrl:  $('rd-url').value.trim(),
+    rdPass: $('rd-pass').value.trim(),
+    walUrl: $('wal-url').value.trim(),
+    walKey: $('wal-key').value.trim(),
+    vouUrl: $('vou-url').value.trim(),
+    vouKey: $('vou-key').value.trim()
+  };
+
+  if (!payload.rdUrl && !payload.walUrl && !payload.vouUrl) {
+    return toast('Nothing to copy — fill the sources in first.');
+  }
+
+  const code = 'KITCHINO1:' + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+
+  const done = () => toast('Setup code copied. Paste it on the other device.');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(done, () => fallback(code));
+  } else fallback(code);
+}
+
+function fallback(code) {
+  // Clipboard access is refused on some mobile browsers, so show the code and
+  // select it rather than failing with nothing on screen.
+  $('pasteBox').style.display = 'block';
+  $('code').value = code;
+  $('code').select();
+  toast('Copy the selected text.');
+}
+
+function togglePaste() {
+  const b = $('pasteBox');
+  b.style.display = b.style.display === 'none' ? 'block' : 'none';
+  if (b.style.display === 'block') $('code').focus();
+}
+
+function applyCode() {
+  const raw = $('code').value.trim();
+  if (!raw) return toast('Paste a code first.');
+
+  let p;
+  try {
+    p = JSON.parse(decodeURIComponent(escape(atob(raw.replace(/^KITCHINO1:/, '')))));
+  } catch (e) {
+    return toast('That code is not readable. Copy it again, complete and unbroken.');
+  }
+
+  if (!p || typeof p !== 'object') return toast('That code is not readable.');
+
+  $('rd-url').value  = p.rdUrl  || '';
+  $('rd-pass').value = p.rdPass || '';
+  $('wal-url').value = p.walUrl || '';
+  $('wal-key').value = p.walKey || '';
+  $('vou-url').value = p.vouUrl || '';
+  $('vou-key').value = p.vouKey || '';
+
+  saveAll(true);
+  toast('Applied. All three sources are set on this device.');
+}
+
+load();
+</script>
+</body>
+</html>
