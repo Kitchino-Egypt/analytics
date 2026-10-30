@@ -19420,20 +19420,26 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
   };
   return ('<!doctype html><html><head><meta charset="utf-8"><title>Kitchino Le Marché Vouchers ' + _vchToday() + '</title><style>' +
     '@page{size:A4 landscape;margin:12mm}@media screen{body{padding:18px;background:#fff}}body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:#16191f;font-size:10.5px;margin:0}' +
-    'h1{font-size:18px;margin:0}.sub{color:#555;margin:3px 0 12px}.k{display:flex;gap:18px;margin:0 0 12px;font-size:11px}.k b{font-size:15px;display:block}' +
-    'table{width:100%;border-collapse:collapse}th{background:#2b4c7e;color:#fff;text-align:left;padding:6px;font-size:9.5px}' +
+    'h1{font-size:18px;margin:0;color:#404041}h1 .dot{color:#c2a15c}.sub{color:#555;margin:3px 0 12px}.k{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:0 0 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.k>div{border:1px solid #e6dcc6;border-left:4px solid var(--c,#404041);border-radius:8px;padding:9px 12px;background:#fbf9f4;' +
+    'font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:#5a6270;page-break-inside:avoid}' +
+    '.k b{display:block;font-size:17px;color:#16191f;text-transform:none;letter-spacing:0;margin-bottom:2px}' +
+    'table{width:100%;border-collapse:collapse}th{background:#404041;color:#fff;border-bottom:2px solid #c2a15c;text-align:left;padding:6px;font-size:9.5px}' +
     'td{border-bottom:1px solid #ddd;padding:5px 6px;vertical-align:top}tr{page-break-inside:avoid}.n{text-align:right}.m{color:#666;font-size:9.5px}' +
     '.t{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;page-break-inside:avoid;font-size:9.5px;color:#333}' +
-    '.t h3{font-size:12px;margin:0 0 6px}.t th{background:#eef1f6;color:#16191f}.t tfoot td{font-weight:700;border-top:2px solid #2b4c7e;border-bottom:0}' +
+    '.t h3{font-size:12px;margin:0 0 6px}.t th{background:#f5efe2;color:#16191f}.t tfoot td{font-weight:700;border-top:2px solid #c2a15c;border-bottom:0}' +
     '.bc{display:flex;flex-direction:column;gap:7px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '.br{display:grid;grid-template-columns:120px 1fr 170px;align-items:center;gap:8px;page-break-inside:avoid}' +
-    '.bl{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt{background:#eef1f6;border-radius:3px;height:14px}' +
-    '.bf{background:#2b4c7e;height:100%;border-radius:3px}.bv{font-size:10px;color:#333;white-space:nowrap}</style></head><body>' +
-    '<h1>Kitchino · ' + e(s.event) + ' voucher register</h1>' +
+    '.bl{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt{background:#f5efe2;border-radius:3px;height:14px}' +
+    '.bf{background:#c2a15c;height:100%;border-radius:3px}.bv{font-size:10px;color:#333;white-space:nowrap}</style></head><body>' +
+    '<h1>Kitchino <span class="dot">·</span> ' + e(s.event) + ' voucher register</h1>' +
     '<div class="sub"><b>Period: ' + e(periodLabel || 'All dates') + '</b> · ' + e(_vchFilterLabel()) + ' · printed ' + new Date().toLocaleString('en-GB') + '</div>' +
-    '<div class="k"><div><b>' + rows.length + '</b>vouchers</div><div><b>EGP ' + _vchMoney(paid) + '</b>collected</div>' +
-    '<div><b>' + cnt('Contracted') + '</b>contracted</div><div><b>' + (rows.length - cnt('Contracted') - cnt('Declined') - cnt('Expired')) +
-    '</b>in progress</div><div><b>' + cnt('Expired') + '</b>expired</div><div><b>' + cnt('Declined') + '</b>declined</div></div>' +
+    '<div class="k"><div style="--c:#c2a15c"><b>' + rows.length + '</b>Vouchers sold</div>' +
+    '<div style="--c:#404041"><b>EGP ' + _vchMoney(paid) + '</b>Collected</div>' +
+    '<div style="--c:#87692f"><b>' + cnt('Contracted') + '</b>Contracted</div>' +
+    '<div style="--c:#c2a15c"><b>' + (rows.length - cnt('Contracted') - cnt('Declined') - cnt('Expired')) + '</b>In progress</div>' +
+    '<div style="--c:#9a9a9c"><b>' + cnt('Expired') + '</b>Expired</div>' +
+    '<div style="--c:#0d0d0e"><b>' + cnt('Declined') + '</b>Declined</div></div>' +
     '<table><thead><tr><th>Ser.</th><th>Sold</th><th>Customer</th><th>Product</th><th>Branch</th><th>Designer</th><th class="n">Paid EGP</th>' +
     '<th>Valid until</th><th>Stage</th><th>CRM #</th><th>Exception</th></tr></thead><tbody>' + body + '</tbody></table>' +
     '<div class="t">' + grp('By branch', 'Branch', v => v.branch) + bars('By designer', v => v.designer) + '</div>' +
