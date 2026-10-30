@@ -19041,8 +19041,10 @@ function _vchFiltered() {
     if (q && ![v.serial, v.fullName, v.crm, v.mobile, v.address, v.designer, v.exceptionOwner]
       .some(x => String(x || '').toLowerCase().includes(q))) return false;
     return true;
-  }).sort((a, b) => (b.saleDate || '').localeCompare(a.saleDate || '') ||
-    String(b.serial || '').localeCompare(String(a.serial || ''), undefined, { numeric: true }));
+  // Fixed order: by voucher serial (0001, 0002, …), then by when the record was
+  // entered. Editing a voucher (stage, dates, notes) never moves it. (30 Oct 2026)
+  }).sort((a, b) => String(a.serial || '').localeCompare(String(b.serial || ''), undefined, { numeric: true }) ||
+    String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
 }
 
 function vchRenderTable() {
