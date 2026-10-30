@@ -19392,6 +19392,21 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
       (st === 'Declined' && v.declineReason ? '<div class="m">' + e(v.declineReason) + '</div>' : '') + '</td>' +
       '<td>' + e(v.crm) + '</td><td>' + (v.exception === 'Yes' ? 'Yes — ' + e(v.exceptionOwner) : 'No') + '</td></tr>';
   }).join('');
+  // Designer chart: one horizontal bar per designer, length = vouchers sold.
+  // Drawn in plain HTML/CSS so it shows in the popup and prints in the PDF
+  // without loading a chart library. (30 Oct 2026)
+  const bars = (title, key) => {
+    const m = new Map();
+    rows.forEach(v => { const k = (key(v) || '').trim() || 'Not set';
+      const g = m.get(k) || { n: 0, paid: 0, con: 0 }; g.n++; g.paid += Number(v.paidAmount) || 0;
+      if (_vchEffStage(v) === 'Contracted') g.con++; m.set(k, g); });
+    const list = [...m.entries()].sort((a, b) => b[1].n - a[1].n || b[1].paid - a[1].paid || a[0].localeCompare(b[0]));
+    const max = Math.max(1, ...list.map(([, g]) => g.n));
+    return '<div><h3>' + title + ' <span class="m">· vouchers sold</span></h3><div class="bc">' +
+      list.map(([k, g]) => '<div class="br"><div class="bl">' + e(k) + '</div><div class="bt"><div class="bf" style="width:' +
+        Math.max(4, Math.round(g.n / max * 100)) + '%"></div></div><div class="bv"><b>' + g.n + '</b> · EGP ' + _vchMoney(g.paid) +
+        (g.con ? ' · ' + g.con + ' contracted' : '') + '</div></div>').join('') + '</div></div>';
+  };
   // Analysis below the table: totals per branch and per designer. (30 Oct 2026)
   const grp = (title, head, key) => {
     const m = new Map();
@@ -19409,7 +19424,11 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
     'table{width:100%;border-collapse:collapse}th{background:#2b4c7e;color:#fff;text-align:left;padding:6px;font-size:9.5px}' +
     'td{border-bottom:1px solid #ddd;padding:5px 6px;vertical-align:top}tr{page-break-inside:avoid}.n{text-align:right}.m{color:#666;font-size:9.5px}' +
     '.t{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;page-break-inside:avoid;font-size:9.5px;color:#333}' +
-    '.t h3{font-size:12px;margin:0 0 6px}.t th{background:#eef1f6;color:#16191f}.t tfoot td{font-weight:700;border-top:2px solid #2b4c7e;border-bottom:0}</style></head><body>' +
+    '.t h3{font-size:12px;margin:0 0 6px}.t th{background:#eef1f6;color:#16191f}.t tfoot td{font-weight:700;border-top:2px solid #2b4c7e;border-bottom:0}' +
+    '.bc{display:flex;flex-direction:column;gap:7px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    '.br{display:grid;grid-template-columns:120px 1fr 170px;align-items:center;gap:8px;page-break-inside:avoid}' +
+    '.bl{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bt{background:#eef1f6;border-radius:3px;height:14px}' +
+    '.bf{background:#2b4c7e;height:100%;border-radius:3px}.bv{font-size:10px;color:#333;white-space:nowrap}</style></head><body>' +
     '<h1>Kitchino · ' + e(s.event) + ' voucher register</h1>' +
     '<div class="sub"><b>Period: ' + e(periodLabel || 'All dates') + '</b> · ' + e(_vchFilterLabel()) + ' · printed ' + new Date().toLocaleString('en-GB') + '</div>' +
     '<div class="k"><div><b>' + rows.length + '</b>vouchers</div><div><b>EGP ' + _vchMoney(paid) + '</b>collected</div>' +
@@ -19417,7 +19436,7 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
     '</b>in progress</div><div><b>' + cnt('Expired') + '</b>expired</div><div><b>' + cnt('Declined') + '</b>declined</div></div>' +
     '<table><thead><tr><th>Ser.</th><th>Sold</th><th>Customer</th><th>Product</th><th>Branch</th><th>Designer</th><th class="n">Paid EGP</th>' +
     '<th>Valid until</th><th>Stage</th><th>CRM #</th><th>Exception</th></tr></thead><tbody>' + body + '</tbody></table>' +
-    '<div class="t">' + grp('By branch', 'Branch', v => v.branch) + grp('By designer', 'Designer', v => v.designer) + '</div>' +
+    '<div class="t">' + grp('By branch', 'Branch', v => v.branch) + bars('By designer', v => v.designer) + '</div>' +
     (autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script>' : '') + '</body></html>');
 }
 
