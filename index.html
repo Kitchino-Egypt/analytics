@@ -18857,9 +18857,17 @@ const VCH_STAGE_LABEL = {
 };
 const VCH_STAGE_DATE = { 'Site Visit': 'siteVisitDate', 'Design': 'designDate',
   'Down Payment': 'downPaymentDate', 'Contracted': 'contractDate', 'Declined': 'declineDate' };
+// Designer pick-list for the voucher form. Marwa Alfishawy removed (2 Nov 2026).
+// Names follow the portal's designer rule: every name passes through
+// _fixDesigner(), the same map the rest of the portal uses.
 const VCH_DESIGNERS = ['Amira Alkafrawy','Amira Elaraby','Amira Kasem','Basma Nosair','Donia Hesham','Elham Fekry',
-  'Esraa Ali','Marwa Alfishawy','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
+  'Esraa Ali','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
   'Sara Eltoukhy','Sherif Tarek'];
+const _vchDes = n => { const t = String(n == null ? '' : n).replace(/\s+/g, ' ').trim();
+  try { return typeof _fixDesigner === 'function' ? _fixDesigner(t) : t; } catch (e) { return t; } };
+// Normalise designer names on read, so spelling variants count as one person
+// in the filter, the table and the report. The register file is not rewritten.
+const _vchNormVoucher = v => { if (v) v.designer = _vchDes(v.designer); return v; };
 
 const _vchUrl = () => { try { return localStorage.getItem('kitchino_voucher_url') || ''; } catch (e) { return ''; } };
 const _vchKey = () => { try { return localStorage.getItem('kitchino_voucher_key') || ''; } catch (e) { return ''; } };
@@ -18939,6 +18947,7 @@ async function buildVouchersPage() {
   try {
     const d = await jsonpFetch(_vchUrl() + '?key=' + encodeURIComponent(_vchKey()) + '&_t=' + Date.now(), '_vchCb', 30000);
     if (!d || d.status !== 'ok') throw new Error(d && d.message ? d.message : 'No data returned');
+    (d.vouchers || []).forEach(_vchNormVoucher);
     _VCH.data = d; _VCH.loadedAt = Date.now();
     show('vch-content'); _vchRenderAll();
   } catch (err) {
@@ -18978,7 +18987,7 @@ function _vchRenderAll() {
     VCH_STAGES.concat('Expired').map(x => '<option value="' + x + '">' + (VCH_STAGE_LABEL[x] || x) + '</option>').join('');
   st.value = curSt;
   document.getElementById('vch-des-list').innerHTML =
-    uniq(VCH_DESIGNERS.concat(vs.map(v => v.designer))).map(n => '<option value="' + _vchEsc(n) + '">').join('');
+    uniq(VCH_DESIGNERS.map(_vchDes)).map(n => '<option value="' + _vchEsc(n) + '">').join('');
 
   _vchRenderKpis(vs);
   vchRenderTable();
@@ -19200,6 +19209,7 @@ async function vchSubmit() {
     const out = await _vchPost({ action: 'save', voucher: v, baseUpdatedAt: _VCH.editing ? _VCH.editing.updatedAt : '' });
     const list = _VCH.data.vouchers;
     const i = list.findIndex(x => x.id === out.voucher.id);
+    _vchNormVoucher(out.voucher);
     if (i >= 0) list[i] = out.voucher; else list.push(out.voucher);
     vchCloseForm(); _vchRenderAll();
   } catch (e) {
