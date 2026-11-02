@@ -3579,7 +3579,7 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
         <div class="vch-section-label">Voucher</div>
         <div class="vch-grid">
           <label><span>Voucher Ser. <b>*</b></span><input name="serial" class="vch-input" required autocomplete="off"></label>
-          <label><span>Sale date <b>*</b></span><input name="saleDate" type="date" class="vch-input" required onchange="_vchFormHint()"></label>
+          <label><span>Voucher date <b>*</b></span><input name="saleDate" type="date" class="vch-input" required onchange="_vchFormHint()"></label>
           <label><span>Paid amount (EGP) <b>*</b></span><input name="paidAmount" type="number" min="0" step="any" class="vch-input" required></label>
           <label><span>Branch <b>*</b></span><select name="branch" class="vch-input" required></select></label>
         </div>
@@ -18857,11 +18857,11 @@ const VCH_STAGE_LABEL = {
 };
 const VCH_STAGE_DATE = { 'Site Visit': 'siteVisitDate', 'Design': 'designDate',
   'Down Payment': 'downPaymentDate', 'Contracted': 'contractDate', 'Declined': 'declineDate' };
-// Designer pick-list for the voucher form. Marwa Alfishawy removed (2 Nov 2026).
-// Names follow the portal's designer rule: every name passes through
-// _fixDesigner(), the same map the rest of the portal uses.
+// Designer pick-list for the voucher form. Names follow the portal's designer
+// rule (_fixDesigner): the duplicate spelling "Marwa Alfishawy" is dropped and
+// the canonical "Marwa Elfishawy" kept. (2 Nov 2026)
 const VCH_DESIGNERS = ['Amira Alkafrawy','Amira Elaraby','Amira Kasem','Basma Nosair','Donia Hesham','Elham Fekry',
-  'Esraa Ali','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
+  'Esraa Ali','Marwa Elfishawy','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
   'Sara Eltoukhy','Sherif Tarek'];
 const _vchDes = n => { const t = String(n == null ? '' : n).replace(/\s+/g, ' ').trim();
   try { return typeof _fixDesigner === 'function' ? _fixDesigner(t) : t; } catch (e) { return t; } };
@@ -18898,15 +18898,19 @@ function _vchSettings() {
 
 // Expiry and the effective stage. Contracted and Declined are final; anything
 // still open after the validity window reads as Expired.
+// Validity runs from the voucher date (saleDate): valid until = voucher date
+// + validityDays. Worked in UTC so toISOString() gives the same calendar day;
+// in local time Cairo's offset pulled every end date one day early. (2 Nov 2026)
 function _vchExpiry(v) {
   if (!v.saleDate) return null;
-  const d = new Date(v.saleDate + 'T00:00:00');
-  d.setDate(d.getDate() + _vchSettings().validityDays);
+  const d = new Date(String(v.saleDate).slice(0, 10) + 'T00:00:00Z');
+  if (isNaN(d)) return null;
+  d.setUTCDate(d.getUTCDate() + _vchSettings().validityDays);
   return d;
 }
 function _vchDaysLeft(v) {
   const e = _vchExpiry(v); if (!e) return null;
-  const t = new Date(_vchToday() + 'T00:00:00');
+  const t = new Date(_vchToday() + 'T00:00:00Z');
   return Math.round((e - t) / 86400000);
 }
 function _vchEffStage(v) {
@@ -19167,8 +19171,9 @@ function _vchFormHint() {
   if (f.saleDate.value) {
     const e = _vchExpiry({ saleDate: f.saleDate.value });
     const left = _vchDaysLeft({ saleDate: f.saleDate.value });
-    parts.push('Valid until <b>' + _vchFmtDate(e.toISOString().slice(0, 10)) + '</b>' +
-      (left < 0 ? ' (already expired)' : ' (' + left + ' days from today)'));
+    parts.push('Valid until <b>' + _vchFmtDate(e.toISOString().slice(0, 10)) + '</b> (' +
+      _vchSettings().validityDays + ' days from the voucher date' +
+      (left < 0 ? ', already expired' : left === 0 ? ', last day today' : ', ' + left + ' days left') + ')');
   }
   document.getElementById('vch-form-hint').innerHTML = parts.join(' &nbsp;·&nbsp; ');
 }
