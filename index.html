@@ -3596,12 +3596,15 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
         <div class="vch-grid">
           <div class="span2"><div class="vch-flabel">Product type <b>*</b></div>
             <div class="vch-checks" id="vch-products">
-              <label><input type="checkbox" value="Kitchen" onchange="_vchFormHint()"> Kitchen <span>20%</span></label>
-              <label><input type="checkbox" value="Dressing" onchange="_vchFormHint()"> Dressing <span>15%</span></label>
-              <label><input type="checkbox" value="Furniture" onchange="_vchFormHint()"> Furniture <span>15%</span></label>
+              <label><input type="checkbox" value="Kitchen" onchange="_vchFormHint();_vchCrmInputs()"> Kitchen <span>20%</span></label>
+              <label><input type="checkbox" value="Dressing" onchange="_vchFormHint();_vchCrmInputs()"> Dressing <span>15%</span></label>
+              <label><input type="checkbox" value="Furniture" onchange="_vchFormHint();_vchCrmInputs()"> Furniture <span>15%</span></label>
             </div></div>
           <label><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
-          <label><span>CRM #</span><input name="crm" class="vch-input" inputmode="numeric" placeholder="add once known"></label>
+        </div>
+        <div class="vch-crm-wrap">
+          <div class="vch-flabel">CRM # per project <span class="vch-crm-note">— each product is its own project with its own CRM code; add each one once known</span></div>
+          <div class="vch-crm-box" id="vch-crm-box"></div>
         </div>
 
         <div class="vch-section-label">Exception</div>
@@ -3795,6 +3798,13 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-vouchers .vch-flabel{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
 #page-vouchers .span2{grid-column:span 2} #page-vouchers .span3{grid-column:span 3} #page-vouchers .span4{grid-column:span 4}
 #page-vouchers .vch-checks{display:flex;gap:8px;flex-wrap:wrap}
+#page-vouchers .vch-crm-wrap{margin-top:12px}
+#page-vouchers .vch-crm-note{font-weight:400;color:var(--text3)}
+#page-vouchers .vch-crm-box{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#page-vouchers .vch-crm-box label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text2)}
+#page-vouchers .vch-crm-empty{grid-column:1/-1;font-size:12px;color:var(--text3)}
+#page-vouchers .vch-crm-line{white-space:nowrap}
+@media (max-width:640px){#page-vouchers .vch-crm-box{grid-template-columns:1fr}}
 #page-vouchers .vch-checks label{flex-direction:row !important;align-items:center;gap:7px !important;padding:8px 12px;border:1px solid var(--border-strong);
   border-radius:8px;cursor:pointer;font-weight:600}
 #page-vouchers .vch-checks label span{color:var(--positive);font-size:11px}
@@ -18871,6 +18881,45 @@ const VCH_STAGE_DATE = { 'Site Visit': 'siteVisitDate', 'Design': 'designDate',
 const VCH_DESIGNERS = ['Amira Alkafrawy','Amira Elaraby','Amira Kasem','Basma Nosair','Donia Hesham','Elham Fekry',
   'Esraa Ali','Marwa Elfishawy','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
   'Sara Eltoukhy','Sherif Tarek'];
+// ── CRM per project ─────────────────────────────────────────────────────
+// One voucher customer can open several projects (e.g. Kitchen + Dressing),
+// each with its own CRM code. The codes are kept per product and also written
+// into the voucher's existing "crm" text field as "Kitchen: 21812 · Dressing:
+// 21900", so the register file needs no new column and older records (a single
+// plain code) still read: a plain code belongs to the voucher's first product.
+// (5 Nov 2026)
+const VCH_PRODUCTS = ['Kitchen', 'Dressing', 'Furniture'];
+function _vchCrmMap(v) {
+  const out = {};
+  if (!v) return out;
+  if (v.crmByProduct && typeof v.crmByProduct === 'object')
+    Object.keys(v.crmByProduct).forEach(k => { const c = String(v.crmByProduct[k] || '').trim(); if (c && VCH_PRODUCTS.includes(k)) out[k] = c; });
+  if (Object.keys(out).length) return out;
+  const txt = String(v.crm || '');
+  const re = /(Kitchen|Dressing|Furniture)\s*:\s*([A-Za-z0-9-]+)/g; let m, tagged = false;
+  while ((m = re.exec(txt))) { out[m[1]] = m[2]; tagged = true; }
+  if (!tagged) {
+    const codes = txt.split(/[^A-Za-z0-9-]+/).filter(Boolean);
+    const prods = (v.products || []).filter(p => VCH_PRODUCTS.includes(p));
+    codes.forEach((c, i) => { const p = prods[i] || prods[0] || 'Kitchen'; if (!out[p]) out[p] = c; });
+  }
+  return out;
+}
+const _vchCrmList = v => { const m = _vchCrmMap(v); return VCH_PRODUCTS.filter(p => m[p]).map(p => ({ p, code: m[p] })); };
+const _vchCrmText = m => VCH_PRODUCTS.filter(p => m[p]).map(p => p + ': ' + m[p]).join(' · ');
+
+// Draws one CRM box per ticked product, keeping whatever was already typed.
+function _vchCrmInputs(seed) {
+  const box = document.getElementById('vch-crm-box'); if (!box) return;
+  const cur = seed || {};
+  if (!seed) box.querySelectorAll('input[data-p]').forEach(i => { if (i.value.trim()) cur[i.dataset.p] = i.value.trim(); });
+  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
+  box.innerHTML = prods.length ? prods.map(p =>
+    '<label><span>' + _vchEsc(p) + ' CRM #</span><input class="vch-input" data-p="' + _vchEsc(p) + '" inputmode="numeric" ' +
+    'autocomplete="off" placeholder="add once known" value="' + _vchEsc(cur[p] || '') + '"></label>').join('')
+    : '<div class="vch-crm-empty">Tick the product types above — a CRM box appears for each one.</div>';
+}
+
 const _vchDes = n => { const t = String(n == null ? '' : n).replace(/\s+/g, ' ').trim();
   try { return typeof _fixDesigner === 'function' ? _fixDesigner(t) : t; } catch (e) { return t; } };
 // Normalise designer names on read, so spelling variants count as one person
@@ -19101,7 +19150,8 @@ function vchRenderTable() {
       '<td>' + _vchFmtDate(v.saleDate) + '</td>' +
       '<td>' + (exp ? _vchFmtDate(exp.toISOString().slice(0, 10)) : '') + '<div class="vch-days ' + daysCls + '">' + daysTxt + '</div></td>' +
       '<td><span class="vch-pill ' + pillCls + '">' + _vchEsc(VCH_STAGE_LABEL[e] || e) + '</span></td>' +
-      '<td>' + (v.crm ? _vchEsc(v.crm) : '<span class="vch-sub">—</span>') + '</td>' +
+      '<td>' + (_vchCrmList(v).length ? _vchCrmList(v).map(o => '<div class="vch-crm-line">' + _vchEsc(o.code) +
+        ' <span class="vch-sub">' + _vchEsc(o.p) + '</span></div>').join('') : '<span class="vch-sub">—</span>') + '</td>' +
       '<td>' + (v.exception === 'Yes' ? '<span class="vch-exc">Yes</span><div class="vch-sub">' + _vchEsc(v.exceptionOwner) + '</div>' : '<span class="vch-sub">No</span>') + '</td>' +
       '</tr>';
   }).join('');
@@ -19123,7 +19173,7 @@ function vchOpenForm(id) {
 
   const set = (k, val) => { if (f[k]) f[k].value = val == null ? '' : val; };
   if (v) {
-    ['serial', 'saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'designer', 'crm',
+    ['serial', 'saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'designer',
       'exceptionOwner', 'stage', 'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate',
       'declineReason', 'notes'].forEach(k => set(k, v[k]));
     f.querySelector('input[name=exception][value="' + (v.exception === 'Yes' ? 'Yes' : 'No') + '"]').checked = true;
@@ -19132,6 +19182,7 @@ function vchOpenForm(id) {
     set('nationality', 'Egyptian');
   }
   document.querySelectorAll('#vch-products input').forEach(cb => { cb.checked = !!(v && (v.products || []).includes(cb.value)); });
+  _vchCrmInputs(_vchCrmMap(v));
 
   document.getElementById('vch-form-title').textContent = v ? 'Voucher ' + v.serial : 'New voucher';
   document.getElementById('vch-form-sub').textContent = v ? 'Recorded ' + new Date(v.createdAt).toLocaleString('en-GB') : 'Fields marked * are required';
@@ -19200,10 +19251,22 @@ async function vchSubmit() {
   const dup = (_VCH.data.vouchers || []).find(x => norm(x.serial) === norm(serial) && (!_VCH.editing || x.id !== _VCH.editing.id));
   if (dup) { err.textContent = 'Voucher ' + serial + ' is already recorded for ' + dup.fullName + '.'; return; }
 
-  const crm = f.crm.value.trim();
-  if (crm && !/^\d{3,7}$/.test(crm)) { err.textContent = 'CRM # should be the number only (e.g. 21812).'; return; }
+  // CRM per project: only the ticked products, numbers only, no code used twice
+  // on this voucher, and no code already recorded on another voucher.
+  const crmByProduct = {};
+  for (const i of document.querySelectorAll('#vch-crm-box input[data-p]')) {
+    const c = i.value.replace(/\s+/g, ''), p = i.dataset.p;
+    if (!c || !prods.includes(p)) continue;
+    if (!/^\d{3,7}$/.test(c)) { err.textContent = p + ' CRM # should be the number only (e.g. 21812).'; i.focus(); return; }
+    const twin = Object.keys(crmByProduct).find(k => crmByProduct[k] === c);
+    if (twin) { err.textContent = 'CRM ' + c + ' is entered for both ' + twin + ' and ' + p + ' — each project has its own code.'; i.focus(); return; }
+    const other = (_VCH.data.vouchers || []).find(x => (!_VCH.editing || x.id !== _VCH.editing.id) && _vchCrmList(x).some(o => o.code === c));
+    if (other) { err.textContent = 'CRM ' + c + ' is already on voucher ' + other.serial + ' (' + other.fullName + ').'; i.focus(); return; }
+    crmByProduct[p] = c;
+  }
+  const crm = _vchCrmText(crmByProduct);
 
-  const v = { id: _VCH.editing ? _VCH.editing.id : '', serial, products: prods, exception, crm,
+  const v = { id: _VCH.editing ? _VCH.editing.id : '', serial, products: prods, exception, crm, crmByProduct,
     designer: typeof _fixDesigner === 'function' ? _fixDesigner(f.designer.value) : f.designer.value.trim() };
   ['saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'exceptionOwner', 'stage',
     'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate', 'declineReason', 'notes']
@@ -19295,7 +19358,8 @@ function _vchExportRows() {
       'Voucher Ser.': v.serial || '', 'Sale Date': v.saleDate || '', 'Full Name': v.fullName || '', 'Mobile': v.mobile || '',
       'Address': v.address || '', 'Nationality': v.nationality || '', 'Paid Amount (EGP)': Number(v.paidAmount) || 0,
       'Product Type': (v.products || []).join(', '), 'Discount': _vchDiscountText(v.products),
-      'Branch': v.branch || '', 'Designer in Charge': v.designer || '', 'CRM #': v.crm || '',
+      'Branch': v.branch || '', 'Designer in Charge': v.designer || '', 'CRM #': _vchCrmList(v).map(o => o.code).join(', '),
+      'CRM Kitchen': _vchCrmMap(v).Kitchen || '', 'CRM Dressing': _vchCrmMap(v).Dressing || '', 'CRM Furniture': _vchCrmMap(v).Furniture || '',
       'Exception': v.exception || 'No', 'Exception Owner': v.exceptionOwner || '',
       'Stage': VCH_STAGE_LABEL[st] || st, 'Valid Until': e ? e.toISOString().slice(0, 10) : '',
       'Days Left': (st === 'Contracted' || st === 'Declined' || left == null) ? '' : left,
@@ -19413,7 +19477,7 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
       '<td>' + e(v.branch) + '</td><td>' + e(v.designer) + '</td><td class="n">' + _vchMoney(v.paidAmount) + '</td>' +
       '<td>' + (ex ? ex.toISOString().slice(0, 10) : '') + '</td><td>' + e(VCH_STAGE_LABEL[st] || st) +
       (st === 'Declined' && v.declineReason ? '<div class="m">' + e(v.declineReason) + '</div>' : '') + '</td>' +
-      '<td>' + e(v.crm) + '</td><td>' + (v.exception === 'Yes' ? 'Yes — ' + e(v.exceptionOwner) : 'No') + '</td></tr>';
+      '<td>' + _vchCrmList(v).map(o => e(o.code) + ' <span class="m">' + e(o.p) + '</span>').join('<br>') + '</td><td>' + (v.exception === 'Yes' ? 'Yes — ' + e(v.exceptionOwner) : 'No') + '</td></tr>';
   }).join('');
   // Designer chart: one horizontal bar per designer, length = vouchers sold.
   // Drawn in plain HTML/CSS so it shows in the popup and prints in the PDF
