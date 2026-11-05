@@ -3849,12 +3849,18 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
     <div class="chart-card">
       <div class="chart-title">Shipped by stage</div>
       <div class="chart-subtitle">share of total shipped orders</div>
-      <div id="sl-stage" style="margin-top:14px"></div>
+      <div class="chart-wrap" style="height:230px;margin-top:10px">
+        <canvas id="sl-stage-chart"></canvas></div>
+      <!-- Figures beneath the donut: a ring shows proportion, not counts, and
+           the counts are what gets quoted in a meeting. -->
+      <div id="sl-stage" style="margin-top:12px"></div>
     </div>
     <div class="chart-card">
       <div class="chart-title">Shipped by month</div>
       <div class="chart-subtitle">orders leaving the store</div>
-      <div id="sl-month" style="margin-top:14px"></div>
+      <div class="chart-wrap" style="height:230px;margin-top:10px">
+        <canvas id="sl-month-chart"></canvas></div>
+      <div id="sl-month" style="margin-top:12px"></div>
     </div>
   </div>
 
@@ -3913,12 +3919,14 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-shiplog .sl-k span{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text2)}
 #page-shiplog .sl-k b{display:block;font-size:27px;font-weight:800;letter-spacing:-1px;margin-top:9px}
 #page-shiplog .sl-k i{font-style:normal;display:block;font-size:11px;color:var(--text2);margin-top:5px}
-#page-shiplog .sl-bar{display:flex;align-items:center;gap:12px;margin-bottom:11px;font-size:12.5px}
-#page-shiplog .sl-bar .nm{flex:0 0 112px;color:var(--text)}
-#page-shiplog .sl-bar .tr{flex:1;height:17px;border-radius:5px;background:var(--card2,rgba(0,0,0,.06));overflow:hidden}
-#page-shiplog .sl-bar .tr i{display:block;height:100%;border-radius:5px}
-#page-shiplog .sl-bar .n{flex:0 0 42px;text-align:right;font-weight:700}
-#page-shiplog .sl-bar .pc{flex:0 0 56px;text-align:right;font-size:11px;color:var(--text2)}
+#page-shiplog .sl-leg{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12.5px;
+  border-top:1px solid var(--line)}
+#page-shiplog .sl-leg:first-child{border-top:0}
+#page-shiplog .sl-leg .sw{width:11px;height:11px;border-radius:3px;flex:none}
+#page-shiplog .sl-leg .nm{flex:1;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-shiplog .sl-leg .n{flex:0 0 40px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+#page-shiplog .sl-leg .pc{flex:0 0 56px;text-align:right;font-size:11px;color:var(--text2);
+  font-variant-numeric:tabular-nums}
 #page-shiplog tbody td{padding:9px 10px;border-top:1px solid var(--line)}
 #sl-report-sheet,#sl-report-sheet *{color:#15181d}
 #sl-report-sheet table{width:100%;border-collapse:collapse;font-size:11px}
@@ -3943,8 +3951,6 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   @page{margin:14mm}
 }
 @media(max-width:640px){
-  #page-shiplog .sl-bar{flex-wrap:wrap;gap:5px 10px}
-  #page-shiplog .sl-bar .nm{flex:1 1 100%}
   #sl-report-modal{padding:0}
   #sl-report-sheet{border-radius:0}
   #sl-report-body{padding:18px 14px 26px}
@@ -16114,6 +16120,7 @@ const SHIP_STAGE_COLOUR = { 'store':'#1b9a6e', 'final qc':'#8b5cf6', 'assembly q
 const SHIP_CUTOVER = '2026-11-05';
 let SHIP_LIVE = [];
 let _slLiveState = 'idle';   // idle · loading · ok · unconfigured · error
+let _slChartStage = null, _slChartMonth = null;
 
 function shipRows(){
   const seen = new Set(SHIP_LOG.map(r => String(r.crm).trim()));
@@ -16205,26 +16212,56 @@ function _slRender(){
              'one order can cover several rooms', '');
   }
 
-  const bars = (el, list, colour) => {
+  // Rows beneath each donut, carrying the exact counts the ring cannot.
+  const legend = (el, list, colour) => {
     const host = document.getElementById(el);
     if (!host) return;
-    const top = list.length ? list[0][1] : 1;
     host.innerHTML = list.map(([k,n]) =>
-      '<div class="sl-bar"><span class="nm">'+_slEsc(k)+'</span>'
-      + '<span class="tr"><i style="width:'+(n/top*100)+'%;background:'
-      +   (typeof colour==='function' ? colour(k) : colour) + '"></i></span>'
+      '<div class="sl-leg"><span class="sw" style="background:'
+      +   (typeof colour==='function' ? colour(k) : colour) + '"></span>'
+      + '<span class="nm">'+_slEsc(k)+'</span>'
       + '<span class="n">'+n+'</span>'
-      + '<span class="pc">'+Math.round(n/total*100)+'%</span></div>').join('');
+      + '<span class="pc">'+(n/total*100).toFixed(1)+'%</span></div>').join('');
   };
 
-  bars('sl-stage', byStage, k => SHIP_STAGE_COLOUR[k.toLowerCase()] || '#8b5cf6');
+  const donut = (id, list, colours, prev) => {
+    const cv = document.getElementById(id);
+    if (!cv || typeof Chart === 'undefined') return null;
+    if (prev) prev.destroy();          // Chart.js leaks onto a reused canvas
+    const txt = (getComputedStyle(document.body).getPropertyValue('--text') || '').trim() || '#e8eaf6';
+    const card = (getComputedStyle(document.body).getPropertyValue('--card') || '').trim() || '#1a1e25';
+    return new Chart(cv.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: list.map(x=>x[0]),
+              datasets: [{ data: list.map(x=>x[1]), backgroundColor: colours,
+                           borderColor: card, borderWidth: 2, hoverOffset: 6 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '58%',
+        plugins: {
+          legend: { display: false },   // the rows below say it better
+          tooltip: { callbacks: { label: c =>
+            ' ' + c.label + ': ' + c.raw + '  (' + (c.raw/total*100).toFixed(1) + '%)' } }
+        }
+      }
+    });
+  };
+
+  const stageColour = k => SHIP_STAGE_COLOUR[k.toLowerCase()] || '#8b5cf6';
+  _slChartStage = donut('sl-stage-chart', byStage, byStage.map(x=>stageColour(x[0])), _slChartStage);
+  legend('sl-stage', byStage, stageColour);
 
   const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const byMonth = Object.entries(
     all.reduce((m,r)=>{ const k=r.date.slice(0,7); m[k]=(m[k]||0)+1; return m; },{})
   ).sort((a,b)=>a[0].localeCompare(b[0]))
    .map(([k,n])=>[ MN[+k.slice(5,7)-1]+' '+k.slice(0,4), n ]);
-  bars('sl-month', byMonth, '#3b82f6');
+
+  // A blue ramp, oldest to newest, so the ring reads chronologically rather
+  // than as unrelated colours.
+  const MONTH_RAMP = ['#1e3a8a','#2563eb','#3b82f6','#60a5fa','#93c5fd','#bfdbfe'];
+  const monthColour = k => MONTH_RAMP[byMonth.findIndex(x=>x[0]===k) % MONTH_RAMP.length];
+  _slChartMonth = donut('sl-month-chart', byMonth, byMonth.map(x=>monthColour(x[0])), _slChartMonth);
+  legend('sl-month', byMonth, monthColour);
 
   const sel = document.getElementById('sl-stage-filter');
   if (sel && sel.options.length <= 1) {
