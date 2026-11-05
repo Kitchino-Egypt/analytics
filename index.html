@@ -1460,6 +1460,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="sources"><span class="nav-icon">📡</span>Lead Sources</div>
     <div class="nav-item" data-page="ordertypes"><span class="nav-icon">🗂</span>Order Types</div>
     <div class="nav-item" data-page="instfollowup"><span class="nav-icon">🔧</span>Installation</div>
+    <div class="nav-item" data-page="shiplog"><span class="nav-icon">🚚</span>Shipping Log</div>
     <div class="nav-item" data-page="receivables"><span class="nav-icon">💰</span>Receivables &amp; Delivery</div>
     <div class="nav-item" data-page="wallet"><span class="nav-icon">🏅</span>Kitchino Reward Wallet</div>
   </div>
@@ -3551,6 +3552,7 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
         <select id="vch-f-branch" class="vch-input" onchange="vchRenderTable()"></select>
         <select id="vch-f-designer" class="vch-input" onchange="vchRenderTable()"></select>
         <select id="vch-f-product" class="vch-input" onchange="vchRenderTable()">
+          <option value="">All products</option><option>Kitchen</option><option>Dressing</option><option>Furniture</option>
         </select>
         <span class="vch-count" id="vch-count"></span>
       </div>
@@ -3593,16 +3595,14 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 
         <div class="vch-section-label">Order</div>
         <div class="vch-grid">
-          <label class="span2"><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
-        </div>
-        <div class="vch-crm-wrap">
-          <div class="vch-flabel">Projects <b>*</b> <span class="vch-crm-note">— one line per project. A customer with 2 kitchens and 3 dressing rooms gets 5 lines, each with its own CRM code (add it once known).</span></div>
-          <div class="vch-proj-head"><span>#</span><span>Project type</span><span>CRM #</span><span></span></div>
-          <div id="vch-proj-list"></div>
-          <div class="vch-proj-foot">
-            <button type="button" class="vch-btn" onclick="vchAddProject()">＋ Add project</button>
-            <span class="vch-proj-sum" id="vch-proj-sum"></span>
-          </div>
+          <div class="span2"><div class="vch-flabel">Product type <b>*</b></div>
+            <div class="vch-checks" id="vch-products">
+              <label><input type="checkbox" value="Kitchen" onchange="_vchFormHint()"> Kitchen <span>20%</span></label>
+              <label><input type="checkbox" value="Dressing" onchange="_vchFormHint()"> Dressing <span>15%</span></label>
+              <label><input type="checkbox" value="Furniture" onchange="_vchFormHint()"> Furniture <span>15%</span></label>
+            </div></div>
+          <label><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
+          <label><span>CRM #</span><input name="crm" class="vch-input" inputmode="numeric" placeholder="add once known"></label>
         </div>
 
         <div class="vch-section-label">Exception</div>
@@ -3796,17 +3796,6 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-vouchers .vch-flabel{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
 #page-vouchers .span2{grid-column:span 2} #page-vouchers .span3{grid-column:span 3} #page-vouchers .span4{grid-column:span 4}
 #page-vouchers .vch-checks{display:flex;gap:8px;flex-wrap:wrap}
-#page-vouchers .vch-crm-wrap{margin-top:12px}
-#page-vouchers .vch-crm-note{font-weight:400;color:var(--text3)}
-#page-vouchers .vch-proj-head,#page-vouchers .vch-proj-row{display:grid;grid-template-columns:28px minmax(0,1.4fr) minmax(0,1fr) 36px;gap:10px;align-items:center}
-#page-vouchers .vch-proj-head{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:6px 0 4px}
-#page-vouchers .vch-proj-row{margin-bottom:8px}
-#page-vouchers .vch-proj-n{font-size:12px;color:var(--text3);text-align:center}
-#page-vouchers .vch-proj-del{padding:6px 0;width:36px}
-#page-vouchers .vch-proj-foot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
-#page-vouchers .vch-proj-sum{font-size:12px;color:var(--text3)}
-#page-vouchers .vch-crm-line{white-space:nowrap}
-#page-vouchers .vch-count-x{font-size:10.5px;opacity:.75;margin-left:3px}
 #page-vouchers .vch-checks label{flex-direction:row !important;align-items:center;gap:7px !important;padding:8px 12px;border:1px solid var(--border-strong);
   border-radius:8px;cursor:pointer;font-weight:600}
 #page-vouchers .vch-checks label span{color:var(--positive);font-size:11px}
@@ -3841,6 +3830,128 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 </div>
 
 <!-- PAGE: STORE PROJECTS -->
+<!-- SHIPPING LOG — shipped projects and the stage each one shipped from.
+     A snapshot, pasted from the store's own record: the rewards app holds only
+     the shipments entered into it, which is a smaller set. The date it covers
+     is stated on the page so nobody mistakes it for live. -->
+<div class="page" id="page-shiplog">
+  <div class="sl-head">
+    <div>
+      <div class="sl-eyebrow">Store record · snapshot</div>
+      <div class="sl-note" id="sl-range">—</div>
+    </div>
+    <button class="btn-sm primary" onclick="openShipReport()">📄 Shipping report</button>
+  </div>
+
+  <div class="sl-kpis" id="sl-kpis"></div>
+
+  <div class="chart-grid chart-2" style="margin-bottom:22px">
+    <div class="chart-card">
+      <div class="chart-title">Shipped by stage</div>
+      <div class="chart-subtitle">share of total shipped orders</div>
+      <div id="sl-stage" style="margin-top:14px"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Shipped by month</div>
+      <div class="chart-subtitle">orders leaving the store</div>
+      <div id="sl-month" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <input type="text" id="sl-search" placeholder="🔍 Search customer, CRM code or type…"
+        oninput="renderShipLog()"
+        style="flex:1;min-width:180px;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+      <select id="sl-stage-filter" onchange="renderShipLog()"
+        style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px">
+        <option value="all">All stages</option>
+      </select>
+    </div>
+    <div style="overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:620px">
+        <thead><tr style="text-align:left;color:var(--text2);font-size:11px">
+          <th style="padding:9px 10px">Shipped</th><th style="padding:9px 10px">Customer</th>
+          <th style="padding:9px 10px">CRM #</th><th style="padding:9px 10px">Project type</th>
+          <th style="padding:9px 10px">Stage when shipped</th>
+        </tr></thead>
+        <tbody id="sl-rows"></tbody>
+      </table>
+    </div>
+    <div id="sl-count" style="font-size:11px;color:var(--text2);padding:10px 2px 0"></div>
+  </div>
+</div>
+
+<!-- Shipping report. Shown on screen first, exported only if wanted. -->
+<div id="sl-report-modal" style="display:none;position:fixed;inset:0;z-index:950;
+     background:rgba(0,0,0,.6);align-items:flex-start;justify-content:center;padding:24px;overflow:auto"
+     onclick="if(event.target===this)closeShipReport()">
+  <div id="sl-report-sheet" style="background:#fff;color:#111;border-radius:12px;max-width:920px;width:100%;
+       box-shadow:0 30px 90px rgba(0,0,0,.5)">
+    <div class="sl-report-actions" style="display:flex;justify-content:space-between;align-items:center;
+         gap:12px;padding:14px 22px;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff;
+         border-radius:12px 12px 0 0;z-index:2">
+      <div style="font-size:13px;font-weight:700;color:#374151">Shipping report</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm primary" onclick="printShipReport()">⬇ Export PDF</button>
+        <button class="btn-sm" onclick="closeShipReport()">Close</button>
+      </div>
+    </div>
+    <div id="sl-report-body" style="padding:26px 30px 32px"></div>
+  </div>
+</div>
+
+<style>
+#page-shiplog .sl-head{display:flex;justify-content:space-between;align-items:center;gap:14px;
+  flex-wrap:wrap;margin-bottom:16px}
+#page-shiplog .sl-eyebrow{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--text2)}
+#page-shiplog .sl-note{font-size:13px;color:var(--text);margin-top:3px}
+#page-shiplog .sl-kpis{display:grid;gap:14px;margin-bottom:22px;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+#page-shiplog .sl-k{background:var(--card,#fff);border:1px solid var(--line,#e6e9e4);
+  border-radius:13px;padding:17px 19px}
+#page-shiplog .sl-k span{font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--text2)}
+#page-shiplog .sl-k b{display:block;font-size:27px;font-weight:800;letter-spacing:-1px;margin-top:9px}
+#page-shiplog .sl-k i{font-style:normal;display:block;font-size:11px;color:var(--text2);margin-top:5px}
+#page-shiplog .sl-bar{display:flex;align-items:center;gap:12px;margin-bottom:11px;font-size:12.5px}
+#page-shiplog .sl-bar .nm{flex:0 0 112px;color:var(--text)}
+#page-shiplog .sl-bar .tr{flex:1;height:17px;border-radius:5px;background:var(--card2,rgba(0,0,0,.06));overflow:hidden}
+#page-shiplog .sl-bar .tr i{display:block;height:100%;border-radius:5px}
+#page-shiplog .sl-bar .n{flex:0 0 42px;text-align:right;font-weight:700}
+#page-shiplog .sl-bar .pc{flex:0 0 56px;text-align:right;font-size:11px;color:var(--text2)}
+#page-shiplog tbody td{padding:9px 10px;border-top:1px solid var(--line)}
+#sl-report-sheet,#sl-report-sheet *{color:#15181d}
+#sl-report-sheet table{width:100%;border-collapse:collapse;font-size:11px}
+#sl-report-sheet th{text-align:left;padding:7px 9px;background:#f5f7fa;color:#5b6472;font-size:9px;
+  letter-spacing:.7px;text-transform:uppercase;font-weight:700;
+  border-top:1px solid #d9dde3;border-bottom:1px solid #15181d}
+#sl-report-sheet td{padding:6px 9px;border-bottom:1px solid #eceff3}
+#sl-report-sheet td.n,#sl-report-sheet th.n{text-align:right;font-variant-numeric:tabular-nums}
+#sl-report-sheet tr.tot td{border-top:1.5px solid #15181d;border-bottom:3px double #15181d;
+  font-weight:800;background:#f5f7fa}
+#sl-report-sheet .h{font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+  margin:26px 0 9px;padding-bottom:4px;border-bottom:1px solid #15181d}
+#sl-report-sheet .h em{font-style:normal;color:#9aa2ad;margin-right:8px}
+@media print{
+  body *{visibility:hidden !important}
+  #sl-report-modal,#sl-report-modal *{visibility:visible !important}
+  #sl-report-modal{position:absolute !important;inset:0 !important;display:block !important;
+    background:#fff !important;padding:0 !important;overflow:visible !important}
+  #sl-report-sheet{box-shadow:none !important;max-width:none !important;border-radius:0 !important}
+  .sl-report-actions{display:none !important}
+  #sl-report-sheet tr{page-break-inside:avoid}
+  @page{margin:14mm}
+}
+@media(max-width:640px){
+  #page-shiplog .sl-bar{flex-wrap:wrap;gap:5px 10px}
+  #page-shiplog .sl-bar .nm{flex:1 1 100%}
+  #sl-report-modal{padding:0}
+  #sl-report-sheet{border-radius:0}
+  #sl-report-body{padding:18px 14px 26px}
+  #sl-report-sheet table{font-size:10px}
+}
+</style>
+
 <!-- KITCHINO REWARD WALLET — read-only mirror of the Apps Script rewards app.
      The store team enters work there; this page only reports. The wallet rule:
      while the store holds more than the target, each shipped order earns a
@@ -10484,7 +10595,7 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',governorate:'Measures by Governorate',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet',vouchers:'Le Marché Vouchers'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet',vouchers:'Le Marché Vouchers',shiplog:'Shipping Log'
 };
 
 const PAGE_BUILDERS = {
@@ -10504,6 +10615,7 @@ const PAGE_BUILDERS = {
   instfollowup: buildInstFollowupPage,
   receivables: buildReceivablesPage,
   wallet: buildWalletPage,
+  shiplog: buildShipLogPage,
   vouchers: () => buildVouchersPage(),   // defined in the voucher script at the end of the page
   journey: buildJourneyPage,
   signals: buildSignalsPage,
@@ -15886,6 +15998,341 @@ const SECURE_FIN_URL = 'https://script.google.com/a/macros/kitchino.com/s/AKfycb
   else wire();
 })();
 
+// ── SHIPPING LOG ────────────────────────────────────────────────────────────
+// The store's own record of what shipped and from which stage. Held here as a
+// snapshot rather than read live, because it is kept outside the portal; the
+// page states the period it covers so it is never mistaken for current.
+//
+// Stage values arrive with inconsistent case and stray leading spaces
+// ("Store", "store", " Final QC"), so everything is normalised on read —
+// otherwise the same stage splits into three rows in every breakdown.
+//
+// [ customer, crm, projectType, shippedISO, stage ]
+const SHIP_LOG = [
+['محمد فاروق مرسي السيد','18359','Kitchen','2026-09-03','Final QC'],
+['راندا مبارك عباس علي- (م/ ايمن غريب)','19893','Kitchen','2026-09-03','Store'],
+['خالد عبد الفتاح فهمي','16216','Kitchen','2026-09-05','Store'],
+['رامى مدحت أمين صفى الدين','20106','Kitchen','2026-09-05','Store'],
+['محمد محمود دميركيران نعسان','19519','Kitchen','2026-09-06','Store'],
+['احمد اشرف عبدربه سليمان ابوموسى','20502','Kitchen','2026-09-06','Store'],
+['عصام عبد الحكم','20231','Dressing Room','2026-09-07','Final QC'],
+['عصام عبد الحكم','20230','Dressing Room','2026-09-07','Store'],
+['عصام عبد الحكم','20229','Dressing Room','2026-09-07','Store'],
+['عصام عبد الحكم','20228','Dressing Room','2026-09-07','Store'],
+['عصام عبد الحكم','20227','Dressing Room','2026-09-07','Store'],
+['عصام عبد الحكم','20226','Dressing Extension','2026-09-07','Store'],
+['عصام عبد الحكم','15366','Kitchen','2026-09-07','Store'],
+['علاء سعيد السيد صالح','19154','Cladding','2026-09-07','Store'],
+['جمال السيد جمال الكومي','19121','Kitchen','2026-09-08','Store'],
+['محمد عادل الوردانى الوردانى','17051','Kitchen','2026-09-08','Store'],
+['محمد عادل الوردانى الوردانى','17319','Kitchenette','2026-09-08','Store'],
+['مصطفى محمد لطفي محمد','19618','Kitchen','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19833','Kitchen','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19776','Bedroom','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19777','Bedroom','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19781','Living Room','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19834','Bedroom','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19835','Bedroom','2026-09-10','Store'],
+['مصطفى محمد لطفي محمد','19836','Living Room','2026-09-10','Store'],
+['فادى نبيل ذكى','18378','Kitchen','2026-09-13','Final QC'],
+['محمد ايمان فتح الله البرقوقي','13817','Kitchen','2026-09-13','Store'],
+['محمد عبد الجواد موسي عبد الجواد','13879','Kitchen','2026-09-15','Store'],
+['محمد عبد الجواد موسي عبد الجواد','16546','Storage','2026-09-15','Store'],
+['حنين مصطفي جمال الدين','7772','Kitchen','2026-09-15','Store'],
+['صالح ابراهيم عبد الحليم حسن','18149','Kitchen','2026-09-16','Final QC'],
+['صالح ابراهيم عبد الحليم حسن','18191','Dressing Room','2026-09-16','Final QC'],
+['ريهام عصام الدين السيد عبد العزيز محمد الفنجري','19581','Kitchen','2026-09-20','Store'],
+['محمد سيف الدين','20682','Kitchen','2026-09-21','Store'],
+['محمد سيف الدين','20629','Kitchenette','2026-09-21','Store'],
+['محمد سيف الدين','20683','Kitchenette','2026-09-21','Store'],
+['اللواء هشام محفوظ ابو زيد','19985','Kitchen','2026-09-21','Final QC'],
+['فارس رمضان محمد رجب','20490','Kitchen','2026-09-22','Store'],
+['فارس رمضان محمد رجب','20519','Dressing Room','2026-09-22','Store'],
+['عائشة قاسم محمد علي خاطر','20414','Kitchen','2026-09-24','Final QC'],
+['عائشة قاسم محمد علي خاطر','20880','Kitchenette','2026-09-24','Final QC'],
+['عمرو سعد صابر الزكي','20122','Kitchen','2026-09-24','Assembly QC'],
+['عمرو سعد صابر الزكي','20140','Dressing Room','2026-09-24','Assembly QC'],
+['رالف بيتر','20071','Kitchen','2026-09-24','Store'],
+['زياد ايهاب فوزى مندور','20168','Kitchen','2026-09-27','Store'],
+['أحمد مصطفى محمود محمد','20263','Kitchen','2026-09-27','Store'],
+['محمد محمود دميركيران نعسان','19540','Dressing Room','2026-09-28','Final QC'],
+['صلاح الدين محمد حسن القبانى','16886','Kitchen','2026-09-29','Store'],
+['محمد عادل الوردانى الوردانى','17072','Dressing Room','2026-09-29','Store'],
+['محمد أحمد عيد حسانين','20542','Kitchen','2026-09-30','Final QC'],
+['دانا محمود رياض خلف','17348','Kitchen','2026-10-04','Store'],
+['ميلاد صموئيل نجيب رزق (م.يحي مطر)','20308','Kitchen','2026-10-04','Final QC'],
+['شريف جمال محمد الابودى','16978','Kitchen','2026-10-06','Store'],
+['ريهام عصام الدين السيد عبد العزيز محمد الفنجري','19742','Closet','2026-10-07','Final QC'],
+['ريهام عصام الدين السيد عبد العزيز محمد الفنجري','19743','Closet','2026-10-07','Final QC'],
+['ريهام عصام الدين السيد عبد العزيز محمد الفنجري','19740','Dressing Room','2026-10-07','Store'],
+['ريهام عصام الدين السيد عبد العزيز محمد الفنجري','19744','Closet','2026-10-07','Final QC'],
+['منال البرنس عبد الحميد ندى','20284','Kitchen','2026-10-11','Final QC'],
+['مينا هشام صبحى جرانت','20643','Kitchen','2026-10-13','Final QC'],
+['تامر صلاح محمد عويس مبروك','20223','Kitchen','2026-10-14','Store'],
+['ريهام عصام الدين السيد عبد العزيز محمد الفنجري','19741','Dressing Room','2026-10-16','Store'],
+['ساره شريف عبدالفتاح محمد عطا','18283','Kitchen','2026-10-18','Store'],
+['غسان محمد عبد السميع الشريف','18790','Bedroom','2026-10-18','Store'],
+['غسان محمد عبد السميع الشريف','18015','Kitchen','2026-10-18','Store'],
+['امانى عبدالحميد عبدالخالق محمود ( منار )','16564','Kitchen','2026-10-18','Store'],
+['منال البرنس عبد الحميد ندى','20247','Kitchen','2026-10-18','Final QC'],
+['محمد محمود احمد ابو النجا','16404','Kitchen','2026-10-19','Final QC'],
+['عمرو عنايه','16266','Kitchen','2026-10-20','Final QC'],
+['بيشوي عبد الشهيد','20476','Dressing Room','2026-10-21','Assembly QC'],
+['بيشوي عبد الشهيد','20477','Kitchen','2026-10-21','Assembly QC'],
+['أحمد فكري جمال ابراهيم','19438','Kitchen','2026-10-22','Final QC'],
+['علياء على على سليمان','17475','Kitchen','2026-10-22','Final QC'],
+['غسان محمد عبد السميع الشريف','18787','Kitchenette','2026-10-24','Store'],
+['غسان محمد عبد السميع الشريف','18789','Laundry Room','2026-10-24','Store'],
+['احمد عادل عبد المطلب السيد يوسف','20556','Kitchen','2026-10-25','Final QC'],
+['أسماء جودة','21825','Dressing Room','2026-10-26','Store'],
+['روداينا (مكتب مي سعد ) مشروع مدينتي','20897','Kitchen','2026-11-03','Store'],
+['جوزفين صبحى حنا','21206','Kitchen','2026-11-03','Final QC'],
+['جوزفين صبحى حنا','21236','Dressing Room','2026-11-03','Final QC'],
+['رامي عمر الفاروق محمد الحسيني','13938','Kitchen','2026-11-04','Store'],
+['أسماء جودة','22105','Kitchen Extension','2026-11-04','Final QC'],
+['أسماء جودة','22104','Shoe Unit','2026-11-04','Final QC'],
+['عصام سيد عبد الغني السيد الجداوي','19665','Kitchen','2026-11-05','Final QC'],
+['عصام سيد عبد الغني السيد الجداوي','21635','TV Unit','2026-11-05','Final QC'],
+['ميلاد عزت فهيم حزين','20652','Kitchen','2026-11-05','Final QC'],
+['ميلاد عزت فهيم حزين','20532','Kitchen','2026-11-05','Final QC']
+].map(r => ({ customer:r[0], crm:r[1], type:r[2], date:r[3], stage:r[4] }));
+
+const SHIP_STAGE_COLOUR = { 'store':'#1b9a6e', 'final qc':'#8b5cf6', 'assembly qc':'#3b82f6' };
+
+// ── Live shipments ──────────────────────────────────────────────────────────
+// From 5 November 2026 the rewards app is the record; before it, the store's
+// spreadsheet above is. Both are shown as one list.
+//
+// Merged on CRM code + shipping date rather than by cut-off date, because a
+// hard date boundary loses anything sitting either side of it: a shipment the
+// app already knows about is simply not added twice.
+const SHIP_CUTOVER = '2026-11-05';
+let SHIP_LIVE = [];
+let _slLiveState = 'idle';   // idle · loading · ok · unconfigured · error
+
+function shipRows(){
+  const seen = new Set(SHIP_LOG.map(r => r.crm + '|' + r.date));
+  const live = SHIP_LIVE
+    .filter(r => r.crm && r.date && !seen.has(r.crm + '|' + r.date))
+    .map(r => ({ customer:r.customer||'—', crm:r.crm, type:r.type||'—',
+                 date:r.date, stage:(r.stage||'').trim()||'—', live:true }));
+  return SHIP_LOG.concat(live);
+}
+
+async function loadShipLive(){
+  if (!_walUrl() || !_walKey()) { _slLiveState = 'unconfigured'; return; }
+  _slLiveState = 'loading';
+  try {
+    const d = await jsonpFetch(
+      _walUrl() + '?api=wallet&key=' + encodeURIComponent(_walKey()) + '&_t=' + Date.now(),
+      '_slCb', 25000);
+    if (!d || d.status !== 'ok') throw new Error(d && d.message ? d.message : 'No data');
+    SHIP_LIVE = d.shipped || [];
+    _slLiveState = 'ok';
+  } catch (e) {
+    _slLiveState = 'error';
+    console.warn('[ShipLog] live feed failed:', e.message);
+  }
+}
+
+function _slEsc(s){ return String(s==null?'':s)
+  .replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+function _slGroup(key, rows){
+  const g = {};
+  (rows || shipRows()).forEach(r => { const k = key(r); g[k] = (g[k]||0)+1; });
+  return Object.entries(g).sort((a,b)=>b[1]-a[1]);
+}
+
+async function buildShipLogPage(){
+  // Draw immediately from the archive, then redraw when the live feed lands:
+  // a page that sits blank while a request runs looks broken.
+  _slRender();
+  if (_slLiveState === 'idle' || _slLiveState === 'error') {
+    await loadShipLive();
+    _slRender();
+  }
+}
+
+function _slRender(){
+  const all = shipRows();
+  const total = all.length;
+  const dates = all.map(r=>r.date).sort();
+  const fmt = d => new Date(d+'T00:00:00').toLocaleDateString('en-GB',
+    { day:'numeric', month:'short', year:'numeric' });
+
+  const liveNote = {
+    ok:           ' · live from the rewards app',
+    loading:      ' · checking the rewards app…',
+    unconfigured: ' · rewards app not connected on this browser',
+    error:        ' · rewards app unreachable, archive only',
+    idle:         ''
+  }[_slLiveState] || '';
+
+  const rng = document.getElementById('sl-range');
+  if (rng) rng.textContent = total + ' shipments · ' + fmt(dates[0]) + ' – '
+    + fmt(dates[dates.length-1]) + liveNote;
+
+  const byStage = _slGroup(r=>r.stage, all);
+  const topStage = byStage[0] || ['—',0];
+
+  const kpis = document.getElementById('sl-kpis');
+  if (kpis) {
+    const card = (l,v,s,c) => '<div class="sl-k"><span>'+l+'</span><b'+(c?' style="color:'+c+'"':'')
+      + '>'+v+'</b><i>'+s+'</i></div>';
+    const store = byStage.find(s=>s[0].toLowerCase()==='store');
+    kpis.innerHTML =
+        card('Total shipped', total, 'orders in the period', '')
+      + card('From Store', store?store[1]:0,
+             (store?Math.round(store[1]/total*100):0)+'% of all shipments', '#1b9a6e')
+      + card('Busiest stage', topStage[0],
+             topStage[1]+' orders · '+Math.round(topStage[1]/total*100)+'%', '')
+      + card('Distinct customers', new Set(all.map(r=>r.customer)).size,
+             'one order can cover several rooms', '');
+  }
+
+  const bars = (el, list, colour) => {
+    const host = document.getElementById(el);
+    if (!host) return;
+    const top = list.length ? list[0][1] : 1;
+    host.innerHTML = list.map(([k,n]) =>
+      '<div class="sl-bar"><span class="nm">'+_slEsc(k)+'</span>'
+      + '<span class="tr"><i style="width:'+(n/top*100)+'%;background:'
+      +   (typeof colour==='function' ? colour(k) : colour) + '"></i></span>'
+      + '<span class="n">'+n+'</span>'
+      + '<span class="pc">'+Math.round(n/total*100)+'%</span></div>').join('');
+  };
+
+  bars('sl-stage', byStage, k => SHIP_STAGE_COLOUR[k.toLowerCase()] || '#8b5cf6');
+
+  const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const byMonth = Object.entries(
+    all.reduce((m,r)=>{ const k=r.date.slice(0,7); m[k]=(m[k]||0)+1; return m; },{})
+  ).sort((a,b)=>a[0].localeCompare(b[0]))
+   .map(([k,n])=>[ MN[+k.slice(5,7)-1]+' '+k.slice(0,4), n ]);
+  bars('sl-month', byMonth, '#3b82f6');
+
+  const sel = document.getElementById('sl-stage-filter');
+  if (sel && sel.options.length <= 1) {
+    byStage.forEach(([k]) => {
+      const o = document.createElement('option'); o.value = k; o.textContent = k; sel.appendChild(o);
+    });
+  }
+
+  renderShipLog();
+}
+
+function renderShipLog(){
+  const q  = (document.getElementById('sl-search')?.value || '').toLowerCase().trim();
+  const sf = document.getElementById('sl-stage-filter')?.value || 'all';
+  const ALL = shipRows();
+
+  const rows = ALL.filter(r =>
+    (sf === 'all' || r.stage === sf) &&
+    (!q || (r.customer+' '+r.crm+' '+r.type).toLowerCase().includes(q))
+  ).sort((a,b) => b.date.localeCompare(a.date));
+
+  const body = document.getElementById('sl-rows');
+  if (body) body.innerHTML = rows.length ? rows.map(r =>
+      '<tr><td style="color:var(--text2);white-space:nowrap">'+r.date
+    +   (r.live ? ' <span title="From the rewards app" style="color:#1b9a6e">●</span>' : '')
+    + '</td>'
+    + '<td>'+_slEsc(r.customer)+'</td>'
+    + '<td style="color:var(--text2)">'+_slEsc(r.crm)+'</td>'
+    + '<td style="color:var(--text2)">'+_slEsc(r.type)+'</td>'
+    + '<td><span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;'
+    +   'background:'+(SHIP_STAGE_COLOUR[r.stage.toLowerCase()]||'#8b5cf6')+'22;color:'
+    +   (SHIP_STAGE_COLOUR[r.stage.toLowerCase()]||'#8b5cf6')+'">'+_slEsc(r.stage)+'</span></td></tr>'
+  ).join('') : '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text2)">No shipments match.</td></tr>';
+
+  const c = document.getElementById('sl-count');
+  if (c) c.textContent = rows.length + ' of ' + ALL.length + ' shipments'
+    + (SHIP_LIVE.length ? ' · ● = from the rewards app' : '');
+}
+
+function openShipReport(){
+  const ALL = shipRows();
+  const total = ALL.length;
+  const dates = ALL.map(r=>r.date).sort();
+  const fmt = d => new Date(d+'T00:00:00').toLocaleDateString('en-GB',
+    { day:'numeric', month:'short', year:'numeric' });
+  const pc = n => (n/total*100).toFixed(1) + '%';
+
+  const byStage = _slGroup(r=>r.stage, ALL);
+  const byType  = _slGroup(r=>r.type,  ALL);
+  const MN = ['January','February','March','April','May','June',
+              'July','August','September','October','November','December'];
+  const byMonth = Object.entries(
+    ALL.reduce((m,r)=>{ const k=r.date.slice(0,7); m[k]=(m[k]||0)+1; return m; },{})
+  ).sort((a,b)=>a[0].localeCompare(b[0]))
+   .map(([k,n])=>[ MN[+k.slice(5,7)-1]+' '+k.slice(0,4), n ]);
+
+  let h =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;'
+    + 'flex-wrap:wrap;padding-bottom:14px;border-bottom:2.5px solid #15181d">'
+    +   '<div><div style="font-size:18px;font-weight:900;letter-spacing:3px">KITCHINO</div>'
+    +     '<div style="font-size:8.5px;letter-spacing:1.7px;text-transform:uppercase;color:#5b6472;'
+    +       'margin-top:3px">Operations · Store</div>'
+    +     '<div style="font-size:20px;font-weight:750;margin-top:14px">Shipping Report</div></div>'
+    +   '<table style="font-size:10.5px;border-collapse:collapse;min-width:230px"><tbody>'
+    +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Period</td>'
+    +       '<td style="text-align:right;font-weight:600">'+fmt(dates[0])+' – '+fmt(dates[dates.length-1])+'</td></tr>'
+    +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Shipments</td>'
+    +       '<td style="text-align:right;font-weight:600">'+total+'</td></tr>'
+    +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Generated</td>'
+    +       '<td style="text-align:right;font-weight:600">'+new Date().toLocaleString()+'</td></tr>'
+    +   '</tbody></table></div>';
+
+  const tbl = (num, title, list, label) =>
+      '<div class="h"><em>'+num+'</em>'+title+'</div>'
+    + '<table><thead><tr><th>'+label+'</th><th class="n">Orders</th>'
+    + '<th class="n">Share of total</th></tr></thead><tbody>'
+    + list.map(([k,n]) => '<tr><td>'+_slEsc(k)+'</td><td class="n">'+n+'</td>'
+        + '<td class="n" style="color:#5b6472">'+pc(n)+'</td></tr>').join('')
+    + '<tr class="tot"><td>Total</td><td class="n">'+total+'</td><td class="n">100.0%</td></tr>'
+    + '</tbody></table>';
+
+  h += tbl(1, 'Shipped by stage', byStage, 'Stage when shipped');
+  h += tbl(2, 'Shipped by month', byMonth, 'Month');
+  h += tbl(3, 'Shipped by project type', byType, 'Project type');
+
+  h += '<div class="h"><em>4</em>Detail</div>'
+     + '<table><thead><tr><th style="width:84px">Shipped</th><th>Customer</th>'
+     + '<th style="width:70px">CRM #</th><th style="width:110px">Type</th>'
+     + '<th style="width:94px">Stage</th></tr></thead><tbody>'
+     + ALL.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(r =>
+         '<tr><td style="color:#5b6472;white-space:nowrap">'+r.date+'</td>'
+       + '<td>'+_slEsc(r.customer)+'</td>'
+       + '<td style="color:#5b6472">'+_slEsc(r.crm)+'</td>'
+       + '<td style="color:#5b6472">'+_slEsc(r.type)+'</td>'
+       + '<td style="color:#5b6472">'+_slEsc(r.stage)+'</td></tr>').join('')
+     + '<tr class="tot"><td colspan="4">Total shipments</td><td class="n">'+total+'</td></tr>'
+     + '</tbody></table>';
+
+  h += '<div class="h"><em>·</em>Basis</div>'
+     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.8">'
+     + '<b>Source.</b> Up to ' + SHIP_CUTOVER + ', the store’s own spreadsheet, held as a fixed '
+     + 'archive. From that date the rewards app is the record and is read live. Rows are matched '
+     + 'on CRM code and shipping date, so a shipment known to both is counted once.<br>'
+     + '<b>Stage.</b> Where the project stood when it shipped, not where it stands now. '
+     + 'Stage names are normalised — "store" and "Store" are counted as one.<br>'
+     + '<b>Counting.</b> One row is one order line. A customer with several rooms appears once '
+     + 'per room, so shipments exceed customers.</div>'
+     + '<div style="margin-top:18px;padding-top:10px;border-top:2.5px solid #15181d;'
+     + 'display:flex;justify-content:space-between;font-size:9px;color:#5b6472">'
+     + '<span>Kitchino · Shipping Report</span><span>Page 1</span></div>';
+
+  document.getElementById('sl-report-body').innerHTML = h;
+  document.getElementById('sl-report-modal').style.display = 'flex';
+}
+
+function closeShipReport(){
+  const m = document.getElementById('sl-report-modal');
+  if (m) m.style.display = 'none';
+}
+function printShipReport(){ window.print(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeShipReport(); });
+
 // ── KITCHINO REWARD WALLET ──────────────────────────────────────────────────
 // Read-only mirror of the Apps Script rewards app. The URL and key live in
 // localStorage, never in this file: the portal is published to GitHub Pages,
@@ -18883,96 +19330,6 @@ const VCH_STAGE_DATE = { 'Site Visit': 'siteVisitDate', 'Design': 'designDate',
 const VCH_DESIGNERS = ['Amira Alkafrawy','Amira Elaraby','Amira Kasem','Basma Nosair','Donia Hesham','Elham Fekry',
   'Esraa Ali','Marwa Elfishawy','Maryam Mohammad','Maryet Emad','Mohamed Atef','Mohamed Fawzy','Monica Alfy',
   'Sara Eltoukhy','Sherif Tarek'];
-// ── Projects per voucher ────────────────────────────────────────────────
-// One voucher customer can open any number of projects (2 kitchens, 3 dressing
-// rooms…), each its own project with its own CRM code. A voucher keeps them as
-//   projects: [{ type, crm }, …]
-// and, so the register file needs no new column and survives any field list on
-// the server, the same list is also written into the two existing fields:
-//   products: ['Kitchen', 'Dressing Room', 'Dressing Room']   (one per project)
-//   crm:      'Kitchen: 21812 · Dressing Room: — · Dressing Room: 21950'
-// Older records (Kitchen / Dressing / Furniture ticks and one plain CRM code)
-// still read: each tick becomes one project and the plain code goes to the
-// first. (5 Nov 2026)
-//
-// Project types = the portal's own list (INST_PRODUCT_MERGE, Installation), plus
-// Furniture from the voucher terms. cat = which voucher discount applies.
-const VCH_TYPES = [
-  { t: 'Kitchen', cat: 'Kitchen' }, { t: 'Kitchenette', cat: 'Kitchen' }, { t: 'Coffee Corner', cat: 'Kitchen' },  // 20%, confirmed 5 Nov 2026
-  { t: 'Dressing Room', cat: 'Dressing' }, { t: 'Closet', cat: 'Dressing' },
-  { t: 'Bedroom', cat: 'Furniture' }, { t: 'Kids Room', cat: 'Furniture' }, { t: 'Living Room', cat: 'Furniture' },
-  { t: 'TV Unit', cat: 'Furniture' }, { t: 'Bathroom Unit', cat: 'Furniture' },
-  { t: 'Laundry Room', cat: 'Furniture' }, { t: 'Cladding', cat: 'Furniture' }, { t: 'Furniture', cat: 'Furniture' }
-];
-const VCH_TYPE_NAMES = VCH_TYPES.map(x => x.t);
-const VCH_LEGACY_TYPE = { Dressing: 'Dressing Room' };
-function _vchType(raw) {
-  let t = String(raw || '').replace(/\s+/g, ' ').trim();
-  if (!t) return '';
-  if (VCH_LEGACY_TYPE[t]) return VCH_LEGACY_TYPE[t];
-  try { if (typeof _instProduct === 'function') t = _instProduct(t); } catch (e) {}
-  const hit = VCH_TYPE_NAMES.find(n => n.toLowerCase() === t.toLowerCase());
-  return hit || t;
-}
-const _vchTypeCat = t => (VCH_TYPES.find(x => x.t === t) || { cat: 'Furniture' }).cat;
-
-function _vchProjects(v) {
-  if (!v) return [];
-  if (Array.isArray(v.projects) && v.projects.length)
-    return v.projects.map(p => ({ type: _vchType(p && p.type), crm: String((p && p.crm) || '').trim() })).filter(p => p.type);
-  const txt = String(v.crm || '').trim();
-  const parts = txt ? txt.split(/\s*[·;|]\s*/).filter(Boolean) : [];
-  const tagged = parts.map(x => x.match(/^(.+?)\s*:\s*(.*)$/)).filter(Boolean);
-  if (tagged.length && tagged.length === parts.length)
-    return tagged.map(m => ({ type: _vchType(m[1]), crm: /^[A-Za-z0-9-]+$/.test(m[2].trim()) ? m[2].trim() : '' })).filter(p => p.type);
-  const list = (v.products || []).map(_vchType).filter(Boolean).map(t => ({ type: t, crm: '' }));
-  const codes = txt.split(/[^A-Za-z0-9-]+/).filter(Boolean);
-  if (!list.length && codes.length) list.push({ type: 'Kitchen', crm: '' });
-  codes.forEach((c, i) => { if (list[i]) list[i].crm = c; else list.push({ type: list[0].type, crm: c }); });
-  return list;
-}
-const _vchCrmList = v => _vchProjects(v).filter(p => p.crm).map(p => ({ p: p.type, code: p.crm }));
-const _vchCrmText = projs => projs.map(p => p.type + ': ' + (p.crm || '—')).join(' · ');
-// "Kitchen ×2 · Dressing Room ×3" — types in project order, counted.
-function _vchTypeCounts(projs) {
-  const m = new Map(); projs.forEach(p => m.set(p.type, (m.get(p.type) || 0) + 1));
-  return [...m.entries()];
-}
-const _vchTypeSummary = projs => _vchTypeCounts(projs).map(([t, n]) => t + (n > 1 ? ' ×' + n : '')).join(' · ');
-
-// ── Project lines on the form ─────────────────────────────────────────────
-function _vchProjRow(p) {
-  const opts = VCH_TYPE_NAMES.concat(p.type && !VCH_TYPE_NAMES.includes(p.type) ? [p.type] : [])
-    .map(t => '<option' + (t === p.type ? ' selected' : '') + '>' + _vchEsc(t) + '</option>').join('');
-  return '<div class="vch-proj-row"><span class="vch-proj-n"></span>' +
-    '<select class="vch-input" data-k="type" onchange="_vchProjChanged()"><option value="">Choose type</option>' + opts + '</select>' +
-    '<input class="vch-input" data-k="crm" inputmode="numeric" autocomplete="off" placeholder="add once known" value="' + _vchEsc(p.crm || '') + '">' +
-    '<button type="button" class="vch-btn danger vch-proj-del" title="Remove this project" onclick="this.parentNode.remove();_vchProjChanged()">✕</button></div>';
-}
-function _vchSetProjects(projs) {
-  const box = document.getElementById('vch-proj-list');
-  box.innerHTML = (projs.length ? projs : [{ type: '', crm: '' }]).map(_vchProjRow).join('');
-  _vchProjChanged();
-}
-function vchAddProject() {
-  const box = document.getElementById('vch-proj-list');
-  box.insertAdjacentHTML('beforeend', _vchProjRow({ type: '', crm: '' }));
-  _vchProjChanged();
-  box.lastElementChild.querySelector('select').focus();
-}
-function _vchFormProjects() {
-  return [...document.querySelectorAll('#vch-proj-list .vch-proj-row')].map(r => ({
-    type: r.querySelector('[data-k=type]').value, crm: r.querySelector('[data-k=crm]').value.replace(/\s+/g, ''), row: r }));
-}
-function _vchProjChanged() {
-  const rows = [...document.querySelectorAll('#vch-proj-list .vch-proj-row')];
-  rows.forEach((r, i) => { r.querySelector('.vch-proj-n').textContent = i + 1; r.querySelector('.vch-proj-del').style.visibility = rows.length > 1 ? 'visible' : 'hidden'; });
-  const projs = _vchFormProjects().filter(p => p.type);
-  document.getElementById('vch-proj-sum').textContent = projs.length
-    ? projs.length + ' project' + (projs.length > 1 ? 's' : '') + ': ' + _vchTypeSummary(projs) : '';
-  if (typeof _vchFormHint === 'function') _vchFormHint();
-}
-
 const _vchDes = n => { const t = String(n == null ? '' : n).replace(/\s+/g, ' ').trim();
   try { return typeof _fixDesigner === 'function' ? _fixDesigner(t) : t; } catch (e) { return t; } };
 // Normalise designer names on read, so spelling variants count as one person
@@ -19031,8 +19388,7 @@ function _vchEffStage(v) {
 }
 function _vchDiscountText(products) {
   const d = _vchSettings().discounts;
-  const cats = [...new Set((products || []).map(_vchType).filter(Boolean).map(_vchTypeCat))];
-  return cats.map(p => p + ' ' + (d[p] != null ? d[p] : (d.Dressing != null ? d.Dressing : '')) + '%').join(' · ');
+  return (products || []).map(p => p + ' ' + (d[p] != null ? d[p] : '') + '%').join(' · ');
 }
 
 // ── Config ────────────────────────────────────────────────────────────────
@@ -19096,8 +19452,6 @@ function _vchRenderAll() {
   const uniq = arr => [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b));
   fill('vch-f-branch', 'All branches', uniq(s.branches.concat(vs.map(v => v.branch))));
   fill('vch-f-designer', 'All designers', uniq(vs.map(v => v.designer)));
-  fill('vch-f-product', 'All project types', VCH_TYPE_NAMES.filter(t => vs.some(v => _vchProjects(v).some(p => p.type === t)))
-    .concat(uniq([].concat(...vs.map(v => _vchProjects(v).map(p => p.type)))).filter(t => !VCH_TYPE_NAMES.includes(t))));
   const st = document.getElementById('vch-f-stage');
   const curSt = st.value;
   st.innerHTML = '<option value="">All stages</option><option value="open">Open (not closed)</option>' +
@@ -19167,8 +19521,8 @@ function _vchFiltered() {
     if (fs === 'open' ? (e === 'Contracted' || e === 'Declined' || e === 'Expired') : (fs && e !== fs)) return false;
     if (fb && v.branch !== fb) return false;
     if (fd && v.designer !== fd) return false;
-    if (fp && !_vchProjects(v).some(p => p.type === fp)) return false;
-    if (q && ![v.serial, v.fullName, _vchCrmList(v).map(o => o.code).join(' '), v.mobile, v.address, v.designer, v.exceptionOwner]
+    if (fp && !(v.products || []).includes(fp)) return false;
+    if (q && ![v.serial, v.fullName, v.crm, v.mobile, v.address, v.designer, v.exceptionOwner]
       .some(x => String(x || '').toLowerCase().includes(q))) return false;
     return true;
   // Fixed order: by voucher serial (0001, 0002, …), then by when the record was
@@ -19200,15 +19554,13 @@ function vchRenderTable() {
     return '<tr onclick="vchOpenForm(\'' + _vchEsc(v.id) + '\')">' +
       '<td class="vch-serial">' + _vchEsc(v.serial) + '</td>' +
       '<td><div>' + _vchEsc(v.fullName) + '</div><div class="vch-sub">' + _vchEsc(v.mobile || v.nationality || '') + '</div></td>' +
-      '<td>' + _vchTypeCounts(_vchProjects(v)).map(([t, n]) => '<span class="vch-tag">' + _vchEsc(t) +
-        (n > 1 ? '<span class="vch-count-x">×' + n + '</span>' : '') + '</span>').join('') + '</td>' +
+      '<td>' + (v.products || []).map(p => '<span class="vch-tag">' + _vchEsc(p) + '</span>').join('') + '</td>' +
       '<td>' + _vchEsc(v.branch) + '</td><td>' + _vchEsc(v.designer) + '</td>' +
       '<td class="num">' + _vchMoney(v.paidAmount) + '</td>' +
       '<td>' + _vchFmtDate(v.saleDate) + '</td>' +
       '<td>' + (exp ? _vchFmtDate(exp.toISOString().slice(0, 10)) : '') + '<div class="vch-days ' + daysCls + '">' + daysTxt + '</div></td>' +
       '<td><span class="vch-pill ' + pillCls + '">' + _vchEsc(VCH_STAGE_LABEL[e] || e) + '</span></td>' +
-      '<td>' + (_vchCrmList(v).length ? _vchCrmList(v).map(o => '<div class="vch-crm-line">' + _vchEsc(o.code) +
-        ' <span class="vch-sub">' + _vchEsc(o.p) + '</span></div>').join('') : '<span class="vch-sub">—</span>') + '</td>' +
+      '<td>' + (v.crm ? _vchEsc(v.crm) : '<span class="vch-sub">—</span>') + '</td>' +
       '<td>' + (v.exception === 'Yes' ? '<span class="vch-exc">Yes</span><div class="vch-sub">' + _vchEsc(v.exceptionOwner) + '</div>' : '<span class="vch-sub">No</span>') + '</td>' +
       '</tr>';
   }).join('');
@@ -19230,7 +19582,7 @@ function vchOpenForm(id) {
 
   const set = (k, val) => { if (f[k]) f[k].value = val == null ? '' : val; };
   if (v) {
-    ['serial', 'saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'designer',
+    ['serial', 'saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'designer', 'crm',
       'exceptionOwner', 'stage', 'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate',
       'declineReason', 'notes'].forEach(k => set(k, v[k]));
     f.querySelector('input[name=exception][value="' + (v.exception === 'Yes' ? 'Yes' : 'No') + '"]').checked = true;
@@ -19238,7 +19590,7 @@ function vchOpenForm(id) {
     set('saleDate', _vchToday()); set('paidAmount', s.voucherValue); set('stage', 'Sold');
     set('nationality', 'Egyptian');
   }
-  _vchSetProjects(v ? _vchProjects(v) : [{ type: 'Kitchen', crm: '' }]);
+  document.querySelectorAll('#vch-products input').forEach(cb => { cb.checked = !!(v && (v.products || []).includes(cb.value)); });
 
   document.getElementById('vch-form-title').textContent = v ? 'Voucher ' + v.serial : 'New voucher';
   document.getElementById('vch-form-sub').textContent = v ? 'Recorded ' + new Date(v.createdAt).toLocaleString('en-GB') : 'Fields marked * are required';
@@ -19280,7 +19632,7 @@ function _vchStageToggle(stamp) {
 
 function _vchFormHint() {
   const f = document.getElementById('vch-form');
-  const prods = _vchFormProjects().filter(p => p.type).map(p => p.type);
+  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
   const parts = [];
   if (prods.length) parts.push('Discount: <b>' + _vchEsc(_vchDiscountText(prods)) + '</b>');
   if (f.saleDate.value) {
@@ -19297,11 +19649,8 @@ async function vchSubmit() {
   const f = document.getElementById('vch-form');
   const err = document.getElementById('vch-form-err');
   err.textContent = '';
-  const formProjs = _vchFormProjects();
-  const blankType = formProjs.find(p => !p.type && p.crm);
-  if (blankType) { err.textContent = 'Choose the project type for CRM ' + blankType.crm + '.'; blankType.row.querySelector('select').focus(); return; }
-  const projs = formProjs.filter(p => p.type);
-  if (!projs.length) { err.textContent = 'Add at least one project and choose its type.'; return; }
+  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
+  if (!prods.length) { err.textContent = 'Choose at least one product type.'; return; }
   const exception = f.querySelector('input[name=exception]:checked')?.value || 'No';
   if (exception === 'Yes' && !f.exceptionOwner.value.trim()) { err.textContent = 'Name the exception owner.'; return; }
 
@@ -19310,23 +19659,10 @@ async function vchSubmit() {
   const dup = (_VCH.data.vouchers || []).find(x => norm(x.serial) === norm(serial) && (!_VCH.editing || x.id !== _VCH.editing.id));
   if (dup) { err.textContent = 'Voucher ' + serial + ' is already recorded for ' + dup.fullName + '.'; return; }
 
-  // CRM per project: numbers only, no code used twice on this voucher, and no
-  // code already recorded on another voucher.
-  const seen = {};
-  for (const p of projs) {
-    if (!p.crm) continue;
-    const box = p.row.querySelector('[data-k=crm]');
-    if (!/^\d{3,7}$/.test(p.crm)) { err.textContent = p.type + ' CRM # should be the number only (e.g. 21812).'; box.focus(); return; }
-    if (seen[p.crm]) { err.textContent = 'CRM ' + p.crm + ' is entered twice — each project has its own code.'; box.focus(); return; }
-    const other = (_VCH.data.vouchers || []).find(x => (!_VCH.editing || x.id !== _VCH.editing.id) && _vchCrmList(x).some(o => o.code === p.crm));
-    if (other) { err.textContent = 'CRM ' + p.crm + ' is already on voucher ' + other.serial + ' (' + other.fullName + ').'; box.focus(); return; }
-    seen[p.crm] = true;
-  }
-  const projects = projs.map(p => ({ type: p.type, crm: p.crm }));
-  const prods = projects.map(p => p.type);
-  const crm = _vchCrmText(projects);
+  const crm = f.crm.value.trim();
+  if (crm && !/^\d{3,7}$/.test(crm)) { err.textContent = 'CRM # should be the number only (e.g. 21812).'; return; }
 
-  const v = { id: _VCH.editing ? _VCH.editing.id : '', serial, products: prods, projects, exception, crm,
+  const v = { id: _VCH.editing ? _VCH.editing.id : '', serial, products: prods, exception, crm,
     designer: typeof _fixDesigner === 'function' ? _fixDesigner(f.designer.value) : f.designer.value.trim() };
   ['saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'exceptionOwner', 'stage',
     'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate', 'declineReason', 'notes']
@@ -19417,9 +19753,8 @@ function _vchExportRows() {
     return {
       'Voucher Ser.': v.serial || '', 'Sale Date': v.saleDate || '', 'Full Name': v.fullName || '', 'Mobile': v.mobile || '',
       'Address': v.address || '', 'Nationality': v.nationality || '', 'Paid Amount (EGP)': Number(v.paidAmount) || 0,
-      'Product Type': _vchTypeSummary(_vchProjects(v)), 'Discount': _vchDiscountText(_vchProjects(v).map(p => p.type)),
-      'Branch': v.branch || '', 'Designer in Charge': v.designer || '', 'Projects': _vchProjects(v).length,
-      'CRM #': _vchProjects(v).map(p => (p.crm || '—') + ' (' + p.type + ')').join('; '),
+      'Product Type': (v.products || []).join(', '), 'Discount': _vchDiscountText(v.products),
+      'Branch': v.branch || '', 'Designer in Charge': v.designer || '', 'CRM #': v.crm || '',
       'Exception': v.exception || 'No', 'Exception Owner': v.exceptionOwner || '',
       'Stage': VCH_STAGE_LABEL[st] || st, 'Valid Until': e ? e.toISOString().slice(0, 10) : '',
       'Days Left': (st === 'Contracted' || st === 'Declined' || left == null) ? '' : left,
@@ -19533,11 +19868,11 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
     const st = _vchEffStage(v), ex = _vchExpiry(v);
     return '<tr><td><b>' + e(v.serial) + '</b></td><td>' + e(v.saleDate) + '</td><td>' + e(v.fullName) +
       '<div class="m">' + e([v.mobile, v.nationality].filter(Boolean).join(' · ')) + '</div><div class="m">' + e(v.address) + '</div></td>' +
-      '<td>' + e(_vchTypeSummary(_vchProjects(v))) + '<div class="m">' + e(_vchDiscountText(_vchProjects(v).map(p => p.type))) + '</div></td>' +
+      '<td>' + e((v.products || []).join(', ')) + '<div class="m">' + e(_vchDiscountText(v.products)) + '</div></td>' +
       '<td>' + e(v.branch) + '</td><td>' + e(v.designer) + '</td><td class="n">' + _vchMoney(v.paidAmount) + '</td>' +
       '<td>' + (ex ? ex.toISOString().slice(0, 10) : '') + '</td><td>' + e(VCH_STAGE_LABEL[st] || st) +
       (st === 'Declined' && v.declineReason ? '<div class="m">' + e(v.declineReason) + '</div>' : '') + '</td>' +
-      '<td>' + _vchCrmList(v).map(o => e(o.code) + ' <span class="m">' + e(o.p) + '</span>').join('<br>') + '</td><td>' + (v.exception === 'Yes' ? 'Yes — ' + e(v.exceptionOwner) : 'No') + '</td></tr>';
+      '<td>' + e(v.crm) + '</td><td>' + (v.exception === 'Yes' ? 'Yes — ' + e(v.exceptionOwner) : 'No') + '</td></tr>';
   }).join('');
   // Designer chart: one horizontal bar per designer, length = vouchers sold.
   // Drawn in plain HTML/CSS so it shows in the popup and prints in the PDF
@@ -19567,7 +19902,7 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
   };
   return ('<!doctype html><html><head><meta charset="utf-8"><title>Kitchino Le Marché Vouchers ' + _vchToday() + '</title><style>' +
     '@page{size:A4 landscape;margin:12mm}@media screen{body{padding:18px;background:#fff}}body{font-family:"Segoe UI",Tahoma,Arial,sans-serif;color:#16191f;font-size:10.5px;margin:0}' +
-    'h1{font-size:18px;margin:0;color:#404041}h1 .dot{color:#c2a15c}.sub{color:#555;margin:3px 0 12px}.k{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:0 0 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+    'h1{font-size:18px;margin:0;color:#404041}h1 .dot{color:#c2a15c}.sub{color:#555;margin:3px 0 12px}.k{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:0 0 14px;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
     '.k>div{border:1px solid #e6dcc6;border-left:4px solid var(--c,#404041);border-radius:8px;padding:9px 12px;background:#fbf9f4;' +
     'font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:#5a6270;page-break-inside:avoid}' +
     '.k b{display:block;font-size:17px;color:#16191f;text-transform:none;letter-spacing:0;margin-bottom:2px}' +
@@ -19582,7 +19917,6 @@ function _vchReportHtml(rows, periodLabel, autoPrint) {
     '<h1>Kitchino <span class="dot">·</span> ' + e(s.event) + ' voucher register</h1>' +
     '<div class="sub"><b>Period: ' + e(periodLabel || 'All dates') + '</b> · ' + e(_vchFilterLabel()) + ' · printed ' + new Date().toLocaleString('en-GB') + '</div>' +
     '<div class="k"><div style="--c:#c2a15c"><b>' + rows.length + '</b>Vouchers sold</div>' +
-    '<div style="--c:#c2a15c"><b>' + rows.reduce((a, v) => a + _vchProjects(v).length, 0) + '</b>Projects</div>' +
     '<div style="--c:#404041"><b>EGP ' + _vchMoney(paid) + '</b>Collected</div>' +
     '<div style="--c:#87692f"><b>' + cnt('Contracted') + '</b>Contracted</div>' +
     '<div style="--c:#c2a15c"><b>' + (rows.length - cnt('Contracted') - cnt('Declined') - cnt('Expired')) + '</b>In progress</div>' +
