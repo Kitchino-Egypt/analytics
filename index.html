@@ -16103,20 +16103,34 @@ const SHIP_STAGE_COLOUR = { 'store':'#1b9a6e', 'final qc':'#8b5cf6', 'assembly q
 // From 5 November 2026 the rewards app is the record; before it, the store's
 // spreadsheet above is. Both are shown as one list.
 //
-// Merged on CRM code + shipping date rather than by cut-off date, because a
-// hard date boundary loses anything sitting either side of it: a shipment the
-// app already knows about is simply not added twice.
+// Merged on CRM code alone, not code + date. The two systems disagree about
+// the shipping date on four known projects — 18787 and 18789 are 18 Oct in the
+// app and 24 Oct in the spreadsheet — and matching on both fields turned each
+// disagreement into a second row, inflating the total from 87 to 91. A CRM
+// code is one project and ships once, so the code is the identity.
+//
+// Where they disagree the archive date is kept: it is the store's own record
+// and runs back further than the app does.
 const SHIP_CUTOVER = '2026-11-05';
 let SHIP_LIVE = [];
 let _slLiveState = 'idle';   // idle · loading · ok · unconfigured · error
 
 function shipRows(){
-  const seen = new Set(SHIP_LOG.map(r => r.crm + '|' + r.date));
+  const seen = new Set(SHIP_LOG.map(r => String(r.crm).trim()));
   const live = SHIP_LIVE
-    .filter(r => r.crm && r.date && !seen.has(r.crm + '|' + r.date))
-    .map(r => ({ customer:r.customer||'—', crm:r.crm, type:r.type||'—',
+    .filter(r => r.crm && r.date && !seen.has(String(r.crm).trim()))
+    .map(r => ({ customer:r.customer||'—', crm:String(r.crm).trim(), type:r.type||'—',
                  date:r.date, stage:(r.stage||'').trim()||'—', live:true }));
   return SHIP_LOG.concat(live);
+}
+
+/** Projects whose shipping date differs between the two systems. */
+function shipDateConflicts(){
+  const byCrm = {};
+  SHIP_LOG.forEach(r => { byCrm[String(r.crm).trim()] = r.date; });
+  return SHIP_LIVE
+    .filter(r => byCrm[String(r.crm).trim()] && byCrm[String(r.crm).trim()] !== r.date)
+    .map(r => ({ crm:r.crm, customer:r.customer, archive:byCrm[String(r.crm).trim()], app:r.date }));
 }
 
 async function loadShipLive(){
@@ -16246,8 +16260,19 @@ function renderShipLog(){
   ).join('') : '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text2)">No shipments match.</td></tr>';
 
   const c = document.getElementById('sl-count');
-  if (c) c.textContent = rows.length + ' of ' + ALL.length + ' shipments'
-    + (SHIP_LIVE.length ? ' · ● = from the rewards app' : '');
+  if (c) {
+    // A silent merge would hide that the two systems disagree about dates.
+    const cf = shipDateConflicts();
+    c.innerHTML = rows.length + ' of ' + ALL.length + ' shipments'
+      + (SHIP_LIVE.length ? ' · ● = from the rewards app' : '')
+      + (cf.length
+          ? '<div style="margin-top:7px;color:var(--gold,#d08700)">'
+            + cf.length + ' project' + (cf.length===1?'':'s') + ' carry a different shipping date '
+            + 'in the two systems — the store record is shown: '
+            + cf.map(x => x.crm + ' (' + x.archive + ' vs ' + x.app + ')').join(', ')
+            + '</div>'
+          : '');
+  }
 }
 
 function openShipReport(){
