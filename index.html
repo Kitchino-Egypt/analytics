@@ -1971,7 +1971,7 @@ if (_checkSession()) {
     </div>
     <div style="overflow-x:auto">
       <table id="measures-table">
-        <thead><tr><th>Order Code</th><th>Customer</th><th>Designer</th><th>Visit Date</th><th>Month</th><th>Source</th><th>Order Type</th><th>Area</th><th>Status</th><th>Payment</th></tr></thead>
+        <thead><tr><th>Order Code</th><th>Customer</th><th>Designer</th><th>Visit Date</th><th>Month</th><th>Source</th><th>Order Type</th><th>Area</th><th>Status</th><th>CRM Stage</th><th>Payment</th></tr></thead>
         <tbody id="measures-tbody"></tbody>
       </table>
     </div>
@@ -8855,9 +8855,15 @@ function renderMeasuresTable() {
       <td class="muted">${r.orderType}</td>
       <td class="muted">${r.area}</td>
       <td><span class="badge ${statusBadge}">${statusLabel}</span></td>
+      <td>${crmStageBadge(r.code || r.orderCode)}</td>
       <td class="muted">${r.payment ? 'EGP '+r.payment.toLocaleString() : '—'}</td>
     </tr>`;
   }).join('');
+
+  // The CRM cache is fetched once and repaints this table when it lands, so
+  // the first paint is never held up by it. crmLoad() is idempotent and
+  // self-throttling, which is why calling it on every render is safe.
+  crmHydrate();
 }
 
 function changePage(dir) {
@@ -11108,6 +11114,157 @@ function jsonpFetch(url, callbackName, timeoutMs) {
   return p;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   CRM LIVE STAGE LAYER
+   ──────────────────────────────────────────────────────────────────────────
+   One place that knows where a project currently is. Kitchino_CRM_Sync polls
+   the CRM API on a trigger and caches every project in a Drive file; this
+   reads that cache, not the CRM directly, for two reasons:
+
+     · the CRM API key must never reach this file — the portal is a public
+       GitHub Pages site. The sync script holds the key; the portal holds a
+       separate read-only key that can do nothing but read the cache.
+     · 2,471 projects cannot be fetched one by one from a browser.
+
+   Everything downstream calls crmOf() / crmStage(). Nothing else fetches.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const CRM_STALE_MS = 10 * 60 * 1000;   // the sync itself runs every 10 minutes
+
+let _CRM_BY_CODE = null;    // Map(code → record). null means "not loaded yet"
+let _CRM_PROMISE = null;    // in-flight load, so N callers cause 1 request
+let _CRM_META    = { at: 0, lastRun: null, count: 0, error: null };
+
+function _crmUrl() { try { return localStorage.getItem('kitchino_crm_url') || ''; } catch (e) { return ''; } }
+function _crmKey() { try { return localStorage.getItem('kitchino_crm_key') || ''; } catch (e) { return ''; } }
+function crmConfigured() { return !!(_crmUrl() && _crmKey()); }
+
+/* Codes arrive from three places — the measures sheet, the contracts sheet and
+   the CRM itself — and they disagree about leading zeros and stray spaces.
+   Normalise once here so the joins actually meet. */
+function _crmCode(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return '';
+  return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s.toLowerCase();
+}
+
+/* Resolves to the Map, or to null when the CRM is not configured or the
+   request fails. Callers must treat null as "no CRM data", never as an error
+   worth showing — a portal with no CRM configured has to keep working. */
+function crmLoad(force) {
+  if (!crmConfigured()) { _CRM_META.error = 'not configured'; return Promise.resolve(null); }
+
+  const fresh = _CRM_BY_CODE && (Date.now() - _CRM_META.at) < CRM_STALE_MS;
+  if (fresh && !force) return Promise.resolve(_CRM_BY_CODE);
+  if (_CRM_PROMISE && !force) return _CRM_PROMISE;
+
+  const url = _crmUrl() + (_crmUrl().includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(_crmKey());
+
+  _CRM_PROMISE = jsonpFetch(url, '_kitchinoCrmData', 60000)
+    .then(data => {
+      if (!data || data.status !== 'ok') {
+        throw new Error((data && data.message) || 'CRM cache refused the request');
+      }
+      const m = new Map();
+      Object.keys(data.projects || {}).forEach(k => {
+        const rec = data.projects[k];
+        // Projects the sync could not find in the CRM are cached as misses so
+        // it stops re-asking. They are not stages, so they must not display.
+        if (rec && !rec.missing && !rec.error) m.set(_crmCode(rec.id != null ? rec.id : k), rec);
+      });
+      _CRM_BY_CODE = m;
+      _CRM_META = { at: Date.now(), lastRun: data.lastRun || null, count: m.size, error: null };
+      _CRM_PROMISE = null;
+      return m;
+    })
+    .catch(err => {
+      _CRM_META.error = err.message || String(err);
+      _CRM_PROMISE = null;
+      console.warn('CRM cache unavailable:', _CRM_META.error);
+      return null;   // deliberately not a rejection — see the note above
+    });
+
+  return _CRM_PROMISE;
+}
+
+function crmOf(code) {
+  if (!_CRM_BY_CODE) return null;
+  const k = _crmCode(code);
+  return k ? (_CRM_BY_CODE.get(k) || null) : null;
+}
+
+function crmStage(code) {
+  const r = crmOf(code);
+  return r && r.stage ? String(r.stage).trim() : '';
+}
+
+/* Stage colours. Grouped by what the stage means operationally rather than by
+   how far along it is, so the table reads at a glance: green = finished,
+   blue = moving, gold = waiting on us, grey = stopped. */
+const _CRM_STAGE_COLOUR = {
+  'delivered':       '#10b981',
+  'installation':    '#10b981',
+  'store':           '#14b8a6',
+  'production':      '#3b82f6',
+  'electromechanic': '#6366f1',
+  'technical office':'#8b5cf6',
+  'designer working':'#a855f7',
+  'design sessions': '#a855f7',
+  'shablona':        '#f59e0b',
+  'contract':        '#f59e0b',
+  'declined':        '#6b7280',
+  'canceled':        '#ef4444',
+  'cancelled':       '#ef4444',
+  'expired':         '#6b7280'
+};
+
+function crmStageColour(stage) {
+  const s = String(stage || '').trim().toLowerCase();
+  if (_CRM_STAGE_COLOUR[s]) return _CRM_STAGE_COLOUR[s];
+  // Unknown stages still get a colour rather than vanishing, because the CRM
+  // can add one at any time and the column must not quietly go blank.
+  return '#64748b';
+}
+
+/* An em-dash for anything we cannot resolve. Three different situations end up
+   here — CRM not configured, cache still filling, project genuinely absent —
+   and the table is not the place to explain which. The section note is. */
+function crmStageBadge(code) {
+  const stage = crmStage(code);
+  if (!stage) return '<span style="color:var(--text3)">—</span>';
+  const c = crmStageColour(stage);
+  return '<span style="background:' + c + '22;color:' + c + ';padding:2px 8px;border-radius:5px;'
+       + 'font-size:10px;font-weight:700;white-space:nowrap">' + stage + '</span>';
+}
+
+/* Called once data is on screen. Repaints whatever is already rendered rather
+   than blocking the first paint on a 60-second JSONP call.
+
+   `_CRM_REPAINTING` matters: the repaint calls renderMeasuresTable, which calls
+   crmHydrate again, which would repaint again — an unbounded loop. The flag
+   breaks it so the arrival of the cache triggers exactly one repaint. */
+let _CRM_REPAINTING = false;
+
+function crmHydrate() {
+  if (!crmConfigured() || _CRM_REPAINTING) return;
+  const had = !!_CRM_BY_CODE;
+  crmLoad().then(m => {
+    if (!m || had) return;   // nothing new to show
+    _CRM_REPAINTING = true;
+    try { if (typeof renderMeasuresTable === 'function') renderMeasuresTable(); }
+    catch (e) { console.warn('CRM repaint failed:', e); }
+    finally { _CRM_REPAINTING = false; }
+  });
+}
+
+/* Force a fresh pull — wired to the portal's Refresh button alongside the
+   other sources, so Refresh means the same thing everywhere. */
+function crmRefresh() {
+  _CRM_BY_CODE = null;
+  _CRM_META.at = 0;
+  return crmLoad(true);
+}
+
 async function connectGoogleSheets() {
   const url = document.getElementById('sheets-url').value.trim();
   if (!url) return;
@@ -12271,6 +12428,10 @@ function refreshData() {
   // was opened stayed invisible until a full browser reload.
   _RD_DATA = null; _RD_PAYMENTS = []; _rdLoadedAt = 0;
   _WAL_DATA = null; _walLoadedAt = 0;
+
+  // Same reasoning for the CRM cache — it is held in memory for ten minutes,
+  // so without this Refresh would show stale stages.
+  if (typeof crmRefresh === 'function') crmRefresh();
 
   if (sheetsUrl) {
     _silentFetch(false);
