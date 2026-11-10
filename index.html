@@ -3595,14 +3595,24 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 
         <div class="vch-section-label">Order</div>
         <div class="vch-grid">
-          <div class="span2"><div class="vch-flabel">Product type <b>*</b></div>
-            <div class="vch-checks" id="vch-products">
-              <label><input type="checkbox" value="Kitchen" onchange="_vchFormHint()"> Kitchen <span>20%</span></label>
-              <label><input type="checkbox" value="Dressing" onchange="_vchFormHint()"> Dressing <span>15%</span></label>
-              <label><input type="checkbox" value="Furniture" onchange="_vchFormHint()"> Furniture <span>15%</span></label>
-            </div></div>
-          <label><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
-          <label><span>CRM #</span><input name="crm" class="vch-input" inputmode="numeric" placeholder="add once known"></label>
+          <!-- One row per project. A voucher often covers a kitchen and several
+               other rooms, each with its own CRM code; a single text box meant
+               the team typed "Kitchen: 22232 · Closet: 22296" into it, which
+               cannot be filtered, counted or joined to a project. -->
+          <div class="span4"><div class="vch-flabel">Projects <b>*</b>
+            <span style="font-weight:400;color:var(--text3)">— one row per project, each with its own CRM code</span></div>
+            <div id="vch-projects"></div>
+            <button type="button" class="vch-addrow" onclick="_vchAddProject()">+ Add project</button>
+          </div>
+          <label class="span2"><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
+          <datalist id="vch-prod-list">
+            <option>Kitchen</option><option>Kitchenette</option><option>Kitchen Extension</option>
+            <option>Dressing Room</option><option>Dressing Extension</option><option>Closet</option>
+            <option>Bedroom</option><option>Living Room</option><option>Office Room</option>
+            <option>Bathroom Unit</option><option>Laundry Room</option><option>TV Unit</option>
+            <option>Shoe Unit</option><option>Cladding</option><option>Storage</option>
+            <option>Furniture</option>
+          </datalist>
         </div>
 
         <div class="vch-section-label">Exception</div>
@@ -3795,6 +3805,24 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 #page-vouchers .vch-grid b,#page-vouchers .vch-flabel b{color:var(--negative);font-weight:700}
 #page-vouchers .vch-flabel{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px}
 #page-vouchers .span2{grid-column:span 2} #page-vouchers .span3{grid-column:span 3} #page-vouchers .span4{grid-column:span 4}
+/* Project rows: product, its discount band, and its CRM code. */
+#page-vouchers .vch-prow{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+#page-vouchers .vch-prow .p{flex:1 1 190px;min-width:0}
+#page-vouchers .vch-prow .c{flex:0 0 118px}
+#page-vouchers .vch-prow .t{flex:0 0 82px;font-size:11px;font-weight:700;text-align:center;
+  padding:5px 0;border-radius:6px;background:var(--card2);color:var(--text2)}
+#page-vouchers .vch-prow .t.kitchen{background:rgba(27,154,110,.16);color:#1b9a6e}
+#page-vouchers .vch-prow .x{flex:0 0 32px;background:none;border:1px solid var(--border);
+  color:var(--text3);border-radius:7px;padding:6px 0;cursor:pointer;font-size:14px;line-height:1}
+#page-vouchers .vch-prow .x:hover{border-color:var(--negative);color:var(--negative)}
+#page-vouchers .vch-addrow{margin-top:4px;background:var(--card2);border:1px dashed var(--border-strong);
+  color:var(--text2);border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer}
+#page-vouchers .vch-addrow:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:640px){
+  #page-vouchers .vch-prow{flex-wrap:wrap}
+  #page-vouchers .vch-prow .p{flex:1 1 100%}
+  #page-vouchers .vch-prow .c{flex:1 1 110px}
+}
 #page-vouchers .vch-checks{display:flex;gap:8px;flex-wrap:wrap}
 #page-vouchers .vch-checks label{flex-direction:row !important;align-items:center;gap:7px !important;padding:8px 12px;border:1px solid var(--border-strong);
   border-radius:8px;cursor:pointer;font-weight:600}
@@ -19652,7 +19680,7 @@ function vchOpenForm(id) {
     set('saleDate', _vchToday()); set('paidAmount', s.voucherValue); set('stage', 'Sold');
     set('nationality', 'Egyptian');
   }
-  document.querySelectorAll('#vch-products input').forEach(cb => { cb.checked = !!(v && (v.products || []).includes(cb.value)); });
+  _vchFillProjects(v);
 
   document.getElementById('vch-form-title').textContent = v ? 'Voucher ' + v.serial : 'New voucher';
   document.getElementById('vch-form-sub').textContent = v ? 'Recorded ' + new Date(v.createdAt).toLocaleString('en-GB') : 'Fields marked * are required';
@@ -19692,9 +19720,69 @@ function _vchStageToggle(stamp) {
   f.declineReason.required = stage === 'Declined';
 }
 
+// ── Project rows ────────────────────────────────────────────────────────────
+// The discount has three bands; the CRM has many more product types. A project
+// therefore carries both — what was sold, and what it is priced as. This must
+// stay in step with _tier() in VoucherStore.gs, or the screen and the stored
+// record would disagree about the discount.
+function _vchTier(label) {
+  const s = String(label || '').toLowerCase().trim();
+  if (!s) return '';
+  if (s.indexOf('kitchen') >= 0 || s.indexOf('مطبخ') >= 0) return 'Kitchen';
+  if (s.indexOf('dress') >= 0 || s.indexOf('دريسينج') >= 0 ||
+      s.indexOf('closet') >= 0 || s.indexOf('wardrobe') >= 0 || s.indexOf('دولاب') >= 0) return 'Dressing';
+  return 'Furniture';
+}
+
+function _vchAddProject(product, crm) {
+  const host = document.getElementById('vch-projects');
+  if (!host) return;
+  const row = document.createElement('div');
+  row.className = 'vch-prow';
+  row.innerHTML =
+      '<input class="vch-input p" list="vch-prod-list" placeholder="Product type" '
+    +   'value="' + _vchEsc(product || '') + '" oninput="_vchRowTier(this)">'
+    + '<input class="vch-input c" inputmode="numeric" placeholder="CRM #" '
+    +   'value="' + _vchEsc(crm || '') + '">'
+    + '<span class="t">—</span>'
+    + '<button type="button" class="x" title="Remove" onclick="this.closest(\'.vch-prow\').remove();_vchFormHint()">×</button>';
+  host.appendChild(row);
+  _vchRowTier(row.querySelector('.p'));
+  if (!product) row.querySelector('.p').focus();
+}
+
+/** Shows which band a row is priced in, as soon as the product is typed. */
+function _vchRowTier(input) {
+  const row = input.closest('.vch-prow');
+  const t = _vchTier(input.value);
+  const cell = row.querySelector('.t');
+  const pct = t ? (_vchSettings().discounts || {})[t] : null;
+  cell.textContent = t ? (pct != null ? pct + '%' : t) : '—';
+  cell.title = t ? t + ' band' : 'Type a product to see its discount';
+  cell.classList.toggle('kitchen', t === 'Kitchen');
+  _vchFormHint();
+}
+
+function _vchReadProjects() {
+  return [...document.querySelectorAll('#vch-projects .vch-prow')].map(r => ({
+    product: r.querySelector('.p').value.trim(),
+    crm:     r.querySelector('.c').value.trim()
+  })).filter(p => p.product || p.crm);
+}
+
+function _vchFillProjects(v) {
+  const host = document.getElementById('vch-projects');
+  if (!host) return;
+  host.innerHTML = '';
+  const list = (v && Array.isArray(v.projects) && v.projects.length) ? v.projects : null;
+  if (list) list.forEach(p => _vchAddProject(p.product, p.crm));
+  else _vchAddProject('', '');          // always one empty row to type into
+}
+
 function _vchFormHint() {
   const f = document.getElementById('vch-form');
-  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
+  // Distinct bands across the rows — that is what the discount is read from.
+  const prods = [...new Set(_vchReadProjects().map(p => _vchTier(p.product)).filter(Boolean))];
   const parts = [];
   if (prods.length) parts.push('Discount: <b>' + _vchEsc(_vchDiscountText(prods)) + '</b>');
   if (f.saleDate.value) {
@@ -19711,8 +19799,22 @@ async function vchSubmit() {
   const f = document.getElementById('vch-form');
   const err = document.getElementById('vch-form-err');
   err.textContent = '';
-  const prods = [...document.querySelectorAll('#vch-products input:checked')].map(c => c.value);
-  if (!prods.length) { err.textContent = 'Choose at least one product type.'; return; }
+  const projects = _vchReadProjects();
+  if (!projects.length) { err.textContent = 'Add at least one project.'; return; }
+
+  const noProduct = projects.find(p => !p.product);
+  if (noProduct) { err.textContent = 'Every project needs a product type.'; return; }
+
+  const badCrm = projects.find(p => p.crm && !/^\d{3,7}$/.test(p.crm));
+  if (badCrm) { err.textContent = 'CRM # should be the number only (e.g. 21812) — check "' + badCrm.product + '".'; return; }
+
+  // The same code twice on one voucher is a slip, and would double every count
+  // built on it. The server refuses it too; catching it here explains it better.
+  const codes = projects.map(p => p.crm).filter(Boolean);
+  const twice = codes.find((c, i) => codes.indexOf(c) !== i);
+  if (twice) { err.textContent = 'CRM ' + twice + ' is on this voucher twice.'; return; }
+
+  const prods = [...new Set(projects.map(p => _vchTier(p.product)).filter(Boolean))];
   const exception = f.querySelector('input[name=exception]:checked')?.value || 'No';
   if (exception === 'Yes' && !f.exceptionOwner.value.trim()) { err.textContent = 'Name the exception owner.'; return; }
 
@@ -19721,10 +19823,13 @@ async function vchSubmit() {
   const dup = (_VCH.data.vouchers || []).find(x => norm(x.serial) === norm(serial) && (!_VCH.editing || x.id !== _VCH.editing.id));
   if (dup) { err.textContent = 'Voucher ' + serial + ' is already recorded for ' + dup.fullName + '.'; return; }
 
-  const crm = f.crm.value.trim();
-  if (crm && !/^\d{3,7}$/.test(crm)) { err.textContent = 'CRM # should be the number only (e.g. 21812).'; return; }
+  // crm stays as a readable summary so the table, exports and anything written
+  // before this change keep working. The list is what the record is built on.
+  const crm = projects.filter(p => p.crm)
+    .map(p => (p.product ? p.product + ': ' : '') + p.crm).join(' · ');
 
   const v = { id: _VCH.editing ? _VCH.editing.id : '', serial, products: prods, exception, crm,
+    projects: projects.map(p => ({ product: p.product, tier: _vchTier(p.product), crm: p.crm })),
     designer: typeof _fixDesigner === 'function' ? _fixDesigner(f.designer.value) : f.designer.value.trim() };
   ['saleDate', 'paidAmount', 'branch', 'fullName', 'mobile', 'nationality', 'address', 'exceptionOwner', 'stage',
     'siteVisitDate', 'designDate', 'downPaymentDate', 'contractDate', 'declineDate', 'declineReason', 'notes']
