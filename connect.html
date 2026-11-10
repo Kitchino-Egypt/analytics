@@ -60,7 +60,7 @@ a.back{display:inline-block;margin-top:22px;color:var(--mut);font-size:13px}
   <!-- ── Transfer ──────────────────────────────────────────────────────── -->
   <div class="card">
     <h2>Move settings to another device</h2>
-    <p>One code carrying all three sources. Treat it exactly like the passcodes
+    <p>One code carrying every source below. Treat it exactly like the passcodes
        themselves — it opens the same data.</p>
     <div class="row">
       <button onclick="copyCode()">Copy setup code</button>
@@ -101,6 +101,17 @@ a.back{display:inline-block;margin-top:22px;color:var(--mut);font-size:13px}
     <input id="vou-key" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
   </div>
 
+  <div class="card">
+    <h2><span class="dot" id="d-crm"></span>CRM project stages</h2>
+    <p>Live stage for every project, read from the sync cache.
+       This is the <b>read key</b>, not the CRM API key — it can only read the
+       cache and nothing else. The API key never leaves the sync script.</p>
+    <label>CRM sync /exec URL</label>
+    <input id="crm-url" type="text" placeholder="https://script.google.com/macros/s/…/exec">
+    <label>Read key</label>
+    <input id="crm-key" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+  </div>
+
   <div class="row">
     <button onclick="saveAll()">Save and open the portal</button>
     <button class="sec" onclick="saveAll(true)">Save only</button>
@@ -129,7 +140,9 @@ const K = {
   walUrl:  'kitchino_wallet_url',
   walKey:  'kitchino_wallet_key',
   vouUrl:  'kitchino_voucher_url',
-  vouKey:  'kitchino_voucher_key'
+  vouKey:  'kitchino_voucher_key',
+  crmUrl:  'kitchino_crm_url',
+  crmKey:  'kitchino_crm_key'
 };
 
 const $ = id => document.getElementById(id);
@@ -148,6 +161,8 @@ function load() {
   $('wal-key').value = get(K.walKey);
   $('vou-url').value = get(K.vouUrl);
   $('vou-key').value = get(K.vouKey);
+  $('crm-url').value = get(K.crmUrl);
+  $('crm-key').value = get(K.crmKey);
   marks();
 }
 
@@ -155,6 +170,7 @@ function marks() {
   $('d-rd').classList.toggle('on',  !!(get(K.rdUrl)  && get(K.rdPass)));
   $('d-wal').classList.toggle('on', !!(get(K.walUrl) && get(K.walKey)));
   $('d-vou').classList.toggle('on', !!(get(K.vouUrl) && get(K.vouKey)));
+  $('d-crm').classList.toggle('on', !!(get(K.crmUrl) && get(K.crmKey)));
 }
 
 function saveAll(stay) {
@@ -174,6 +190,8 @@ function saveAll(stay) {
   set(K.walKey, $('wal-key').value.trim());
   set(K.vouUrl, $('vou-url').value.trim());
   set(K.vouKey, $('vou-key').value.trim());
+  set(K.crmUrl, $('crm-url').value.trim());
+  set(K.crmKey, $('crm-key').value.trim());
 
   marks();
 
@@ -193,10 +211,12 @@ function copyCode() {
     walUrl: $('wal-url').value.trim(),
     walKey: $('wal-key').value.trim(),
     vouUrl: $('vou-url').value.trim(),
-    vouKey: $('vou-key').value.trim()
+    vouKey: $('vou-key').value.trim(),
+    crmUrl: $('crm-url').value.trim(),
+    crmKey: $('crm-key').value.trim()
   };
 
-  if (!payload.rdUrl && !payload.walUrl && !payload.vouUrl) {
+  if (!payload.rdUrl && !payload.walUrl && !payload.vouUrl && !payload.crmUrl) {
     return toast('Nothing to copy — fill the sources in first.');
   }
 
@@ -242,9 +262,11 @@ function applyCode() {
   $('wal-key').value = p.walKey || '';
   $('vou-url').value = p.vouUrl || '';
   $('vou-key').value = p.vouKey || '';
+  $('crm-url').value = p.crmUrl || '';
+  $('crm-key').value = p.crmKey || '';
 
   saveAll(true);
-  toast('Applied. All three sources are set on this device.');
+  toast('Applied. Every source in the code is set on this device.');
 }
 
 load();
