@@ -8959,7 +8959,7 @@ function renderMeasuresTable() {
   // portal are built on it.
   document.getElementById('measures-tbody').innerHTML = pageRows.map(r => {
     return `<tr>
-      <td class="muted">${r.code}</td>
+      <td class="muted">${crmCodeLink(r.code || r.orderCode)}</td>
       <td>${r.customer}</td>
       <td>${r.designer}</td>
       <td class="muted">${r.visitDate}</td>
@@ -11359,6 +11359,22 @@ function crmStageBadge(code) {
   const c = crmStageColour(stage);
   return '<span style="background:' + c + '22;color:' + c + ';padding:2px 8px;border-radius:5px;'
        + 'font-size:10px;font-weight:700;white-space:nowrap">' + stage + '</span>';
+}
+
+/* A link straight to the project in the CRM. Only for codes that look like
+   project IDs — anything else would produce a link that 404s, which is worse
+   than plain text. rel="noopener" because target="_blank" otherwise hands the
+   CRM tab a reference back to the portal. */
+const CRM_PROJECT_URL = 'https://kitchino.com/system/projects/';
+
+function crmCodeLink(code, label) {
+  const raw  = String(code == null ? '' : code).trim();
+  const text = label == null ? (raw || '—') : label;
+  if (!/^\d{3,7}$/.test(raw)) return text;
+  return '<a href="' + CRM_PROJECT_URL + raw + '" target="_blank" rel="noopener"'
+       + ' title="Open ' + raw + ' in the CRM"'
+       + ' style="color:var(--blue,#60a5fa);text-decoration:none;border-bottom:1px dotted currentColor">'
+       + text + '</a>';
 }
 
 /* Called once data is on screen. Repaints whatever is already rendered rather
