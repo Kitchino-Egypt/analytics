@@ -8779,9 +8779,10 @@ function renderSourceTable() {
    list hides that. Stages the CRM returns that aren't in this list are
    appended at the end rather than dropped.                                   */
 const _MT_STAGE_ORDER = [
-  'Contract', 'Design Sessions', 'Designer Working', 'Shablona',
-  'Technical Office', 'Electromechanic', 'Production', 'Store',
-  'Installation', 'Delivered', 'Declined', 'Canceled', 'Cancelled', 'Expired'
+  'Measure', 'Design Sessions', 'Contracted', 'Electromechanic', 'Shablona',
+  'Designer Working', 'Technical Office', 'Production', 'Assembly QC',
+  'Final QC', 'Recheck', 'Store', 'Shipping', 'Installation', 'Delivered',
+  'Canceled', 'Declined'
 ];
 
 function _mtRenderStageCards(rows, selected) {
@@ -11313,19 +11314,31 @@ function crmStage(code) {
    how far along it is, so the table reads at a glance: green = finished,
    blue = moving, gold = waiting on us, grey = stopped. */
 const _CRM_STAGE_COLOUR = {
-  'delivered':       '#10b981',
-  'installation':    '#10b981',
-  'store':           '#14b8a6',
-  'production':      '#3b82f6',
-  'electromechanic': '#6366f1',
-  'technical office':'#8b5cf6',
-  'designer working':'#a855f7',
+  // Before the money is committed
+  'measure':         '#94a3b8',
   'design sessions': '#a855f7',
-  'shablona':        '#f59e0b',
-  'contract':        '#f59e0b',
-  'declined':        '#6b7280',
+  'contracted':      '#f59e0b',
+  // Engineering — purples and indigos
+  'electromechanic': '#6366f1',
+  'shablona':        '#818cf8',
+  'designer working':'#8b5cf6',
+  'technical office':'#7c3aed',
+  // Factory — blues, deepening as it nears the end of the line
+  'production':      '#3b82f6',
+  'assembly qc':     '#2563eb',
+  'final qc':        '#1d4ed8',
+  'recheck':         '#0ea5e9',
+  // Out of the factory — teals
+  'store':           '#14b8a6',
+  'shipping':        '#06b6d4',
+  // Finished — greens
+  'installation':    '#22c55e',
+  'delivered':       '#10b981',
+  // Stopped. Canceled is red because it is a loss after contracting;
+  // declined is grey because it never became an order at all.
   'canceled':        '#ef4444',
   'cancelled':       '#ef4444',
+  'declined':        '#6b7280',
   'expired':         '#6b7280'
 };
 
