@@ -1957,11 +1957,10 @@ if (_checkSession()) {
     <div class="table-header">
       <div class="table-title">All Measures</div>
       <div class="table-actions">
-        <select class="filter-select" id="mt-status-filter" onchange="renderMeasuresTable()">
-          <option value="all">All Status</option>
-          <option value="تعاقد">✅ Contracted</option>
-          <option value="مناقشة">💬 Discussion</option>
-          <option value="الغاء">❌ Cancelled</option>
+        <!-- Stage options are filled in from the CRM cache itself, not hard-coded,
+             so a stage the CRM adds later shows up without an edit here. -->
+        <select class="filter-select" id="mt-stage-filter" onchange="renderMeasuresTable()">
+          <option value="all">All Stages</option>
         </select>
         <select class="filter-select" id="mt-month-filter" onchange="renderMeasuresTable()">
           <option value="all">All Months</option>
@@ -1969,9 +1968,14 @@ if (_checkSession()) {
         <button class="btn-sm primary" onclick="exportTable('measures-table')">⬇ Excel Export</button>
       </div>
     </div>
+
+    <!-- One card per CRM stage. Counts follow the page filters above, and
+         clicking a card filters the table to that stage. -->
+    <div id="mt-stage-cards" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 14px"></div>
+
     <div style="overflow-x:auto">
       <table id="measures-table">
-        <thead><tr><th>Order Code</th><th>Customer</th><th>Designer</th><th>Visit Date</th><th>Month</th><th>Source</th><th>Order Type</th><th>Area</th><th>Status</th><th>CRM Stage</th><th>Payment</th></tr></thead>
+        <thead><tr><th>Order Code</th><th>Customer</th><th>Designer</th><th>Visit Date</th><th>Month</th><th>Source</th><th>Order Type</th><th>Area</th><th>CRM Stage</th><th>Payment</th></tr></thead>
         <tbody id="measures-tbody"></tbody>
       </table>
     </div>
@@ -8764,12 +8768,106 @@ function renderSourceTable() {
   }).join('');
 }
 
+/* ── CRM stage cards above the Measures table ──────────────────────────────
+   Counts come from the rows the page is already showing, so they follow the
+   year / designer / area / month filters at the top without any wiring of
+   their own. Clicking a card filters the table to that stage; clicking the
+   selected one again clears it.
+
+   Ordered by the production sequence rather than by count, because the useful
+   question is "where is work piling up", and an alphabetical or size-ordered
+   list hides that. Stages the CRM returns that aren't in this list are
+   appended at the end rather than dropped.                                   */
+const _MT_STAGE_ORDER = [
+  'Contract', 'Design Sessions', 'Designer Working', 'Shablona',
+  'Technical Office', 'Electromechanic', 'Production', 'Store',
+  'Installation', 'Delivered', 'Declined', 'Canceled', 'Cancelled', 'Expired'
+];
+
+function _mtRenderStageCards(rows, selected) {
+  const box = document.getElementById('mt-stage-cards');
+  if (!box) return;
+
+  if (!crmConfigured()) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--text3)">'
+      + 'CRM not connected — set it up on the Connect page to see stage counts.</div>';
+    return;
+  }
+
+  const counts = new Map();
+  let unknown = 0;
+  rows.forEach(r => {
+    const s = crmStage(r.code || r.orderCode);
+    if (!s) { unknown++; return; }
+    counts.set(s, (counts.get(s) || 0) + 1);
+  });
+
+  if (!counts.size && !_CRM_BY_CODE) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--text3)">Loading CRM stages…</div>';
+    return;
+  }
+
+  const seen   = new Set();
+  const known  = _MT_STAGE_ORDER.filter(s => counts.has(s));
+  known.forEach(s => seen.add(s));
+  const extra  = [...counts.keys()].filter(s => !seen.has(s)).sort();
+  const ordered = known.concat(extra);
+
+  const total = rows.length || 1;
+  const card = (label, n, colour, value) => {
+    const on  = selected === value;
+    const pct = Math.round(n / total * 100);
+    return '<div onclick="mtSetStage(\'' + String(value).replace(/'/g, "\\'") + '\')" '
+      + 'title="' + pct + '% of the ' + total.toLocaleString() + ' rows shown" '
+      + 'style="cursor:pointer;flex:0 0 auto;min-width:104px;padding:8px 12px;border-radius:9px;'
+      + 'background:' + colour + (on ? '2e' : '14') + ';'
+      + 'border:1px solid ' + colour + (on ? 'cc' : '33') + ';'
+      + 'box-shadow:' + (on ? '0 0 0 1px ' + colour + '66' : 'none') + ';transition:all .12s">'
+      + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:' + colour + ';'
+      + 'font-weight:700;white-space:nowrap">' + label + '</div>'
+      + '<div style="font-size:18px;font-weight:700;color:var(--text1);line-height:1.25">'
+      + n.toLocaleString() + '</div>'
+      + '<div style="font-size:9px;color:var(--text3)">' + pct + '%</div></div>';
+  };
+
+  let html = card('All stages', rows.length, '#64748b', 'all');
+  ordered.forEach(s => { html += card(s, counts.get(s), crmStageColour(s), s); });
+  // Not a stage, but the number that matters most while the cache is filling —
+  // and afterwards it means the code never reached the CRM, which is a real gap.
+  if (unknown) html += card('Not in CRM', unknown, '#475569', '(none)');
+
+  box.innerHTML = html;
+
+  // Keep the dropdown and the cards saying the same thing.
+  const sel = document.getElementById('mt-stage-filter');
+  if (sel) {
+    const want = ['all'].concat(ordered).concat(unknown ? ['(none)'] : []);
+    const have = [...sel.options].map(o => o.value);
+    if (want.join('|') !== have.join('|')) {
+      sel.innerHTML = '<option value="all">All Stages</option>'
+        + ordered.map(s => '<option value="' + s + '">' + s + '</option>').join('')
+        + (unknown ? '<option value="(none)">Not in CRM</option>' : '');
+    }
+    if (sel.value !== selected) sel.value = selected;
+  }
+}
+
+/* Clicking the card that is already selected clears the filter — otherwise
+   there is no way back to everything except the dropdown. */
+function mtSetStage(value) {
+  const sel = document.getElementById('mt-stage-filter');
+  if (!sel) return;
+  sel.value = (sel.value === value) ? 'all' : value;
+  currentPage = 1;        // page 7 of the old filter is meaningless under the new one
+  renderMeasuresTable();
+}
+
 function renderMeasuresTable() {
   // ── ARCHITECTURAL RULE: Never reassign filteredMeasures here.
   // filteredMeasures is the single source of truth, owned exclusively by engine_compute().
   // This function only applies its own LOCAL secondary filters on top.
   const search = (document.getElementById('global-search')?.value||'').toLowerCase();
-  const statusF = document.getElementById('mt-status-filter')?.value || 'all';
+  const stageF  = document.getElementById('mt-stage-filter')?.value  || 'all';
   const monthF  = document.getElementById('mt-month-filter')?.value  || 'all';
 
   if (!ENGINE_READY) {
@@ -8778,13 +8876,24 @@ function renderMeasuresTable() {
     return;
   }
 
-  // displayRows = filteredMeasures (main filters already applied) + local secondary filters
-  const displayRows = filteredMeasures.filter(r => {
+  // baseRows = filteredMeasures (main filters already applied) + search + month,
+  // but NOT the stage filter. The stage cards count this set, so selecting one
+  // stage does not collapse every other card to zero — the cards stay a
+  // breakdown of the same population the page is showing.
+  const baseRows = filteredMeasures.filter(r => {
     if(search  && !(r.customer||'').toLowerCase().includes(search) && !String(r.code||r.orderCode||'').includes(search) && !(r.location||'').toLowerCase().includes(search) && !(r.source||'').toLowerCase().includes(search) && !(r.orderType||r.type||'').toLowerCase().includes(search)) return false;
-    if(statusF !== 'all' && r.status !== statusF) return false;
     if(monthF  !== 'all' && (r.month||r._monthName) !== monthF) return false;
     return true;
   });
+
+  _mtRenderStageCards(baseRows, stageF);
+
+  const displayRows = stageF === 'all'
+    ? baseRows
+    : baseRows.filter(r => {
+        const s = crmStage(r.code || r.orderCode);
+        return stageF === '(none)' ? !s : s === stageF;
+      });
 
   // ── No Pay: customers not marked "Paid" in استثناءات سداد (column J) ──────
   // Column J is the source of truth for whether a customer paid — NOT the
@@ -8842,9 +8951,12 @@ function renderMeasuresTable() {
   document.getElementById('show-range').textContent = `${start+1}–${Math.min(start+PAGE_SIZE,displayRows.length)} of ${displayRows.length}`;
   document.getElementById('page-info').textContent = `Page ${currentPage} of ${Math.ceil(displayRows.length/PAGE_SIZE)}`;
 
+  // The sheet Status column (تعاقد / مناقشة / الغاء) was removed from this
+  // table on 11 Nov 2026: it is a manual, coarser copy of the same CRM state
+  // the Stage column now shows live, so having both invited disagreement.
+  // r.status itself is untouched — contracted counts across the rest of the
+  // portal are built on it.
   document.getElementById('measures-tbody').innerHTML = pageRows.map(r => {
-    const statusBadge = r.status==='تعاقد'?'badge-green':r.status==='مناقشة'?'badge-gold':'badge-red';
-    const statusLabel = r.status==='تعاقد'?'✅ Contracted':r.status==='مناقشة'?'💬 Discussion':'❌ Cancelled';
     return `<tr>
       <td class="muted">${r.code}</td>
       <td>${r.customer}</td>
@@ -8854,7 +8966,6 @@ function renderMeasuresTable() {
       <td class="muted">${r.source}</td>
       <td class="muted">${r.orderType}</td>
       <td class="muted">${r.area}</td>
-      <td><span class="badge ${statusBadge}">${statusLabel}</span></td>
       <td>${crmStageBadge(r.code || r.orderCode)}</td>
       <td class="muted">${r.payment ? 'EGP '+r.payment.toLocaleString() : '—'}</td>
     </tr>`;
