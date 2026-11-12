@@ -19820,8 +19820,26 @@ function _instRenderPage() {
 // Expired is never stored: it is read from sale date + validity days, so a
 // voucher that quietly runs out shows up without anyone having to mark it.
 // ════════════════════════════════════════════════════════════════════════════
-const _VCH = { data: null, loadedAt: 0, editing: null, stageFilter: '' };
+// `stageFilter` is the dropdown: vouchers sitting AT one stage right now.
+// `reachedFilter` is the funnel strip: vouchers that got TO a stage or past it.
+// They were the same variable until 12 Nov 2026, which is why the funnel read
+// "13 reached site visit" and clicking it showed 2 — the card counted everyone
+// who had passed through, the click filtered to those still standing there.
+const _VCH = { data: null, loadedAt: 0, editing: null, stageFilter: '', reachedFilter: '' };
 const VCH_STAGES = ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted', 'Declined'];
+
+// How far along a voucher got. A stage date that is filled in counts even if
+// the voucher was later declined, so the funnel shows the journey, not just
+// where things ended.
+const VCH_RANK = { 'Sold': 0, 'Site Visit': 1, 'Design': 2, 'Down Payment': 3, 'Contracted': 4 };
+function _vchReached(v) {
+  if (v.stage === 'Contracted') return 4;
+  let r = VCH_RANK[v.stage] || 0;
+  Object.keys(VCH_STAGE_DATE).forEach(s => {
+    if (VCH_RANK[s] != null && v[VCH_STAGE_DATE[s]]) r = Math.max(r, VCH_RANK[s]);
+  });
+  return r;
+}
 const VCH_STAGE_LABEL = {
   'Sold': 'Voucher sold', 'Site Visit': 'Site visit', 'Design': 'Design discussion',
   'Down Payment': 'Down payment', 'Contracted': 'Contracted', 'Declined': 'Declined'
@@ -19990,26 +20008,24 @@ function _vchRenderKpis(vs) {
 
   // Funnel: how many reached at least each stage. Declined and expired
   // vouchers count for the stages they did reach.
-  const rank = { 'Sold': 0, 'Site Visit': 1, 'Design': 2, 'Down Payment': 3, 'Contracted': 4 };
-  const reached = v => {
-    if (v.stage === 'Contracted') return 4;
-    let r = rank[v.stage] || 0;
-    Object.keys(VCH_STAGE_DATE).forEach(s => { if (rank[s] != null && v[VCH_STAGE_DATE[s]]) r = Math.max(r, rank[s]); });
-    return r;
-  };
   const steps = ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'];
   document.getElementById('vch-funnel').innerHTML = steps.map((s, i) => {
-    const c = vs.filter(v => reached(v) >= i).length;
+    const c = vs.filter(v => _vchReached(v) >= i).length;
     const w = n ? Math.round(c / n * 100) : 0;
-    return '<div class="vch-fstep' + (_VCH.stageFilter === s ? ' on' : '') + '" onclick="vchFunnelClick(\'' + s + '\')" title="Show vouchers now at this stage">' +
+    return '<div class="vch-fstep' + (_VCH.reachedFilter === s ? ' on' : '') + '" onclick="vchFunnelClick(\'' + s + '\')" title="Show the ' + c + ' vouchers that reached this stage or went past it">' +
       '<div class="vch-fstep-n">' + c + '</div><div class="vch-fstep-l">' + (i ? 'Reached ' + VCH_STAGE_LABEL[s].toLowerCase() : 'Vouchers sold') +
       '</div><div class="vch-fbar"><i style="width:' + w + '%"></i></div></div>';
   }).join('');
 }
 
+/* Clicking a funnel step shows exactly the vouchers it counted — those that
+   reached that stage or went past it. It clears the "at this stage" dropdown,
+   because the two ask different questions and having both on at once gives an
+   answer that matches neither. */
 function vchFunnelClick(s) {
+  _VCH.reachedFilter = (_VCH.reachedFilter === s) ? '' : s;
   const st = document.getElementById('vch-f-stage');
-  st.value = st.value === s ? '' : s;
+  if (st) st.value = '';
   vchRenderTable();
 }
 
@@ -20023,6 +20039,7 @@ function _vchFiltered() {
   return vs.filter(v => {
     const e = _vchEffStage(v);
     if (fs === 'open' ? (e === 'Contracted' || e === 'Declined' || e === 'Expired') : (fs && e !== fs)) return false;
+    if (_VCH.reachedFilter && _vchReached(v) < VCH_RANK[_VCH.reachedFilter]) return false;
     if (fb && v.branch !== fb) return false;
     if (fd && v.designer !== fd) return false;
     if (fp && !(v.products || []).includes(fp)) return false;
@@ -20041,8 +20058,11 @@ function vchRenderTable() {
   // stage beside each project code fills itself in.
   crmHydrate();
   _VCH.stageFilter = document.getElementById('vch-f-stage')?.value || '';
+  // Choosing a stage from the dropdown drops the funnel selection, for the same
+  // reason the funnel clears the dropdown — one question at a time.
+  if (_VCH.stageFilter) _VCH.reachedFilter = '';
   document.querySelectorAll('#vch-funnel .vch-fstep').forEach((el, i) =>
-    el.classList.toggle('on', ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'][i] === _VCH.stageFilter));
+    el.classList.toggle('on', ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'][i] === _VCH.reachedFilter));
   const rows = _vchFiltered();
   const all = (_VCH.data.vouchers || []).length;
   document.getElementById('vch-count').textContent = rows.length === all ? all + ' vouchers' : rows.length + ' of ' + all + ' vouchers';
