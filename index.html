@@ -2286,6 +2286,10 @@ if (_checkSession()) {
         </select>
       </div>
     </div>
+    <!-- Live CRM stage breakdown. Same component as the Measures page; counts
+         follow the filters above and clicking a card filters the table. -->
+    <div id="fu-stage-cards" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 14px"></div>
+
     <div style="overflow-x:auto">
       <table>
         <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>CRM Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th><th>Notes</th><th></th></tr></thead>
@@ -8284,6 +8288,94 @@ function closeWaNumbers() {
   if (m) m.style.display = 'none';
 }
 
+/* ── Live CRM stage on the Contracted Customers Follow-up page ─────────────
+   The CRM Status column here was filled from the contracts sheet, which is
+   maintained by hand. Where the CRM knows the project, that wins; where it
+   does not, the sheet value is still shown but marked, so a row never goes
+   blank just because the join failed.                                       */
+
+let _FU_STAGE = 'all';   // table-level stage filter, driven by the cards
+
+/* The contracts sheet carries CRM Code; Order ID is the fallback because a
+   few older rows have the project number there instead. */
+function _fuCode(c) { return c.crmCode || c.orderId; }
+
+function _fuStageCell(c, sheetBadgeClass, sheetLabel) {
+  const live = crmStage(_fuCode(c));
+  if (live) return crmStageBadge(_fuCode(c));
+  // Dotted underline marks "this is the sheet's word, not the CRM's".
+  return '<span class="badge ' + sheetBadgeClass + '" style="border-bottom:1px dotted currentColor"'
+       + ' title="From the contracts sheet — this project was not found in the CRM">'
+       + sheetLabel + '</span>';
+}
+
+/* A small ↗ beside the Order ID. The Order ID text itself already opens the
+   order history on click, so the link has to be its own target rather than
+   wrapping the number. */
+function _fuCrmLink(c) {
+  const raw = String(_fuCode(c) || '').trim();
+  if (!/^\d{3,7}$/.test(raw)) return '';
+  return '<a href="' + CRM_PROJECT_URL + raw + '" target="_blank" rel="noopener"'
+       + ' title="Open ' + raw + ' in the CRM" onclick="event.stopPropagation()"'
+       + ' style="margin-left:5px;font-size:10px;text-decoration:none;color:var(--text3)">↗</a>';
+}
+
+function _fuRenderStageCards(rows) {
+  const box = document.getElementById('fu-stage-cards');
+  if (!box) return;
+
+  if (!crmConfigured()) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--text3)">'
+      + 'CRM not connected — set it up on the Connect page to see live stages.</div>';
+    return;
+  }
+
+  const counts = new Map();
+  let unknown = 0;
+  rows.forEach(c => {
+    const s = crmStage(_fuCode(c));
+    if (!s) { unknown++; return; }
+    counts.set(s, (counts.get(s) || 0) + 1);
+  });
+
+  if (!counts.size && !_CRM_BY_CODE) {
+    box.innerHTML = '<div style="font-size:11px;color:var(--text3)">Loading CRM stages…</div>';
+    return;
+  }
+
+  const seen    = new Set();
+  const known   = _MT_STAGE_ORDER.filter(s => counts.has(s));
+  known.forEach(s => seen.add(s));
+  const ordered = known.concat([...counts.keys()].filter(s => !seen.has(s)).sort());
+
+  const total = rows.length || 1;
+  const card = (label, n, colour, value) => {
+    const on  = _FU_STAGE === value;
+    const pct = Math.round(n / total * 100);
+    return '<div onclick="fuSetStage(\'' + String(value).replace(/'/g, "\\'") + '\')" '
+      + 'title="' + pct + '% of the ' + total.toLocaleString() + ' orders shown" '
+      + 'style="cursor:pointer;flex:0 0 auto;min-width:104px;padding:8px 12px;border-radius:9px;'
+      + 'background:' + colour + (on ? '2e' : '14') + ';'
+      + 'border:1px solid ' + colour + (on ? 'cc' : '33') + ';'
+      + 'box-shadow:' + (on ? '0 0 0 1px ' + colour + '66' : 'none') + ';transition:all .12s">'
+      + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:' + colour + ';'
+      + 'font-weight:700;white-space:nowrap">' + label + '</div>'
+      + '<div style="font-size:18px;font-weight:700;color:var(--text1);line-height:1.25">'
+      + n.toLocaleString() + '</div>'
+      + '<div style="font-size:9px;color:var(--text3)">' + pct + '%</div></div>';
+  };
+
+  let html = card('All stages', rows.length, '#64748b', 'all');
+  ordered.forEach(s => { html += card(s, counts.get(s), crmStageColour(s), s); });
+  if (unknown) html += card('Not in CRM', unknown, '#475569', '(none)');
+  box.innerHTML = html;
+}
+
+function fuSetStage(value) {
+  _FU_STAGE = (_FU_STAGE === value) ? 'all' : value;
+  renderFollowupTable();
+}
+
 function renderFollowupTable() {
   // Stage-name normalisation, hoisted so both the priority rule and the
   // pipeline cards below use exactly the same mapping.
@@ -8364,11 +8456,24 @@ function renderFollowupTable() {
            (c.orderType||c.type||'').toLowerCase().includes(search);
   });
 
+  // The stage cards count the rows the page is already showing, so they follow
+  // every filter above without any wiring of their own. They are drawn from
+  // `data` BEFORE the stage filter, so picking one stage does not zero all the
+  // others — the cards stay a breakdown of the same population.
+  _fuRenderStageCards(data);
+  const _fuStageF = _FU_STAGE || 'all';
+  const dataStaged = _fuStageF === 'all'
+    ? data
+    : data.filter(c => {
+        const s = crmStage(c.crmCode || c.orderId);
+        return _fuStageF === '(none)' ? !s : s === _fuStageF;
+      });
+
   let rowsHtml;
-  if (data.length === 0) {
-    rowsHtml = `<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:24px;">No results found${search ? ' for <strong style=\'color:var(--green)\'>"' + search + '"</strong>' : ''}</td></tr>`;
+  if (dataStaged.length === 0) {
+    rowsHtml = `<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:24px;">No results found${search ? ' for <strong style=\'color:var(--green)\'>"' + search + '"</strong>' : (_fuStageF !== 'all' ? ' at stage <strong style=\'color:var(--green)\'>' + _fuStageF + '</strong>' : '')}</td></tr>`;
   } else {
-    rowsHtml = data.map((c,i) => {
+    rowsHtml = dataStaged.map((c,i) => {
       // ── PRIORITY RULE (as specified by Nabila, Aug 2026) ────────────────
       // Urgent = older than 60 days AND stuck in a stage that is NOT one of:
       //   Technical Office · Production · Final QC · Store · Shipping
@@ -8454,9 +8559,10 @@ function renderFollowupTable() {
         <td><span onclick="openOrderHistory('${escId}','${escName}')" title="History for this order"
               style="cursor:pointer;border-bottom:1px dotted var(--border-strong)">${_nameCell}</span></td>
         <td class="muted"><span onclick="openOrderHistory('${escId}','${escName}')" title="History for this order"
-              style="cursor:pointer;border-bottom:1px dotted var(--border-strong)">${c.orderId}</span></td>
+              style="cursor:pointer;border-bottom:1px dotted var(--border-strong)">${c.orderId}</span>
+              ${_fuCrmLink(c)}</td>
         <td>${c.designer}</td>
-        <td><span class="badge ${statusBadge}">${_crmLabel}</span></td>
+        <td>${_fuStageCell(c, statusBadge, _crmLabel)}</td>
         <td class="muted">${c.date}</td>
         <td>${_ageCell}</td>
         <td class="muted">${_agingCell}</td>
@@ -8479,6 +8585,10 @@ function renderFollowupTable() {
     const el = document.getElementById(id);
     if (el) el.innerHTML = rowsHtml;
   });
+
+  // Fetches the CRM cache the first time and repaints once it lands. Safe to
+  // call on every render — it is throttled and guards against re-entry.
+  crmHydrate();
 
   // Update KPIs on follow-up page — all built from _COUNTED, which excludes
   // Cash Gear drafts. August 2026: 50 rows in the sheet, 4 drafts, 46 counted.
@@ -11391,8 +11501,11 @@ function crmHydrate() {
   crmLoad().then(m => {
     if (!m || had) return;   // nothing new to show
     _CRM_REPAINTING = true;
-    try { if (typeof renderMeasuresTable === 'function') renderMeasuresTable(); }
-    catch (e) { console.warn('CRM repaint failed:', e); }
+    try {
+      if (typeof renderMeasuresTable === 'function') renderMeasuresTable();
+      if (typeof renderFollowupTable === 'function') renderFollowupTable();
+      if (typeof vchRenderTable      === 'function') vchRenderTable();
+    } catch (e) { console.warn('CRM repaint failed:', e); }
     finally { _CRM_REPAINTING = false; }
   });
 }
@@ -19924,6 +20037,9 @@ function _vchFiltered() {
 
 function vchRenderTable() {
   if (!_VCH.data) return;
+  // Pulls the CRM cache the first time and repaints once it arrives, so the
+  // stage beside each project code fills itself in.
+  crmHydrate();
   _VCH.stageFilter = document.getElementById('vch-f-stage')?.value || '';
   document.querySelectorAll('#vch-funnel .vch-fstep').forEach((el, i) =>
     el.classList.toggle('on', ['Sold', 'Site Visit', 'Design', 'Down Payment', 'Contracted'][i] === _VCH.stageFilter));
@@ -19951,10 +20067,72 @@ function vchRenderTable() {
       '<td>' + _vchFmtDate(v.saleDate) + '</td>' +
       '<td>' + (exp ? _vchFmtDate(exp.toISOString().slice(0, 10)) : '') + '<div class="vch-days ' + daysCls + '">' + daysTxt + '</div></td>' +
       '<td><span class="vch-pill ' + pillCls + '">' + _vchEsc(VCH_STAGE_LABEL[e] || e) + '</span></td>' +
-      '<td>' + (v.crm ? _vchEsc(v.crm) : '<span class="vch-sub">—</span>') + '</td>' +
+      '<td>' + _vchCrmCell(v) + '</td>' +
       '<td>' + (v.exception === 'Yes' ? '<span class="vch-exc">Yes</span><div class="vch-sub">' + _vchEsc(v.exceptionOwner) + '</div>' : '<span class="vch-sub">No</span>') + '</td>' +
       '</tr>';
   }).join('');
+}
+
+/* ── Live CRM state for a voucher ─────────────────────────────────────────
+   A voucher can carry several projects, each with its own CRM code, so the
+   CRM # cell shows one line per project: the code as a link, and the stage
+   the CRM currently reports for it.
+
+   The voucher's own stage stays hand-set. It is a sales-funnel stage (sold →
+   site visit → design → down payment → contracted) which the CRM does not
+   track, so it cannot simply be overwritten. What the portal can do is notice
+   when the CRM has clearly moved past the voucher — a project in Production
+   while the voucher still says "Voucher sold" — and flag it for the team to
+   update. That is shown as a ⚠ beside the row.                              */
+
+// Everything from Contracted onwards means the sale definitely happened.
+const _VCH_CRM_WON = ['Contracted','Electromechanic','Shablona','Designer Working',
+  'Technical Office','Production','Assembly QC','Final QC','Recheck','Store',
+  'Shipping','Installation','Delivered'];
+
+/* Every code on a voucher, whether it came from the new per-project rows or
+   the single legacy field. */
+function _vchCodes(v) {
+  const out = [];
+  if (Array.isArray(v.projects)) {
+    v.projects.forEach(p => { const c = String(p.crm || '').trim(); if (c) out.push(c); });
+  }
+  if (!out.length && v.crm) {
+    String(v.crm).split(/[,،/|\s]+/).forEach(c => { c = c.trim(); if (c) out.push(c); });
+  }
+  return [...new Set(out)];
+}
+
+function _vchCrmCell(v) {
+  const codes = _vchCodes(v);
+  if (!codes.length) return '<span class="vch-sub">—</span>';
+
+  return codes.map(code => {
+    const stage = crmStage(code);
+    const link  = /^\d{3,7}$/.test(code)
+      ? '<a href="' + CRM_PROJECT_URL + code + '" target="_blank" rel="noopener"'
+        + ' onclick="event.stopPropagation()" title="Open ' + code + ' in the CRM"'
+        + ' style="text-decoration:none;border-bottom:1px dotted currentColor">' + _vchEsc(code) + '</a>'
+      : _vchEsc(code);
+    if (!stage) return '<div>' + link + '</div>';
+    const c = crmStageColour(stage);
+    return '<div style="white-space:nowrap">' + link
+      + ' <span style="background:' + c + '22;color:' + c + ';padding:1px 6px;border-radius:5px;'
+      + 'font-size:9px;font-weight:700">' + _vchEsc(stage) + '</span></div>';
+  }).join('') + _vchCrmFlag(v, codes);
+}
+
+/* Only flags the one case that is unambiguously wrong: the CRM says the work
+   is under way, the voucher still says it was merely sold or visited. */
+function _vchCrmFlag(v, codes) {
+  const eff = _vchEffStage(v);
+  if (eff === 'Contracted' || eff === 'Declined') return '';
+  const won = codes.find(c => _VCH_CRM_WON.indexOf(crmStage(c)) >= 0);
+  if (!won) return '';
+  return '<div class="vch-sub" style="color:var(--gold,#eac570);white-space:nowrap" '
+       + 'title="The CRM has this project at ' + _vchEsc(crmStage(won))
+       + ', but the voucher is still marked ' + _vchEsc(VCH_STAGE_LABEL[eff] || eff)
+       + '. Update the voucher stage.">⚠ CRM says ' + _vchEsc(crmStage(won)) + '</div>';
 }
 
 // ── Form ──────────────────────────────────────────────────────────────────
