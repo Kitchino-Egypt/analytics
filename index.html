@@ -8296,9 +8296,51 @@ function closeWaNumbers() {
 
 let _FU_STAGE = 'all';   // table-level stage filter, driven by the cards
 
-/* The contracts sheet carries CRM Code; Order ID is the fallback because a
-   few older rows have the project number there instead. */
-function _fuCode(c) { return c.crmCode || c.orderId; }
+/* Resolving a contract to its CRM project.
+
+   The contracts sheet has a CRM Code column, but it is largely empty. The
+   Order ID is NOT a substitute — those are sales order numbers (2600777,
+   OR26-00002), a different numbering system from CRM project IDs (21594,
+   22232). Treating one as the other produced links that 404, which is how
+   this was caught on 12 Nov 2026.
+
+   So where the sheet has no code, the customer's name is matched against the
+   measures data, which does carry the CRM project ID as `orderCode`. The match
+   is on the normalised name only, and only when it resolves to exactly ONE
+   project — a customer with two rooms gives two codes, and guessing which one
+   a contract refers to would attach the wrong stage to a real order. Those are
+   left unresolved and reported rather than guessed. */
+
+let _FU_NAME_INDEX = null;
+
+function _fuNameIndex() {
+  if (_FU_NAME_INDEX) return _FU_NAME_INDEX;
+  const idx = new Map();
+  (window.ENGINE_CLEAN_ROWS || []).forEach(r => {
+    const code = String(r.orderCode || '').trim();
+    if (!/^\d{3,7}$/.test(code)) return;
+    const key = _journeyNorm(r.customer);
+    if (!key) return;
+    if (!idx.has(key)) idx.set(key, new Set());
+    idx.get(key).add(code);
+  });
+  _FU_NAME_INDEX = idx;
+  return idx;
+}
+
+/* { code, codes, source } — code is null when nothing could be resolved, or
+   when the name matched more than one project. */
+function _fuResolve(c) {
+  const sheet = String(c.crmCode || '').trim();
+  if (/^\d{3,7}$/.test(sheet)) return { code: sheet, codes: [sheet], source: 'sheet' };
+
+  const hit = _fuNameIndex().get(_journeyNorm(c.name));
+  if (!hit || !hit.size) return { code: null, codes: [], source: 'none' };
+  const codes = [...hit];
+  return { code: codes.length === 1 ? codes[0] : null, codes, source: 'name' };
+}
+
+function _fuCode(c) { return _fuResolve(c).code; }
 
 function _fuStageCell(c, sheetBadgeClass, sheetLabel) {
   const live = crmStage(_fuCode(c));
@@ -8313,11 +8355,26 @@ function _fuStageCell(c, sheetBadgeClass, sheetLabel) {
    order history on click, so the link has to be its own target rather than
    wrapping the number. */
 function _fuCrmLink(c) {
-  const raw = String(_fuCode(c) || '').trim();
-  if (!/^\d{3,7}$/.test(raw)) return '';
-  return '<a href="' + CRM_PROJECT_URL + raw + '" target="_blank" rel="noopener"'
-       + ' title="Open ' + raw + ' in the CRM" onclick="event.stopPropagation()"'
-       + ' style="margin-left:5px;font-size:10px;text-decoration:none;color:var(--text3)">↗</a>';
+  const r = _fuResolve(c);
+
+  // Matched to several projects — the customer has more than one room. Every
+  // code is offered rather than one picked, since picking would be a guess.
+  if (!r.code && r.codes.length > 1) {
+    return ' <span style="font-size:9px;color:var(--text3)" title="This customer has '
+      + r.codes.length + ' projects in the CRM — open the right one">'
+      + r.codes.map(code => '<a href="' + CRM_PROJECT_URL + code + '" target="_blank" rel="noopener"'
+          + ' onclick="event.stopPropagation()" style="margin-left:4px;text-decoration:none;'
+          + 'color:var(--text3);border-bottom:1px dotted currentColor">' + code + '</a>').join('')
+      + '</span>';
+  }
+
+  if (!r.code) return '';
+  const viaName = r.source === 'name';
+  return '<a href="' + CRM_PROJECT_URL + r.code + '" target="_blank" rel="noopener"'
+       + ' title="Open CRM project ' + r.code + (viaName ? ' — matched by customer name, not from the sheet' : '') + '"'
+       + ' onclick="event.stopPropagation()"'
+       + ' style="margin-left:5px;font-size:10px;text-decoration:none;color:var(--text3)'
+       + (viaName ? ';opacity:.75' : '') + '">↗' + (viaName ? '<sup>~</sup>' : '') + '</a>';
 }
 
 function _fuRenderStageCards(rows) {
@@ -8368,6 +8425,28 @@ function _fuRenderStageCards(rows) {
   let html = card('All stages', rows.length, '#64748b', 'all');
   ordered.forEach(s => { html += card(s, counts.get(s), crmStageColour(s), s); });
   if (unknown) html += card('Not in CRM', unknown, '#475569', '(none)');
+
+  // Where the codes came from. Without this the "Not in CRM" card is unreadable
+  // — it could mean the sync missed them or that nothing joined, and the fix
+  // is different in each case.
+  let fromSheet = 0, byName = 0, ambiguous = 0, none = 0;
+  rows.forEach(c => {
+    const r = _fuResolve(c);
+    if (r.source === 'sheet') fromSheet++;
+    else if (r.code) byName++;
+    else if (r.codes.length > 1) ambiguous++;
+    else none++;
+  });
+  const bits = [];
+  if (fromSheet) bits.push(fromSheet + ' from the CRM Code column');
+  if (byName)    bits.push(byName + ' matched by customer name');
+  if (ambiguous) bits.push(ambiguous + ' with several projects, left for you to pick');
+  if (none)      bits.push(none + ' with no CRM project found');
+  if (bits.length) {
+    html += '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:4px">'
+          + 'Project codes: ' + bits.join(' · ') + '</div>';
+  }
+
   box.innerHTML = html;
 }
 
@@ -12685,6 +12764,8 @@ function refreshData() {
   // Same reasoning for the CRM cache — it is held in memory for ten minutes,
   // so without this Refresh would show stale stages.
   if (typeof crmRefresh === 'function') crmRefresh();
+  // Rebuilt from the measures rows, which Refresh is about to replace.
+  _FU_NAME_INDEX = null;
 
   if (sheetsUrl) {
     _silentFetch(false);
