@@ -8316,7 +8316,12 @@ let _FU_NAME_INDEX = null;
 function _fuNameIndex() {
   if (_FU_NAME_INDEX) return _FU_NAME_INDEX;
   const idx = new Map();
-  (window.ENGINE_CLEAN_ROWS || []).forEach(r => {
+  // Referenced directly, NOT as window.ENGINE_CLEAN_ROWS: it is declared with
+  // `let`, so it never appears on window and that read was silently undefined.
+  // The fallback looked broken rather than erroring. (12 Nov 2026)
+  const src = (typeof ENGINE_CLEAN_ROWS !== 'undefined' && ENGINE_CLEAN_ROWS) || [];
+  if (!src.length) return idx;   // measures not loaded yet — do not cache empty
+  src.forEach(r => {
     const code = String(r.orderCode || '').trim();
     if (!/^\d{3,7}$/.test(code)) return;
     const key = _journeyNorm(r.customer);
