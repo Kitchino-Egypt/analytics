@@ -12152,6 +12152,14 @@ function renderSixMonth() {
   const sheetTotal = parseInt(SIXMONTH_DATA.eligible, 10) || 0;
   const rowsComplete = SIXMONTH_ROWS.length >= sheetTotal;
 
+  // The cut-off date, spelled out. "183+ days ago" made readers work out what
+  // that meant and several read it as a backlog of stuck orders. A date is
+  // unambiguous: everything signed before this is in, everything after is not.
+  const _otifCutoff = (() => {
+    const t = new Date(Date.now() - 183 * 86400000);
+    return t.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  })();
+
   let d;
   if (SIXMONTH_ROWS.length && (f.active || rowsComplete)) {
     const days = f.rows.filter(r => r.days !== '').map(r => +r.days)
@@ -12169,7 +12177,8 @@ function renderSixMonth() {
       // card looks broken. It is a data fault, counted as a miss and named.
       unclear:     f.rows.length - ontime - late - undel,
       rate:        f.rows.length ? (ontime / f.rows.length * 100) : 0,
-      median:      days.length ? days[Math.floor(days.length / 2)] : ''
+      median:      days.length ? days[Math.floor(days.length / 2)] : '',
+      cutoff:      _otifCutoff
     };
   } else if (f.active) {
     if (scopeEl) scopeEl.textContent = 'contracts signed 183+ days ago';
@@ -12184,7 +12193,7 @@ function renderSixMonth() {
       + '</div>';
     return;
   } else {
-    d = SIXMONTH_DATA;
+    d = Object.assign({}, SIXMONTH_DATA, { cutoff: _otifCutoff });
   }
 
   if (scopeEl) {
@@ -12196,7 +12205,7 @@ function renderSixMonth() {
     // 183-day window, not a calendar year: today it holds only Jan–Apr 2026,
     // which is why the Year filter looks inert. Computed from the rows rather
     // than written in, so it moves as the window does.
-    scopeEl.textContent = 'contracts signed 183+ days ago'
+    scopeEl.textContent = 'contracts signed before ' + _otifCutoff
       + (f.desF !== 'all' ? ' · ' + f.desF : '');
   }
 
@@ -12283,11 +12292,12 @@ function renderSixMonth() {
     +   '<div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:20px">'
     // The window differs per contract now, so the notes name the promise
     // rather than a number that would be wrong for half the set.
-    // Called "Measured" until 14 Nov 2026, which read as site measures — the
-    // word means something specific everywhere else in this portal, and the
-    // card sits two sections below a measures count. It is the OTIF
-    // denominator: contracts old enough to have kept or missed the promise.
-    +     stat('Contracts judged', d.eligible, 'signed 183+ days ago — old enough to score', 'all')
+    // The eligible count used to sit here as a fourth figure, labelled
+    // "Measured". It was read as site measures, then as a backlog of stuck
+    // orders — two wrong readings of a number that is only the denominator.
+    // It moved to the footnote below on 14 Nov 2026: still stated, because
+    // the percentage is meaningless without it, but no longer competing with
+    // the three outcomes that actually say something.
     +     stat('Delivered in time', d.ontime, 'within 183 days', 'ontime')
     +     stat('Delivered late', d.late, 'over 183 days', 'late')
     +     stat('Never delivered', d.undelivered, 'still open', 'open')
@@ -12295,10 +12305,11 @@ function renderSixMonth() {
     + '</div>'
     + '<div style="border-top:1px solid var(--line);padding:10px 16px;font-size:11px;'
     +      'color:var(--text2);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">'
-    +   '<span>Median ' + (d.median || '—') + ' days for those delivered</span>'
+    +   '<span>Out of ' + d.eligible + ' contracts signed before ' + (d.cutoff || 'the cut-off')
+    +     ' · median ' + (d.median || '—') + ' days for those delivered</span>'
     +   ((parseInt(d.unclear,10)||0) > 0
         ? '<span style="color:var(--amber,#d08700)">' + d.unclear + ' with an unreadable '
-          + 'delivery gap — counted as a miss, so the four figures fall short of Contracts judged</span>'
+          + 'delivery gap — counted as a miss, so the three figures do not quite add up</span>'
         : '')
     +   '<span>Only contracts carrying a CRM Code can be traced to a delivery</span>'
     + '</div>';
