@@ -8374,12 +8374,16 @@ function _fuCrmLink(c) {
   }
 
   if (!r.code) return '';
+  // The code itself, not an arrow. The arrow said "there is a CRM project
+  // here" without saying which, so the only rows showing a number were the
+  // ambiguous ones — exactly backwards. (12 Nov 2026)
   const viaName = r.source === 'name';
-  return '<a href="' + CRM_PROJECT_URL + r.code + '" target="_blank" rel="noopener"'
-       + ' title="Open CRM project ' + r.code + (viaName ? ' — matched by customer name, not from the sheet' : '') + '"'
+  return ' <a href="' + CRM_PROJECT_URL + r.code + '" target="_blank" rel="noopener"'
+       + ' title="CRM project ' + r.code + (viaName ? ' — matched by customer name, not read from the sheet' : '') + '"'
        + ' onclick="event.stopPropagation()"'
-       + ' style="margin-left:5px;font-size:10px;text-decoration:none;color:var(--text3)'
-       + (viaName ? ';opacity:.75' : '') + '">↗' + (viaName ? '<sup>~</sup>' : '') + '</a>';
+       + ' style="margin-left:6px;font-size:10px;text-decoration:none;color:var(--text3);'
+       + 'border-bottom:1px dotted currentColor' + (viaName ? ';opacity:.7' : '') + '">'
+       + r.code + (viaName ? '~' : '') + '</a>';
 }
 
 function _fuRenderStageCards(rows) {
