@@ -2290,8 +2290,26 @@ if (_checkSession()) {
          follow the filters above and clicking a card filters the table. -->
     <div id="fu-stage-cards" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 14px"></div>
 
+    <!-- Widths are set here rather than left to the browser. Order ID carries
+         two values now (the sales order and the CRM code) and the auto layout
+         gave it a third of the table, squeezing the Arabic customer names into
+         four wrapped lines. Customer gets that space back. -->
+    <style>
+      #fu-table { table-layout: fixed; width: 100% }
+      #fu-table th, #fu-table td { overflow-wrap: anywhere }
+      #fu-table th:nth-child(1),  #fu-table td:nth-child(1)  { width: 38px }
+      #fu-table th:nth-child(2),  #fu-table td:nth-child(2)  { width: 21% }
+      #fu-table th:nth-child(3),  #fu-table td:nth-child(3)  { width: 128px }
+      #fu-table th:nth-child(4),  #fu-table td:nth-child(4)  { width: 104px }
+      #fu-table th:nth-child(5),  #fu-table td:nth-child(5)  { width: 104px }
+      #fu-table th:nth-child(6),  #fu-table td:nth-child(6)  { width: 86px }
+      #fu-table th:nth-child(7),  #fu-table td:nth-child(7)  { width: 84px }
+      #fu-table th:nth-child(8),  #fu-table td:nth-child(8)  { width: 84px }
+      #fu-table th:nth-child(9),  #fu-table td:nth-child(9)  { width: 84px }
+      #fu-table th:nth-child(11), #fu-table td:nth-child(11) { width: 44px }
+    </style>
     <div style="overflow-x:auto">
-      <table>
+      <table id="fu-table">
         <thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>CRM Status</th><th>Date</th><th>Age (Days)</th><th>Category</th><th>Priority</th><th>Notes</th><th></th></tr></thead>
         <tbody id="fu-tbody"></tbody>
       </table>
@@ -8977,7 +8995,10 @@ function renderSourceTable() {
    list hides that. Stages the CRM returns that aren't in this list are
    appended at the end rather than dropped.                                   */
 const _MT_STAGE_ORDER = [
-  'Measure', 'Design Sessions', 'Contracted', 'Electromechanic', 'Shablona',
+  // Quotation appeared in the data on 14 Nov 2026 — it was not in the stage
+  // list Nabila supplied, so it had been sorting into the alphabetical tail
+  // after Delivered. It belongs before Contracted.
+  'Measure', 'Quotation', 'Design Sessions', 'Contracted', 'Electromechanic', 'Shablona',
   'Designer Working', 'Technical Office', 'Production', 'Assembly QC',
   'Final QC', 'Recheck', 'Store', 'Shipping', 'Installation', 'Delivered',
   'Canceled', 'Declined'
@@ -11514,6 +11535,7 @@ function crmStage(code) {
 const _CRM_STAGE_COLOUR = {
   // Before the money is committed
   'measure':         '#94a3b8',
+  'quotation':       '#c084fc',
   'design sessions': '#a855f7',
   'contracted':      '#f59e0b',
   // Engineering — purples and indigos
