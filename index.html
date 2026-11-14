@@ -12283,7 +12283,11 @@ function renderSixMonth() {
     +   '<div style="flex:1 1 300px;display:flex;flex-wrap:wrap;gap:20px">'
     // The window differs per contract now, so the notes name the promise
     // rather than a number that would be wrong for half the set.
-    +     stat('Measured', d.eligible, 'signed 183+ days ago', 'all')
+    // Called "Measured" until 14 Nov 2026, which read as site measures — the
+    // word means something specific everywhere else in this portal, and the
+    // card sits two sections below a measures count. It is the OTIF
+    // denominator: contracts old enough to have kept or missed the promise.
+    +     stat('Contracts judged', d.eligible, 'signed 183+ days ago — old enough to score', 'all')
     +     stat('Delivered in time', d.ontime, 'within 183 days', 'ontime')
     +     stat('Delivered late', d.late, 'over 183 days', 'late')
     +     stat('Never delivered', d.undelivered, 'still open', 'open')
@@ -12294,7 +12298,7 @@ function renderSixMonth() {
     +   '<span>Median ' + (d.median || '—') + ' days for those delivered</span>'
     +   ((parseInt(d.unclear,10)||0) > 0
         ? '<span style="color:var(--amber,#d08700)">' + d.unclear + ' with an unreadable '
-          + 'delivery gap — counted as a miss, so the four figures fall short of Measured</span>'
+          + 'delivery gap — counted as a miss, so the four figures fall short of Contracts judged</span>'
         : '')
     +   '<span>Only contracts carrying a CRM Code can be traced to a delivery</span>'
     + '</div>';
