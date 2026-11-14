@@ -12369,7 +12369,13 @@ async function _fetchContracts() {
         return {
           name:     r['Name']     || '',
           orderId:  r['Order ID'] || '',
-          designer: _fixDesigner(r['Designer']),
+          // "Column 3" is what Google's CSV export calls a column whose header
+          // cell is empty. The designer column in the contracts sheet lost its
+          // header at some point, so every contract read as having no designer
+          // and the column rendered blank across the whole page. Reading both
+          // names means putting "Designer" back in the sheet fixes it too,
+          // without needing a change here. (14 Nov 2026)
+          designer: _fixDesigner(r['Designer'] || r['Column 3']),
           status:   r['Contract Status'] || '',
           date:     r['Contract Date']   || '',
           crm:      crmStatus || crmCode,
