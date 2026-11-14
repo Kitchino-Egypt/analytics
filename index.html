@@ -11916,7 +11916,10 @@ function _wnRead() {
 // records the live CRM stage where one is known. A v1 snapshot cannot be
 // compared against v2 values — every row would read as "moved" once — so an
 // old snapshot is re-baselined instead of diffed.
-const _WN_VERSION = 2;
+// v3, not v2: the v2 snapshots written on 14 Nov were taken before the CRM
+// cache had loaded, so they hold sheet stages and report ~142 false
+// movements. Bumping the version throws them away and re-baselines properly.
+const _WN_VERSION = 3;
 
 /* What this order's stage is RIGHT NOW. The live CRM stage is the truth when
    the CRM knows the project; the sheet column is the fallback. Before this,
@@ -11927,11 +11930,28 @@ function _wnStageOf(c) {
   return live || (c.crm || '');
 }
 
+/* Returns false when it refuses to write.
+
+   A snapshot taken before the CRM cache arrives records the sheet's stages,
+   not the live ones. Every row where the two disagree then reads as a
+   movement the moment the cache loads — 142 of them on 14 Nov 2026, none of
+   them real. The baseline is only meaningful once it can be taken from the
+   same source the comparison will use. */
 function _wnWrite() {
+  if (!CONTRACTS_DATA.length) return false;
+  if (crmConfigured() && !_CRM_BY_CODE) {
+    console.warn('[WhatsNew] CRM stages not loaded — snapshot postponed.');
+    return false;
+  }
   const orders = {};
   CONTRACTS_DATA.forEach(c => { if (c.orderId) orders[String(c.orderId)] = _wnStageOf(c); });
-  try { localStorage.setItem(_WN_KEY, JSON.stringify({ v: _WN_VERSION, at: Date.now(), orders: orders })); }
-  catch (e) { console.warn('[WhatsNew] could not save snapshot:', e.message); }
+  try {
+    localStorage.setItem(_WN_KEY, JSON.stringify({ v: _WN_VERSION, at: Date.now(), orders: orders }));
+    return true;
+  } catch (e) {
+    console.warn('[WhatsNew] could not save snapshot:', e.message);
+    return false;
+  }
 }
 
 function _wnDiff() {
@@ -11941,8 +11961,12 @@ function _wnDiff() {
   // record the baseline and report nothing. Without this the first look would
   // announce all 390-odd existing contracts at once, which is noise, not news.
   if (!snap || !snap.orders || snap.v !== _WN_VERSION) {
-    if (CONTRACTS_DATA.length) _wnWrite();
-    return { first: true, added: [], moved: [], at: Date.now() };
+    // _wnWrite declines until the CRM cache is here, so this may need to wait
+    // for a later call. Reporting "pending" rather than "first" keeps it from
+    // claiming a baseline it has not actually saved.
+    return _wnWrite()
+      ? { first: true,  added: [], moved: [], at: Date.now() }
+      : { first: false, pending: true, added: [], moved: [], at: Date.now() };
   }
 
   // The comparison is only meaningful once the CRM cache has arrived.
