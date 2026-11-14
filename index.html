@@ -2302,7 +2302,8 @@ if (_checkSession()) {
       #fu-table th:nth-child(3),  #fu-table td:nth-child(3)  { width: 128px }
       #fu-table th:nth-child(4),  #fu-table td:nth-child(4)  { width: 104px }
       #fu-table th:nth-child(5),  #fu-table td:nth-child(5)  { width: 104px }
-      #fu-table th:nth-child(6),  #fu-table td:nth-child(6)  { width: 86px }
+      /* nowrap as well as a width: 86px split "4/18/2026" across two lines. */
+      #fu-table th:nth-child(6),  #fu-table td:nth-child(6)  { width: 94px; white-space: nowrap }
       #fu-table th:nth-child(7),  #fu-table td:nth-child(7)  { width: 84px }
       #fu-table th:nth-child(8),  #fu-table td:nth-child(8)  { width: 84px }
       #fu-table th:nth-child(9),  #fu-table td:nth-child(9)  { width: 84px }
@@ -8331,6 +8332,43 @@ let _FU_STAGE = 'all';   // table-level stage filter, driven by the cards
 
 let _FU_NAME_INDEX = null;
 
+/* ── Area for a contract ───────────────────────────────────────────────────
+   The contracts sheet has no area column — it carries a Showroom, which is
+   the branch that sold the order, not where the customer lives. So the main
+   Areas filter did nothing on this page.
+
+   The area is taken instead from the measure the contract belongs to, found
+   through the CRM project code. That keeps the Areas dropdown meaning the
+   same thing here as everywhere else, and reads the area from the one place
+   it is actually recorded rather than asking anyone to type it twice.
+
+   Contracts that resolve to no CRM project have no area, and are excluded
+   when an area is selected — the same way an undated contract is excluded by
+   the Month filter. The count is reported under the stage cards so the gap is
+   visible rather than silent.                                               */
+
+let _FU_AREA_INDEX = null;
+
+function _fuAreaIndex() {
+  if (_FU_AREA_INDEX) return _FU_AREA_INDEX;
+  const idx = new Map();
+  const src = (typeof ENGINE_CLEAN_ROWS !== 'undefined' && ENGINE_CLEAN_ROWS) || [];
+  if (!src.length) return idx;        // measures not loaded yet — do not cache empty
+  src.forEach(r => {
+    const code = String(r.orderCode || '').trim();
+    const area = String(r.area || '').trim();
+    if (!area || !/^\d{3,7}$/.test(code)) return;
+    if (!idx.has(code)) idx.set(code, area);
+  });
+  _FU_AREA_INDEX = idx;
+  return idx;
+}
+
+function _fuArea(c) {
+  const code = _fuCode(c);
+  return code ? (_fuAreaIndex().get(String(code).trim()) || '') : '';
+}
+
 function _fuNameIndex() {
   if (_FU_NAME_INDEX) return _FU_NAME_INDEX;
   const idx = new Map();
@@ -8474,6 +8512,19 @@ function _fuRenderStageCards(rows) {
           + 'Project codes: ' + bits.join(' · ') + '</div>';
   }
 
+  // Area coverage. Only worth saying when some contracts have no area, since
+  // those silently disappear whenever an area is selected.
+  const noArea = rows.filter(c => !_fuArea(c)).length;
+  if (noArea) {
+    const areaSel = document.getElementById('filter-area');
+    const active  = areaSel && areaSel.value !== 'all';
+    html += '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:2px">'
+          + 'Area is read from each contract’s measure — ' + noArea
+          + ' of these have no measure to read it from'
+          + (active ? ', so they are not shown while an area is selected.' : '.')
+          + '</div>';
+  }
+
   box.innerHTML = html;
 }
 
@@ -8491,6 +8542,7 @@ function renderFollowupTable() {
   const _mainYear = document.getElementById('filter-year')?.value  || 'all';
   const _mainDes  = document.getElementById('filter-designer')?.value || 'all';
   const _mainMon  = document.getElementById('filter-month')?.value || 'all';
+  const _mainArea = document.getElementById('filter-area')?.value || 'all';
   // The month dropdown holds full month names ("September"), matching the rest
   // of the portal. Contract dates arrive as M/D/YYYY strings.
   const _MN = ['January','February','March','April','May','June',
@@ -8521,6 +8573,10 @@ function renderFollowupTable() {
     // undated contract is DROPPED when a month is chosen — keeping it would
     // add the same rows to every month and quietly inflate all twelve.
     if (_mainMon !== 'all' && _monthOf(c.date) !== _mainMon) return false;
+    // Area comes from the contract's measure, via the CRM code. A contract
+    // with no resolvable project has no area, so it drops out when one is
+    // chosen rather than appearing under every area.
+    if (_mainArea !== 'all' && _fuArea(c) !== _mainArea) return false;
     if (_fuLo !== null || _fuHi !== null) {
       const t = c.date ? new Date(c.date).getTime() : NaN;
       // Undated contracts are kept, matching the Year filter's behaviour above.
@@ -11615,6 +11671,9 @@ function crmHydrate() {
       if (typeof renderMeasuresTable === 'function') renderMeasuresTable();
       if (typeof renderFollowupTable === 'function') renderFollowupTable();
       if (typeof vchRenderTable      === 'function') vchRenderTable();
+      // What's New now compares live stages, so its count is only correct
+      // once the cache is here. Recompute rather than leave a stale number.
+      if (typeof updateWhatsNewBadge === 'function') updateWhatsNewBadge();
     } catch (e) { console.warn('CRM repaint failed:', e); }
     finally { _CRM_REPAINTING = false; }
   });
@@ -11853,30 +11912,53 @@ function _wnRead() {
   catch (e) { return null; }
 }
 
+// Snapshot format version. v1 recorded the sheet's CRM Status column; v2
+// records the live CRM stage where one is known. A v1 snapshot cannot be
+// compared against v2 values — every row would read as "moved" once — so an
+// old snapshot is re-baselined instead of diffed.
+const _WN_VERSION = 2;
+
+/* What this order's stage is RIGHT NOW. The live CRM stage is the truth when
+   the CRM knows the project; the sheet column is the fallback. Before this,
+   "Moved stage" only noticed changes someone had retyped into the sheet, so a
+   project that actually moved in the CRM stayed invisible here. (14 Nov 2026) */
+function _wnStageOf(c) {
+  const live = (typeof crmStage === 'function') ? crmStage(_fuCode(c)) : '';
+  return live || (c.crm || '');
+}
+
 function _wnWrite() {
   const orders = {};
-  CONTRACTS_DATA.forEach(c => { if (c.orderId) orders[String(c.orderId)] = (c.crm || ''); });
-  try { localStorage.setItem(_WN_KEY, JSON.stringify({ at: Date.now(), orders: orders })); }
+  CONTRACTS_DATA.forEach(c => { if (c.orderId) orders[String(c.orderId)] = _wnStageOf(c); });
+  try { localStorage.setItem(_WN_KEY, JSON.stringify({ v: _WN_VERSION, at: Date.now(), orders: orders })); }
   catch (e) { console.warn('[WhatsNew] could not save snapshot:', e.message); }
 }
 
 function _wnDiff() {
   const snap = _wnRead();
 
-  // First ever run on this browser: record the baseline and report nothing.
-  // Without this the first click would announce all 350-odd existing contracts
-  // as brand new, which is noise, not news.
-  if (!snap || !snap.orders) {
+  // First ever run on this browser, or a snapshot from the older format:
+  // record the baseline and report nothing. Without this the first look would
+  // announce all 390-odd existing contracts at once, which is noise, not news.
+  if (!snap || !snap.orders || snap.v !== _WN_VERSION) {
     if (CONTRACTS_DATA.length) _wnWrite();
     return { first: true, added: [], moved: [], at: Date.now() };
+  }
+
+  // The comparison is only meaningful once the CRM cache has arrived.
+  // Running it against an empty cache would read every live stage as blank
+  // and report the whole book as having moved backwards.
+  if (crmConfigured() && !_CRM_BY_CODE) {
+    return { first: false, pending: true, added: [], moved: [], at: snap.at };
   }
 
   const added = [], moved = [];
   CONTRACTS_DATA.forEach(c => {
     if (!c.orderId) return;
     const before = snap.orders[String(c.orderId)];
-    if (before === undefined)            added.push(c);
-    else if ((c.crm || '') !== before)   moved.push({ row: c, from: before || '—', to: c.crm || '—' });
+    const now    = _wnStageOf(c);
+    if (before === undefined)  added.push(c);
+    else if (now !== before)   moved.push({ row: c, from: before || '—', to: now || '—' });
   });
   return { first: false, added, moved, at: snap.at };
 }
@@ -11906,7 +11988,9 @@ function openWhatsNew() {
 
   if (!d.added.length && !d.moved.length) {
     body.innerHTML = '<div style="padding:26px 0;text-align:center;color:var(--text2);font-size:13px">'
-      + (d.first ? 'Nothing to compare against yet.' : 'Nothing has changed since you last looked.')
+      + (d.pending ? 'Waiting for the CRM stages to load — reopen this in a moment.'
+         : d.first ? 'Nothing to compare against yet.'
+                   : 'Nothing has changed since you last looked.')
       + '</div>';
     return;
   }
@@ -12801,8 +12885,9 @@ function refreshData() {
   // Same reasoning for the CRM cache — it is held in memory for ten minutes,
   // so without this Refresh would show stale stages.
   if (typeof crmRefresh === 'function') crmRefresh();
-  // Rebuilt from the measures rows, which Refresh is about to replace.
+  // Both are built from the measures rows, which Refresh is about to replace.
   _FU_NAME_INDEX = null;
+  _FU_AREA_INDEX = null;
 
   if (sheetsUrl) {
     _silentFetch(false);
