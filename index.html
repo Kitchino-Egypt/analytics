@@ -8351,6 +8351,21 @@ let _FU_NAME_INDEX = null;
    the Month filter. The count is reported under the stage cards so the gap is
    visible rather than silent.                                               */
 
+/* An اضافات is an addition to an existing order, not a project in its own
+   right, so it has no CRM Code — ever. A blank code on one of these rows is
+   correct and must not be reported as a gap, chased by the team, or counted
+   in any stage percentage: it can never have a stage.
+
+   Matched on the normalised Contract Status, because إضافات and اضافات are
+   the same word. فاتورة is treated the same way, as it is elsewhere on this
+   page. (Data rule 2; applied here 16 Nov 2026) */
+function _fuIsAddition(c) {
+  const s = (typeof _journeyNorm === 'function')
+    ? _journeyNorm(c.status)
+    : String(c.status || '').trim();
+  return s === _journeyNorm('اضافات') || s === _journeyNorm('فاتورة');
+}
+
 let _FU_AREA_INDEX = null;
 
 function _fuAreaIndex() {
@@ -8456,9 +8471,15 @@ function _fuRenderStageCards(rows) {
     return;
   }
 
+  // اضافات are set aside before anything is counted. They cannot carry a CRM
+  // code, so leaving them in put every one of them in "Not in CRM" and made
+  // each stage's share of the total look smaller than it is.
+  const additions = rows.filter(_fuIsAddition).length;
+  const projects  = rows.filter(c => !_fuIsAddition(c));
+
   const counts = new Map();
   let unknown = 0;
-  rows.forEach(c => {
+  projects.forEach(c => {
     const s = crmStage(_fuCode(c));
     if (!s) { unknown++; return; }
     counts.set(s, (counts.get(s) || 0) + 1);
@@ -8474,7 +8495,9 @@ function _fuRenderStageCards(rows) {
   known.forEach(s => seen.add(s));
   const ordered = known.concat([...counts.keys()].filter(s => !seen.has(s)).sort());
 
-  const total = rows.length || 1;
+  // Percentages are of the projects, not of every row — otherwise adding an
+  // اضافات to an order would appear to push every stage's share down.
+  const total = projects.length || 1;
   const card = (label, n, colour, value) => {
     const on  = _FU_STAGE === value;
     const pct = Math.round(n / total * 100);
@@ -8491,16 +8514,19 @@ function _fuRenderStageCards(rows) {
       + '<div style="font-size:9px;color:var(--text3)">' + pct + '%</div></div>';
   };
 
-  let html = card('All stages', rows.length, '#64748b', 'all');
+  let html = card('All stages', projects.length, '#64748b', 'all');
   ordered.forEach(s => { html += card(s, counts.get(s), crmStageColour(s), s); });
-  if (unknown) html += card('Not in CRM', unknown, '#475569', '(none)');
+  if (unknown)   html += card('Not in CRM', unknown, '#475569', '(none)');
+  // Its own card, not folded into "Not in CRM": one is a gap to fix, the
+  // other is correct by design and nobody should go looking for the codes.
+  if (additions) html += card('اضافات', additions, '#8b5e3c', '(addition)');
 
   // Where the codes came from. Without this the "Not in CRM" card is unreadable
   // — it could mean the sync missed them or that nothing joined, and the fix
   // is different in each case.
   let fromSheet = 0, byName = 0, ambiguous = 0, none = 0;
   _FU_NOCRM_ROWS = [];
-  rows.forEach(c => {
+  projects.forEach(c => {
     const r = _fuResolve(c);
     if (r.source === 'sheet') fromSheet++;
     else if (r.code) byName++;
@@ -8517,6 +8543,7 @@ function _fuRenderStageCards(rows) {
                    + 'color:var(--gold,#eac570);border-bottom:1px dotted currentColor" '
                    + 'title="List them, and export to CSV">' + none
                    + ' with no CRM project found</span>');
+  if (additions) bits.push(additions + ' اضافات, which never carry a code');
   if (bits.length) {
     html += '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:4px">'
           + 'Project codes: ' + bits.join(' · ') + '</div>';
@@ -8524,7 +8551,7 @@ function _fuRenderStageCards(rows) {
 
   // Area coverage. Only worth saying when some contracts have no area, since
   // those silently disappear whenever an area is selected.
-  const noArea = rows.filter(c => !_fuArea(c)).length;
+  const noArea = projects.filter(c => !_fuArea(c)).length;
   if (noArea) {
     const areaSel = document.getElementById('filter-area');
     const active  = areaSel && areaSel.value !== 'all';
@@ -8697,7 +8724,11 @@ function renderFollowupTable() {
   const dataStaged = _fuStageF === 'all'
     ? data
     : data.filter(c => {
-        const s = crmStage(c.crmCode || c.orderId);
+        if (_fuStageF === '(addition)') return _fuIsAddition(c);
+        // Every other card counts projects only, so an اضافات must not turn
+        // up under "Not in CRM" when that card is clicked.
+        if (_fuIsAddition(c)) return false;
+        const s = crmStage(_fuCode(c));
         return _fuStageF === '(none)' ? !s : s === _fuStageF;
       });
 
@@ -17501,6 +17532,16 @@ const _RD_STATUS_COLORS = {
 };
 
 async function buildReceivablesPage() {
+  // Pull the CRM cache alongside the receivables data and repaint once it is
+  // here, so the stage column fills in rather than blocking the first paint.
+  if (typeof crmConfigured === 'function' && crmConfigured() && !_CRM_BY_CODE) {
+    crmLoad().then(m => {
+      if (m && document.querySelector('.page.active')?.id === 'page-receivables') {
+        try { _rdRender(_RD_DATA || []); } catch (e) { console.warn('RD repaint:', e); }
+      }
+    });
+  }
+
   const loading = document.getElementById('rd-loading');
   const error   = document.getElementById('rd-error');
   const cont    = document.getElementById('rd-content');
@@ -17568,11 +17609,34 @@ function _rdTextColour() {
   return (v || '').trim() || (document.body.classList.contains('dark') ? '#e8eaf6' : '#1e1e1e');
 }
 
+/* ── Stage for a Receivables row ──────────────────────────────────────────
+   The live CRM stage wins; the sheet's own Project Status is the fallback for
+   rows the CRM does not know. One definition for the whole page, so the
+   cards, the donut, the filter and the table cannot disagree with each other.
+
+   `Project No.` is the CRM project id — the Receivables API renames CRM Code
+   to it — so the join needs nothing extra. (16 Nov 2026) */
+function _rdCode(r) {
+  // CRM Code first: that is the CRM's project id, the same field the rewards
+  // app joins on. Project No. is the fallback for rows that only carry it.
+  return String(r['CRM Code'] || r['Project No.'] || '').replace(/[\n\t\s]/g, '').trim();
+}
+
+function _rdStageLive(r) {
+  return (typeof crmStage === 'function') ? crmStage(_rdCode(r)) : '';
+}
+
+function _rdStage(r) {
+  return _rdStageLive(r) || (r['Project Status'] || r['CRM Status'] || '').trim();
+}
+
 function _rdRender(allRows) {
   const total      = allRows.length;
-  const production = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'production').length;
-  const finalQc    = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'final qc').length;
-  const inStore    = allRows.filter(r => (r['Project Status']||'').trim().toLowerCase() === 'store').length;
+  // These three now follow the CRM, not the sheet, through _rdStage.
+  const isStage = (r, name) => _rdStage(r).toLowerCase() === name;
+  const production = allRows.filter(r => isStage(r, 'production')).length;
+  const finalQc    = allRows.filter(r => isStage(r, 'final qc')).length;
+  const inStore    = allRows.filter(r => isStage(r, 'store')).length;
 
   // ── Money ────────────────────────────────────────────────────────────────
   // Amounts arrive as "£127,825" strings, so everything numeric strips the
@@ -17581,7 +17645,7 @@ function _rdRender(allRows) {
   // — they answer different questions and will not always agree.
   const num = v => Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')) || 0;
   const egp = n => new Intl.NumberFormat('en-EG', { maximumFractionDigits: 0 }).format(n || 0);
-  const stageOf = r => (r['Project Status'] || r['CRM Status'] || '').trim().toLowerCase();
+  const stageOf = r => _rdStage(r).toLowerCase();
   const payFlag = r => (r['Payment Report'] || '').trim().toLowerCase();
 
   const dueRows = allRows.filter(r => payFlag(r) === 'due');
@@ -17672,7 +17736,7 @@ function _rdRender(allRows) {
   // ── Outstanding by stage ─────────────────────────────────────────────────
   const byStage = {};
   withAmount.forEach(r => {
-    const k = (r['Project Status'] || r['CRM Status'] || '—').trim() || '—';
+    const k = _rdStage(r) || '—';
     if (!byStage[k]) byStage[k] = { sum: 0, n: 0 };
     byStage[k].sum += num(r['Due Amount']);
     byStage[k].n++;
@@ -17730,7 +17794,8 @@ function _rdRender(allRows) {
   }
 
   // Populate dropdowns
-  const statuses  = [...new Set(allRows.map(r=>(r['Project Status']||'').trim()).filter(Boolean))].sort();
+  // Built from the live stages, so the dropdown offers what the table shows.
+  const statuses  = [...new Set(allRows.map(r => _rdStage(r)).filter(Boolean))].sort();
   const types     = [...new Set(allRows.map(r=>(r['Project Type']||'').trim()).filter(Boolean))].sort();
   const designers = [...new Set(allRows.map(r=>(r['Designer']||'').trim().replace(/^\t/,'')).filter(Boolean))].sort();
 
@@ -17872,7 +17937,7 @@ function openRdReport() {
   const rows  = _RD_DATA || [];
   const num   = v => Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')) || 0;
   const flag  = r => (r['Payment Report'] || '').trim().toLowerCase();
-  const stage = r => (r['Project Status'] || r['CRM Status'] || '').trim();
+  const stage = r => _rdStage(r);
 
   const outstanding = rows.reduce((s, r) => s + num(r['Due Amount']), 0);
   const dueCount    = rows.filter(r => flag(r) === 'due').length;
@@ -18023,7 +18088,7 @@ function filterRdTable() {
   const designF = document.getElementById('rd-filter-designer')?.value || 'all';
 
   let rows = _RD_DATA;
-  if (statusF !== 'all') rows = rows.filter(r => (r['Project Status']||'').trim() === statusF);
+  if (statusF !== 'all') rows = rows.filter(r => _rdStage(r) === statusF);
   if (typeF   !== 'all') rows = rows.filter(r => (r['Project Type']||'').trim() === typeF);
   if (designF !== 'all') rows = rows.filter(r => (r['Designer']||'').trim().replace(/^	/,'') === designF);
   if (search) rows = rows.filter(r =>
@@ -18062,16 +18127,29 @@ function _rdRenderPage() {
     tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text2)">No records found</td></tr>';
   } else {
     tbody.innerHTML = slice.map((r, i) => {
-      const status = (r['Project Status']||'').trim().toLowerCase();
-      const badge  = _RD_STATUS_BADGE[status] || 'background:var(--card2);color:var(--text2)';
+      // The stage shown is the CRM's where it has one. A sheet-only value is
+      // marked with a dotted underline, the same convention as the Follow-up
+      // page, so nobody takes a stale cell for a live one.
+      const liveStage = _rdStageLive(r);
+      const shown     = _rdStage(r);
+      const status = shown.toLowerCase();
+      const badge  = (liveStage && typeof crmStageColour === 'function')
+        ? (c => 'background:' + c + '22;color:' + c)(crmStageColour(liveStage))
+        : (_RD_STATUS_BADGE[status] || 'background:var(--card2);color:var(--text2)');
       const due    = (r['Due Amount']||'').trim();
+      const code   = _rdCode(r);
+      const codeCell = /^\d{3,7}$/.test(code)
+        ? '<a href="' + CRM_PROJECT_URL + code + '" target="_blank" rel="noopener"'
+          + ' title="Open ' + code + ' in the CRM" style="color:inherit;text-decoration:none;'
+          + 'border-bottom:1px dotted currentColor">' + code + '</a>'
+        : (code || '—');
       return `<tr style="border-bottom:1px solid var(--border);${(start+i)%2===1?'background:var(--card2)':''}">
         <td style="padding:7px 10px;color:var(--text3)">${start+i+1}</td>
-        <td style="padding:7px 10px;font-weight:600">${(r['Project No.']||'—').toString().replace(/\n|\t/g,'').trim()}</td>
+        <td style="padding:7px 10px;font-weight:600">${codeCell}</td>
         <td style="padding:7px 10px;direction:rtl;text-align:right">${r['Client Name']||'—'}</td>
         <td style="padding:7px 10px"><span style="background:var(--card2);padding:2px 8px;border-radius:12px;font-size:11px">${r['Project Type']||'—'}</span></td>
         <td style="padding:7px 10px">${(r['Designer']||'—').replace(/^\t/,'')}</td>
-        <td style="padding:7px 10px"><span style="${badge};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600">${r['Project Status']||'—'}</span></td>
+        <td style="padding:7px 10px"><span style="${badge};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600${liveStage ? '' : ';border-bottom:1px dotted currentColor'}"${liveStage ? '' : ' title="From the Receivables sheet — this project was not found in the CRM"'}>${shown || '—'}</span></td>
         <td style="padding:7px 10px;color:var(--gold);font-weight:600">${due && due!=='0' ? due : '—'}</td>
       </tr>`;
     }).join('');
