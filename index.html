@@ -20080,6 +20080,10 @@ function _vchReached(v) {
   Object.keys(VCH_STAGE_DATE).forEach(s => {
     if (VCH_RANK[s] != null && v[VCH_STAGE_DATE[s]]) r = Math.max(r, VCH_RANK[s]);
   });
+  // The CRM counts as evidence of having got that far, so the funnel and the
+  // stage pill agree instead of telling two different stories.
+  const derived = (typeof _vchCrmDerived === 'function') ? _vchCrmDerived(v) : '';
+  if (derived) r = Math.max(r, VCH_RANK[derived] || 0);
   return r;
 }
 const VCH_STAGE_LABEL = {
@@ -20145,8 +20149,15 @@ function _vchDaysLeft(v) {
   return Math.round((e - t) / 86400000);
 }
 function _vchEffStage(v) {
-  const s = v.stage || 'Sold';
-  if (s === 'Contracted' || s === 'Declined') return s;
+  let s = v.stage || 'Sold';
+  // Declined is a decision, not a position in the funnel — the CRM moving on
+  // does not undo it.
+  if (s === 'Declined') return s;
+
+  const derived = (typeof _vchCrmDerived === 'function') ? _vchCrmDerived(v) : '';
+  if (derived && (VCH_RANK[derived] || 0) > (VCH_RANK[s] || 0)) s = derived;
+
+  if (s === 'Contracted') return s;
   const left = _vchDaysLeft(v);
   return left != null && left < 0 ? 'Expired' : s;
 }
@@ -20328,7 +20339,15 @@ function vchRenderTable() {
       '<td class="num">' + _vchMoney(v.paidAmount) + '</td>' +
       '<td>' + _vchFmtDate(v.saleDate) + '</td>' +
       '<td>' + (exp ? _vchFmtDate(exp.toISOString().slice(0, 10)) : '') + '<div class="vch-days ' + daysCls + '">' + daysTxt + '</div></td>' +
-      '<td><span class="vch-pill ' + pillCls + '">' + _vchEsc(VCH_STAGE_LABEL[e] || e) + '</span></td>' +
+      // A dotted underline marks a stage the CRM supplied rather than one
+      // anyone typed, so nobody wonders who changed it.
+      '<td><span class="vch-pill ' + pillCls + '"'
+        + (e !== (v.stage || 'Sold') && e !== 'Expired'
+            ? ' style="border-bottom:1px dotted currentColor"'
+              + ' title="From the CRM — the voucher itself still says &quot;'
+              + _vchEsc(VCH_STAGE_LABEL[v.stage || 'Sold'] || v.stage || 'Sold') + '&quot;"'
+            : '')
+        + '>' + _vchEsc(VCH_STAGE_LABEL[e] || e) + '</span></td>' +
       '<td>' + _vchCrmCell(v) + '</td>' +
       '<td>' + (v.exception === 'Yes' ? '<span class="vch-exc">Yes</span><div class="vch-sub">' + _vchEsc(v.exceptionOwner) + '</div>' : '<span class="vch-sub">No</span>') + '</td>' +
       '</tr>';
@@ -20351,6 +20370,37 @@ function vchRenderTable() {
 const _VCH_CRM_WON = ['Contracted','Electromechanic','Shablona','Designer Working',
   'Technical Office','Production','Assembly QC','Final QC','Recheck','Store',
   'Shipping','Installation','Delivered'];
+
+/* ── Voucher stage from the CRM ───────────────────────────────────────────
+   Only three of the two vocabularies line up. A CRM measure visit is the
+   voucher's site visit; CRM design sessions are the voucher's design
+   discussion; anything from CRM Contracted onwards means the sale closed.
+
+   Down payment has no CRM equivalent and stays hand-set, and Quotation is
+   deliberately unmapped — it says a price was given, not that anyone visited.
+
+   The derived stage only ever moves a voucher FORWARD. The CRM not knowing
+   about a site visit is not evidence the visit did not happen, so a voucher
+   the team has already advanced is never pulled back. The stored stage is
+   untouched either way: this is a reading of it, not a write. */
+const VCH_CRM_TO_STAGE = { 'measure': 'Site Visit', 'design sessions': 'Design' };
+
+function _vchCrmDerived(v) {
+  if (typeof crmStage !== 'function' || !_CRM_BY_CODE) return '';
+  let best = -1, name = '';
+  _vchCodes(v).forEach(code => {
+    const s = crmStage(code);
+    if (!s) return;
+    const mapped = VCH_CRM_TO_STAGE[s.toLowerCase()]
+      || (_VCH_CRM_WON.indexOf(s) >= 0 ? 'Contracted' : '');
+    if (!mapped) return;
+    // A voucher can carry several projects. The furthest one decides, because
+    // the customer has reached that point even if other rooms lag behind.
+    const r = VCH_RANK[mapped];
+    if (r > best) { best = r; name = mapped; }
+  });
+  return name;
+}
 
 /* Every code on a voucher, whether it came from the new per-project rows or
    the single legacy field. */
@@ -20381,7 +20431,32 @@ function _vchCrmCell(v) {
     return '<div style="white-space:nowrap">' + link
       + ' <span style="background:' + c + '22;color:' + c + ';padding:1px 6px;border-radius:5px;'
       + 'font-size:9px;font-weight:700">' + _vchEsc(stage) + '</span></div>';
-  }).join('') + _vchCrmFlag(v, codes);
+  }).join('') + _vchMoreInCrm(v, codes) + _vchCrmFlag(v, codes);
+}
+
+/* Projects the CRM has for this customer that are NOT written on the voucher.
+
+   A voucher only knows the codes someone typed into it. وليد الجابري was
+   recorded with one kitchen while the CRM had eight projects for him, and
+   nothing on this page could have shown that — the other seven were never
+   entered. (15 Nov 2026)
+
+   The lookup is by customer name against the measures data, which carries the
+   CRM project code. It reports rather than adds: attaching projects to a
+   voucher on the strength of a name match would change what the discount
+   applies to, and that is a decision for a person. */
+function _vchMoreInCrm(v, codes) {
+  if (typeof _fuNameIndex !== 'function' || typeof _journeyNorm !== 'function') return '';
+  const hit = _fuNameIndex().get(_journeyNorm(v.fullName));
+  if (!hit || !hit.size) return '';
+
+  const have  = new Set(codes.map(c => String(c).trim()));
+  const extra = [...hit].filter(c => !have.has(c));
+  if (!extra.length) return '';
+
+  return '<div class="vch-sub" style="color:var(--gold,#eac570);margin-top:3px" '
+    + 'title="The CRM has these projects under this customer’s name, but they are not on the voucher: '
+    + extra.join(', ') + '">+' + extra.length + ' more in CRM</div>';
 }
 
 /* Only flags the one case that is unambiguously wrong: the CRM says the work
