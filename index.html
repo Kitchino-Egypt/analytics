@@ -17626,8 +17626,24 @@ function _rdStageLive(r) {
   return (typeof crmStage === 'function') ? crmStage(_rdCode(r)) : '';
 }
 
+/* Canonical spelling for a stage name.
+
+   The CRM writes "Store"; the receivables sheet writes "store", and
+   " Assembly QC" with a leading space. Left alone, the two spellings group as
+   two different stages — Outstanding by Stage showed Store and store as
+   separate rows on 16 Nov 2026. Mapped back to the CRM's spelling, which is
+   also what every other page in the portal displays. */
+function _rdCanonStage(s) {
+  const t = String(s == null ? '' : s).trim();
+  if (!t) return '';
+  const known = (typeof _MT_STAGE_ORDER !== 'undefined' ? _MT_STAGE_ORDER : [])
+    .find(k => k.toLowerCase() === t.toLowerCase());
+  return known || t;
+}
+
 function _rdStage(r) {
-  return _rdStageLive(r) || (r['Project Status'] || r['CRM Status'] || '').trim();
+  return _rdStageLive(r)
+      || _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
 }
 
 function _rdRender(allRows) {
@@ -17712,11 +17728,17 @@ function _rdRender(allRows) {
           + RD_STORE_TARGET + ' — needs clearing.'
   }[storeState];
 
+  // Shipping and Installation added 16 Nov 2026: the page covered the factory
+  // and the store but stopped there, while the CRM had 48 and 112 sitting in
+  // the two stages after them — the part of the line where the money is
+  // closest to being collectable.
   const RING = [
-    ['Production',  production, '#3b82f6', ''],
-    ['Assembly QC', allRows.filter(r => stageOf(r) === 'assembly qc').length, '#6366f1', ''],
-    ['Final QC',    finalQc,    '#8b5cf6', ''],
-    ['Store',       inStore,    STORE_LOOK.colour, STORE_LOOK.cls]
+    ['Production',   production, '#3b82f6', ''],
+    ['Assembly QC',  allRows.filter(r => stageOf(r) === 'assembly qc').length, '#6366f1', ''],
+    ['Final QC',     finalQc,    '#8b5cf6', ''],
+    ['Store',        inStore,    STORE_LOOK.colour, STORE_LOOK.cls],
+    ['Shipping',     allRows.filter(r => stageOf(r) === 'shipping').length,     '#06b6d4', ''],
+    ['Installation', allRows.filter(r => stageOf(r) === 'installation').length, '#22c55e', '']
   ];
 
   const rings = document.getElementById('rd-rings');
