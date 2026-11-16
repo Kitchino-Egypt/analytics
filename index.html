@@ -3614,7 +3614,7 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
 
         <div class="vch-section-label">Customer</div>
         <div class="vch-grid">
-          <label class="span2"><span>Full name <b>*</b></span><input name="fullName" class="vch-input" required></label>
+          <label class="span2"><span>Full name <b>*</b></span><input name="fullName" class="vch-input" required oninput="_vchFormHint()"></label>
           <label><span>Mobile</span><input name="mobile" class="vch-input" inputmode="tel"></label>
           <label><span>Nationality</span><input name="nationality" class="vch-input" list="vch-nat-list"></label>
           <label class="span4"><span>Address</span><input name="address" class="vch-input"></label>
@@ -3630,6 +3630,8 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
             <span style="font-weight:400;color:var(--text3)">— one row per project, each with its own CRM code</span></div>
             <div id="vch-projects"></div>
             <button type="button" class="vch-addrow" onclick="_vchAddProject()">+ Add project</button>
+            <!-- The customer's other CRM projects, offered one click away. -->
+            <div id="vch-crm-suggest"></div>
           </div>
           <label class="span2"><span>Designer in charge</span><input name="designer" class="vch-input" list="vch-des-list"></label>
           <datalist id="vch-prod-list">
@@ -11561,6 +11563,7 @@ function crmLoad(force) {
       });
       _CRM_BY_CODE = m;
       _CRM_BY_CUSTOMER = null;   // rebuilt lazily from the new cache
+      _CRM_BY_NAME     = null;
       _CRM_META = { at: Date.now(), lastRun: data.lastRun || null, count: m.size, error: null };
       _CRM_PROMISE = null;
       return m;
@@ -11612,6 +11615,38 @@ function _crmCustomerIndex() {
   });
   _CRM_BY_CUSTOMER = idx;
   return idx;
+}
+
+/* Projects the CRM holds under a customer NAME.
+
+   crmSiblings needs a code to start from, so a voucher with no CRM code at
+   all — Jahn Mark, voucher 0010, three projects in the CRM and none recorded
+   — found nothing. This is the way in when there is no code yet.
+
+   Matched on the normalised name, which handles the Arabic spelling
+   variations (أ/إ/ا, ى/ي, ة/ه, diacritics) the rest of the portal already
+   normalises. Names are not unique, so this is offered as a suggestion for a
+   person to accept, never applied on its own. */
+let _CRM_BY_NAME = null;
+
+function _crmNameIndex() {
+  if (_CRM_BY_NAME) return _CRM_BY_NAME;
+  const idx = new Map();
+  if (!_CRM_BY_CODE || typeof _journeyNorm !== 'function') return idx;
+  _CRM_BY_CODE.forEach(rec => {
+    const key = _journeyNorm(rec.customer);
+    if (!key) return;
+    if (!idx.has(key)) idx.set(key, []);
+    idx.get(key).push(String(rec.id));
+  });
+  _CRM_BY_NAME = idx;
+  return idx;
+}
+
+function crmByCustomerName(name) {
+  if (typeof _journeyNorm !== 'function') return [];
+  const key = _journeyNorm(name);
+  return key ? (_crmNameIndex().get(key) || []).slice() : [];
 }
 
 function crmSiblings(code) {
@@ -11724,6 +11759,7 @@ function crmHydrate() {
 function crmRefresh() {
   _CRM_BY_CODE = null;
   _CRM_BY_CUSTOMER = null;
+  _CRM_BY_NAME = null;
   _CRM_META.at = 0;
   return crmLoad(true);
 }
@@ -20494,6 +20530,11 @@ function _vchMoreInCrm(v, codes) {
   // held eight projects for him. The CRM knows its own customers.
   const found = new Set();
   codes.forEach(c => crmSiblings(c).forEach(id => found.add(String(id))));
+  // A voucher with no code at all has no sibling to find, so fall back to the
+  // customer's name — that is the only handle there is.
+  if (typeof crmByCustomerName === 'function') {
+    crmByCustomerName(v.fullName).forEach(id => found.add(String(id)));
+  }
 
   const have  = new Set(codes.map(c => String(c).trim()));
   const extra = [...found].filter(c => !have.has(c));
@@ -20603,8 +20644,10 @@ function _vchAddProject(product, crm) {
   row.innerHTML =
       '<input class="vch-input p" list="vch-prod-list" placeholder="Product type" '
     +   'value="' + _vchEsc(product || '') + '" oninput="_vchRowTier(this)">'
+    // oninput so that typing a code immediately looks up that customer's
+    // other projects, rather than only on reopening the form.
     + '<input class="vch-input c" inputmode="numeric" placeholder="CRM #" '
-    +   'value="' + _vchEsc(crm || '') + '">'
+    +   'value="' + _vchEsc(crm || '') + '" oninput="_vchFormHint()">'
     + '<span class="t">—</span>'
     + '<button type="button" class="x" title="Remove" onclick="this.closest(\'.vch-prow\').remove();_vchFormHint()">×</button>';
   host.appendChild(row);
@@ -20638,10 +20681,85 @@ function _vchFillProjects(v) {
   const list = (v && Array.isArray(v.projects) && v.projects.length) ? v.projects : null;
   if (list) list.forEach(p => _vchAddProject(p.product, p.crm));
   else _vchAddProject('', '');          // always one empty row to type into
+  // Draw the CRM suggestions for the voucher being opened.
+  try { _vchRenderCrmSuggestions(); } catch (e) {}
+}
+
+/* The customer's other CRM projects, listed under the rows with an Add
+   button each.
+
+   The row in the table says "+8 more in CRM", which tells you something is
+   missing but leaves you to find eight numbers and type them in. This puts
+   them where the work happens. It still never adds anything on its own: each
+   project is added only when someone clicks it, because adding a project
+   changes what the discount applies to.
+
+   Recomputed from the rows currently in the form, not from the saved record,
+   so an entry disappears from the list the moment it is added.             */
+function _vchRenderCrmSuggestions() {
+  const box = document.getElementById('vch-crm-suggest');
+  if (!box) return;
+  box.innerHTML = '';
+  if (typeof crmSiblings !== 'function' || !crmConfigured()) return;
+
+  const rows = _vchReadProjects();
+  const have = new Set(rows.map(p => String(p.crm || '').trim()).filter(Boolean));
+
+  const found = new Set();
+  have.forEach(c => crmSiblings(c).forEach(id => found.add(String(id))));
+
+  // With no code typed yet there is nothing to find siblings of, so the
+  // customer's name is the only way in — and that is exactly the case worth
+  // catching, a voucher where no project was ever recorded.
+  const f = document.getElementById('vch-form');
+  const name = (f && f.fullName ? f.fullName.value : '') || '';
+  if (typeof crmByCustomerName === 'function') {
+    crmByCustomerName(name).forEach(id => found.add(String(id)));
+  }
+
+  const extra = [...found].filter(id => !have.has(id));
+  if (!extra.length) return;
+
+  const item = id => {
+    const rec   = crmOf(id) || {};
+    const type  = rec.type || '';
+    const stage = rec.stage || '';
+    const col   = crmStageColour(stage);
+    return '<button type="button" onclick="_vchAddFromCrm(\'' + id + '\')" '
+      + 'title="Add this project to the voucher" '
+      + 'style="display:inline-flex;align-items:center;gap:7px;margin:0 6px 6px 0;padding:5px 10px;'
+      + 'border:1px dashed var(--border-strong,#444);background:none;border-radius:7px;'
+      + 'cursor:pointer;color:var(--text,#e8eaf6);font:inherit;font-size:11px">'
+      + '<span style="font-weight:700">+ ' + _vchEsc(id) + '</span>'
+      + (type  ? '<span style="color:var(--text2)">' + _vchEsc(type) + '</span>' : '')
+      + (stage ? '<span style="background:' + col + '22;color:' + col + ';padding:1px 6px;'
+                 + 'border-radius:5px;font-size:9px;font-weight:700">' + _vchEsc(stage) + '</span>' : '')
+      + '</button>';
+  };
+
+  box.innerHTML =
+      '<div style="margin-top:8px;font-size:11px;color:var(--text2)">'
+    +   'The CRM has <b>' + extra.length + '</b> more project'
+    +   (extra.length === 1 ? '' : 's') + ' for this customer. Click to add:'
+    + '</div>'
+    + '<div style="margin-top:6px">' + extra.map(item).join('') + '</div>';
+}
+
+/* Adds one suggested project as a row. The product type comes from the CRM,
+   but lands in a normal editable field — the CRM's wording and the voucher's
+   product list do not always match, and the discount band is read from what
+   is in the box. */
+function _vchAddFromCrm(id) {
+  const rec = crmOf(id) || {};
+  _vchAddProject(rec.type || '', String(id));
+  _vchFormHint();
 }
 
 function _vchFormHint() {
   const f = document.getElementById('vch-form');
+  // Kept here so the list refreshes on every change to the rows, rather than
+  // only when the form is opened.
+  try { _vchRenderCrmSuggestions(); } catch (e) { console.warn('CRM suggestions:', e); }
   // Distinct bands across the rows — that is what the discount is read from.
   const prods = [...new Set(_vchReadProjects().map(p => _vchTier(p.product)).filter(Boolean))];
   const parts = [];
