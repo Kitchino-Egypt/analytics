@@ -2480,7 +2480,9 @@ if (_checkSession()) {
       <button onclick="closeFuCrmModal()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
     </div>
     <div style="overflow-x:auto">
-      <table><thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Status</th><th>Age (Days)</th><th>Category</th></tr></thead>
+      <!-- Shared by the stage modal and the no-CRM-code list; the second
+           re-labels the last two columns in its own header text. -->
+      <table><thead><tr><th>#</th><th>Customer</th><th>Order ID</th><th>Designer</th><th>Status</th><th>Age (Days)</th><th>Category / Date</th></tr></thead>
       <tbody id="fu-crm-modal-tbody"></tbody></table>
     </div>
   </div>
@@ -8497,18 +8499,24 @@ function _fuRenderStageCards(rows) {
   // — it could mean the sync missed them or that nothing joined, and the fix
   // is different in each case.
   let fromSheet = 0, byName = 0, ambiguous = 0, none = 0;
+  _FU_NOCRM_ROWS = [];
   rows.forEach(c => {
     const r = _fuResolve(c);
     if (r.source === 'sheet') fromSheet++;
     else if (r.code) byName++;
     else if (r.codes.length > 1) ambiguous++;
-    else none++;
+    else { none++; _FU_NOCRM_ROWS.push(c); }
   });
   const bits = [];
   if (fromSheet) bits.push(fromSheet + ' from the CRM Code column');
   if (byName)    bits.push(byName + ' matched by customer name');
   if (ambiguous) bits.push(ambiguous + ' with several projects, left for you to pick');
-  if (none)      bits.push(none + ' with no CRM project found');
+  // Clickable: this is the one group that needs someone to do something, so
+  // "69 of them" is only useful if you can see which 69.
+  if (none)      bits.push('<span onclick="openFuNoCrmModal()" style="cursor:pointer;'
+                   + 'color:var(--gold,#eac570);border-bottom:1px dotted currentColor" '
+                   + 'title="List them, and export to CSV">' + none
+                   + ' with no CRM project found</span>');
   if (bits.length) {
     html += '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:4px">'
           + 'Project codes: ' + bits.join(' · ') + '</div>';
@@ -8528,6 +8536,66 @@ function _fuRenderStageCards(rows) {
   }
 
   box.innerHTML = html;
+}
+
+/* The contracts no CRM project could be found for.
+
+   These are the ones needing a person: the CRM Code cell is empty in the
+   contracts sheet and the customer's name matches no measure, so nothing on
+   this page can tell where the order actually is. Listed so they can be
+   fixed at the source rather than counted again every week. */
+let _FU_NOCRM_ROWS = [];
+
+function openFuNoCrmModal() {
+  const rows = (_FU_NOCRM_ROWS || []).slice()
+    .sort((a, b) => (b.age || 0) - (a.age || 0));   // oldest neglect first
+
+  const t = document.getElementById('fu-crm-modal-title');
+  if (t) t.innerHTML = 'No CRM project found · ' + rows.length + ' contracts'
+    + '<button onclick="exportFuNoCrm()" class="btn-sm" style="margin-left:14px;'
+    + 'font-size:11px;padding:4px 10px;cursor:pointer">⬇ Export CSV</button>'
+    + '<div style="font-size:11px;font-weight:400;color:var(--text3);margin-top:5px">'
+    + 'The CRM Code cell is empty in the contracts sheet and the customer name '
+    + 'matches no measure. Fill the CRM Code and these resolve themselves.</div>';
+
+  const tb = document.getElementById('fu-crm-modal-tbody');
+  if (tb) tb.innerHTML = rows.length
+    ? rows.map((c, i) =>
+        '<tr><td class="muted">' + (i + 1) + '</td>'
+        + '<td>' + (c.name || '—') + '</td>'
+        + '<td class="muted">' + (c.orderId || '—') + '</td>'
+        + '<td>' + (c.designer || '—') + '</td>'
+        + '<td>' + (c.crm || '—') + '</td>'
+        + '<td><span class="badge ' + (c.age > 45 ? 'badge-red' : c.age >= 30 ? 'badge-gold' : 'badge-green')
+        + '">' + (c.age || 0) + ' d</span></td>'
+        + '<td class="muted">' + (c.date || '—') + '</td></tr>').join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">'
+      + 'Every contract on screen resolves to a CRM project.</td></tr>';
+
+  const modal = document.getElementById('fu-crm-modal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function exportFuNoCrm() {
+  const rows = (_FU_NOCRM_ROWS || []).slice().sort((a, b) => (b.age || 0) - (a.age || 0));
+  if (!rows.length) { alert('Nothing to export.'); return; }
+  // Leading apostrophe on anything a spreadsheet would read as a formula.
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+@\-]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  let csv = ['Customer','Order ID','Designer','Sheet CRM Status','Contract Date','Age (Days)','CRM Code']
+              .map(esc).join(',') + '\n';
+  rows.forEach(c => {
+    csv += [esc(c.name), esc(c.orderId), esc(c.designer), esc(c.crm),
+            esc(c.date), esc(c.age), esc('')].join(',') + '\n';
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = 'kitchino_contracts_without_crm_code_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 function fuSetStage(value) {
