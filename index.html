@@ -11560,6 +11560,7 @@ function crmLoad(force) {
         if (rec && !rec.missing && !rec.error) m.set(_crmCode(rec.id != null ? rec.id : k), rec);
       });
       _CRM_BY_CODE = m;
+      _CRM_BY_CUSTOMER = null;   // rebuilt lazily from the new cache
       _CRM_META = { at: Date.now(), lastRun: data.lastRun || null, count: m.size, error: null };
       _CRM_PROMISE = null;
       return m;
@@ -11583,6 +11584,45 @@ function crmOf(code) {
 function crmStage(code) {
   const r = crmOf(code);
   return r && r.stage ? String(r.stage).trim() : '';
+}
+
+/* Every OTHER project the CRM holds for the same customer as `code`.
+
+   Grouped on customerId, which the CRM assigns — exact, and immune to the
+   spelling differences that make Arabic name matching unreliable. Where the
+   feed has no customerId (an older deployment of the sync), it falls back to
+   the customer name as the CRM itself spells it, which at least compares like
+   with like because both sides came from the same record.
+
+   Added for Le Marché: a voucher lists the projects someone typed onto it,
+   and that is routinely fewer than the customer actually has. (16 Nov 2026) */
+let _CRM_BY_CUSTOMER = null;
+
+function _crmCustomerIndex() {
+  if (_CRM_BY_CUSTOMER) return _CRM_BY_CUSTOMER;
+  const idx = new Map();
+  if (!_CRM_BY_CODE) return idx;      // not loaded — do not cache an empty index
+  _CRM_BY_CODE.forEach(rec => {
+    const key = rec.customerId != null && rec.customerId !== ''
+      ? 'id:' + rec.customerId
+      : (rec.customer ? 'nm:' + String(rec.customer).trim() : '');
+    if (!key) return;
+    if (!idx.has(key)) idx.set(key, []);
+    idx.get(key).push(String(rec.id));
+  });
+  _CRM_BY_CUSTOMER = idx;
+  return idx;
+}
+
+function crmSiblings(code) {
+  const rec = crmOf(code);
+  if (!rec) return [];
+  const key = rec.customerId != null && rec.customerId !== ''
+    ? 'id:' + rec.customerId
+    : (rec.customer ? 'nm:' + String(rec.customer).trim() : '');
+  if (!key) return [];
+  const all = _crmCustomerIndex().get(key) || [];
+  return all.filter(id => _crmCode(id) !== _crmCode(code));
 }
 
 /* Stage colours. Grouped by what the stage means operationally rather than by
@@ -11683,6 +11723,7 @@ function crmHydrate() {
    other sources, so Refresh means the same thing everywhere. */
 function crmRefresh() {
   _CRM_BY_CODE = null;
+  _CRM_BY_CUSTOMER = null;
   _CRM_META.at = 0;
   return crmLoad(true);
 }
@@ -20446,12 +20487,16 @@ function _vchCrmCell(v) {
    voucher on the strength of a name match would change what the discount
    applies to, and that is a decision for a person. */
 function _vchMoreInCrm(v, codes) {
-  if (typeof _fuNameIndex !== 'function' || typeof _journeyNorm !== 'function') return '';
-  const hit = _fuNameIndex().get(_journeyNorm(v.fullName));
-  if (!hit || !hit.size) return '';
+  if (typeof crmSiblings !== 'function') return '';
+
+  // Asked of the CRM, not of the measures sheet. وليد الجابرى has no measure
+  // rows at all, so the earlier name lookup came back empty while the CRM
+  // held eight projects for him. The CRM knows its own customers.
+  const found = new Set();
+  codes.forEach(c => crmSiblings(c).forEach(id => found.add(String(id))));
 
   const have  = new Set(codes.map(c => String(c).trim()));
-  const extra = [...hit].filter(c => !have.has(c));
+  const extra = [...found].filter(c => !have.has(c));
   if (!extra.length) return '';
 
   return '<div class="vch-sub" style="color:var(--gold,#eac570);margin-top:3px" '
