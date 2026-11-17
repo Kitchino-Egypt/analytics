@@ -17695,6 +17695,26 @@ function _rdTextColour() {
 
    `Project No.` is the CRM project id — the Receivables API renames CRM Code
    to it — so the join needs nothing extra. (16 Nov 2026) */
+/* Arabic-aware normaliser for searching, per data rule 11.
+
+   _journeyNorm is not usable here: it is built for matching NAMES across
+   sheets, so it deletes digit runs of four or more as phone numbers — which
+   silently turns a project-number search into an empty one. It also does not
+   fold the letter variants that actually break Arabic search.
+
+   Digits are kept. أ إ آ → ا, ى → ي, ة → ه, diacritics and tatweel removed. */
+function _rdNormText(s) {
+  return String(s == null ? '' : s)
+    .replace(/[ً-ْٰ]/g, '')   // tashkeel
+    .replace(/ـ/g, '')                  // tatweel
+    .replace(/[آأإ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
 function _rdCode(r) {
   // CRM Code first: that is the CRM's project id, the same field the rewards
   // app joins on. Project No. is the fallback for rows that only carry it.
@@ -18401,15 +18421,16 @@ function filterRdTable() {
   // "محمد عيسى" — ي against ى. Also searches the CRM Code, which was not
   // searchable at all even though it is the column people quote. (17 Nov 2026)
   if (search) {
-    const norm = s => (typeof _journeyNorm === 'function')
-      ? _journeyNorm(s)
-      : String(s == null ? '' : s).toLowerCase().trim();
-    const q = norm(search);
+    const q = _rdNormText(search);
     rows = rows.filter(r =>
-      norm(r['Client Name']).includes(q) ||
+      // Guard on q: a search that normalises to nothing must match nothing,
+      // not everything. "20159" through _journeyNorm became '' — it strips
+      // digit runs of 4+ as phone numbers — and includes('') is true for every
+      // row, so the table showed the whole book. (17 Nov 2026)
+      (q && _rdNormText(r['Client Name']).includes(q)) ||
+      (q && _rdNormText(r['Designer']).includes(q))    ||
       String(r['Project No.'] || '').toLowerCase().includes(search) ||
-      String(r['CRM Code']   || '').toLowerCase().includes(search) ||
-      norm(r['Designer']).includes(q)
+      String(r['CRM Code']   || '').toLowerCase().includes(search)
     );
   }
 
