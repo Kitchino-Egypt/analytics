@@ -4402,8 +4402,45 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
   </div>
 </div>
 
+<!-- Store Aging Report ------------------------------------------------------
+     How long each order has been sitting at the Store stage. The age is the
+     time since the CRM last recorded a stage change, which is a manual entry,
+     so a very old row is either a genuine backlog or a move nobody made. Both
+     are worth chasing, which is why neither is hidden. -->
+<div id="rd-aging-modal" onclick="if(event.target===this)closeStoreAging()"
+     style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);
+            align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:14px;width:94%;max-width:980px;
+              max-height:86vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;
+                gap:14px;padding:20px 24px 12px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:17px;font-weight:700;color:var(--text)">📦 Store Aging Report</div>
+        <div id="rd-aging-sub" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm primary" onclick="exportStoreAging()">⬇ Export to Excel</button>
+        <button onclick="closeStoreAging()" style="background:none;border:none;color:var(--text);
+                font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+      </div>
+    </div>
+    <div id="rd-aging-bands" style="display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px 4px"></div>
+    <div style="overflow:auto;padding:8px 24px 22px">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr id="rd-aging-head"></tr></thead>
+        <tbody id="rd-aging-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
     <!-- Filters + Table -->
     <div class="chart-card" style="margin-bottom:22px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Orders</div>
+        <button class="btn-sm primary" onclick="openStoreAging()" style="margin-left:auto"
+          title="How long each order has been sitting in the store">📦 Store Aging Report</button>
+      </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
         <input type="text" id="rd-search" placeholder="🔍 Search by client name or project no…"
           oninput="filterRdTable()"
@@ -17701,6 +17738,148 @@ function _rdIsStale(r) {
 // number is where the question gets asked, so that is where the answer is.
 let _RD_STALE_ONLY = false;
 
+/* ── Store Aging Report ───────────────────────────────────────────────────
+   Every order currently at the Store stage, oldest first.
+
+   The age is days since the CRM last recorded a stage change. Orders with no
+   recorded change are listed with a blank age rather than dropped — an order
+   the CRM cannot date is exactly the kind that goes unnoticed.            */
+const RD_AGING_BANDS = [
+  { label: '0–30 days',  min: 0,   max: 30,       colour: '#1b9a6e' },
+  { label: '31–60 days', min: 31,  max: 60,       colour: '#e8871a' },
+  { label: '61–90 days', min: 61,  max: 90,       colour: '#e0603e' },
+  { label: 'Over 90',    min: 91,  max: Infinity, colour: '#e03e3e' }
+];
+
+let _RD_AGING_ROWS = [];
+
+function _rdAgingRows() {
+  return (_RD_DATA || [])
+    .filter(r => _rdStage(r).toLowerCase() === 'store')
+    .map(r => ({
+      code:     _rdCode(r),
+      client:   (r['Client Name'] || '—').trim(),
+      type:     (r['Project Type'] || '—').trim(),
+      designer: (r['Designer'] || '—').replace(/^\t/, '').trim(),
+      days:     crmStageAge(_rdCode(r)),
+      due:      Number(String(r['Due Amount'] == null ? '' : r['Due Amount'])
+                  .replace(/[^0-9.-]/g, '')) || 0
+    }))
+    // Oldest first; undated rows last, since there is nothing to rank them by.
+    .sort((a, b) => (b.days == null ? -1 : b.days) - (a.days == null ? -1 : a.days));
+}
+
+function _rdAgingColour(d) {
+  if (d == null) return 'var(--text3)';
+  const b = RD_AGING_BANDS.find(x => d >= x.min && d <= x.max);
+  return b ? b.colour : 'var(--text3)';
+}
+
+function openStoreAging() {
+  const rows = _RD_AGING_ROWS = _rdAgingRows();
+
+  const dated = rows.filter(r => r.days != null);
+  const median = dated.length
+    ? dated.map(r => r.days).sort((a, b) => a - b)[Math.floor(dated.length / 2)]
+    : null;
+
+  const sub = document.getElementById('rd-aging-sub');
+  if (sub) sub.textContent = rows.length + ' orders at Store'
+    + (median != null ? ' · median ' + median + ' days' : '')
+    + ' · age is time since the CRM last recorded a stage change';
+
+  const bands = document.getElementById('rd-aging-bands');
+  if (bands) {
+    const undated = rows.length - dated.length;
+    bands.innerHTML = RD_AGING_BANDS.map(b => {
+      const n = dated.filter(r => r.days >= b.min && r.days <= b.max).length;
+      return '<div style="flex:1 1 120px;min-width:112px;padding:9px 13px;border-radius:9px;'
+        + 'background:' + b.colour + '14;border:1px solid ' + b.colour + '3a">'
+        + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;'
+        + 'color:' + b.colour + ';font-weight:700">' + b.label + '</div>'
+        + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
+        + n + '</div></div>';
+    }).join('')
+    + (undated ? '<div style="flex:1 1 120px;min-width:112px;padding:9px 13px;border-radius:9px;'
+        + 'background:var(--card2);border:1px solid var(--border)">'
+        + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;'
+        + 'color:var(--text3);font-weight:700">No stage date</div>'
+        + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
+        + undated + '</div></div>' : '');
+  }
+
+  const head = document.getElementById('rd-aging-head');
+  if (head) head.innerHTML = ['#','Project No.','Client','Type','Designer','Days in store','Due amount']
+    .map((h, i) => '<th style="text-align:' + (i >= 5 ? 'right' : 'left')
+      + ';padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;'
+      + 'text-transform:uppercase;letter-spacing:.5px;color:var(--text3)">' + h + '</th>').join('');
+
+  const body = document.getElementById('rd-aging-body');
+  if (body) body.innerHTML = rows.length
+    ? rows.map((r, i) => {
+        const c = _rdAgingColour(r.days);
+        return '<tr style="border-bottom:1px solid rgba(128,128,128,.14)">'
+          + '<td style="padding:7px 10px;color:var(--text3)">' + (i + 1) + '</td>'
+          + '<td style="padding:7px 10px;font-weight:600">'
+          +   (/^\d{3,7}$/.test(r.code)
+                ? '<a href="' + CRM_PROJECT_URL + r.code + '" target="_blank" rel="noopener"'
+                  + ' style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">'
+                  + r.code + '</a>'
+                : (r.code || '—')) + '</td>'
+          + '<td style="padding:7px 10px;direction:rtl;text-align:right">' + r.client + '</td>'
+          + '<td style="padding:7px 10px;color:var(--text2)">' + r.type + '</td>'
+          + '<td style="padding:7px 10px;color:var(--text2)">' + r.designer + '</td>'
+          + '<td style="padding:7px 10px;text-align:right;font-weight:700;color:' + c + '">'
+          +   (r.days == null ? '—' : r.days + 'd') + '</td>'
+          + '<td style="padding:7px 10px;text-align:right;color:var(--gold)">'
+          +   (r.due ? r.due.toLocaleString() : '—') + '</td>'
+          + '</tr>';
+      }).join('')
+    : '<tr><td colspan="7" style="padding:24px;text-align:center;color:var(--text2)">'
+      + 'Nothing is at the Store stage right now.</td></tr>';
+
+  const m = document.getElementById('rd-aging-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function closeStoreAging() {
+  const m = document.getElementById('rd-aging-modal');
+  if (m) m.style.display = 'none';
+}
+
+function exportStoreAging() {
+  const rows = _RD_AGING_ROWS.length ? _RD_AGING_ROWS : _rdAgingRows();
+  if (!rows.length) { alert('Nothing at the Store stage to export.'); return; }
+
+  // Leading apostrophe on anything Excel would read as a formula.
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+@\-]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  const band = d => {
+    if (d == null) return 'No stage date';
+    const b = RD_AGING_BANDS.find(x => d >= x.min && d <= x.max);
+    return b ? b.label : '';
+  };
+
+  let csv = ['Project No.','Client','Type','Designer','Days in store','Band','Due amount']
+              .map(esc).join(',') + '\n';
+  rows.forEach(r => {
+    csv += [esc(r.code), esc(r.client), esc(r.type), esc(r.designer),
+            esc(r.days == null ? '' : r.days), esc(band(r.days)),
+            esc(r.due || '')].join(',') + '\n';
+  });
+
+  // UTF-8 BOM: without it Excel on an Arabic Windows reads the file as
+  // Windows-1252 and every client name comes out as mojibake.
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = 'kitchino_store_aging_' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
 function rdToggleStale() {
   _RD_STALE_ONLY = !_RD_STALE_ONLY;
   _rdCurrentPage = 1;
@@ -18217,10 +18396,22 @@ function filterRdTable() {
   if (statusF !== 'all') rows = rows.filter(r => _rdStage(r) === statusF);
   if (typeF   !== 'all') rows = rows.filter(r => (r['Project Type']||'').trim() === typeF);
   if (designF !== 'all') rows = rows.filter(r => (r['Designer']||'').trim().replace(/^	/,'') === designF);
-  if (search) rows = rows.filter(r =>
-    (r['Client Name']||'').toLowerCase().includes(search) ||
-    (r['Project No.']||'').toString().toLowerCase().includes(search)
-  );
+  // Normalised, because a plain substring match on Arabic fails on a single
+  // spelling variant: searching "محمد عيسي" found nothing while the sheet held
+  // "محمد عيسى" — ي against ى. Also searches the CRM Code, which was not
+  // searchable at all even though it is the column people quote. (17 Nov 2026)
+  if (search) {
+    const norm = s => (typeof _journeyNorm === 'function')
+      ? _journeyNorm(s)
+      : String(s == null ? '' : s).toLowerCase().trim();
+    const q = norm(search);
+    rows = rows.filter(r =>
+      norm(r['Client Name']).includes(q) ||
+      String(r['Project No.'] || '').toLowerCase().includes(search) ||
+      String(r['CRM Code']   || '').toLowerCase().includes(search) ||
+      norm(r['Designer']).includes(q)
+    );
+  }
 
   _rdFilteredRows = rows;
   _rdCurrentPage  = 1;
@@ -21350,6 +21541,7 @@ document.addEventListener('keydown', ev => {
   if (ev.key !== 'Escape') return;
   document.querySelectorAll('#page-vouchers .vch-modal.open').forEach(m => m.classList.remove('open'));
   _VCH.editing = null;
+  if (typeof closeStoreAging === 'function') closeStoreAging();
 });
 </script>
 </body>
