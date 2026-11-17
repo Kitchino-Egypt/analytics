@@ -11847,9 +11847,10 @@ function crmStageBadge(code) {
   if (['Delivered','Declined','Canceled','Cancelled','Expired'].indexOf(stage) >= 0) return badge;
 
   const ac = crmStageAgeColour(days);
-  return badge + ' <span style="color:' + ac + ';font-size:9px;font-weight:700" '
+  return badge + ' <span style="padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;'
+       + 'white-space:nowrap;color:' + ac + ';background:' + ac + '1f;border:1px solid ' + ac + '55" '
        + 'title="At this stage for ' + days + ' days. Stage moves are entered by hand, '
-       + 'so this is either a real hold-up or a move nobody recorded.">' + days + 'd</span>';
+       + 'so this is either a real hold-up or a move nobody recorded.">⏱ ' + days + 'd</span>';
 }
 
 /* A link straight to the project in the CRM. Only for codes that look like
@@ -17687,6 +17688,29 @@ function _rdStage(r) {
       || _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
 }
 
+/* A row whose stage has not moved in CRM_STAGE_STALE_DAYS. Settled stages are
+   excluded — Delivered has been Delivered since delivery, which is not news. */
+function _rdIsStale(r) {
+  const live = _rdStageLive(r);
+  if (!live || ['Delivered','Declined','Canceled','Cancelled','Expired'].indexOf(live) >= 0) return false;
+  const d = crmStageAge(_rdCode(r));
+  return d != null && d >= CRM_STAGE_STALE_DAYS;
+}
+
+// Table filter driven by the note under the rings, not by a dropdown: the
+// number is where the question gets asked, so that is where the answer is.
+let _RD_STALE_ONLY = false;
+
+function rdToggleStale() {
+  _RD_STALE_ONLY = !_RD_STALE_ONLY;
+  _rdCurrentPage = 1;
+  filterRdTable();
+  const el = document.getElementById('rd-stale-note');
+  if (el) el.style.opacity = _RD_STALE_ONLY ? '1' : '';
+  const tbl = document.getElementById('rd-table-body');
+  if (tbl && _RD_STALE_ONLY) tbl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 /* Days at the current stage, shown only when it is long enough to matter and
    only for stages that are still moving. Nothing to show for a sheet-only row:
    the sheet does not record when the stage changed. */
@@ -17695,10 +17719,13 @@ function _rdAgeTag(r, liveStage) {
   if (['Delivered','Declined','Canceled','Cancelled','Expired'].indexOf(liveStage) >= 0) return '';
   const days = crmStageAge(_rdCode(r));
   if (days == null || days < CRM_STAGE_STALE_DAYS) return '';
-  return '<span style="margin-left:6px;font-size:9px;font-weight:700;color:'
-    + crmStageAgeColour(days) + '" title="At ' + liveStage + ' for ' + days
+  // A pill, not a whisper: at 9px beside a coloured badge it was invisible.
+  const c = crmStageAgeColour(days);
+  return '<span style="margin-left:7px;padding:1px 7px;border-radius:10px;font-size:10px;'
+    + 'font-weight:700;white-space:nowrap;color:' + c + ';background:' + c + '1f;'
+    + 'border:1px solid ' + c + '55" title="At ' + liveStage + ' for ' + days
     + ' days. Stage moves are entered by hand, so this is either a real hold-up '
-    + 'or a move nobody recorded.">' + days + 'd</span>';
+    + 'or a move nobody recorded.">⏱ ' + days + 'd</span>';
 }
 
 function _rdRender(allRows) {
@@ -17818,11 +17845,16 @@ function _rdRender(allRows) {
          : (total ? Math.round(n / total * 100) : 0) + '% of orders')
       + '</i></div>').join('')
       + (_rdStale
-          ? '<div style="flex-basis:100%;text-align:center;font-size:11px;padding-top:10px;color:'
-            + 'var(--text2)"><b style="color:#e8871a">' + _rdStale + '</b> of these have not '
-            + 'moved stage in ' + CRM_STAGE_STALE_DAYS + '+ days. Stage changes are entered by '
-            + 'hand in the CRM, so a figure above is only as current as the last move recorded.'
-            + '</div>'
+          ? '<div id="rd-stale-note" onclick="rdToggleStale()" title="Click to show only these rows"'
+            + ' style="flex-basis:100%;text-align:center;margin-top:12px;padding:9px 14px;cursor:pointer;'
+            + 'border:1px solid rgba(232,135,26,.35);background:rgba(232,135,26,.08);border-radius:9px;'
+            + 'font-size:12px;color:var(--text2)">'
+            + '<b style="color:#e8871a;font-size:15px">' + _rdStale + '</b> '
+            + 'have not moved stage in ' + CRM_STAGE_STALE_DAYS + '+ days '
+            + '<span style="color:#e8871a;font-weight:700">— show them</span>'
+            + '<div style="font-size:10px;color:var(--text3);margin-top:3px">'
+            + 'Stage changes are entered by hand in the CRM, so the figures above are only as '
+            + 'current as the last move recorded.</div></div>'
           : '');
   }
 
@@ -18181,6 +18213,7 @@ function filterRdTable() {
   const designF = document.getElementById('rd-filter-designer')?.value || 'all';
 
   let rows = _RD_DATA;
+  if (_RD_STALE_ONLY) rows = rows.filter(_rdIsStale);
   if (statusF !== 'all') rows = rows.filter(r => _rdStage(r) === statusF);
   if (typeF   !== 'all') rows = rows.filter(r => (r['Project Type']||'').trim() === typeF);
   if (designF !== 'all') rows = rows.filter(r => (r['Designer']||'').trim().replace(/^	/,'') === designF);
