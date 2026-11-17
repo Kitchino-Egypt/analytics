@@ -11688,6 +11688,34 @@ function crmStage(code) {
   return r && r.stage ? String(r.stage).trim() : '';
 }
 
+/* How long a project has been sitting at its current stage, in days.
+
+   Stage changes in the CRM are a manual action by the admin and are sometimes
+   late, so a stage on its own says what was last recorded, not what is true
+   today. The age says how much to trust it: a project three days into Store
+   is current, one forty days in is either a real backlog or a stage move
+   nobody made. Both are worth seeing; neither is visible from the stage name.
+
+   Null when the CRM has no stageUpdated for the project. (17 Nov 2026) */
+const CRM_STAGE_STALE_DAYS = 30;   // amber beyond this
+const CRM_STAGE_OLD_DAYS   = 60;   // red beyond this
+
+function crmStageAge(code) {
+  const r = crmOf(code);
+  if (!r || !r.stageUpdated) return null;
+  const t = new Date(r.stageUpdated).getTime();
+  if (isNaN(t)) return null;
+  const days = Math.floor((Date.now() - t) / 86400000);
+  return days >= 0 ? days : null;   // a future date is bad data, not an age
+}
+
+function crmStageAgeColour(days) {
+  if (days == null) return 'var(--text3)';
+  if (days >= CRM_STAGE_OLD_DAYS)   return '#e03e3e';
+  if (days >= CRM_STAGE_STALE_DAYS) return '#e8871a';
+  return 'var(--text3)';
+}
+
 /* Every OTHER project the CRM holds for the same customer as `code`.
 
    Grouped on customerId, which the CRM assigns — exact, and immune to the
@@ -11807,8 +11835,21 @@ function crmStageBadge(code) {
   const stage = crmStage(code);
   if (!stage) return '<span style="color:var(--text3)">—</span>';
   const c = crmStageColour(stage);
-  return '<span style="background:' + c + '22;color:' + c + ';padding:2px 8px;border-radius:5px;'
+  const badge = '<span style="background:' + c + '22;color:' + c + ';padding:2px 8px;border-radius:5px;'
        + 'font-size:10px;font-weight:700;white-space:nowrap">' + stage + '</span>';
+
+  // The age rides alongside the stage rather than replacing it, and only once
+  // it is worth a second look — a badge reading "2d" on every row would be
+  // noise. Settled stages are left alone: a project delivered six months ago
+  // has sat at Delivered for six months, and that is not a problem.
+  const days = crmStageAge(code);
+  if (days == null || days < CRM_STAGE_STALE_DAYS) return badge;
+  if (['Delivered','Declined','Canceled','Cancelled','Expired'].indexOf(stage) >= 0) return badge;
+
+  const ac = crmStageAgeColour(days);
+  return badge + ' <span style="color:' + ac + ';font-size:9px;font-weight:700" '
+       + 'title="At this stage for ' + days + ' days. Stage moves are entered by hand, '
+       + 'so this is either a real hold-up or a move nobody recorded.">' + days + 'd</span>';
 }
 
 /* A link straight to the project in the CRM. Only for codes that look like
@@ -17646,6 +17687,20 @@ function _rdStage(r) {
       || _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
 }
 
+/* Days at the current stage, shown only when it is long enough to matter and
+   only for stages that are still moving. Nothing to show for a sheet-only row:
+   the sheet does not record when the stage changed. */
+function _rdAgeTag(r, liveStage) {
+  if (!liveStage || typeof crmStageAge !== 'function') return '';
+  if (['Delivered','Declined','Canceled','Cancelled','Expired'].indexOf(liveStage) >= 0) return '';
+  const days = crmStageAge(_rdCode(r));
+  if (days == null || days < CRM_STAGE_STALE_DAYS) return '';
+  return '<span style="margin-left:6px;font-size:9px;font-weight:700;color:'
+    + crmStageAgeColour(days) + '" title="At ' + liveStage + ' for ' + days
+    + ' days. Stage moves are entered by hand, so this is either a real hold-up '
+    + 'or a move nobody recorded.">' + days + 'd</span>';
+}
+
 function _rdRender(allRows) {
   const total      = allRows.length;
   // These three now follow the CRM, not the sheet, through _rdStage.
@@ -17741,6 +17796,15 @@ function _rdRender(allRows) {
     ['Installation', allRows.filter(r => stageOf(r) === 'installation').length, '#22c55e', '']
   ];
 
+  // How much of what is on screen is running on an old stage move. Said once,
+  // above the rows, because every ring below is only as current as this.
+  const _rdStale = allRows.filter(r => {
+    const live = _rdStageLive(r);
+    if (!live || ['Delivered','Declined','Canceled','Cancelled','Expired'].indexOf(live) >= 0) return false;
+    const d = crmStageAge(_rdCode(r));
+    return d != null && d >= CRM_STAGE_STALE_DAYS;
+  }).length;
+
   const rings = document.getElementById('rd-rings');
   if (rings) {
     rings.innerHTML = RING.map(([name, n, c, cls]) =>
@@ -17752,7 +17816,14 @@ function _rdRender(allRows) {
       + (name === 'Store'
          ? STORE_LOOK.note
          : (total ? Math.round(n / total * 100) : 0) + '% of orders')
-      + '</i></div>').join('');
+      + '</i></div>').join('')
+      + (_rdStale
+          ? '<div style="flex-basis:100%;text-align:center;font-size:11px;padding-top:10px;color:'
+            + 'var(--text2)"><b style="color:#e8871a">' + _rdStale + '</b> of these have not '
+            + 'moved stage in ' + CRM_STAGE_STALE_DAYS + '+ days. Stage changes are entered by '
+            + 'hand in the CRM, so a figure above is only as current as the last move recorded.'
+            + '</div>'
+          : '');
   }
 
   // ── Outstanding by stage ─────────────────────────────────────────────────
@@ -18171,7 +18242,7 @@ function _rdRenderPage() {
         <td style="padding:7px 10px;direction:rtl;text-align:right">${r['Client Name']||'—'}</td>
         <td style="padding:7px 10px"><span style="background:var(--card2);padding:2px 8px;border-radius:12px;font-size:11px">${r['Project Type']||'—'}</span></td>
         <td style="padding:7px 10px">${(r['Designer']||'—').replace(/^\t/,'')}</td>
-        <td style="padding:7px 10px"><span style="${badge};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600${liveStage ? '' : ';border-bottom:1px dotted currentColor'}"${liveStage ? '' : ' title="From the Receivables sheet — this project was not found in the CRM"'}>${shown || '—'}</span></td>
+        <td style="padding:7px 10px"><span style="${badge};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600${liveStage ? '' : ';border-bottom:1px dotted currentColor'}"${liveStage ? '' : ' title="From the Receivables sheet — this project was not found in the CRM"'}>${shown || '—'}</span>${_rdAgeTag(r, liveStage)}</td>
         <td style="padding:7px 10px;color:var(--gold);font-weight:600">${due && due!=='0' ? due : '—'}</td>
       </tr>`;
     }).join('');
