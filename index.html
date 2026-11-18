@@ -17740,9 +17740,30 @@ function _rdCanonStage(s) {
   return known || t;
 }
 
+/* The sheet wins here, and the CRM fills the gaps.
+
+   Reversed on 17 Nov 2026. The CRM used to win, which meant the page painted
+   the sheet's count, then overwrote it a second later when the cache arrived —
+   the store jumped 45 → 49 in front of you. Those four were projects already
+   moved on in the sheet that the CRM admin had not got to yet.
+
+   This sheet is maintained deliberately and is routinely ahead of the CRM, so
+   the stage it carries is the better answer. The CRM still supplies a stage
+   for every row the sheet has not filled in, which is most of the back
+   history, and still supplies the stage DATE for the aging pills — the sheet
+   does not record when a stage changed. */
 function _rdStage(r) {
-  return _rdStageLive(r)
-      || _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
+  const sheet = _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
+  return sheet || _rdStageLive(r);
+}
+
+/* True when the CRM disagrees with the sheet about this row. Not shown by
+   default — the sheet is what the page reports — but kept so the gap can be
+   surfaced when it is worth chasing. */
+function _rdStageConflict(r) {
+  const sheet = _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
+  const live  = _rdStageLive(r);
+  return !!(sheet && live && sheet.toLowerCase() !== live.toLowerCase());
 }
 
 /* A row whose stage has not moved in CRM_STAGE_STALE_DAYS. Settled stages are
