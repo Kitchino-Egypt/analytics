@@ -3939,6 +3939,7 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
           <th style="padding:9px 10px">Shipped</th><th style="padding:9px 10px">Customer</th>
           <th style="padding:9px 10px">CRM #</th><th style="padding:9px 10px">Project type</th>
           <th style="padding:9px 10px">Stage when shipped</th>
+          <th style="padding:9px 10px">Notes</th>
         </tr></thead>
         <tbody id="sl-rows"></tbody>
       </table>
@@ -4470,6 +4471,7 @@ Commitment Accuracy</div></div></div><div dir="auto" style="font-size:15.5px;col
               <th style="padding:8px 10px">Designer</th>
               <th style="padding:8px 10px">Status</th>
               <th style="padding:8px 10px">Due Amount</th>
+              <th style="padding:8px 10px">Notes</th>
             </tr>
           </thead>
           <tbody id="rd-table-body"></tbody>
@@ -11746,6 +11748,29 @@ function crmStageAge(code) {
   return days >= 0 ? days : null;   // a future date is bad data, not an age
 }
 
+/* The date a project entered Store, or '' — supplied by the sync from the
+   CRM's stage history. Used to measure how long an order waited in the store
+   before it shipped, which the shipping log alone cannot answer: it records
+   when a thing left, never when it arrived. */
+function crmStoreEntered(code) {
+  var r = crmOf(code);
+  return (r && r.storeEntered) ? String(r.storeEntered).slice(0, 10) : '';
+}
+
+/* Days between entering Store and a given date (the ship date), or null when
+   either end is unknown. Negative gaps are returned as null rather than zero:
+   they mean the two dates disagree, and a silent 0 would quietly pull the
+   average down. */
+function crmDaysInStore(code, until) {
+  var from = crmStoreEntered(code);
+  if (!from || !until) return null;
+  var a = new Date(from + 'T00:00:00').getTime();
+  var b = new Date(String(until).slice(0, 10) + 'T00:00:00').getTime();
+  if (isNaN(a) || isNaN(b)) return null;
+  var d = Math.round((b - a) / 86400000);
+  return d >= 0 ? d : null;
+}
+
 function crmStageAgeColour(days) {
   if (days == null) return 'var(--text3)';
   if (days >= CRM_STAGE_OLD_DAYS)   return '#e03e3e';
@@ -13017,6 +13042,44 @@ async function _fetchContractNotes() {
 // Posts as text/plain body (no custom headers) → browser treats it as a
 // "simple request" and skips the CORS preflight that Apps Script doesn't
 // handle. Apps Script's doPost still parses e.postData.contents as JSON.
+/* ── Notes on a project row ───────────────────────────────────────────────
+   Receivables and the Shipping Log both key on the CRM project code, not on
+   a Cash Gear order id, so their notes are stored under a prefixed key:
+   "P:19828". Same notes sheet, same modal, same reminders — but a separate
+   namespace, so a project code can never collide with a contract's Order ID
+   and show one page's note on another.
+
+   Deliberately reusing the contracts notes backend rather than adding a
+   second one. Notes are the kind of thing people expect to find in one
+   place, and a second store would mean two places to look and two to back
+   up. (19 Nov 2026) */
+function _projNoteKey(code) { return 'P:' + String(code == null ? '' : code).trim(); }
+
+/* The cell itself: 🗒 with the first words of the note, or a quiet "+ Note"
+   when there is none. Clicking opens the same editor the Follow-up page uses. */
+function projNoteCell(code, label) {
+  var raw = String(code == null ? '' : code).trim();
+  if (!raw) return '<span style="color:var(--text3)">—</span>';
+
+  var n = (typeof CONTRACT_NOTES !== 'undefined' && CONTRACT_NOTES[_projNoteKey(raw)]) || {};
+  var text = String(n.note || '').trim();
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+  var preview = text ? (text.length > 28 ? text.slice(0, 28) + '…' : text) : '+ Note';
+  var due = n.reminderDate && !n.reminderSent;
+
+  return '<span onclick="event.stopPropagation();openNoteModal(\'' + _projNoteKey(raw) + '\',\''
+    + esc(label || raw).replace(/'/g, "\\'") + '\')" '
+    + 'title="' + (text ? esc(text) : 'Add a note to this project') + '" '
+    + 'style="cursor:pointer;font-size:11px;white-space:nowrap;'
+    + (text ? 'color:var(--text2)' : 'color:var(--green);font-weight:600') + '">'
+    + (due ? '⏰ ' : (text ? '🗒 ' : '')) + esc(preview) + '</span>'
+    + (n.reminderDate ? '<div style="font-size:9px;color:var(--text3);margin-top:2px">'
+        + esc(n.reminderDate) + '</div>' : '');
+}
+
 async function _postContractNote(orderId, customer, note, reminderDate) {
   const url = NOTES_SCRIPT_URL || localStorage.getItem('kitchino_notes_url');
   if (!url) { alert('⚠ Notes script not configured yet. Add the URL via Connect Google Sheets.'); return false; }
@@ -13074,10 +13137,13 @@ async function saveNoteModal() {
   if (ok) {
     closeNoteModal();
     renderFollowupTable();
-    // If the note was added from the Journey page, re-run the search so the
-    // inline note strip on the installation card updates immediately.
+    // Repaint whichever page the note was added from. Before this only the
+    // Follow-up table was refreshed, so a note saved on Receivables or the
+    // Shipping Log stayed invisible until a reload.
     const activePg = document.querySelector('.page.active')?.id.replace('page-','');
-    if (activePg === 'journey') runJourneySearch();
+    if (activePg === 'journey')     runJourneySearch();
+    if (activePg === 'receivables' && typeof filterRdTable === 'function') filterRdTable();
+    if (activePg === 'shiplog'     && typeof renderShipLog === 'function') renderShipLog();
   }
 }
 
@@ -17210,6 +17276,16 @@ function _slRender(){
   }
 
   renderShipLog();
+
+  // Same reason as the Receivables page: the notes sheet is fetched by the
+  // Follow-up page, and this one can be opened first.
+  if (typeof _refreshNotes === 'function' && !Object.keys(CONTRACT_NOTES || {}).length) {
+    _refreshNotes().then(function (ok) {
+      if (ok && document.querySelector('.page.active')?.id === 'page-shiplog') {
+        try { renderShipLog(); } catch (e) {}
+      }
+    });
+  }
 }
 
 function renderShipLog(){
@@ -17232,8 +17308,9 @@ function renderShipLog(){
     + '<td style="color:var(--text2)">'+_slEsc(r.type)+'</td>'
     + '<td><span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;'
     +   'background:'+(SHIP_STAGE_COLOUR[r.stage.toLowerCase()]||'#8b5cf6')+'22;color:'
-    +   (SHIP_STAGE_COLOUR[r.stage.toLowerCase()]||'#8b5cf6')+'">'+_slEsc(r.stage)+'</span></td></tr>'
-  ).join('') : '<tr><td colspan="5" style="padding:24px;text-align:center;color:var(--text2)">No shipments match.</td></tr>';
+    +   (SHIP_STAGE_COLOUR[r.stage.toLowerCase()]||'#8b5cf6')+'">'+_slEsc(r.stage)+'</span></td>'
+    + '<td>'+projNoteCell(r.crm, r.customer)+'</td></tr>'
+  ).join('') : '<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--text2)">No shipments match.</td></tr>';
 
   const c = document.getElementById('sl-count');
   if (c) {
@@ -17297,17 +17374,55 @@ function openShipReport(){
   h += tbl(2, 'Shipped by month', byMonth, 'Month');
   h += tbl(3, 'Shipped by project type', byType, 'Project type');
 
-  h += '<div class="h"><em>4</em>Detail</div>'
+  // ── Time in store before shipping ─────────────────────────────────────
+  // Measured from the date the CRM recorded the project entering Store to
+  // the date it shipped. Only orders the CRM can date are included, and the
+  // rest are counted and named rather than quietly left out — a median over
+  // an unstated subset is worse than no median.
+  const aged = ALL.map(r => ({ r: r, d: crmDaysInStore(r.crm, r.date) }));
+  const dated = aged.filter(x => x.d != null).map(x => x.d).sort((a, b) => a - b);
+  const undated = aged.length - dated.length;
+
+  if (dated.length) {
+    const med = dated[Math.floor(dated.length / 2)];
+    const avg = Math.round(dated.reduce((s, n) => s + n, 0) / dated.length);
+    const BANDS = [['0–7 days',0,7],['8–30 days',8,30],['31–60 days',31,60],
+                   ['61–90 days',61,90],['Over 90 days',91,Infinity]];
+    h += '<div class="h"><em>4</em>Time in store before shipping</div>'
+       + '<table><thead><tr><th>Waited</th><th class="n">Orders</th>'
+       + '<th class="n">Share of dated</th></tr></thead><tbody>'
+       + BANDS.map(([lab, lo, hi]) => {
+           const n = dated.filter(d => d >= lo && d <= hi).length;
+           return '<tr><td>' + lab + '</td><td class="n">' + n + '</td>'
+             + '<td class="n" style="color:#5b6472">'
+             + (n / dated.length * 100).toFixed(1) + '%</td></tr>';
+         }).join('')
+       + '<tr class="tot"><td>Median ' + med + ' days · average ' + avg + '</td>'
+       + '<td class="n">' + dated.length + '</td><td class="n">100.0%</td></tr>'
+       + '</tbody></table>'
+       + (undated
+           ? '<div style="font-size:10.5px;color:#5b6472;margin:-6px 0 14px">'
+             + undated + ' of ' + total + ' shipments are not counted above — the CRM has no '
+             + 'record of when they entered the store.</div>'
+           : '');
+  }
+
+  h += '<div class="h"><em>' + (dated.length ? 5 : 4) + '</em>Detail</div>'
      + '<table><thead><tr><th style="width:84px">Shipped</th><th>Customer</th>'
-     + '<th style="width:70px">CRM #</th><th style="width:110px">Type</th>'
-     + '<th style="width:94px">Stage</th></tr></thead><tbody>'
-     + ALL.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(r =>
-         '<tr><td style="color:#5b6472;white-space:nowrap">'+r.date+'</td>'
+     + '<th style="width:70px">CRM #</th><th style="width:100px">Type</th>'
+     + '<th style="width:88px">Stage</th>'
+     + '<th class="n" style="width:78px">In store</th></tr></thead><tbody>'
+     + ALL.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(r => {
+         const d = crmDaysInStore(r.crm, r.date);
+         return '<tr><td style="color:#5b6472;white-space:nowrap">'+r.date+'</td>'
        + '<td>'+_slEsc(r.customer)+'</td>'
        + '<td style="color:#5b6472">'+_slEsc(r.crm)+'</td>'
        + '<td style="color:#5b6472">'+_slEsc(r.type)+'</td>'
-       + '<td style="color:#5b6472">'+_slEsc(r.stage)+'</td></tr>').join('')
-     + '<tr class="tot"><td colspan="4">Total shipments</td><td class="n">'+total+'</td></tr>'
+       + '<td style="color:#5b6472">'+_slEsc(r.stage)+'</td>'
+       + '<td class="n" style="color:' + (d != null && d > 60 ? '#b3261e' : '#5b6472') + '">'
+       +   (d == null ? '—' : d + 'd') + '</td></tr>';
+       }).join('')
+     + '<tr class="tot"><td colspan="5">Total shipments</td><td class="n">'+total+'</td></tr>'
      + '</tbody></table>';
 
   h += '<div class="h"><em>·</em>Basis</div>'
@@ -17318,7 +17433,11 @@ function openShipReport(){
      + '<b>Stage.</b> Where the project stood when it shipped, not where it stands now. '
      + 'Stage names are normalised — "store" and "Store" are counted as one.<br>'
      + '<b>Counting.</b> One row is one order line. A customer with several rooms appears once '
-     + 'per room, so shipments exceed customers.</div>'
+     + 'per room, so shipments exceed customers.<br>'
+     + '<b>Time in store.</b> From the date the CRM recorded the project entering Store to the '
+     + 'date it shipped. Stage moves are entered by hand in the CRM, so a figure here is only as '
+     + 'accurate as the day that move was recorded. Orders the CRM cannot date are shown as — '
+     + 'and excluded from the median rather than counted as zero.</div>'
      + '<div style="margin-top:18px;padding-top:10px;border-top:2.5px solid #15181d;'
      + 'display:flex;justify-content:space-between;font-size:9px;color:#5b6472">'
      + '<span>Kitchino · Shipping Report</span><span>Page 1</span></div>';
@@ -17621,6 +17740,17 @@ async function buildReceivablesPage() {
     });
   }
 
+  // Notes live in the contracts notes sheet and are normally fetched when the
+  // Follow-up page loads. Opening Receivables first would otherwise show an
+  // empty Notes column on rows that do have one.
+  if (typeof _refreshNotes === 'function' && !Object.keys(CONTRACT_NOTES || {}).length) {
+    _refreshNotes().then(ok => {
+      if (ok && document.querySelector('.page.active')?.id === 'page-receivables') {
+        try { filterRdTable(); } catch (e) {}
+      }
+    });
+  }
+
   const loading = document.getElementById('rd-loading');
   const error   = document.getElementById('rd-error');
   const cont    = document.getElementById('rd-content');
@@ -17752,9 +17882,50 @@ function _rdCanonStage(s) {
    for every row the sheet has not filled in, which is most of the back
    history, and still supplies the stage DATE for the aging pills — the sheet
    does not record when a stage changed. */
+/* Whichever source has the project FURTHER along the line wins.
+
+   Neither is wrong; one is sometimes behind. The CRM knows where a project is
+   as soon as the admin moves it, and is the better answer for most stages.
+   But when a project leaves Store or Shipping nobody always moves it on, so
+   the CRM holds it there while the sheet — which the team updates as work
+   progresses — has already recorded the next stage.
+
+   Taking the later of the two handles both without a special case:
+     · 19828  sheet Final QC, CRM Store      → Store     (CRM is ahead)
+     · a job the sheet has at Delivered,
+       CRM still at Store                    → Delivered (sheet is ahead)
+
+   It also means nothing needs changing when the CRM admin catches up — the
+   two sources simply agree and the rule becomes a no-op. (18 Nov 2026)
+
+   Canceled and Declined are excluded from the race: they are decisions, not
+   positions, and "further along" is meaningless for them. Whichever source
+   records one, that is what the project is. */
+var _RD_STOPPED = ['Canceled', 'Cancelled', 'Declined', 'Expired'];
+
+function _rdStageRank(s) {
+  if (!s) return -1;
+  var i = (typeof _MT_STAGE_ORDER !== 'undefined' ? _MT_STAGE_ORDER : [])
+    .findIndex(function (k) { return k.toLowerCase() === s.toLowerCase(); });
+  return i;   // -1 for a stage neither list knows
+}
+
 function _rdStage(r) {
-  const sheet = _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
-  return sheet || _rdStageLive(r);
+  var sheet = _rdCanonStage(r['Project Status'] || r['CRM Status'] || '');
+  var live  = _rdStageLive(r);
+
+  if (!sheet) return live;
+  if (!live)  return sheet;
+
+  if (_RD_STOPPED.indexOf(sheet) >= 0) return sheet;
+  if (_RD_STOPPED.indexOf(live)  >= 0) return live;
+
+  var rs = _rdStageRank(sheet), rl = _rdStageRank(live);
+  // An unrecognised stage cannot be ranked, so it does not get to win a race
+  // it is not in — the known one is the safer answer.
+  if (rs < 0) return live;
+  if (rl < 0) return sheet;
+  return rl > rs ? live : sheet;
 }
 
 /* True when the CRM disagrees with the sheet about this row. Not shown by
@@ -18483,7 +18654,7 @@ function _rdRenderPage() {
   if (!tbody) return;
 
   if (!slice.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text2)">No records found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--text2)">No records found</td></tr>';
   } else {
     tbody.innerHTML = slice.map((r, i) => {
       // The stage shown is the CRM's where it has one. A sheet-only value is
@@ -18510,6 +18681,7 @@ function _rdRenderPage() {
         <td style="padding:7px 10px">${(r['Designer']||'—').replace(/^\t/,'')}</td>
         <td style="padding:7px 10px"><span style="${badge};padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600${liveStage ? '' : ';border-bottom:1px dotted currentColor'}"${liveStage ? '' : ' title="From the Receivables sheet — this project was not found in the CRM"'}>${shown || '—'}</span>${_rdAgeTag(r, liveStage)}</td>
         <td style="padding:7px 10px;color:var(--gold);font-weight:600">${due && due!=='0' ? due : '—'}</td>
+        <td style="padding:7px 10px">${projNoteCell(code, r['Client Name'])}</td>
       </tr>`;
     }).join('');
   }
