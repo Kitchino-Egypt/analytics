@@ -8571,7 +8571,10 @@ function _fuNameIndex() {
   src.forEach(r => {
     const code = String(r.orderCode || '').trim();
     if (!/^\d{3,7}$/.test(code)) return;
-    const key = _journeyNorm(r.customer);
+    // arName, not _journeyNorm: the latter does not fold ى into ي, so a
+    // customer spelled one way in the contracts sheet and the other in the
+    // measures sheet never matched. (22 Nov 2026)
+    const key = arName(r.customer);
     if (!key) return;
     if (!idx.has(key)) idx.set(key, new Set());
     idx.get(key).add(code);
@@ -8586,7 +8589,19 @@ function _fuResolve(c) {
   const sheet = String(c.crmCode || '').trim();
   if (/^\d{3,7}$/.test(sheet)) return { code: sheet, codes: [sheet], source: 'sheet' };
 
-  const hit = _fuNameIndex().get(_journeyNorm(c.name));
+  // Phone before name. The contracts sheet has no phone column of its own,
+  // but names in these sheets routinely carry one appended, and the CRM has
+  // the customer's number — so a match is often available even here.
+  if (typeof crmByPhone === 'function') {
+    const phones = arPhones(c.name);
+    for (let i = 0; i < phones.length; i++) {
+      const hitP = crmByPhone(phones[i]);
+      if (hitP.length === 1) return { code: hitP[0], codes: hitP, source: 'phone' };
+      if (hitP.length > 1)   return { code: null,    codes: hitP, source: 'phone' };
+    }
+  }
+
+  const hit = _fuNameIndex().get(arName(c.name));
   if (!hit || !hit.size) return { code: null, codes: [], source: 'none' };
   const codes = [...hit];
   return { code: codes.length === 1 ? codes[0] : null, codes, source: 'name' };
@@ -8696,17 +8711,19 @@ function _fuRenderStageCards(rows) {
   // Where the codes came from. Without this the "Not in CRM" card is unreadable
   // — it could mean the sync missed them or that nothing joined, and the fix
   // is different in each case.
-  let fromSheet = 0, byName = 0, ambiguous = 0, none = 0;
+  let fromSheet = 0, byName = 0, byPhone = 0, ambiguous = 0, none = 0;
   _FU_NOCRM_ROWS = [];
   projects.forEach(c => {
     const r = _fuResolve(c);
     if (r.source === 'sheet') fromSheet++;
+    else if (r.code && r.source === 'phone') byPhone++;
     else if (r.code) byName++;
     else if (r.codes.length > 1) ambiguous++;
     else { none++; _FU_NOCRM_ROWS.push(c); }
   });
   const bits = [];
   if (fromSheet) bits.push(fromSheet + ' from the CRM Code column');
+  if (byPhone)   bits.push(byPhone + ' matched by phone');
   if (byName)    bits.push(byName + ' matched by customer name');
   if (ambiguous) bits.push(ambiguous + ' with several projects, left for you to pick');
   // Clickable: this is the one group that needs someone to do something, so
@@ -10508,6 +10525,10 @@ function applyFilters() {
     if (activePage === 'measures')   renderMeasuresTable();
     if (activePage === 'followup')   renderFollowupTable();
     if (activePage === 'daily')      renderFollowupTable();
+    // Carry-over filters on the journey start date, so it has to be told the
+    // filters moved — PAGE_BUILDERS rebuilds it, but only once the CRM cache
+    // is in, and this keeps the two paths consistent.
+    if (activePage === 'carryover' && typeof _coRender === 'function' && _CRM_BY_CODE) _coRender();
     if (activePage === 'instfollowup' && _INST_DATA) { _instRender(_INST_DATA); }
     // yearcompare has no PAGE_BUILDERS entry — it renders through its own
     // functions, so without this it never reacted to a filter or period change.
@@ -10541,6 +10562,16 @@ function _journeyNorm(s) {
   return (s || '').toString()
     .replace(/\([^)]*\)/g, ' ')            // strip parenthetical notes
     .replace(/[ً-ٰٟ]/g, '') // strip Arabic diacritics (tashkeel)
+    // Letter folding added 22 Nov 2026, here at the source rather than in
+    // each caller. This function already stripped brackets, diacritics,
+    // dashes and phone numbers but left أ/إ/آ, ى and ة alone — so محمد على
+    // and محمد علي were different strings, and every join built on it failed
+    // silently on that one letter. Fixing it here fixes the Journey page, the
+    // fuzzy matcher, the status comparison and every name index at once.
+    .replace(/ـ/g, '')                       // tatweel
+    .replace(/[آأإ]/g, 'ا')   // آ أ إ → ا
+    .replace(/ى/g, 'ي')                 // ى → ي
+    .replace(/ة/g, 'ه')                 // ة → ه
     .replace(/[-_/]+/g, ' ')               // dashes/underscores/slashes → space
     .replace(/\d{4,}/g, ' ')               // strip long digit runs (phone numbers, codes)
     .replace(/\s+/g, ' ')
@@ -11409,6 +11440,71 @@ function coRows() {
   return out.sort((a, b) => (b.days == null ? -1 : b.days) - (a.days == null ? -1 : a.days));
 }
 
+/* The topbar filters, applied to the carry-over book.
+
+   Year and Month read the date the customer's journey began, not the stage
+   date — "2025" here means work that started in 2025 and is still open,
+   which is the question this page exists to answer. A project whose start
+   cannot be dated is dropped when a year or month is chosen, the same way an
+   undated contract is dropped on the Follow-up page: keeping it would add
+   the same rows to every period. (22 Nov 2026) */
+const _CO_MONTHS = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+
+function _coApplyFilters(rows) {
+  const yr  = document.getElementById('filter-year')?.value     || 'all';
+  const des = document.getElementById('filter-designer')?.value || 'all';
+  const ar  = document.getElementById('filter-area')?.value     || 'all';
+  const mo  = document.getElementById('filter-month')?.value    || 'all';
+  const per = (typeof _periodFilter === 'function') ? _periodFilter() : { from:null, to:null };
+  const lo = per.from ? new Date(per.from + 'T00:00:00').getTime() : null;
+  const hi = per.to   ? new Date(per.to   + 'T23:59:59').getTime() : null;
+
+  return rows.filter(r => {
+    if (des !== 'all' && r.designer !== des) return false;
+    if (ar  !== 'all' && r.area     !== ar)  return false;
+
+    if (yr !== 'all') { if (!r.startYear || r.startYear !== yr) return false; }
+
+    if (mo !== 'all') {
+      if (!r.started) return false;
+      if (_CO_MONTHS[new Date(r.started + 'T00:00:00').getMonth()] !== mo) return false;
+    }
+
+    if (lo !== null || hi !== null) {
+      if (!r.started) return false;
+      const t = new Date(r.started + 'T00:00:00').getTime();
+      if (isNaN(t)) return false;
+      if (lo !== null && t < lo) return false;
+      if (hi !== null && t > hi) return false;
+    }
+    return true;
+  });
+}
+
+/* Receivables data is fetched by its own page and held behind a passcode, so
+   arriving here first left every balance blank — "EGP 0 on 0 of 335", which
+   reads as "nothing is owed" rather than "nothing is loaded". Fetches quietly
+   when the passcode is already stored, and repaints when it lands. */
+let _CO_RD_TRIED = false;
+
+function _coEnsureReceivables() {
+  if (_CO_RD_TRIED || _RD_DATA) return;
+  if (typeof _rdUrl !== 'function' || !_rdUrl() || !_rdPass()) return;
+  _CO_RD_TRIED = true;
+
+  jsonpFetch(_rdUrl() + '?key=' + encodeURIComponent(_rdPass()) + '&_t=' + Date.now(),
+             '_coRdCb', 30000)
+    .then(d => {
+      if (!d || d.status === 'error') return;
+      _RD_DATA = d.data || [];
+      _RD_PAYMENTS = d.payments || [];
+      _rdLoadedAt = Date.now();
+      if (document.querySelector('.page.active')?.id === 'page-carryover') _coRender();
+    })
+    .catch(e => console.warn('[Carry-over] receivables not loaded:', e.message));
+}
+
 const CO_AGE_BANDS = [
   ['Under 30 days', 0,   29,       '#1b9a6e'],
   ['30–89 days',    30,  89,       '#e8871a'],
@@ -11445,7 +11541,9 @@ function buildCarryoverPage() {
 }
 
 function _coRender() {
-  const rows = _CO_ROWS = coRows();
+  _coEnsureReceivables();
+  const all = coRows();
+  const rows = _CO_ROWS = _coApplyFilters(all);
   const committed = rows.filter(r => r.kind === 'committed');
   const pipeline  = rows.filter(r => r.kind === 'pipeline');
   const other     = rows.filter(r => r.kind === 'other');
@@ -11468,11 +11566,18 @@ function _coRender() {
   const thisYear = String(new Date().getFullYear());
   const older = committed.filter(r => r.startYear && r.startYear < thisYear).length;
 
+  // Say when a filter is narrowing the view, and what the whole book is —
+  // otherwise a filtered figure gets quoted as the total.
+  const allCommitted = all.filter(r => r.kind === 'committed').length;
+  const filtered = committed.length !== allCommitted;
+
   const sub = document.getElementById('co-sub');
   if (sub) sub.textContent = committed.length + ' committed projects open at '
     + new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+    + (filtered ? ' · filtered from ' + allCommitted : '')
     + (other.length ? ' · ' + other.length + ' at an unrecognised stage' : '')
-    + ' · pre-contract stages are not counted here';
+    + ' · pre-contract stages are not counted here'
+    + ' · Year and Month read the date the journey began';
 
   const card = (label, value, sub2, cls) =>
     '<div class="kpi-card ' + cls + '"><div class="kpi-label">' + label + '</div>'
@@ -11626,7 +11731,8 @@ function _coRender() {
 let _CO_YEAR_ROWS = [], _CO_YEAR_LABEL = '';
 
 function openCoYear(year) {
-  const all = (_CO_ROWS.length ? _CO_ROWS : coRows()).filter(r => r.kind === 'committed');
+  const all = (_CO_ROWS.length ? _CO_ROWS : _coApplyFilters(coRows()))
+                .filter(r => r.kind === 'committed');
   const unknown = year === '(unknown)';
   const rows = _CO_YEAR_ROWS = all
     .filter(r => unknown ? !r.startYear : r.startYear === year)
@@ -11726,7 +11832,7 @@ function exportCoYear() {
    is to present a total and let it imply completeness; here the money section
    covers 96 of 858 projects and says so in the same breath as the number. */
 function openCarryoverReport() {
-  const rows = _CO_ROWS.length ? _CO_ROWS : coRows();
+  const rows = _CO_ROWS.length ? _CO_ROWS : _coApplyFilters(coRows());
   const committed = rows.filter(r => r.kind === 'committed');
   const pipeline  = rows.filter(r => r.kind === 'pipeline');
 
@@ -11776,6 +11882,25 @@ function openCarryoverReport() {
     +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Of which committed</td>'
     +       '<td style="text-align:right;font-weight:600">' + n(committed.length) + '</td></tr>'
     +   '</tbody></table></div>';
+
+  // A report covering a filtered subset must say so on its face. Quoted out
+  // of context, "335 committed" and "81 committed" look like the same kind of
+  // number, and only one of them is the whole book.
+  const activeFilters = [
+    ['Year',     document.getElementById('filter-year')?.value],
+    ['Designer', document.getElementById('filter-designer')?.value],
+    ['Area',     document.getElementById('filter-area')?.value],
+    ['Month',    document.getElementById('filter-month')?.value]
+  ].filter(f => f[1] && f[1] !== 'all');
+
+  if (activeFilters.length) {
+    h += '<div style="margin:14px 0 0;padding:9px 13px;border-left:3px solid #b3261e;'
+       + 'background:#fdf0ef;font-size:11px;color:#15181d">'
+       + '<b>This report is filtered.</b> '
+       + activeFilters.map(f => esc(f[0]) + ': ' + esc(f[1])).join(' · ')
+       + '. It describes part of the carry-over book, not all of it. '
+       + 'Clear the filters before exporting the full review.</div>';
+  }
 
   // ── 1. The headline ─────────────────────────────────────────────────────
   const jrn = committed.map(r => r.journey).filter(d => d != null).sort((a,b) => a-b);
@@ -12519,6 +12644,7 @@ function crmLoad(force) {
       _CRM_BY_CODE = m;
       _CRM_BY_CUSTOMER = null;   // rebuilt lazily from the new cache
       _CRM_BY_NAME     = null;
+      _CRM_BY_PHONE    = null;
       _CRM_META = { at: Date.now(), lastRun: data.lastRun || null, count: m.size, error: null };
       _CRM_PROMISE = null;
       return m;
@@ -12633,14 +12759,133 @@ function _crmCustomerIndex() {
    variations (أ/إ/ا, ى/ي, ة/ه, diacritics) the rest of the portal already
    normalises. Names are not unique, so this is offered as a suggestion for a
    person to accept, never applied on its own. */
+/* ── THE Arabic name normaliser ───────────────────────────────────────────
+   One function, used everywhere a person's name is matched across systems.
+
+   `_journeyNorm` was being used for this and is not fit for it: it strips
+   diacritics and parenthetical notes but does NOT fold the letter variants,
+   so محمد على and محمد علي are different strings to it. Voucher 0017 had
+   three projects at Design Sessions in the CRM and the page showed none of
+   them, for the sake of one ى. The same bug had already cost us the
+   Receivables search for محمد عيسى.
+
+   Per data rule 11: أ إ آ → ا, ى → ي, ة → ه, diacritics and tatweel removed.
+   Plus the useful parts of _journeyNorm — parenthetical notes and phone
+   numbers dropped, whitespace collapsed — because Kitchino's name fields
+   routinely carry both. (22 Nov 2026) */
+function arName(s) {
+  // Delegates rather than duplicates. _journeyNorm now carries the letter
+  // folding, so there is exactly one implementation; two would drift, and
+  // drift between two normalisers is impossible to notice from the outside.
+  return (typeof _journeyNorm === 'function')
+    ? _journeyNorm(s)
+    : String(s == null ? '' : s).trim().toLowerCase();
+}
+
+/* Match coverage, measured rather than claimed.
+
+   Run  crmMatchAudit()  in the console. It reports, for each thing that has
+   to be joined to a CRM project, how many succeed and by which key — and
+   lists the failures so they can be fixed at source.
+
+   The honest position on "zero failures": a code match is exact and a phone
+   match is near enough, but a name match never gets to zero. Word order,
+   abbreviations, two customers with the same name, a typo — none of those
+   are solvable by normalising letters. What is achievable is that every
+   failure is VISIBLE and countable, so the remaining ones get fixed in the
+   data instead of hiding. This is the instrument for that. */
+function crmMatchAudit() {
+  if (!_CRM_BY_CODE) { console.warn('CRM cache not loaded.'); return; }
+
+  const out = {};
+
+  // Vouchers
+  const vs = (_VCH && _VCH.data && _VCH.data.vouchers) || [];
+  if (vs.length) {
+    let code = 0, phone = 0, name = 0, miss = 0;
+    const missed = [];
+    vs.forEach(v => {
+      if (_vchCodes(v).length) { code++; return; }
+      if (crmByPhone(v.mobile).length) { phone++; return; }
+      if (crmByCustomerName(v.fullName).length) { name++; return; }
+      miss++; missed.push({ serial: v.serial, name: v.fullName, mobile: v.mobile });
+    });
+    out.vouchers = { total: vs.length, byCode: code, byPhone: phone, byName: name,
+                     unmatched: miss, rate: (miss / vs.length * 100).toFixed(1) + '%' };
+    if (missed.length) console.table(missed);
+  }
+
+  // Contracts
+  const cs = (CONTRACTS_DATA || []).filter(c => c.cgStatus !== 'DRAFT');
+  if (cs.length) {
+    const tally = { sheet: 0, phone: 0, name: 0, ambiguous: 0, none: 0 };
+    const missed = [];
+    cs.forEach(c => {
+      const r = _fuResolve(c);
+      if (r.source === 'sheet') tally.sheet++;
+      else if (r.code && r.source === 'phone') tally.phone++;
+      else if (r.code) tally.name++;
+      else if (r.codes.length > 1) tally.ambiguous++;
+      else { tally.none++; missed.push({ orderId: c.orderId, name: c.name }); }
+    });
+    out.contracts = Object.assign({ total: cs.length }, tally,
+      { rate: (tally.none / cs.length * 100).toFixed(1) + '%' });
+    if (missed.length) console.table(missed.slice(0, 30));
+  }
+
+  // Receivables
+  const rd = _RD_DATA || [];
+  if (rd.length) {
+    const miss = rd.filter(r => !crmOf(_rdCode(r))).length;
+    out.receivables = { total: rd.length, unmatched: miss,
+                        rate: (miss / rd.length * 100).toFixed(1) + '%' };
+  }
+
+  // How much of the CRM can be reached by phone at all
+  const withPhone = [..._CRM_BY_CODE.values()].filter(p => arPhone(p.customerPhone)).length;
+  out.crmPhoneCoverage = withPhone + ' of ' + _CRM_BY_CODE.size
+    + ' projects carry a phone (' + (withPhone / _CRM_BY_CODE.size * 100).toFixed(1) + '%)';
+
+  console.table(out);
+  return out;
+}
+
+/* ── Phone numbers ────────────────────────────────────────────────────────
+   A far stronger key than a name: digits have no spelling variants.
+
+   Egyptian mobiles are written every way imaginable — 01012345678,
+   +201012345678, 0020 101 234 5678, 1012345678. Reduced to the last nine
+   digits, which is the part that identifies the line regardless of how the
+   country code and leading zero were written.
+
+   Nine rather than ten because the leading 1 of 01x is constant; taking nine
+   avoids a mismatch when one source kept the zero and another dropped it. */
+function arPhone(s) {
+  const d = String(s == null ? '' : s).replace(/\D/g, '');
+  if (d.length < 9) return '';
+  return d.slice(-9);
+}
+
+/* Every phone number found anywhere in a string — name fields in these
+   sheets routinely carry one appended to the name. */
+function arPhones(s) {
+  const out = [];
+  String(s == null ? '' : s).replace(/\d[\d\s\-+()]{7,}\d/g, m => {
+    const p = arPhone(m);
+    if (p) out.push(p);
+    return m;
+  });
+  return [...new Set(out)];
+}
+
 let _CRM_BY_NAME = null;
 
 function _crmNameIndex() {
   if (_CRM_BY_NAME) return _CRM_BY_NAME;
   const idx = new Map();
-  if (!_CRM_BY_CODE || typeof _journeyNorm !== 'function') return idx;
+  if (!_CRM_BY_CODE) return idx;
   _CRM_BY_CODE.forEach(rec => {
-    const key = _journeyNorm(rec.customer);
+    const key = arName(rec.customer);
     if (!key) return;
     if (!idx.has(key)) idx.set(key, []);
     idx.get(key).push(String(rec.id));
@@ -12650,9 +12895,48 @@ function _crmNameIndex() {
 }
 
 function crmByCustomerName(name) {
-  if (typeof _journeyNorm !== 'function') return [];
-  const key = _journeyNorm(name);
+  const key = arName(name);
   return key ? (_crmNameIndex().get(key) || []).slice() : [];
+}
+
+/* Projects indexed by the customer's phone.
+
+   Tried before the name everywhere the two are both available. A phone is an
+   exact key; a name is a guess that happens to be right most of the time.
+   Numbers are taken from the CRM's customerPhone field and from any phone
+   embedded in the customer name, because both sources carry them. */
+let _CRM_BY_PHONE = null;
+
+function _crmPhoneIndex() {
+  if (_CRM_BY_PHONE) return _CRM_BY_PHONE;
+  const idx = new Map();
+  if (!_CRM_BY_CODE) return idx;
+  _CRM_BY_CODE.forEach(rec => {
+    const keys = new Set();
+    const direct = arPhone(rec.customerPhone);
+    if (direct) keys.add(direct);
+    arPhones(rec.customer).forEach(p => keys.add(p));
+    keys.forEach(k => {
+      if (!idx.has(k)) idx.set(k, []);
+      idx.get(k).push(String(rec.id));
+    });
+  });
+  _CRM_BY_PHONE = idx;
+  return idx;
+}
+
+function crmByPhone(phone) {
+  const k = arPhone(phone);
+  return k ? (_crmPhoneIndex().get(k) || []).slice() : [];
+}
+
+/* Every project the CRM holds for a customer, found by phone first and name
+   second. The single entry point — anything matching a customer to projects
+   should call this rather than rolling its own. */
+function crmFindProjects(name, phone) {
+  const byPhone = crmByPhone(phone);
+  if (byPhone.length) return byPhone;
+  return crmByCustomerName(name);
 }
 
 function crmSiblings(code) {
@@ -12780,6 +13064,7 @@ function crmRefresh() {
   _CRM_BY_CODE = null;
   _CRM_BY_CUSTOMER = null;
   _CRM_BY_NAME = null;
+  _CRM_BY_PHONE = null;
   _CRM_META.at = 0;
   return crmLoad(true);
 }
@@ -18655,6 +18940,8 @@ function _rdTextColour() {
 
    Digits are kept. أ إ آ → ا, ى → ي, ة → ه, diacritics and tatweel removed. */
 function _rdNormText(s) {
+  // Same letter folding as arName, but digits are KEPT: this one also has to
+  // match project numbers typed into the search box.
   return String(s == null ? '' : s)
     .replace(/[ً-ْٰ]/g, '')   // tashkeel
     .replace(/ـ/g, '')                  // tatweel
@@ -21963,7 +22250,19 @@ const VCH_CRM_TO_STAGE = { 'measure': 'Site Visit', 'design sessions': 'Design' 
 function _vchCrmDerived(v) {
   if (typeof crmStage !== 'function' || !_CRM_BY_CODE) return '';
   let best = -1, name = '';
-  _vchCodes(v).forEach(code => {
+
+  // Codes first. Where a voucher carries none — nobody typed them in — fall
+  // back to the customer's name. Voucher 0017 had three projects at Design
+  // Sessions in the CRM and sat at "Voucher sold" because it had no codes to
+  // look up and the name match was defeated by a single ى. (22 Nov 2026)
+  let codes = _vchCodes(v);
+  if (!codes.length && typeof crmFindProjects === 'function') {
+    // Phone first, then name. A voucher records the customer's mobile, which
+    // is the one field that cannot be spelled two ways.
+    codes = crmFindProjects(v.fullName, v.mobile);
+  }
+
+  codes.forEach(code => {
     const s = crmStage(code);
     if (!s) return;
     const mapped = VCH_CRM_TO_STAGE[s.toLowerCase()]
@@ -22030,8 +22329,8 @@ function _vchMoreInCrm(v, codes) {
   codes.forEach(c => crmSiblings(c).forEach(id => found.add(String(id))));
   // A voucher with no code at all has no sibling to find, so fall back to the
   // customer's name — that is the only handle there is.
-  if (typeof crmByCustomerName === 'function') {
-    crmByCustomerName(v.fullName).forEach(id => found.add(String(id)));
+  if (typeof crmFindProjects === 'function') {
+    crmFindProjects(v.fullName, v.mobile).forEach(id => found.add(String(id)));
   }
 
   const have  = new Set(codes.map(c => String(c).trim()));
@@ -22210,9 +22509,10 @@ function _vchRenderCrmSuggestions() {
   // customer's name is the only way in — and that is exactly the case worth
   // catching, a voucher where no project was ever recorded.
   const f = document.getElementById('vch-form');
-  const name = (f && f.fullName ? f.fullName.value : '') || '';
-  if (typeof crmByCustomerName === 'function') {
-    crmByCustomerName(name).forEach(id => found.add(String(id)));
+  const name   = (f && f.fullName ? f.fullName.value : '') || '';
+  const mobile = (f && f.mobile   ? f.mobile.value   : '') || '';
+  if (typeof crmFindProjects === 'function') {
+    crmFindProjects(name, mobile).forEach(id => found.add(String(id)));
   }
 
   const extra = [...found].filter(id => !have.has(id));
