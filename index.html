@@ -2241,17 +2241,17 @@ if (_checkSession()) {
       <div style="overflow-x:auto">
         <table id="co-risk-table">
           <thead><tr><th>#</th><th>Project</th><th>Customer</th><th>Stage</th>
-            <th>Standing</th><th>Designer</th><th>Balance</th><th>Notes</th></tr></thead>
+            <th>Standing</th><th>In Kitchino</th><th>Designer</th><th>Balance</th><th>Notes</th></tr></thead>
           <tbody id="co-risk-body"></tbody>
         </table>
       </div>
     </div>
 
     <div class="table-card">
-      <div class="table-header"><div class="table-title">Pipeline</div>
+      <div class="table-header"><div class="table-title">How far back it runs</div>
         <div class="table-actions" style="font-size:11px;color:var(--text2)">
-          Measure · Quotation · Design Sessions — not yet sold</div></div>
-      <div id="co-pipeline" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px"></div>
+          Committed work by the year the customer's journey began</div></div>
+      <div id="co-years" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px"></div>
     </div>
   </div>
 </div>
@@ -11281,9 +11281,39 @@ const CO_COMMITTED = ['Contracted','Electromechanic','Shablona','Designer Workin
   'Technical Office','Production','Assembly QC','Final QC','Recheck','Store',
   'Shipping','Installation'];
 
-// Not sold yet. Kept separate and never added to the committed total: a site
-// visit that may never convert is not a backlog.
+// Pre-contract stages. Excluded from this report entirely, on 22 Nov 2026:
+// these are CRM stage counts, not the commercial pipeline, and a section
+// headed "Pipeline" showing 2 projects at Measure invites the CEO to read it
+// as the sales book — which lives on the Measures page and is ~2,490 visits.
+// Rather than publish a number that is true but will be misread, the report
+// covers committed work only, which is what actually carries into 2027.
 const CO_PIPELINE = ['Measure','Quotation','Design Sessions'];
+
+/* When the customer's journey began, as yyyy-MM-dd, or ''.
+
+   The first measure visit, because that is when the customer started waiting
+   — and it is recorded for 799 of the 858 open projects. The contract date is
+   the fallback; it is the stricter definition of when Kitchino owes delivery,
+   but the contracts sheet only knows 184 of them.
+
+   Needed because days-at-current-stage flatters a project that moved last
+   week after sitting in the system for a year. (22 Nov 2026) */
+function _coStart(ms, ct) {
+  const pick = v => {
+    if (!v) return '';
+    const t = new Date(v);
+    return isNaN(t.getTime()) ? '' : t.toISOString().slice(0, 10);
+  };
+  return pick(ms && ms.visitDate) || pick(ct && ct.date) || '';
+}
+
+function _coDaysSince(iso) {
+  if (!iso) return null;
+  const t = new Date(iso + 'T00:00:00').getTime();
+  if (isNaN(t)) return null;
+  const d = Math.floor((Date.now() - t) / 86400000);
+  return d >= 0 ? d : null;
+}
 
 // Finished or abandoned — not carried into anything.
 const CO_CLOSED = ['Delivered','Declined','Canceled','Cancelled','Expired'];
@@ -11321,9 +11351,15 @@ function coRows() {
 
     const id = String(p.id);
     const rd = rdByCode[id], ct = ctByCode[id], ms = msByCode[id];
+    const started = _coStart(ms, ct);
 
     out.push({
       id, stage,
+      started,
+      // Total time inside Kitchino, not time at the current stage.
+      journey:   _coDaysSince(started),
+      // The year the customer's journey began — how far back the backlog runs.
+      startYear: started ? started.slice(0, 4) : '',
       kind:     CO_COMMITTED.indexOf(stage) >= 0 ? 'committed'
               : CO_PIPELINE.indexOf(stage)  >= 0 ? 'pipeline' : 'other',
       // The CRM's own name first: it is the only one present for every row.
@@ -11398,11 +11434,18 @@ function _coRender() {
   const agesC = committed.map(r => r.days).filter(d => d != null).sort((a,b) => a-b);
   const medC = agesC.length ? agesC[Math.floor(agesC.length/2)] : null;
 
+  // Total time inside Kitchino, which is the question the stage age cannot
+  // answer: a project that moved last week may still have been here a year.
+  const jrn = committed.map(r => r.journey).filter(d => d != null).sort((a,b) => a-b);
+  const medJ = jrn.length ? jrn[Math.floor(jrn.length/2)] : null;
+  const thisYear = String(new Date().getFullYear());
+  const older = committed.filter(r => r.startYear && r.startYear < thisYear).length;
+
   const sub = document.getElementById('co-sub');
-  if (sub) sub.textContent = rows.length + ' projects open at ' + new Date().toLocaleDateString('en-GB',
-      { day:'numeric', month:'long', year:'numeric' })
-    + ' · ' + committed.length + ' committed · ' + pipeline.length + ' pipeline'
-    + (other.length ? ' · ' + other.length + ' at another stage' : '');
+  if (sub) sub.textContent = committed.length + ' committed projects open at '
+    + new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+    + (other.length ? ' · ' + other.length + ' at an unrecognised stage' : '')
+    + ' · pre-contract stages are not counted here';
 
   const card = (label, value, sub2, cls) =>
     '<div class="kpi-card ' + cls + '"><div class="kpi-label">' + label + '</div>'
@@ -11415,9 +11458,12 @@ function _coRender() {
     + card('Standing 90+ days',  n(stuck),
            committed.length ? Math.round(stuck/committed.length*100) + '% of committed' : '—', 'red')
     + card('Median standing',    medC == null ? '—' : medC + 'd', 'days at current stage', 'gold')
+    + card('Median in Kitchino', medJ == null ? '—' : medJ + 'd',
+           'since the first measure visit', 'purple')
+    + card('Started before ' + thisYear, n(older),
+           committed.length ? Math.round(older/committed.length*100) + '% of committed' : '—', 'red')
     + card('Known balances',     'EGP ' + n(Math.round(owed)),
-           'on ' + withBal.length + ' of ' + committed.length + ' committed', 'teal')
-    + card('Pipeline',           n(pipeline.length), 'may or may not convert', 'purple');
+           'on ' + withBal.length + ' of ' + committed.length + ' committed', 'teal');
 
   // ── Stage cards ─────────────────────────────────────────────────────────
   const stageBox = document.getElementById('co-stage-cards');
@@ -11486,32 +11532,57 @@ function _coRender() {
         + '<td style="direction:rtl;text-align:right">' + esc(r.customer) + '</td>'
         + '<td>' + (typeof crmStageBadge === 'function' ? crmStageBadge(r.id) : esc(r.stage)) + '</td>'
         + '<td style="font-weight:700;color:' + col + '">' + r.days + 'd</td>'
+        + '<td style="font-weight:600;color:' + (r.journey != null && r.journey >= 365
+            ? '#e03e3e' : 'var(--text2)') + '">'
+        +   (r.journey == null ? '—' : r.journey + 'd'
+              + (r.startYear ? '<div style="font-size:9px;color:var(--text3);font-weight:400">since '
+                  + esc(r.startYear) + '</div>' : '')) + '</td>'
         + '<td class="muted">' + esc(r.designer) + '</td>'
         + '<td class="muted">' + (r.balance == null ? '—'
             : r.balance > 0 ? n(Math.round(r.balance)) : '0') + '</td>'
         + '<td>' + (typeof projNoteCell === 'function' ? projNoteCell(r.id, r.customer) : '') + '</td></tr>';
     }).join('')
-    : '<tr><td colspan="8" style="text-align:center;padding:22px;color:var(--text2)">'
+    : '<tr><td colspan="9" style="text-align:center;padding:22px;color:var(--text2)">'
       + 'Nothing committed has been standing 90 days or more.</td></tr>';
   }
 
-  // ── Pipeline ────────────────────────────────────────────────────────────
-  const pb = document.getElementById('co-pipeline');
-  if (pb) {
-    const counts = {};
-    pipeline.forEach(r => counts[r.stage] = (counts[r.stage] || 0) + 1);
-    pb.innerHTML = CO_PIPELINE.filter(s => counts[s]).map(s => {
-      const c = crmStageColour(s);
-      return '<div style="flex:0 0 auto;min-width:130px;padding:9px 13px;border-radius:9px;'
+  // ── How far back it runs ────────────────────────────────────────────────
+  // The oldest years are the story: a 2024 project still open is a different
+  // conversation from one measured in September.
+  const yb = document.getElementById('co-years');
+  if (yb) {
+    const byYear = {};
+    let unknownYear = 0;
+    committed.forEach(r => {
+      if (!r.startYear) { unknownYear++; return; }
+      byYear[r.startYear] = (byYear[r.startYear] || 0) + 1;
+    });
+    const years = Object.keys(byYear).sort();
+    const thisYear = String(new Date().getFullYear());
+    yb.innerHTML = years.map(y => {
+      const old = y < thisYear;
+      const c = old ? '#e03e3e' : '#3b82f6';
+      return '<div style="flex:0 0 auto;min-width:118px;padding:9px 13px;border-radius:9px;'
         + 'background:' + c + '14;border:1px solid ' + c + '3a">'
         + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:' + c
-        + ';font-weight:700">' + esc(s) + '</div>'
+        + ';font-weight:700">' + esc(y) + (old ? ' · carried' : '') + '</div>'
         + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
-        + counts[s] + '</div></div>';
+        + byYear[y] + '</div>'
+        + '<div style="font-size:9px;color:var(--text3)">'
+        + Math.round(byYear[y] / (committed.length || 1) * 100) + '%</div></div>';
     }).join('')
+    + (unknownYear
+        ? '<div style="flex:0 0 auto;min-width:118px;padding:9px 13px;border-radius:9px;'
+          + 'background:var(--card2);border:1px solid var(--border)">'
+          + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;'
+          + 'color:var(--text3);font-weight:700">Start unknown</div>'
+          + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
+          + unknownYear + '</div></div>'
+        : '')
     + '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:6px">'
-    + 'Counted separately and never added to the committed total — these are not work '
-    + 'anybody is owed yet.</div>';
+    + 'Dated from the first measure visit, or the contract date where there is no measure. '
+    + (unknownYear ? unknownYear + ' projects have neither, so their start is unknown.' : '')
+    + '</div>';
   }
 }
 
@@ -11546,8 +11617,6 @@ function openCarryoverReport() {
   committed.forEach(r => byDes[r.designer] = (byDes[r.designer] || 0) + 1);
   const byArea = {};
   committed.forEach(r => byArea[r.area] = (byArea[r.area] || 0) + 1);
-  const byPipe = {};
-  pipeline.forEach(r => byPipe[r.stage] = (byPipe[r.stage] || 0) + 1);
 
   const head = (num, title) => '<div class="h"><em>' + num + '</em>' + title + '</div>';
   const tbl = (list, label, total) =>
@@ -11578,17 +11647,31 @@ function openCarryoverReport() {
     +   '</tbody></table></div>';
 
   // ── 1. The headline ─────────────────────────────────────────────────────
+  const jrn = committed.map(r => r.journey).filter(d => d != null).sort((a,b) => a-b);
+  const medJ = jrn.length ? jrn[Math.floor(jrn.length/2)] : null;
+  const thisYear = String(new Date().getFullYear());
+  const older = committed.filter(r => r.startYear && r.startYear < thisYear).length;
+  const overYear = jrn.filter(d => d >= 365).length;
+
   h += head(1, 'The position')
      + '<table><tbody>'
      + '<tr><td>Committed work carried into 2027</td><td class="n">' + n(committed.length) + '</td></tr>'
+     + '<tr><td>Median time inside Kitchino</td><td class="n">'
+     +   (medJ == null ? '—' : medJ + ' days') + '</td></tr>'
+     + '<tr><td>In the system more than a year</td><td class="n">' + n(overYear) + '</td></tr>'
+     + '<tr><td>Journey began before ' + thisYear + '</td><td class="n">' + n(older) + '</td></tr>'
      + '<tr><td>Standing 90 days or more at one stage</td><td class="n">'
      +   n(dated.filter(r => r.days >= 90).length) + '</td></tr>'
      + '<tr><td>Standing 180 days or more</td><td class="n">'
      +   n(dated.filter(r => r.days >= 180).length) + '</td></tr>'
      + '<tr><td>Median days at current stage</td><td class="n">'
      +   (med == null ? '—' : med) + '</td></tr>'
-     + '<tr><td>Pipeline, not yet sold</td><td class="n">' + n(pipeline.length) + '</td></tr>'
-     + '</tbody></table>';
+     + '</tbody></table>'
+     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.75;margin:-6px 0 16px">'
+     + 'Two different measures, and they answer different questions. <b>Time inside '
+     + 'Kitchino</b> is how long the customer has been waiting, counted from their first '
+     + 'measure visit. <b>Standing</b> is how long the project has sat at its current '
+     + 'stage. A project can have moved last week and still have been here a year.</div>';
 
   // ── 2–4. Breakdowns ─────────────────────────────────────────────────────
   h += head(2, 'Committed work by stage')
@@ -11601,8 +11684,25 @@ function openCarryoverReport() {
   h += head(4, 'Committed work by area')
      + tbl(Object.entries(byArea).sort((a,b) => b[1]-a[1]), 'Area', committed.length);
 
+  // How far back the backlog runs. The oldest years are the story.
+  const byYear = {};
+  let unknownYear = 0;
+  committed.forEach(r => {
+    if (!r.startYear) { unknownYear++; return; }
+    byYear[r.startYear] = (byYear[r.startYear] || 0) + 1;
+  });
+  const yearList = Object.keys(byYear).sort().map(y => [y, byYear[y]]);
+  if (unknownYear) yearList.push(['Start not recorded', unknownYear]);
+
+  h += head(5, 'How far back the backlog runs')
+     + tbl(yearList, 'Journey began', committed.length)
+     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.75;margin:-6px 0 16px">'
+     + 'Dated from the customer’s first measure visit, or the contract date where there '
+     + 'is no measure record. Anything before ' + thisYear + ' has already been carried '
+     + 'once and is being carried again.</div>';
+
   // ── 5. Money ────────────────────────────────────────────────────────────
-  h += head(5, 'Money carried into 2027')
+  h += head(6, 'Money carried into 2027')
      + '<table><tbody>'
      + '<tr><td>Known outstanding on committed work</td><td class="n">EGP '
      +   n(Math.round(owed)) + '</td></tr>'
@@ -11619,35 +11719,35 @@ function openCarryoverReport() {
      + 'Closing that gap is a data exercise, not an analytical one.</div>';
 
   // ── 6. The longest standing ─────────────────────────────────────────────
-  const worst = dated.filter(r => r.days >= 90).slice(0, 25);
-  h += head(6, 'Longest standing — committed work')
+  // Ordered by total time in Kitchino, not by stage age: the customer waiting
+  // longest is the one to answer for, whatever stage their project sits at.
+  const worst = committed.slice()
+    .filter(r => r.journey != null)
+    .sort((a, b) => b.journey - a.journey)
+    .slice(0, 25);
+
+  h += head(7, 'Longest waiting — committed work')
      + '<table><thead><tr><th style="width:62px">Project</th><th>Customer</th>'
-     + '<th style="width:104px">Stage</th><th class="n" style="width:66px">Standing</th>'
-     + '<th style="width:124px">Designer</th><th class="n" style="width:82px">Balance</th>'
+     + '<th style="width:96px">Stage</th><th class="n" style="width:70px">In Kitchino</th>'
+     + '<th class="n" style="width:62px">Standing</th>'
+     + '<th style="width:116px">Designer</th><th class="n" style="width:78px">Balance</th>'
      + '</tr></thead><tbody>'
      + (worst.length ? worst.map(r =>
          '<tr><td style="color:#5b6472">' + esc(r.id) + '</td>'
        + '<td>' + esc(r.customer) + '</td>'
        + '<td style="color:#5b6472">' + esc(r.stage) + '</td>'
-       + '<td class="n" style="font-weight:700;color:' + (r.days >= 180 ? '#b3261e' : '#8a5a00')
-       +   '">' + r.days + 'd</td>'
+       + '<td class="n" style="font-weight:700;color:' + (r.journey >= 365 ? '#b3261e' : '#8a5a00')
+       +   '">' + r.journey + 'd</td>'
+       + '<td class="n" style="color:#5b6472">' + (r.days == null ? '—' : r.days + 'd') + '</td>'
        + '<td style="color:#5b6472">' + esc(r.designer) + '</td>'
        + '<td class="n" style="color:#5b6472">'
        +   (r.balance == null ? '—' : n(Math.round(r.balance))) + '</td></tr>').join('')
-       : '<tr><td colspan="6" style="text-align:center;color:#5b6472">Nothing standing 90 days or more.</td></tr>')
+       : '<tr><td colspan="7" style="text-align:center;color:#5b6472">No start dates recorded.</td></tr>')
      + '</tbody></table>'
      + (dated.filter(r => r.days >= 90).length > 25
         ? '<div style="font-size:10.5px;color:#5b6472;margin:-6px 0 16px">Showing the 25 '
           + 'longest standing of ' + dated.filter(r => r.days >= 90).length
           + '. The full list is on the portal page and in the CSV export.</div>' : '');
-
-  // ── 7. Pipeline ─────────────────────────────────────────────────────────
-  h += head(7, 'Pipeline — not yet sold')
-     + tbl(CO_PIPELINE.filter(s => byPipe[s]).map(s => [s, byPipe[s]]), 'Stage', pipeline.length)
-     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.75;margin:-6px 0 16px">'
-     + 'Counted separately and never added to the committed total. A measure visit is not '
-     + 'work anyone is owed, and treating it as backlog would overstate 2027 by '
-     + n(pipeline.length) + ' projects.</div>';
 
   // ── Basis ───────────────────────────────────────────────────────────────
   h += head('·', 'Basis')
@@ -11658,13 +11758,17 @@ function openCarryoverReport() {
      + 'contracts sheet knows ' + n(committed.filter(r => r.hasCt).length) + ', the '
      + 'receivables sheet ' + n(committed.length - noRd) + ', and the measures sheet '
      + n(committed.filter(r => r.hasMs).length) + '.<br>'
-     + '<b>Committed and pipeline.</b> Committed is Contracted through Installation — work '
-     + 'sold and owed. Pipeline is Measure, Quotation and Design Sessions. The two are never '
-     + 'added together.<br>'
-     + '<b>No completion dates.</b> One project of the whole open book carries a delivery '
-     + 'date in the CRM, so this report makes no forecast of when work will finish. '
-     + '"Standing" is days since the project last changed stage, which is recorded for '
-     + n(dated.length) + ' of ' + n(committed.length) + '.<br>'
+     + '<b>What counts as committed.</b> Contracted through Installation — work sold and '
+     + 'owed. Projects at Measure, Quotation or Design Sessions are excluded: those are CRM '
+     + 'stage counts, not the commercial pipeline, which is tracked on the Measures page. '
+     + 'Including them would have overstated 2027 by ' + n(pipeline.length) + ' projects.<br>'
+     + '<b>Two clocks.</b> "In Kitchino" is days since the customer’s first measure '
+     + 'visit, recorded for ' + n(jrn.length) + ' of ' + n(committed.length) + '. "Standing" '
+     + 'is days at the current stage, recorded for ' + n(dated.length) + '. The first says '
+     + 'how long the customer has waited; the second says where it is stuck.<br>'
+     + '<b>No completion dates.</b> One project in the whole open book carries a delivery '
+     + 'date in the CRM, so this report forecasts nothing. Where work will land in 2027 has '
+     + 'to be judged from stage and waiting time, not read off a promise.<br>'
      + '<b>Stage accuracy.</b> Stage changes are entered by hand in the CRM. A project that '
      + 'moved on without the move being recorded will read as standing longer than it has; '
      + 'the long tail in section 6 is the place that shows.<br>'
@@ -11723,13 +11827,15 @@ function exportCarryover() {
     if (/^[=+@\-]/.test(s)) s = "'" + s;     // Excel would read it as a formula
     return '"' + s.replace(/"/g, '""') + '"';
   };
-  let csv = ['Project','Customer','Type','Stage','Committed or pipeline',
-             'Days standing','Designer','Area','Balance','In receivables',
-             'In contracts','In measures','Contract date','Entered store']
+  let csv = ['Project','Customer','Type','Stage','Committed or pre-contract',
+             'Days standing','Designer','Area',
+             'Days in Kitchino','Journey began','Start year','Balance',
+             'In receivables','In contracts','In measures','Contract date','Entered store']
              .map(esc).join(',') + '\n';
   rows.forEach(r => {
     csv += [esc(r.id), esc(r.customer), esc(r.type), esc(r.stage), esc(r.kind),
             esc(r.days == null ? '' : r.days), esc(r.designer), esc(r.area),
+            esc(r.journey == null ? '' : r.journey), esc(r.started), esc(r.startYear),
             esc(r.balance == null ? '' : r.balance),
             esc(r.hasRd ? 'yes' : 'no'), esc(r.hasCt ? 'yes' : 'no'),
             esc(r.hasMs ? 'yes' : 'no'), esc(r.contractDate), esc(r.storeEntered)]
