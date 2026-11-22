@@ -2256,6 +2256,33 @@ if (_checkSession()) {
   </div>
 </div>
 
+<!-- Year drill-down. Opened from the "How far back it runs" cards. -->
+<div id="co-year-modal" onclick="if(event.target===this)closeCoYear()"
+     style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);
+            align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:14px;width:95%;max-width:1040px;
+              max-height:86vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;
+                padding:20px 24px 12px;border-bottom:1px solid var(--border)">
+      <div>
+        <div id="co-year-title" style="font-size:16px;font-weight:700;color:var(--text)"></div>
+        <div id="co-year-sub" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm" onclick="exportCoYear()">⬇ Export</button>
+        <button onclick="closeCoYear()" style="background:none;border:none;color:var(--text);
+                font-size:22px;cursor:pointer;line-height:1;padding:0">✕</button>
+      </div>
+    </div>
+    <div style="overflow:auto;padding:8px 24px 22px">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead><tr id="co-year-head"></tr></thead>
+        <tbody id="co-year-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- CEO report pop-up -->
 <div id="co-report-modal" onclick="if(event.target===this)closeCarryoverReport()"
      style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);
@@ -11559,31 +11586,135 @@ function _coRender() {
     });
     const years = Object.keys(byYear).sort();
     const thisYear = String(new Date().getFullYear());
+    // Clickable: a count is only useful if you can see which projects it is.
     yb.innerHTML = years.map(y => {
       const old = y < thisYear;
       const c = old ? '#e03e3e' : '#3b82f6';
-      return '<div style="flex:0 0 auto;min-width:118px;padding:9px 13px;border-radius:9px;'
-        + 'background:' + c + '14;border:1px solid ' + c + '3a">'
+      return '<div onclick="openCoYear(\'' + esc(y) + '\')" title="List these projects" '
+        + 'style="cursor:pointer;flex:0 0 auto;min-width:118px;padding:9px 13px;border-radius:9px;'
+        + 'background:' + c + '14;border:1px solid ' + c + '3a;transition:all .12s" '
+        + 'onmouseenter="this.style.background=\'' + c + '2e\'" '
+        + 'onmouseleave="this.style.background=\'' + c + '14\'">'
         + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:' + c
         + ';font-weight:700">' + esc(y) + (old ? ' · carried' : '') + '</div>'
         + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
         + byYear[y] + '</div>'
         + '<div style="font-size:9px;color:var(--text3)">'
-        + Math.round(byYear[y] / (committed.length || 1) * 100) + '%</div></div>';
+        + Math.round(byYear[y] / (committed.length || 1) * 100) + '% · view</div></div>';
     }).join('')
     + (unknownYear
-        ? '<div style="flex:0 0 auto;min-width:118px;padding:9px 13px;border-radius:9px;'
+        ? '<div onclick="openCoYear(\'(unknown)\')" title="List these projects" '
+          + 'style="cursor:pointer;flex:0 0 auto;min-width:118px;padding:9px 13px;border-radius:9px;'
           + 'background:var(--card2);border:1px solid var(--border)">'
           + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;'
           + 'color:var(--text3);font-weight:700">Start unknown</div>'
           + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
-          + unknownYear + '</div></div>'
+          + unknownYear + '</div>'
+          + '<div style="font-size:9px;color:var(--text3)">view</div></div>'
         : '')
     + '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:6px">'
     + 'Dated from the first measure visit, or the contract date where there is no measure. '
     + (unknownYear ? unknownYear + ' projects have neither, so their start is unknown.' : '')
     + '</div>';
   }
+}
+
+/* ── Year drill-down ──────────────────────────────────────────────────────
+   The year cards are counts, and a count on its own cannot be acted on. This
+   lists the projects behind one, each code linking to the CRM so the person
+   reading it can go straight to the project rather than search for it. */
+let _CO_YEAR_ROWS = [], _CO_YEAR_LABEL = '';
+
+function openCoYear(year) {
+  const all = (_CO_ROWS.length ? _CO_ROWS : coRows()).filter(r => r.kind === 'committed');
+  const unknown = year === '(unknown)';
+  const rows = _CO_YEAR_ROWS = all
+    .filter(r => unknown ? !r.startYear : r.startYear === year)
+    // Longest waiting first — within a year, that is the order that matters.
+    .sort((a, b) => (b.journey == null ? -1 : b.journey) - (a.journey == null ? -1 : a.journey));
+
+  _CO_YEAR_LABEL = unknown ? 'start-unknown' : year;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
+    m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const n = v => (v || 0).toLocaleString();
+
+  const t = document.getElementById('co-year-title');
+  if (t) t.textContent = unknown
+    ? 'Committed work with no recorded start · ' + rows.length + ' projects'
+    : 'Committed work that began in ' + year + ' · ' + rows.length + ' projects';
+
+  const jrn = rows.map(r => r.journey).filter(d => d != null).sort((a,b) => a-b);
+  const owed = rows.filter(r => r.balance != null && r.balance > 0)
+                   .reduce((s, r) => s + r.balance, 0);
+  const sub = document.getElementById('co-year-sub');
+  if (sub) sub.textContent = unknown
+    ? 'No measure visit and no contract date, so their journey cannot be dated. '
+      + 'Everything else about them is known.'
+    : (jrn.length ? 'Median ' + jrn[Math.floor(jrn.length/2)] + ' days in Kitchino · ' : '')
+      + 'known balances EGP ' + n(Math.round(owed));
+
+  const cols = ['#','Project','Customer','Type','Stage','In Kitchino','Standing','Designer','Balance'];
+  const head = document.getElementById('co-year-head');
+  if (head) head.innerHTML = cols.map((c, i) =>
+    '<th style="text-align:' + (i >= 5 && i !== 7 ? 'right' : 'left')
+    + ';padding:8px 10px;border-bottom:1px solid var(--border);font-size:10px;'
+    + 'text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap">'
+    + c + '</th>').join('');
+
+  const body = document.getElementById('co-year-body');
+  if (body) body.innerHTML = rows.length ? rows.map((r, i) =>
+      '<tr style="border-bottom:1px solid rgba(128,128,128,.14)">'
+    + '<td style="padding:7px 10px;color:var(--text3)">' + (i + 1) + '</td>'
+    + '<td style="padding:7px 10px;font-weight:600">'
+    +   (typeof crmCodeLink === 'function' ? crmCodeLink(r.id) : esc(r.id)) + '</td>'
+    + '<td style="padding:7px 10px;direction:rtl;text-align:right">' + esc(r.customer) + '</td>'
+    + '<td style="padding:7px 10px;color:var(--text2)">' + esc(r.type) + '</td>'
+    + '<td style="padding:7px 10px">'
+    +   (typeof crmStageBadge === 'function' ? crmStageBadge(r.id) : esc(r.stage)) + '</td>'
+    + '<td style="padding:7px 10px;text-align:right;font-weight:700;color:'
+    +   (r.journey != null && r.journey >= 365 ? '#e03e3e' : 'var(--text2)') + '">'
+    +   (r.journey == null ? '—' : r.journey + 'd') + '</td>'
+    + '<td style="padding:7px 10px;text-align:right;color:var(--text2)">'
+    +   (r.days == null ? '—' : r.days + 'd') + '</td>'
+    + '<td style="padding:7px 10px;color:var(--text2)">' + esc(r.designer) + '</td>'
+    + '<td style="padding:7px 10px;text-align:right;color:var(--gold)">'
+    +   (r.balance == null ? '—' : n(Math.round(r.balance))) + '</td></tr>'
+  ).join('')
+  : '<tr><td colspan="9" style="padding:24px;text-align:center;color:var(--text2)">'
+    + 'Nothing here.</td></tr>';
+
+  const m = document.getElementById('co-year-modal');
+  if (m) m.style.display = 'flex';
+}
+
+function closeCoYear() {
+  const m = document.getElementById('co-year-modal');
+  if (m) m.style.display = 'none';
+}
+
+function exportCoYear() {
+  const rows = _CO_YEAR_ROWS;
+  if (!rows.length) { alert('Nothing to export.'); return; }
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+@\-]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  let csv = ['Project','Customer','Type','Stage','Days in Kitchino','Journey began',
+             'Days standing','Designer','Area','Balance'].map(esc).join(',') + '\n';
+  rows.forEach(r => {
+    csv += [esc(r.id), esc(r.customer), esc(r.type), esc(r.stage),
+            esc(r.journey == null ? '' : r.journey), esc(r.started),
+            esc(r.days == null ? '' : r.days), esc(r.designer), esc(r.area),
+            esc(r.balance == null ? '' : r.balance)].join(',') + '\n';
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8;' }));
+  a.download = 'kitchino_carryover_' + _CO_YEAR_LABEL + '_'
+             + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
 }
 
 /* ── The CEO report ───────────────────────────────────────────────────────
@@ -22447,6 +22578,7 @@ document.addEventListener('keydown', ev => {
   _VCH.editing = null;
   if (typeof closeStoreAging === 'function') closeStoreAging();
   if (typeof closeCarryoverReport === 'function') closeCarryoverReport();
+  if (typeof closeCoYear === 'function') closeCoYear();
 });
 </script>
 </body>
