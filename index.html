@@ -1470,6 +1470,7 @@ if (_checkSession()) {
     <div class="nav-item" data-page="forecast"><span class="nav-icon">🔮</span>Forecast &amp; Pipeline</div>
     <div class="nav-item" data-page="presentation"><span class="nav-icon">🖥</span>Presentation View</div>
     <div class="nav-item" data-page="yearcompare"><span class="nav-icon">📊</span>2025 vs 2026</div>
+    <div class="nav-item" data-page="carryover"><span class="nav-icon">📦</span>2027 Carry-over</div>
   </div>
   <div class="sidebar-footer" style="display:none">
     <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Data Source</div>
@@ -2169,6 +2170,111 @@ if (_checkSession()) {
 </div>
 
 <!-- PAGE 8: CUSTOMER FOLLOW-UP -->
+<!-- ════════════════════════════════════════════════════════════════════════
+     2027 CARRY-OVER — the annual review for the CEO
+     ─────────────────────────────────────────────────────────────────────────
+     Every project started in 2026 or earlier that has not finished, and so
+     lands in 2027. Built on the CRM cache rather than any one sheet, because
+     no sheet holds the whole book: receivables covers 96 of 858, contracts
+     184, measures 799. The CRM is the only source that knows them all.
+
+     Two populations, never added together:
+       COMMITTED  Contracted → Installation. Work sold and owed.
+       PIPELINE   Measure, Quotation, Design Sessions. May convert, may not.
+     A measure is not capacity you have to deliver, and mixing the two would
+     overstate the backlog.
+
+     What this page deliberately does NOT do is forecast completion dates.
+     One project of the 858 carries a delivery date, so any date-based
+     projection would be invention. Risk is measured by how long a project
+     has been standing still, which is recorded for all of them.
+     (22 Nov 2026)
+     ════════════════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-carryover">
+  <div id="co-gate" style="display:none;padding:50px 0;text-align:center;color:var(--text2)">
+    <div style="font-size:32px;margin-bottom:12px">📦</div>
+    <div>The CRM is not connected, so the carry-over book cannot be built.</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:8px">
+      Set it up on the Connect page, then come back.</div>
+  </div>
+
+  <div id="co-content">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Carried into 2027</div>
+        <div id="co-sub" style="font-size:11px;color:var(--text3);margin-top:3px"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" onclick="exportCarryover()">⬇ Export CSV</button>
+        <button class="btn-sm primary" onclick="openCarryoverReport()">📄 CEO report</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid" id="co-kpis"
+         style="grid-template-columns:repeat(auto-fit,minmax(165px,1fr));margin-bottom:16px"></div>
+
+    <div class="table-card" style="margin-bottom:16px">
+      <div class="table-header"><div class="table-title">Committed work by stage</div>
+        <div class="table-actions" style="font-size:11px;color:var(--text2)">Contracted → Installation</div></div>
+      <div id="co-stage-cards" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px"></div>
+    </div>
+
+    <div class="charts-grid" style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));margin-bottom:16px">
+      <div class="chart-card">
+        <div class="chart-title">How long it has been standing still</div>
+        <div class="chart-subtitle">Days at the current stage — committed work only</div>
+        <div id="co-age-bands" style="padding:10px 0"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Carried by designer</div>
+        <div class="chart-subtitle">Committed work, from the measure record</div>
+        <div id="co-designers" style="padding:10px 0;max-height:300px;overflow:auto"></div>
+      </div>
+    </div>
+
+    <div class="table-card" style="margin-bottom:16px">
+      <div class="table-header">
+        <div class="table-title">⚠ Needs attention</div>
+        <div class="table-actions" style="font-size:11px;color:var(--text2)">
+          Committed work standing still longest</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="co-risk-table">
+          <thead><tr><th>#</th><th>Project</th><th>Customer</th><th>Stage</th>
+            <th>Standing</th><th>Designer</th><th>Balance</th><th>Notes</th></tr></thead>
+          <tbody id="co-risk-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header"><div class="table-title">Pipeline</div>
+        <div class="table-actions" style="font-size:11px;color:var(--text2)">
+          Measure · Quotation · Design Sessions — not yet sold</div></div>
+      <div id="co-pipeline" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 16px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CEO report pop-up -->
+<div id="co-report-modal" onclick="if(event.target===this)closeCarryoverReport()"
+     style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.65);
+            align-items:center;justify-content:center">
+  <div style="background:#fff;color:#15181d;border-radius:12px;width:94%;max-width:1000px;
+              max-height:90vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;
+                padding:16px 24px;border-bottom:1px solid #e3e7ec">
+      <div style="font-size:15px;font-weight:700">2027 Carry-over — annual review</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sm primary" onclick="printCarryoverReport()">⬇ Export PDF</button>
+        <button onclick="closeCarryoverReport()" style="background:none;border:none;
+                font-size:22px;cursor:pointer;line-height:1;padding:0;color:#15181d">✕</button>
+      </div>
+    </div>
+    <div id="co-report-body" style="overflow:auto;padding:26px 30px 34px"></div>
+  </div>
+</div>
+
 <div class="page" id="page-followup">
   <!-- Row 1: Main KPIs -->
   <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:12px">
@@ -11162,10 +11268,484 @@ function _renderJourneyTimeline(name, visits, contracts, installs, qCode) {
 const PAGE_TITLES = {
   executive:'Executive Summary',daily:'Daily Operations',measures:'Measures Tracking',
   designers:'Designers Performance',conversion:'Conversion Analysis',geographic:'Geographic Analysis',governorate:'Measures by Governorate',
-  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet',vouchers:'Le Marché Vouchers',shiplog:'Shipping Log'
+  monthly:'Monthly Trends',followup:'Contracted Customers Follow-up',journey:'Customer / Order Journey',sources:'Lead Sources',signals:'Signals & Data Health',forecast:'Forecast & Pipeline',ceo:'CEO View',presentation:'Presentation View',yearcompare:'2025 vs 2026',ordertypes:'Order Types Analysis',instfollowup:'Installation Follow-up',receivables:'Receivables & Delivery',wallet:'Kitchino Reward Wallet',vouchers:'Le Marché Vouchers',shiplog:'Shipping Log',carryover:'2027 Carry-over'
 };
 
+/* ══════════════════════════════════════════════════════════════════════════
+   2027 CARRY-OVER
+   ══════════════════════════════════════════════════════════════════════════ */
+
+// Work sold and owed. A project at any of these has been paid for in part and
+// has to be finished, so it is capacity 2027 must absorb.
+const CO_COMMITTED = ['Contracted','Electromechanic','Shablona','Designer Working',
+  'Technical Office','Production','Assembly QC','Final QC','Recheck','Store',
+  'Shipping','Installation'];
+
+// Not sold yet. Kept separate and never added to the committed total: a site
+// visit that may never convert is not a backlog.
+const CO_PIPELINE = ['Measure','Quotation','Design Sessions'];
+
+// Finished or abandoned — not carried into anything.
+const CO_CLOSED = ['Delivered','Declined','Canceled','Cancelled','Expired'];
+
+/* One row per open project, with whatever each sheet can add.
+
+   Built from the CRM because it is the only source that holds the whole book.
+   Everything else is attached where it exists and left blank where it does
+   not, and the gaps are counted so the report can state its own coverage
+   rather than implying completeness it does not have. */
+function coRows() {
+  if (!_CRM_BY_CODE) return [];
+
+  const rdByCode = {};
+  (_RD_DATA || []).forEach(r => { const c = _rdCode(r); if (c) rdByCode[c] = r; });
+
+  const ctByCode = {};
+  (CONTRACTS_DATA || []).forEach(c => {
+    const k = String(c.crmCode || '').trim();
+    if (k && !ctByCode[k]) ctByCode[k] = c;
+  });
+
+  const msByCode = {};
+  ((typeof ENGINE_CLEAN_ROWS !== 'undefined' && ENGINE_CLEAN_ROWS) || []).forEach(r => {
+    const k = String(r.orderCode || '').trim();
+    if (k && !msByCode[k]) msByCode[k] = r;
+  });
+
+  const num = v => Number(String(v == null ? '' : v).replace(/[^0-9.-]/g, '')) || 0;
+  const out = [];
+
+  _CRM_BY_CODE.forEach(p => {
+    const stage = String(p.stage || '').trim();
+    if (!stage || CO_CLOSED.indexOf(stage) >= 0) return;
+
+    const id = String(p.id);
+    const rd = rdByCode[id], ct = ctByCode[id], ms = msByCode[id];
+
+    out.push({
+      id, stage,
+      kind:     CO_COMMITTED.indexOf(stage) >= 0 ? 'committed'
+              : CO_PIPELINE.indexOf(stage)  >= 0 ? 'pipeline' : 'other',
+      // The CRM's own name first: it is the only one present for every row.
+      customer: p.customer || (rd && rd['Client Name']) || (ct && ct.name) || (ms && ms.customer) || '—',
+      type:     p.type || (rd && rd['Project Type']) || (ms && ms.orderType) || '—',
+      // Designer comes from the measure for most of the book — 799 of 858 —
+      // which is why it is preferred over the CRM's own field here.
+      designer: (ms && _fixDesigner(ms.designer)) || p.designer
+                || (ct && ct.designer) || (rd && String(rd['Designer']||'').replace(/^\t/,'').trim()) || '—',
+      area:     (ms && ms.area) || '—',
+      days:     (typeof crmStageAge === 'function') ? crmStageAge(id) : null,
+      balance:  rd ? num(rd['Due Amount']) : null,   // null = no receivables row at all
+      hasRd:    !!rd, hasCt: !!ct, hasMs: !!ms,
+      contractDate: ct ? ct.date : '',
+      storeEntered: (typeof crmStoreEntered === 'function') ? crmStoreEntered(id) : ''
+    });
+  });
+
+  // Longest-standing first: the question this page answers is what is stuck.
+  return out.sort((a, b) => (b.days == null ? -1 : b.days) - (a.days == null ? -1 : a.days));
+}
+
+const CO_AGE_BANDS = [
+  ['Under 30 days', 0,   29,       '#1b9a6e'],
+  ['30–89 days',    30,  89,       '#e8871a'],
+  ['90–179 days',   90,  179,      '#e0603e'],
+  ['180 days or more', 180, Infinity, '#e03e3e']
+];
+
+let _CO_ROWS = [];
+
+function buildCarryoverPage() {
+  const gate = document.getElementById('co-gate');
+  const main = document.getElementById('co-content');
+
+  if (typeof crmConfigured !== 'function' || !crmConfigured()) {
+    if (gate) gate.style.display = 'block';
+    if (main) main.style.display = 'none';
+    return;
+  }
+
+  // The whole page is the CRM cache, so there is nothing to draw until it has
+  // arrived. Fetch, then build.
+  if (!_CRM_BY_CODE) {
+    if (main) main.innerHTML = '<div style="padding:50px 0;text-align:center;color:var(--text2)">'
+      + 'Loading the carry-over book…</div>';
+    crmLoad().then(m => {
+      if (m && document.querySelector('.page.active')?.id === 'page-carryover') location.reload();
+    });
+    return;
+  }
+
+  if (gate) gate.style.display = 'none';
+  if (main) main.style.display = 'block';
+  _coRender();
+}
+
+function _coRender() {
+  const rows = _CO_ROWS = coRows();
+  const committed = rows.filter(r => r.kind === 'committed');
+  const pipeline  = rows.filter(r => r.kind === 'pipeline');
+  const other     = rows.filter(r => r.kind === 'other');
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
+    m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const n = v => (v || 0).toLocaleString();
+
+  // ── Headline ────────────────────────────────────────────────────────────
+  const stuck = committed.filter(r => r.days != null && r.days >= 90).length;
+  const withBal = committed.filter(r => r.balance != null && r.balance > 0);
+  const owed = withBal.reduce((s, r) => s + r.balance, 0);
+  const agesC = committed.map(r => r.days).filter(d => d != null).sort((a,b) => a-b);
+  const medC = agesC.length ? agesC[Math.floor(agesC.length/2)] : null;
+
+  const sub = document.getElementById('co-sub');
+  if (sub) sub.textContent = rows.length + ' projects open at ' + new Date().toLocaleDateString('en-GB',
+      { day:'numeric', month:'long', year:'numeric' })
+    + ' · ' + committed.length + ' committed · ' + pipeline.length + ' pipeline'
+    + (other.length ? ' · ' + other.length + ' at another stage' : '');
+
+  const card = (label, value, sub2, cls) =>
+    '<div class="kpi-card ' + cls + '"><div class="kpi-label">' + label + '</div>'
+    + '<div class="kpi-value">' + value + '</div>'
+    + '<div class="kpi-sub">' + sub2 + '</div></div>';
+
+  const kp = document.getElementById('co-kpis');
+  if (kp) kp.innerHTML =
+      card('Committed into 2027', n(committed.length), 'sold, not delivered', 'blue')
+    + card('Standing 90+ days',  n(stuck),
+           committed.length ? Math.round(stuck/committed.length*100) + '% of committed' : '—', 'red')
+    + card('Median standing',    medC == null ? '—' : medC + 'd', 'days at current stage', 'gold')
+    + card('Known balances',     'EGP ' + n(Math.round(owed)),
+           'on ' + withBal.length + ' of ' + committed.length + ' committed', 'teal')
+    + card('Pipeline',           n(pipeline.length), 'may or may not convert', 'purple');
+
+  // ── Stage cards ─────────────────────────────────────────────────────────
+  const stageBox = document.getElementById('co-stage-cards');
+  if (stageBox) {
+    const counts = {};
+    committed.forEach(r => counts[r.stage] = (counts[r.stage] || 0) + 1);
+    const total = committed.length || 1;
+    stageBox.innerHTML = CO_COMMITTED.filter(s => counts[s]).map(s => {
+      const c = crmStageColour(s);
+      return '<div style="flex:0 0 auto;min-width:116px;padding:9px 13px;border-radius:9px;'
+        + 'background:' + c + '14;border:1px solid ' + c + '3a">'
+        + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:' + c
+        + ';font-weight:700;white-space:nowrap">' + esc(s) + '</div>'
+        + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
+        + counts[s] + '</div>'
+        + '<div style="font-size:9px;color:var(--text3)">'
+        + Math.round(counts[s]/total*100) + '%</div></div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text3)">Nothing committed is open.</div>';
+  }
+
+  // ── Age bands ───────────────────────────────────────────────────────────
+  const ageBox = document.getElementById('co-age-bands');
+  if (ageBox) {
+    const dated = committed.filter(r => r.days != null);
+    const undated = committed.length - dated.length;
+    const max = Math.max(1, ...CO_AGE_BANDS.map(([,lo,hi]) =>
+      dated.filter(r => r.days >= lo && r.days <= hi).length));
+    ageBox.innerHTML = CO_AGE_BANDS.map(([lab, lo, hi, col]) => {
+      const c = dated.filter(r => r.days >= lo && r.days <= hi).length;
+      return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">'
+        + '<div style="width:112px;font-size:11px;color:var(--text2)">' + lab + '</div>'
+        + '<div style="flex:1;background:var(--card2);border-radius:5px;height:17px;overflow:hidden">'
+        + '<div style="width:' + (c/max*100) + '%;height:100%;background:' + col + '"></div></div>'
+        + '<div style="width:46px;text-align:right;font-weight:700;font-size:12px">' + c + '</div></div>';
+    }).join('')
+    + (undated ? '<div style="font-size:10px;color:var(--text3);margin-top:4px">'
+        + undated + ' with no stage date in the CRM, so not placed in a band.</div>' : '');
+  }
+
+  // ── Designers ───────────────────────────────────────────────────────────
+  const desBox = document.getElementById('co-designers');
+  if (desBox) {
+    const byDes = {};
+    committed.forEach(r => byDes[r.designer] = (byDes[r.designer] || 0) + 1);
+    const list = Object.entries(byDes).sort((a,b) => b[1]-a[1]);
+    const max = Math.max(1, ...list.map(x => x[1]));
+    desBox.innerHTML = list.map(([d, c]) =>
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">'
+      + '<div style="width:140px;font-size:11px;color:var(--text2);overflow:hidden;'
+      + 'text-overflow:ellipsis;white-space:nowrap">' + esc(d) + '</div>'
+      + '<div style="flex:1;background:var(--card2);border-radius:5px;height:14px;overflow:hidden">'
+      + '<div style="width:' + (c/max*100) + '%;height:100%;background:var(--gold,#eac570)"></div></div>'
+      + '<div style="width:34px;text-align:right;font-weight:700;font-size:11px">' + c + '</div></div>'
+    ).join('');
+  }
+
+  // ── Risk table ──────────────────────────────────────────────────────────
+  const rb = document.getElementById('co-risk-body');
+  if (rb) {
+    const risk = committed.filter(r => r.days != null && r.days >= 90).slice(0, 40);
+    rb.innerHTML = risk.length ? risk.map((r, i) => {
+      const col = r.days >= 180 ? '#e03e3e' : '#e8871a';
+      return '<tr><td class="muted">' + (i+1) + '</td>'
+        + '<td>' + (typeof crmCodeLink === 'function' ? crmCodeLink(r.id) : esc(r.id))
+        +   '<div style="font-size:10px;color:var(--text3)">' + esc(r.type) + '</div></td>'
+        + '<td style="direction:rtl;text-align:right">' + esc(r.customer) + '</td>'
+        + '<td>' + (typeof crmStageBadge === 'function' ? crmStageBadge(r.id) : esc(r.stage)) + '</td>'
+        + '<td style="font-weight:700;color:' + col + '">' + r.days + 'd</td>'
+        + '<td class="muted">' + esc(r.designer) + '</td>'
+        + '<td class="muted">' + (r.balance == null ? '—'
+            : r.balance > 0 ? n(Math.round(r.balance)) : '0') + '</td>'
+        + '<td>' + (typeof projNoteCell === 'function' ? projNoteCell(r.id, r.customer) : '') + '</td></tr>';
+    }).join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:22px;color:var(--text2)">'
+      + 'Nothing committed has been standing 90 days or more.</td></tr>';
+  }
+
+  // ── Pipeline ────────────────────────────────────────────────────────────
+  const pb = document.getElementById('co-pipeline');
+  if (pb) {
+    const counts = {};
+    pipeline.forEach(r => counts[r.stage] = (counts[r.stage] || 0) + 1);
+    pb.innerHTML = CO_PIPELINE.filter(s => counts[s]).map(s => {
+      const c = crmStageColour(s);
+      return '<div style="flex:0 0 auto;min-width:130px;padding:9px 13px;border-radius:9px;'
+        + 'background:' + c + '14;border:1px solid ' + c + '3a">'
+        + '<div style="font-size:9px;letter-spacing:.4px;text-transform:uppercase;color:' + c
+        + ';font-weight:700">' + esc(s) + '</div>'
+        + '<div style="font-size:19px;font-weight:800;color:var(--text1);line-height:1.2">'
+        + counts[s] + '</div></div>';
+    }).join('')
+    + '<div style="flex-basis:100%;font-size:10px;color:var(--text3);padding-top:6px">'
+    + 'Counted separately and never added to the committed total — these are not work '
+    + 'anybody is owed yet.</div>';
+  }
+}
+
+/* ── The CEO report ───────────────────────────────────────────────────────
+   Printed on white, in the same register as the Travco and Shipping reports:
+   figures, their basis, and what is not known. No recommendations — those are
+   the CEO's to draw.
+
+   Every section states its own coverage. The temptation in an annual review
+   is to present a total and let it imply completeness; here the money section
+   covers 96 of 858 projects and says so in the same breath as the number. */
+function openCarryoverReport() {
+  const rows = _CO_ROWS.length ? _CO_ROWS : coRows();
+  const committed = rows.filter(r => r.kind === 'committed');
+  const pipeline  = rows.filter(r => r.kind === 'pipeline');
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
+    m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const n = v => (v || 0).toLocaleString();
+  const pc = (a, b) => b ? (a / b * 100).toFixed(1) + '%' : '—';
+
+  const dated = committed.filter(r => r.days != null);
+  const ages  = dated.map(r => r.days).sort((a, b) => a - b);
+  const med   = ages.length ? ages[Math.floor(ages.length / 2)] : null;
+  const withBal = committed.filter(r => r.balance != null && r.balance > 0);
+  const owed = withBal.reduce((s, r) => s + r.balance, 0);
+  const noRd = committed.filter(r => !r.hasRd).length;
+
+  const byStage = {};
+  committed.forEach(r => byStage[r.stage] = (byStage[r.stage] || 0) + 1);
+  const byDes = {};
+  committed.forEach(r => byDes[r.designer] = (byDes[r.designer] || 0) + 1);
+  const byArea = {};
+  committed.forEach(r => byArea[r.area] = (byArea[r.area] || 0) + 1);
+  const byPipe = {};
+  pipeline.forEach(r => byPipe[r.stage] = (byPipe[r.stage] || 0) + 1);
+
+  const head = (num, title) => '<div class="h"><em>' + num + '</em>' + title + '</div>';
+  const tbl = (list, label, total) =>
+      '<table><thead><tr><th>' + label + '</th><th class="n">Projects</th>'
+    + '<th class="n">Share</th></tr></thead><tbody>'
+    + list.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td class="n">' + v + '</td>'
+        + '<td class="n" style="color:#5b6472">' + pc(v, total) + '</td></tr>').join('')
+    + '<tr class="tot"><td>Total</td><td class="n">' + total + '</td>'
+    + '<td class="n">100.0%</td></tr></tbody></table>';
+
+  let h =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;'
+    + 'flex-wrap:wrap;padding-bottom:14px;border-bottom:2.5px solid #15181d">'
+    +   '<div><div style="font-size:18px;font-weight:900;letter-spacing:3px">KITCHINO</div>'
+    +     '<div style="font-size:8.5px;letter-spacing:1.7px;text-transform:uppercase;color:#5b6472;'
+    +       'margin-top:3px">Annual review · Operations</div>'
+    +     '<div style="font-size:20px;font-weight:750;margin-top:14px">'
+    +       'Work carried into 2027</div></div>'
+    +   '<table style="font-size:10.5px;border-collapse:collapse;min-width:250px"><tbody>'
+    +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Position at</td>'
+    +       '<td style="text-align:right;font-weight:600">'
+    +       new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})
+    +       '</td></tr>'
+    +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Open projects</td>'
+    +       '<td style="text-align:right;font-weight:600">' + n(rows.length) + '</td></tr>'
+    +     '<tr><td style="color:#5b6472;padding:2px 14px 2px 0">Of which committed</td>'
+    +       '<td style="text-align:right;font-weight:600">' + n(committed.length) + '</td></tr>'
+    +   '</tbody></table></div>';
+
+  // ── 1. The headline ─────────────────────────────────────────────────────
+  h += head(1, 'The position')
+     + '<table><tbody>'
+     + '<tr><td>Committed work carried into 2027</td><td class="n">' + n(committed.length) + '</td></tr>'
+     + '<tr><td>Standing 90 days or more at one stage</td><td class="n">'
+     +   n(dated.filter(r => r.days >= 90).length) + '</td></tr>'
+     + '<tr><td>Standing 180 days or more</td><td class="n">'
+     +   n(dated.filter(r => r.days >= 180).length) + '</td></tr>'
+     + '<tr><td>Median days at current stage</td><td class="n">'
+     +   (med == null ? '—' : med) + '</td></tr>'
+     + '<tr><td>Pipeline, not yet sold</td><td class="n">' + n(pipeline.length) + '</td></tr>'
+     + '</tbody></table>';
+
+  // ── 2–4. Breakdowns ─────────────────────────────────────────────────────
+  h += head(2, 'Committed work by stage')
+     + tbl(CO_COMMITTED.filter(s => byStage[s]).map(s => [s, byStage[s]]),
+           'Stage', committed.length);
+
+  h += head(3, 'Committed work by designer')
+     + tbl(Object.entries(byDes).sort((a,b) => b[1]-a[1]), 'Designer', committed.length);
+
+  h += head(4, 'Committed work by area')
+     + tbl(Object.entries(byArea).sort((a,b) => b[1]-a[1]), 'Area', committed.length);
+
+  // ── 5. Money ────────────────────────────────────────────────────────────
+  h += head(5, 'Money carried into 2027')
+     + '<table><tbody>'
+     + '<tr><td>Known outstanding on committed work</td><td class="n">EGP '
+     +   n(Math.round(owed)) + '</td></tr>'
+     + '<tr><td>Projects that figure covers</td><td class="n">'
+     +   withBal.length + ' of ' + committed.length + '</td></tr>'
+     + '<tr><td>Committed projects with no receivables record at all</td><td class="n">'
+     +   n(noRd) + '</td></tr>'
+     + '</tbody></table>'
+     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.75;margin:-6px 0 16px">'
+     + '<b>This figure is not the total exposure.</b> Balances are recorded in the '
+     + 'Receivables sheet, which covers ' + pc(committed.length - noRd, committed.length)
+     + ' of committed work. The remaining ' + n(noRd) + ' projects may carry a balance, '
+     + 'an unbilled stage payment, or nothing at all — the records do not say. '
+     + 'Closing that gap is a data exercise, not an analytical one.</div>';
+
+  // ── 6. The longest standing ─────────────────────────────────────────────
+  const worst = dated.filter(r => r.days >= 90).slice(0, 25);
+  h += head(6, 'Longest standing — committed work')
+     + '<table><thead><tr><th style="width:62px">Project</th><th>Customer</th>'
+     + '<th style="width:104px">Stage</th><th class="n" style="width:66px">Standing</th>'
+     + '<th style="width:124px">Designer</th><th class="n" style="width:82px">Balance</th>'
+     + '</tr></thead><tbody>'
+     + (worst.length ? worst.map(r =>
+         '<tr><td style="color:#5b6472">' + esc(r.id) + '</td>'
+       + '<td>' + esc(r.customer) + '</td>'
+       + '<td style="color:#5b6472">' + esc(r.stage) + '</td>'
+       + '<td class="n" style="font-weight:700;color:' + (r.days >= 180 ? '#b3261e' : '#8a5a00')
+       +   '">' + r.days + 'd</td>'
+       + '<td style="color:#5b6472">' + esc(r.designer) + '</td>'
+       + '<td class="n" style="color:#5b6472">'
+       +   (r.balance == null ? '—' : n(Math.round(r.balance))) + '</td></tr>').join('')
+       : '<tr><td colspan="6" style="text-align:center;color:#5b6472">Nothing standing 90 days or more.</td></tr>')
+     + '</tbody></table>'
+     + (dated.filter(r => r.days >= 90).length > 25
+        ? '<div style="font-size:10.5px;color:#5b6472;margin:-6px 0 16px">Showing the 25 '
+          + 'longest standing of ' + dated.filter(r => r.days >= 90).length
+          + '. The full list is on the portal page and in the CSV export.</div>' : '');
+
+  // ── 7. Pipeline ─────────────────────────────────────────────────────────
+  h += head(7, 'Pipeline — not yet sold')
+     + tbl(CO_PIPELINE.filter(s => byPipe[s]).map(s => [s, byPipe[s]]), 'Stage', pipeline.length)
+     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.75;margin:-6px 0 16px">'
+     + 'Counted separately and never added to the committed total. A measure visit is not '
+     + 'work anyone is owed, and treating it as backlog would overstate 2027 by '
+     + n(pipeline.length) + ' projects.</div>';
+
+  // ── Basis ───────────────────────────────────────────────────────────────
+  h += head('·', 'Basis')
+     + '<div style="font-size:10.5px;color:#5b6472;line-height:1.8">'
+     + '<b>Population.</b> Every project the CRM holds that is not Delivered, Declined, '
+     + 'Canceled or Expired. The CRM is used rather than any single sheet because none of '
+     + 'them holds the whole book: of ' + n(committed.length) + ' committed projects, the '
+     + 'contracts sheet knows ' + n(committed.filter(r => r.hasCt).length) + ', the '
+     + 'receivables sheet ' + n(committed.length - noRd) + ', and the measures sheet '
+     + n(committed.filter(r => r.hasMs).length) + '.<br>'
+     + '<b>Committed and pipeline.</b> Committed is Contracted through Installation — work '
+     + 'sold and owed. Pipeline is Measure, Quotation and Design Sessions. The two are never '
+     + 'added together.<br>'
+     + '<b>No completion dates.</b> One project of the whole open book carries a delivery '
+     + 'date in the CRM, so this report makes no forecast of when work will finish. '
+     + '"Standing" is days since the project last changed stage, which is recorded for '
+     + n(dated.length) + ' of ' + n(committed.length) + '.<br>'
+     + '<b>Stage accuracy.</b> Stage changes are entered by hand in the CRM. A project that '
+     + 'moved on without the move being recorded will read as standing longer than it has; '
+     + 'the long tail in section 6 is the place that shows.<br>'
+     + '<b>Designer.</b> Taken from the measure record, which covers most of the book, '
+     + 'falling back to the CRM and then the contract.</div>'
+     + '<div style="margin-top:18px;padding-top:10px;border-top:2.5px solid #15181d;'
+     + 'font-size:9.5px;color:#5b6472">Generated from the Kitchino Analytics Portal on '
+     + new Date().toLocaleString() + '. Figures move as the CRM is updated.</div>';
+
+  const body = document.getElementById('co-report-body');
+  if (body) body.innerHTML = _coReportStyle() + h;
+  const m = document.getElementById('co-report-modal');
+  if (m) m.style.display = 'flex';
+}
+
+/* Print styling kept with the report rather than in the page stylesheet: this
+   renders on white and must survive being exported to PDF from a dark page. */
+function _coReportStyle() {
+  return '<style>'
+    + '#co-report-body{font-family:Segoe UI,system-ui,Arial,sans-serif;color:#15181d;font-size:12px}'
+    + '#co-report-body .h{display:flex;align-items:center;gap:9px;margin:22px 0 9px;'
+    +   'font-size:12.5px;font-weight:750;letter-spacing:.2px}'
+    + '#co-report-body .h em{font-style:normal;display:inline-flex;align-items:center;'
+    +   'justify-content:center;width:19px;height:19px;border-radius:50%;background:#15181d;'
+    +   'color:#fff;font-size:10px;font-weight:700}'
+    + '#co-report-body table{width:100%;border-collapse:collapse;margin-bottom:16px}'
+    + '#co-report-body th{text-align:left;font-size:9px;letter-spacing:.7px;'
+    +   'text-transform:uppercase;color:#5b6472;border-bottom:1px solid #d7dce2;padding:6px 8px}'
+    + '#co-report-body th.n,#co-report-body td.n{text-align:right}'
+    + '#co-report-body td{padding:6px 8px;border-bottom:1px solid #eef1f4}'
+    + '#co-report-body tr.tot td{font-weight:750;border-top:1.5px solid #15181d;'
+    +   'border-bottom:none;background:#f7f9fb}'
+    + '@media print{@page{size:A4;margin:14mm}'
+    + ' body *{visibility:hidden}'
+    + ' #co-report-body,#co-report-body *{visibility:visible}'
+    + ' #co-report-body{position:absolute;left:0;top:0;width:100%;padding:0}'
+    + ' #co-report-body tr{break-inside:avoid}}'
+    + '</style>';
+}
+
+function printCarryoverReport() { window.print(); }
+
+function closeCarryoverReport() {
+  const m = document.getElementById('co-report-modal');
+  if (m) m.style.display = 'none';
+}
+
+/* CSV of the whole book, so the detail the report summarises can be checked
+   and sorted independently of it. */
+function exportCarryover() {
+  const rows = _CO_ROWS.length ? _CO_ROWS : coRows();
+  if (!rows.length) { alert('Nothing open to export.'); return; }
+
+  const esc = v => {
+    let s = String(v == null ? '' : v);
+    if (/^[=+@\-]/.test(s)) s = "'" + s;     // Excel would read it as a formula
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  let csv = ['Project','Customer','Type','Stage','Committed or pipeline',
+             'Days standing','Designer','Area','Balance','In receivables',
+             'In contracts','In measures','Contract date','Entered store']
+             .map(esc).join(',') + '\n';
+  rows.forEach(r => {
+    csv += [esc(r.id), esc(r.customer), esc(r.type), esc(r.stage), esc(r.kind),
+            esc(r.days == null ? '' : r.days), esc(r.designer), esc(r.area),
+            esc(r.balance == null ? '' : r.balance),
+            esc(r.hasRd ? 'yes' : 'no'), esc(r.hasCt ? 'yes' : 'no'),
+            esc(r.hasMs ? 'yes' : 'no'), esc(r.contractDate), esc(r.storeEntered)]
+           .join(',') + '\n';
+  });
+
+  // UTF-8 BOM, or Excel on an Arabic Windows renders every name as mojibake.
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8;' }));
+  a.download = 'kitchino_carryover_2027_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
 const PAGE_BUILDERS = {
+  carryover: buildCarryoverPage,
   executive: buildExecutiveCharts,
   daily: buildDailyCharts,
   designers: buildDesignerCharts,
@@ -21760,6 +22340,7 @@ document.addEventListener('keydown', ev => {
   document.querySelectorAll('#page-vouchers .vch-modal.open').forEach(m => m.classList.remove('open'));
   _VCH.editing = null;
   if (typeof closeStoreAging === 'function') closeStoreAging();
+  if (typeof closeCarryoverReport === 'function') closeCarryoverReport();
 });
 </script>
 </body>
