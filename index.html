@@ -22251,16 +22251,26 @@ function _vchCrmDerived(v) {
   if (typeof crmStage !== 'function' || !_CRM_BY_CODE) return '';
   let best = -1, name = '';
 
-  // Codes first. Where a voucher carries none — nobody typed them in — fall
-  // back to the customer's name. Voucher 0017 had three projects at Design
-  // Sessions in the CRM and sat at "Voucher sold" because it had no codes to
-  // look up and the name match was defeated by a single ى. (22 Nov 2026)
-  let codes = _vchCodes(v);
+  // Codes typed onto the voucher are evidence about THIS voucher. A phone or
+  // name match is evidence about the CUSTOMER, which is not the same thing.
+  //
+  // Voucher 0017 showed both failures in two days. First it sat at "Voucher
+  // sold" while the CRM had three of his projects at Design Sessions, because
+  // the name match was defeated by a single ى. Then, once that was fixed, the
+  // same match found an OLD contracted project of his and closed the voucher
+  // — he had not contracted on this one.
+  //
+  // So a matched project may carry the voucher forward through the early
+  // stages but may never close it. Closing has commercial meaning — the
+  // discount, the funnel, the designer's credit — and a guess must not carry
+  // that weight. Only a code written on the voucher can reach Contracted.
+  // (22 Nov 2026)
+  let codes = _vchCodes(v), matched = false;
   if (!codes.length && typeof crmFindProjects === 'function') {
-    // Phone first, then name. A voucher records the customer's mobile, which
-    // is the one field that cannot be spelled two ways.
     codes = crmFindProjects(v.fullName, v.mobile);
+    matched = true;
   }
+  const ceiling = matched ? VCH_RANK['Design'] : VCH_RANK['Contracted'];
 
   codes.forEach(code => {
     const s = crmStage(code);
@@ -22270,7 +22280,9 @@ function _vchCrmDerived(v) {
     if (!mapped) return;
     // A voucher can carry several projects. The furthest one decides, because
     // the customer has reached that point even if other rooms lag behind.
+    // But a matched project cannot push past the ceiling set above.
     const r = VCH_RANK[mapped];
+    if (r > ceiling) return;
     if (r > best) { best = r; name = mapped; }
   });
   return name;
