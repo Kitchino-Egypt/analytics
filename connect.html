@@ -173,6 +173,24 @@ function marks() {
   $('d-crm').classList.toggle('on', !!(get(K.crmUrl) && get(K.crmKey)));
 }
 
+/* An /exec URL must be bare. Each page appends its own query — ?key= for
+   Receivables, ?api=wallet&key= for the Wallet — so a URL pasted with a query
+   already on it produces two, and the script rejects the request. The error
+   says "wrong link or passkey", which sends people back to re-enter the same
+   value. Strip it here instead. (25 Nov 2026) */
+function execUrl(v) {
+  return String(v || '').trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
+}
+
+/* If a key was pasted along with the URL, take it from there rather than
+   making someone go and find it twice. */
+function keyFrom(urlRaw, typed) {
+  const t = String(typed || '').trim();
+  if (t) return t;
+  const m = String(urlRaw || '').match(/[?&]key=([^&#]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
 function saveAll(stay) {
   const rdUrl = $('rd-url').value.trim();
 
@@ -183,15 +201,22 @@ function saveAll(stay) {
     return toast('That Receivables URL is the Google-restricted dashboard. Use the data API /exec URL.');
   }
 
-  set(K.rdUrl,  rdUrl);
+  const walRaw = $('wal-url').value, vouRaw = $('vou-url').value,
+        crmRaw = $('crm-url').value;
+
+  set(K.rdUrl,  execUrl(rdUrl));
   set(K.rdPass, $('rd-pass').value.trim());
-  if (rdUrl) set(K.rdLast, rdUrl);
-  set(K.walUrl, $('wal-url').value.trim());
-  set(K.walKey, $('wal-key').value.trim());
-  set(K.vouUrl, $('vou-url').value.trim());
-  set(K.vouKey, $('vou-key').value.trim());
-  set(K.crmUrl, $('crm-url').value.trim());
-  set(K.crmKey, $('crm-key').value.trim());
+  if (rdUrl) set(K.rdLast, execUrl(rdUrl));
+  set(K.walUrl, execUrl(walRaw));
+  set(K.walKey, keyFrom(walRaw, $('wal-key').value));
+  set(K.vouUrl, execUrl(vouRaw));
+  set(K.vouKey, keyFrom(vouRaw, $('vou-key').value));
+  set(K.crmUrl, execUrl(crmRaw));
+  set(K.crmKey, keyFrom(crmRaw, $('crm-key').value));
+
+  // Show what was actually stored, so a stripped query is visible rather
+  // than silently different from what was pasted.
+  load();
 
   marks();
 
