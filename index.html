@@ -18565,13 +18565,38 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeShipRep
 // so a key written here would ship to anyone who opens the site or the repo.
 let _WAL_DATA = null;
 
-const _walUrl = () => localStorage.getItem('kitchino_wallet_url') || '';
-const _walKey = () => localStorage.getItem('kitchino_wallet_key') || '';
+/* Both are cleaned on the way out as well as on the way in, so a value saved
+   by an older build — or by connect.html — is repaired rather than failing.
+
+   The /exec URL must be bare. The page appends ?api=wallet&key=… itself, so a
+   URL pasted WITH that query produces ...exec?api=wallet&key=A?api=wallet&key=B
+   and the script rejects it. The error reads "wrong link or passkey", which
+   sends you to re-enter the same thing again. (25 Nov 2026) */
+const _walClean = u => String(u || '').trim().split('?')[0].split('#')[0].replace(/\/+$/, '');
+
+const _walUrl = () => _walClean(localStorage.getItem('kitchino_wallet_url'));
+const _walKey = () => String(localStorage.getItem('kitchino_wallet_key') || '').trim();
 
 function _walSaveConfig() {
-  const url = (document.getElementById('wal-url')?.value || '').trim();
-  const key = (document.getElementById('wal-key')?.value || '').trim();
-  if (!url || !key) return alert('Both the URL and the key are needed.');
+  const raw = (document.getElementById('wal-url')?.value || '').trim();
+  let key   = (document.getElementById('wal-key')?.value || '').trim();
+  const url = _walClean(raw);
+
+  if (!url) return alert('Paste the rewards app /exec URL.');
+
+  // A URL pasted with ?api=wallet&key=… carries the key with it, so accept it
+  // from there rather than making someone find it a second time.
+  if (!key) {
+    const m = raw.match(/[?&]key=([^&#]+)/);
+    if (m) key = decodeURIComponent(m[1]);
+  }
+  if (!key) return alert('Paste the wallet key as well.');
+
+  if (!/\/exec$/.test(url)) {
+    return alert('That URL does not end in /exec.\n\nCopy the Web app URL from '
+      + 'the deployment — not the editor address, and not a /dev URL.');
+  }
+
   localStorage.setItem('kitchino_wallet_url', url);
   localStorage.setItem('kitchino_wallet_key', key);
   _WAL_DATA = null;
